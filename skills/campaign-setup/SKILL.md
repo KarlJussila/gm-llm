@@ -107,4 +107,17 @@ Now that the character exists:
 
 ## Stage 7 — Commit
 
-Commit everything: `campaign: init`. The campaign is now ready for the PRE-SESSION flow.
+Commit everything: `campaign: init`.
+
+## Stage 8 — Prepare the first session, then hand off (spoiler-free)
+
+1. **Plan session 1 before handing off.** Run the PRE-SESSION flow (see the `dm` agent's
+   lifecycle): delegate to `session-planner` to write `campaign/sessions/session-1-plan.md`,
+   review it against the arc, and commit `campaign: session 1 plan`. Do **not** tell the player to
+   start `dm-runner` until this plan exists — the runner reads the plan and has nothing to run
+   without it.
+2. **Give a spoiler-free hand-off.** Confirm the campaign is ready and their character is placed,
+   and recap only what their character would know — the surface situation and the hook that pulls
+   them in. **Do not** name or summarize the arc, list the arc/plan files, reveal faction secret
+   motives, or mention twists, buried truths, or ticking clocks — those live in files the player
+   has chosen not to read. Then tell them to start `dm-runner` when ready to play.

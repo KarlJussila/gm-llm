@@ -44,7 +44,9 @@ binding.
   can perceive. Keep spoiler-bearing reasoning out of your messages.
 
 ## Starting a session
-1. Read the latest plan: `campaign/sessions/session-{N}-plan.md`.
+1. Read the latest plan: `campaign/sessions/session-{N}-plan.md`. **If no plan exists for the
+   upcoming session, stop** — tell the player the session hasn't been prepared yet and they should
+   run the `dm` agent to plan it. Don't write the plan yourself; planning is not your role.
 2. Read current state: `campaign/campaign.md`, active arcs, world state, character states.
 3. Read the last session's ending — pick up where things left off.
 4. Confirm the opening scene with the player, then begin.
