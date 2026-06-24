@@ -33,6 +33,23 @@ spoiling the surprises you're planting.
 - **Don't over-build before the character exists.** Build enough world to present a premise and
   offer hooks. Save the major arcs until the character is made, so they can be personal.
 
+## Stage 0 — Scaffold
+
+Do this first, before any conversation, if the campaign doesn't exist yet. It makes the working
+directory self-contained — the system builds its own structure and git repo.
+
+1. **Git repo.** If the project root is not a git repository, run `git init` there. This is the
+   *campaign* repository (the framework has its own under `.opencode/`).
+2. **Ignore the framework.** Ensure a root `.gitignore` exists containing `.opencode/`, so the
+   campaign repo never tracks the framework.
+3. **Structure & conventions.** Create the `campaign/` directory and copy the templates from
+   `.opencode/templates/campaign/` into it — this provides `campaign/README.md` (the directory
+   map and capture conventions) and `campaign/feedback/README.md` (the feedback routing guide).
+   The remaining directories (`world/`, `sessions/`, `characters/`, `narrative/arcs/`,
+   `documents/`, `assessment/`) are created lazily as files are written into them.
+
+The first commit happens at Stage 7.
+
 ## Stage 1 — Vibe & control
 
 Ask one open question: what kind of campaign do they want? Genre, vibe, a specific premise, a
@@ -55,11 +72,11 @@ defer any to you ("you choose"):
 
 ## Stage 3 — Design the world skeleton
 
-Synthesize their answers into a premise and a central conflict. Then:
-1. Create the `campaign/` structure (see `campaign/README.md` for the layout).
-2. Delegate world-building to **`world-builder`** — opening locations, key factions, a handful of
+Synthesize their answers into a premise and a central conflict. Then (the `campaign/` structure
+already exists from Stage 0 — see `campaign/README.md` for the layout):
+1. Delegate world-building to **`world-builder`** — opening locations, key factions, a handful of
    NPCs, and any significant item — enough to anchor a premise and hooks.
-3. Write a first-pass `campaign/campaign.md` (overview: setting, tone, themes, stakes). Record
+2. Write a first-pass `campaign/campaign.md` (overview: setting, tone, themes, stakes). Record
    the content boundaries here too.
 Build the surface; hold the arcs.
 

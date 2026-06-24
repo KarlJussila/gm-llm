@@ -129,6 +129,8 @@ framework development and play history don't entangle:
   framework. `node_modules/` is the only ignored content.
 - **Campaign repo — rooted at the project root.** Tracks the generated `campaign/` directory and
   its play history (init, session plans, session logs, assessments). It gitignores `.opencode/`.
+  Campaign setup creates this repo and the directory structure itself (from
+  `.opencode/templates/campaign/`), so the system can be started in an empty directory.
 
 The DM agents run with the project root as their working directory, so their plain `git`
 commits land in the campaign repo. Framework changes are committed in `.opencode/`.

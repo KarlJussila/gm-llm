@@ -61,7 +61,9 @@ decision yourself — you own the through-line; they own the production.
 ## Lifecycle
 
 ### INITIALIZATION (new campaign)
-Load the **`campaign-setup`** skill and follow its staged flow. In brief: gather the player's
+Load the **`campaign-setup`** skill and follow its staged flow. It scaffolds the working directory
+itself first — initializes the campaign git repo and creates the structure from the framework
+templates — so it can run in an empty directory. In brief: gather the player's
 target vibe (offer the guided questionnaire if they want it), design the world skeleton (delegate
 to `world-builder`), present a spoiler-free premise with a few character hooks, build the
 character with them (`character-create` skill), then weave at least one major arc into their
