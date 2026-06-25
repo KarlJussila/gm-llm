@@ -62,8 +62,9 @@ campaign/
     npcs.md
     events.md
   sessions/
-    session-1.md          # factual log written by dm-runner
-    session-1-plan.md     # plan written by session-planner
+    session-1-plan.md         # plan written by session-planner
+    session-1-transcript.md   # raw play transcript (auto-captured)
+    session-1.md              # session digest (extracted from the transcript)
     ...
   narrative/
     arcs/

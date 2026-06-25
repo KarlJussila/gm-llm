@@ -28,8 +28,7 @@ This skill reads:
 
 ## The play loop — run this on every player message
 
-Running a session is this loop, repeated. Don't skip steps — especially step 5, the one that gets
-dropped over a long session.
+Running a session is this loop, repeated:
 
 1. **Read what the player said.** Is it an **out-of-game question** (a rule, logistics, "how much
    longer?")? Answer it plainly and spoiler-free, then stop — don't advance the fiction.
@@ -41,12 +40,6 @@ dropped over a long session.
    judge the result privately and let a low roll fail or complicate.
 4. **Narrate what happens** — the world's and the NPCs' response to the action and the roll.
    Describe outcomes, not the character's next move; then hand the moment back to the player.
-5. **Log it — every turn, no exceptions.** Append to the running session log
-   (`campaign/sessions/session-{N}.md`) what the character did, learned, met, and changed this
-   turn — a line or two is enough. Do it *before* you finish responding; "later" does not happen,
-   and a thin log is the failure we're fixing. (Verbatim documents also can't wait — record those
-   the instant they appear. The other structured files can be reconstructed from a good log
-   afterward; see Capture.)
 
 The sections below elaborate each step.
 
@@ -91,8 +84,8 @@ These rules are baked in. They come from how this player wants to be run; do not
   container it's in." Don't infer; clarify.)
 - **The player rolls their own character's actions — you never roll for them.** Attacks, saving
   throws, and ability/skill checks for what the PC does (offensive, defensive, or out of combat)
-  are the *player's* to roll. Name the check and DC, ask them to roll, and narrate from the result
-  they report. Use the `dice` tool yourself **only** for things outside the player's control —
+  are the *player's* to roll. Name the check, ask them to roll, and narrate from the result they
+  report. Use the `dice` tool yourself **only** for things outside the player's control —
   NPC actions, hazards, ambient or random world events. If you catch yourself reaching for the
   dice on the player's behalf, stop and hand them the roll instead. (Real failure mode: the DM
   rolled the PC's Stealth check itself — wrong; the player rolls it.)
@@ -133,39 +126,9 @@ screen**.
   something logistical ("how much longer?", "when's a good stopping point?"), answer at the
   surface — "we can wrap at the next natural beat" — never by revealing where the plot is headed
   to justify the answer.
-- **The end-of-session wrap-up is spoiler-free too.** Record everything in the log (files), but
-  your closing message to the player is not a build report: don't list the files you wrote, and
-  don't preview "what's at stake next session," upcoming threads, or NPCs the character hasn't met.
-  Close on the beat they just lived, and stop.
-
-## Capture as you play
-
-The capture that **must** happen, every turn, is the running session log. Everything else can be
-reconstructed from a good log afterward — a thin log cannot. So the rule is simple: keep a
-comprehensive running log, and don't let the heavier structured updates block play.
-
-- **The running session log — required every turn (step 5 of the loop).** Append to
-  `campaign/sessions/session-{N}.md` as you play: what the character did, learned, who they met,
-  what changed. A line or two per turn is fine. Don't batch it for the end — "later" does not
-  happen, and the whole point is a comprehensive log the orchestrator can mine. This is the one
-  capture you never skip.
-- **Verbatim documents — also required, the moment they appear.** Any written text shown to the
-  player (letter, journal, inscription, sign, contract, book passage, or an overheard line whose
-  exact wording matters) → record it word-for-word in `campaign/documents/{slug}.md`. Besides the
-  log, this is the only thing that *cannot* be reconstructed later, so it can't wait. If it's
-  partial or damaged, record what's legible and note the gaps.
-- **Structured state — update live when it's natural, but never let it block the flow.** The
-  knowledge ledger (+`[hidden]`/`Known to:` flags), improvised world canon, and item changes are
-  ideally updated as they happen — but the orchestrator reconciles them from your log after the
-  session (see `session-review`). So if a clean update would interrupt play, get it into the log
-  and move on. The log is the floor; structured updates are the bonus:
-  - *Knowledge* — PC learns/deduces/is told something → ledger (Knows / Believes, incl. wrong
-    beliefs / Open questions) and flip the source `[hidden]` → `[revealed: S<n>]` (add "the PC" to
-    `Known to:`). An NPC learns something → add them to that fact's `Known to:`.
-  - *World canon* — a reusable name/place/rumor/minor NPC → the matching `world/*.md` file.
-  - *Items* — gained/lost/changed significant objects → `world/items.md`; a PC's gear → their sheet.
-- **Keep a running session log.** Maintain `campaign/sessions/session-{N}.md` as you go, not only
-  at the end, so nothing is lost if the session runs long.
+- **The end-of-session wrap-up is spoiler-free too.** Your closing message to the player is not a
+  build report: don't summarize the session or preview "what's at stake next session," upcoming
+  threads, or NPCs the character hasn't met. Close on the beat they just lived, and stop.
 
 ## Run a shaped session — and end it
 
@@ -177,8 +140,7 @@ Hold a target exit in mind the whole time, and steer toward it.
 - **When the player goes substantially off-script** (their choices have left the plan's beats and
   exit behind — e.g., they ally with the antagonist and skip the planned scenes), don't just keep
   improvising open-endedly. Pause, sketch a **short forward plan** — two to four beats to a fresh,
-  natural stopping point — and **write it into the running session log**, then play toward that
-  exit.
+  natural stopping point — and play toward that exit.
 - **End the session when either** the exit/stopping point is reached, **or** the player again
   diverges substantially from your improvised plan. Land on a satisfying beat or a cliffhanger.
 - **Propose the ending yourself.** Don't wait to be asked. If you notice you're improvising with no
@@ -189,7 +151,7 @@ Hold a target exit in mind the whole time, and steer toward it.
 - **Say yes or roll** — when players attempt something, find a way to make it interesting. Deny nothing outright; complicate it instead.
 - **Maintain cause and effect** — the world reacts to player actions. Empty rooms don't stay empty; npcs remember; consequences arrive.
 - **Advance at least one thread per session**, even subtly. Every session should leave at least one arc slightly closer to resolution or escalation.
-- **Keep notes on what actually happens vs. what was planned.** The real session is the canon. Plans are scaffolding, not scripture.
+- **What actually happens is the canon, not the plan.** Follow the player; plans are scaffolding, not scripture.
 - **Respect player agency** — the world doesn't punish creative solutions. Reward ingenuity with narrative, not mechanical retaliation.
 - **Use the `dice` tool for random resolution when appropriate.** Invoke it for attack rolls, skill checks, saving throws, random encounters, or any moment where uncertainty adds tension. Don't over-roll — some things are better narrated than rolled.
 

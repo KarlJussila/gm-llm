@@ -62,6 +62,8 @@ feedback file too.
 - **`session-planner`** — prepare the plan for the next session (`session-plan` skill).
 - **`campaign-analyst`** — read-only analysis: a situation report (`campaign-assess`) or a
   post-session review (`session-review`). Use it to offload heavy reading from your context.
+- **`log-extractor`** — turns the auto-captured play transcript into the structured session digest
+  (`log-extract` skill). Use it first thing post-session.
 
 Each subagent returns a Result / Evidence / Changes / Caveats report. Read it and synthesize the
 decision yourself — you own the through-line; they own the production.
@@ -88,19 +90,22 @@ to start `dm-runner` until that session plan exists** — the runner has nothing
 4. Commit: `campaign: session N plan`.
 
 ### POST-SESSION (after the player finishes a session with dm-runner)
-1. Read the runner's session log (`campaign/sessions/session-{N}.md`).
+1. **Extract the log.** The runner's play was captured automatically to
+   `campaign/sessions/session-{N}-transcript.md`. Delegate to `log-extractor` to turn it into the
+   structured digest `campaign/sessions/session-{N}.md` — the canonical session log everything
+   else reads.
 2. Produce the assessment with the `session-review` skill (inline, or delegate to
-   `campaign-analyst`) → `campaign/assessment/session-{N}-assessment.md`.
-3. For each affected arc, delegate adjustments to `arc-designer`.
-4. Delegate world/NPC/faction updates to `world-builder`; update character states. **Reconcile
-   knowledge:** confirm everything the PC learned this session is in
-   `campaign/characters/{name}-knowledge.md`, and that the matching source facts were flipped
-   (`[hidden]` → `[revealed: S<n>]`, `Known to:` updated) — backfill any the runner missed.
-5. **Route player feedback.** Read the log's "Player feedback" section and distill each item into
-   the matching `campaign/feedback/{target}.md` file (see `campaign/feedback/README.md` for
-   routing). Refine existing guidance and drop what's superseded — keep each file a tight list of
-   current standing guidance, not a transcript. This is how feedback gets baked in without editing
-   the framework.
+   `campaign-analyst`) from the digest → `campaign/assessment/session-{N}-assessment.md`.
+3. **Apply the digest to canonical state.** Reconcile from it: knowledge ledger (everything the PC
+   learned, with source flags flipped `[hidden]` → `[revealed: S<n>]` and `Known to:` updated);
+   world/NPC/faction changes (delegate to `world-builder`); item changes; and any verbatim
+   documents → `campaign/documents/`. Update character states.
+4. For each affected arc, delegate adjustments to `arc-designer`.
+5. **Route player feedback.** The player's end-of-session feedback is in the digest. Distill each
+   item into the matching `campaign/feedback/{target}.md` file (see `campaign/feedback/README.md`).
+   Refine existing guidance and drop what's superseded — keep each file a tight list of current
+   standing guidance, not a transcript. This is how feedback gets baked in without editing the
+   framework.
 6. Flag new threads and unresolved hooks for next time.
 7. Commit: `campaign: post-session N updates`.
 

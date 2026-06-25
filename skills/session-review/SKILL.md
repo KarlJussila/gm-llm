@@ -9,15 +9,15 @@ description: Perform post-session analysis after a D&D session. Use after each s
 
 Reflect on what happened during a session and produce actionable insights for the campaign. This skill runs **between** sessions, as a fresh analytical pass — comparing planned events against actual outcomes, evaluating player engagement, and generating recommendations for future planning.
 
-**Who runs this:** the `dm` agent (or a delegated `campaign-analyst`), *not* the session runner. The runner's job ends at writing the factual session log (`campaign/sessions/session-{N}.md`). This review reads that log fresh and turns it into strategy, which keeps the analytical pass uncoupled from a long play context and keeps the runner's role clean.
+**Who runs this:** the `dm` agent (or a delegated `campaign-analyst`), *not* the session runner. The play transcript is captured automatically and `log-extractor` turns it into the digest; this review reads that digest and turns it into strategy, which keeps the analytical pass uncoupled from a long play context and keeps the runner's role clean.
 
 ## Input
 
 This skill reads:
 
 - **Session plan** — `campaign/sessions/session-{N}-plan.md`
-- **Session notes / actual events** — `campaign/sessions/session-{N}.md` (incl. its "Captured
-  this session" checklist)
+- **Session digest** — `campaign/sessions/session-{N}.md` (the structured extraction of the
+  session; the raw `session-{N}-transcript.md` is also there if you need to check a detail)
 - **Character states** — `campaign/characters/*.md` (incl. the PC knowledge ledger
   `characters/{name}-knowledge.md`)
 - **Significant items** — `campaign/world/items.md`
@@ -52,12 +52,10 @@ Write the review following this structure:
 
 ## Review Principles
 
-- **Extract structured state from the log.** By design, the runner's one mandatory live capture is
-  a comprehensive session log; it defers most structured updates to you. Walk the log and make sure
-  everything it records is reflected in its home: knowledge gained → the ledger
-  (+`[hidden]`/`Known to:` flags), documents → `documents/`, improvised canon → `world/*.md`, item
-  changes → `items.md` or the character sheet. Backfill whatever's missing while the session is
-  fresh — and if the log itself is thin, that's a process failure worth flagging.
+- **Continuity check.** The digest records every notable change; make sure each is reflected in its
+  home: knowledge gained → the ledger (+`[hidden]`/`Known to:` flags), documents → `documents/`,
+  improvised canon → `world/*.md`, item changes → `items.md` or the character sheet. Flag anything
+  not yet applied so it gets backfilled while the session is fresh.
 - **Knowledge check:** verify every thing the PC learned this session is in the knowledge ledger,
   and that the matching source facts were flipped (`[hidden]` → `[revealed: S<n>]`, `Known to:`
   updated, including any NPCs who learned something). Backfill anything the runner missed.

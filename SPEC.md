@@ -60,9 +60,9 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 - Identify what worked and what didn't
 - Produce actionable insights for arc adjustment and future planning
 - Update character states, world state, and faction positions
-- The runner's one mandatory live capture is a comprehensive session log (plus verbatim
-  documents); the `dm` extracts structured state — knowledge, world canon, items — from that log
-  post-session, so note-taking during play stays low-friction
+- Note-taking is automatic: the play transcript is captured by a plugin during the session, then
+  the `dm` delegates to `log-extractor` to produce a structured digest (`session-{N}.md`) and
+  applies it to canonical state — knowledge, world, items, documents — post-session
 
 ### Player Feedback Loop
 - Collect player feedback at session end (runner asks; recorded verbatim in the session log)
@@ -101,24 +101,24 @@ skills that hold the actual procedures (one home each — the single source of t
 - **`dm`** — the between-sessions brain. Initializes the campaign, assesses state, plans the next
   session, reviews finished ones, and adjusts arcs and world state. Delegates production work to
   subagents and commits to git. It does **not** run live sessions.
-- **`dm-runner`** — runs one live session (narration, NPCs, improvisation, state tracking, dice),
-  then writes the factual session log and stops. It does **not** plan, assess, or adjust arcs.
+- **`dm-runner`** — runs one live session (narration, NPCs, improvisation, dice), then stops. It
+  does **not** take notes, plan, assess, or adjust arcs (the transcript is auto-captured).
 
 **Subagents** (`mode: subagent`, delegated by `dm` via the native `task` tool, never started by
 the player): `world-builder`, `arc-designer`, `session-planner`, and a read-only
-`campaign-analyst`. Each is a thin wrapper that loads its skill, does the task, and returns a
-Result / Evidence / Changes / Caveats report.
+`campaign-analyst`, and `log-extractor` (transcript → digest). Each is a thin wrapper that loads
+its skill, does the task, and returns a Result / Evidence / Changes / Caveats report.
 
 **Skills** (procedures, reused by both agents and subagents): `campaign-setup`,
 `character-create`, `world-build`, `arc-design`, `session-plan`, `session-run`, `campaign-assess`,
-`session-review`.
+`session-review`, `log-extract`.
 
 **Boundaries that prevent role bleed:**
 - The two roles are separate primary agents; the player starts whichever phase they're in.
 - `dm` is explicitly barred from running sessions; `dm-runner` is explicitly barred from
   planning, assessing, and arc work.
-- Post-session analysis belongs to `dm`: the runner writes only the factual log, and `dm` reviews
-  it fresh between sessions.
+- Post-session work belongs to `dm`: the runner just plays (the transcript is auto-captured), and
+  `dm` extracts the log and reviews it fresh between sessions.
 - **Spoiler discipline:** the human is the player and has not read the planning files. Both
   primary agents keep spoiler-bearing content (upcoming beats, twists, NPC secrets) in files and
   out of conversation, narrating only what the character can perceive.
@@ -127,11 +127,14 @@ Result / Evidence / Changes / Caveats report.
 
 - **Dice rolling:** the `dice` tool (opencode plugin at `.opencode/plugins/dice-roller.ts`) for
   random resolution during play.
-- **Per-turn reminder & note-taking enforcement:** a plugin (`.opencode/plugins/dm-reminder.ts`)
-  re-injects the runner's per-turn DM loop into the system prompt on every request
-  (`experimental.chat.system.transform`), and detects when a turn passed without a session-log
-  write (`tool.execute.after` + `chat.message`) to escalate the reminder next turn — gated to the
-  `dm-runner` agent. A trace is written to `/tmp/dm-reminder.log` for debugging whether it fires.
+- **Per-turn craft reminder:** a plugin (`.opencode/plugins/dm-reminder.ts`) re-injects the
+  runner's per-turn DM *craft* loop into the system prompt on every request
+  (`experimental.chat.system.transform`), gated to the `dm-runner` agent — so the craft resists
+  decay over a long session.
+- **Automatic transcript capture:** a plugin (`.opencode/plugins/dm-transcript.ts`) tracks the
+  `dm-runner` session and, on each `session.idle`, fetches the conversation via the opencode client
+  and writes `campaign/sessions/session-{N}-transcript.md`. Note-taking never depends on the model.
+  (Trace at `/tmp/dm-transcript.log`.)
 - **Delegation:** the native `task` tool targeting `mode: subagent` agents — no subprocess
   spawning (`opencode run`).
 - **Markdown files:** all state is stored in human-readable markdown (no database).
