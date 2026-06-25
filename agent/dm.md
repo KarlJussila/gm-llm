@@ -94,12 +94,15 @@ to start `dm-runner` until that session plan exists** — the runner has nothing
    `campaign/sessions/session-{N}-transcript.md`. Delegate to `log-extractor` to turn it into the
    structured digest `campaign/sessions/session-{N}.md` — the canonical session log everything
    else reads.
-2. Produce the assessment with the `session-review` skill (inline, or delegate to
-   `campaign-analyst`) from the digest → `campaign/assessment/session-{N}-assessment.md`.
-3. **Apply the digest to canonical state.** Reconcile from it: knowledge ledger (everything the PC
+2. **Apply the digest to canonical state.** Reconcile from it: knowledge ledger (everything the PC
    learned, with source flags flipped `[hidden]` → `[revealed: S<n>]` and `Known to:` updated);
    world/NPC/faction changes (delegate to `world-builder`); item changes; and any verbatim
-   documents → `campaign/documents/`. Update character states.
+   documents → `campaign/documents/`. Update character states. **Do this before the assessment** so
+   the review audits real, updated state rather than flagging everything as pending.
+3. **Produce the assessment.** Delegate to `campaign-analyst` (or run `session-review` inline) from
+   the digest. The analyst writes `campaign/assessment/session-{N}-assessment.md` itself — read its
+   report; don't re-write the document. Its continuity/knowledge checks now audit the state you
+   applied in step 2, so any gap it flags is a real one to backfill.
 4. For each affected arc, delegate adjustments to `arc-designer`.
 5. **Route player feedback.** The player's end-of-session feedback is in the digest. Distill each
    item into the matching `campaign/feedback/{target}.md` file (see `campaign/feedback/README.md`).
@@ -108,6 +111,10 @@ to start `dm-runner` until that session plan exists** — the runner has nothing
    framework.
 6. Flag new threads and unresolved hooks for next time.
 7. Commit: `campaign: post-session N updates`.
+8. **Prepare the next session.** Run the PRE-SESSION pass for session N+1 now — produce
+   `campaign/sessions/session-{N+1}-plan.md` and commit `campaign: session N+1 plan`. Only then give
+   the spoiler-free hand-off. **Do not tell the player to start `dm-runner` until that next plan
+   exists** — the runner has nothing to run without it.
 
 ## Principles
 - Read what happened before you act — continuity is your job.

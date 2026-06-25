@@ -9,7 +9,9 @@ description: Perform post-session analysis after a D&D session. Use after each s
 
 Reflect on what happened during a session and produce actionable insights for the campaign. This skill runs **between** sessions, as a fresh analytical pass — comparing planned events against actual outcomes, evaluating player engagement, and generating recommendations for future planning.
 
-**Who runs this:** the `dm` agent (or a delegated `campaign-analyst`), *not* the session runner. The play transcript is captured automatically and `log-extractor` turns it into the digest; this review reads that digest and turns it into strategy, which keeps the analytical pass uncoupled from a long play context and keeps the runner's role clean.
+**Who runs this:** the `dm` agent (or, usually, a delegated `campaign-analyst`), *not* the session runner. The play transcript is captured automatically and `log-extractor` turns it into the digest; this review reads that digest and turns it into strategy, which keeps the analytical pass uncoupled from a long play context and keeps the runner's role clean. When delegated, the `campaign-analyst` **writes the assessment document itself** — it does not hand the writing back to the dm.
+
+**Timing:** the `dm` applies the digest to canonical state *before* this review runs, so the continuity and knowledge checks below are a genuine audit of the applied state — anything still missing is a real gap to backfill, not just a pending to-do.
 
 ## Input
 
@@ -52,13 +54,15 @@ Write the review following this structure:
 
 ## Review Principles
 
-- **Continuity check.** The digest records every notable change; make sure each is reflected in its
-  home: knowledge gained → the ledger (+`[hidden]`/`Known to:` flags), documents → `documents/`,
-  improvised canon → `world/*.md`, item changes → `items.md` or the character sheet. Flag anything
-  not yet applied so it gets backfilled while the session is fresh.
-- **Knowledge check:** verify every thing the PC learned this session is in the knowledge ledger,
-  and that the matching source facts were flipped (`[hidden]` → `[revealed: S<n>]`, `Known to:`
-  updated, including any NPCs who learned something). Backfill anything the runner missed.
+- **Continuity check (audit).** The digest records every notable change; the dm has already applied
+  them, so verify each is reflected in its home: knowledge gained → the ledger
+  (+`[hidden]`/`Known to:` flags), documents → `documents/`, improvised canon → `world/*.md`, item
+  changes → `items.md` or the character sheet. Flag any genuine gap the apply-pass missed so the dm
+  backfills it while the session is fresh — you analyze and flag; you don't edit canonical state.
+- **Knowledge check (audit):** verify everything the PC learned this session is in the knowledge
+  ledger, and that the matching source facts were flipped (`[hidden]` → `[revealed: S<n>]`,
+  `Known to:` updated, including any NPCs who learned something). Flag anything the apply-pass
+  missed.
 - Be honest about what worked and what didn't
 - Focus on player engagement — what made them excited vs. disengaged?
 - Track narrative momentum — are arcs advancing or stalling?

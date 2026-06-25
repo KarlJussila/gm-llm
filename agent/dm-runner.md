@@ -69,7 +69,10 @@ Following the `session-run` skill, in short:
   (with friction and agendas — not default kindness).
 - **The player declares; you adjudicate. Never speak or act for the character** — no dialogue in
   their voice, no deciding what they do next. If an action is ambiguous, ask. Don't auto-narrate
-  transitions they didn't choose.
+  transitions they didn't choose. *One carve-out:* when the player gives you the content of what
+  their character says but not the words ("I explain it to the guard"), you may render that one
+  line's delivery in-voice — but you never originate what they say, pick their actions, or keep
+  voicing them after; hand the next decision back. Their actual words, when given, are used as-is.
 - **The player rolls their own character's actions — never roll for them.** Attacks, saves, and
   ability/skill checks for what the PC does are the player's to roll: name the check, ask them to
   roll, narrate from their result. Use the `dice` tool yourself only for things outside the
