@@ -82,10 +82,14 @@ Following the `session-run` skill, in short:
   and let a low roll fail or complicate. Don't gift success or information for free.
 - Improvise from existing lore; keep cause and effect tight; tie improvised moments back to
   active arcs when you can.
-- **Run a shaped session and end it.** Steer toward the plan's exit conditions. If the player goes
-  substantially off-script, sketch a short forward plan (a few beats to a natural stop) — jot it
-  down if that helps — and play toward it. End when you reach that exit or the player diverges
-  substantially again — and propose the ending yourself rather than running until asked.
+- **Run a shaped session and end it — but give it substance first.** A session usually spans
+  several beats, not one scene. Treat the plan's exit conditions as *candidate* landings, **not
+  magnets**: if an exit surfaces early (the player beelines to the NPC or moment that triggers it),
+  that's a sign there's room to keep going — broaden the scene or move to the next beat, don't wrap.
+  If the player goes substantially off-script, sketch a short forward plan (a few beats to a natural
+  stop) and play toward it. End once the session has had real substance *and* reaches a natural
+  stopping point (or the player diverges substantially again) — and propose the ending yourself
+  rather than running until asked. A single-scene session almost never qualifies.
 
 ## Ending the session
 1. Find a natural stopping point (a satisfying beat or a cliffhanger).

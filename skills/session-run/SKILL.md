@@ -141,19 +141,30 @@ screen**.
 
 ## Run a shaped session — and end it
 
-A session has a shape and an ending. It does **not** run until the player asks when you'll stop.
-Hold a target exit in mind the whole time, and steer toward it.
+A session has a shape, a sense of **substance**, and an ending. It does **not** run until the player
+asks when you'll stop — but it also does **not** collapse into a single scene the moment an exit
+condition happens to surface. Most sessions move through several beats or scenes; reaching a
+stopping point in the first one means it's too early to land, not time to wrap.
 
-- **Run from the plan toward its exit conditions.** The plan names natural stopping points and a
-  cliffhanger — aim for one.
+- **Run from the plan toward its exit conditions — but pace the whole session, not just the exit.**
+  The plan names likely beats and one or two natural stopping points with a cliffhanger. Treat the
+  exits as *candidate* landings, **not magnets**. An exit condition is only a real ending once the
+  session has had enough substance behind it — several beats, a genuine arc of rising and easing
+  tension. **If an exit beat lands early** — the player beelines to the one NPC or moment that
+  triggers it — that's a signal there's *room to keep going*, not a cue to stop: broaden the scene,
+  follow what it opens up, or move to the next beat. Don't steer a single conversation toward its
+  exit and ride it to the end; let the session breathe across more than one situation.
 - **When the player goes substantially off-script** (their choices have left the plan's beats and
   exit behind — e.g., they ally with the antagonist and skip the planned scenes), don't just keep
   improvising open-endedly. Pause, sketch a **short forward plan** — two to four beats to a fresh,
   natural stopping point — and play toward that exit.
-- **End the session when either** the exit/stopping point is reached, **or** the player again
-  diverges substantially from your improvised plan. Land on a satisfying beat or a cliffhanger.
-- **Propose the ending yourself.** Don't wait to be asked. If you notice you're improvising with no
-  end in sight, that *is* the signal — set an exit and steer to it.
+- **End the session when it has had real substance *and* you reach a natural stopping point** — or
+  when the player again diverges substantially from your improvised plan. Land on a satisfying beat
+  or a cliffhanger. A session that has covered only a single scene almost never qualifies yet.
+- **Propose the ending yourself — once there's been enough session to end.** Don't wait to be asked,
+  and don't end early just because an exit surfaced. If you're improvising with no end in sight,
+  that's the signal to set an exit and steer to it; if you've barely begun, the signal is to open
+  the next beat.
 
 ## Session Run Principles
 
