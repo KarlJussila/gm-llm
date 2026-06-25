@@ -85,8 +85,13 @@ to start `dm-runner` until that session plan exists** — the runner has nothing
 ### PRE-SESSION (before each session)
 1. Read current state; get a situation report (`campaign-assess` inline, or delegate to
    `campaign-analyst`). Identify which arc(s) need advancing.
-2. Delegate the plan to `session-planner` with that context.
-3. Review the returned plan against active arcs — does it advance what needs advancing? Adjust.
+2. Delegate the plan to `session-planner` with that context. Its plan is a working draft.
+3. **Review and revise the returned plan** — don't accept it as-is. Check it against (a) the active
+   arcs: does it advance what needs advancing? and (b) **campaign canon**: cross-reference its NPCs,
+   clues, reveals, places, and stakes against the world/NPC/faction files, recorded documents, and
+   the PC knowledge ledger. Fix contradictions, anything that hands a party knowledge it never got,
+   any reveal mis-flagged against the ledger, or any beat that assumes the PC knows what it doesn't.
+   Revise the plan file directly (or send it back to the planner with specifics).
 4. Commit: `campaign: session N plan`.
 5. **Hand off spoiler-free.** The plan you just made is the spoiler — the player has not read it
    and does not want it back. Do **not** report "the shape of" the session, list its beats, or name

@@ -111,7 +111,23 @@ its skill, does the task, and returns a Result / Evidence / Changes / Caveats re
 
 **Skills** (procedures, reused by both agents and subagents): `campaign-setup`,
 `character-create`, `world-build`, `arc-design`, `session-plan`, `session-run`, `campaign-assess`,
-`session-review`, `log-extract`.
+`session-review`, `log-extract`, plus the focused session-level skills below.
+
+**Session-level skills come in two types, by a flat naming convention** (opencode discovers skills
+from `.opencode/skills/<name>/SKILL.md`, so the type lives in the name, not in subdirectories).
+Many table concerns — investigation, NPCs, encounters/combat, pacing — have both a *planning* face
+and a *running* face, and the content differs between them:
+
+- **`*-plan` skills** — pulled by `session-plan` (the planning orchestrator) when designing a
+  session: `encounter-plan`, `investigation-plan`, `npc-plan`, `pacing-plan`. Planning is
+  deliberate and sectioned, so these are loaded as needed.
+- **`*-run` skills** — used at the table by `dm-runner` for a distinct mode of live play (e.g. a
+  forthcoming `combat-run`). Live play wants craft *resident*, so always-on running craft stays in
+  `session-run`; a `*-run` skill is reserved for a genuine play mode you enter.
+
+The campaign-lifecycle skills (`world-build`, `arc-design`, `campaign-setup`, `campaign-assess`,
+`session-review`, `log-extract`, `character-create`) are neither — they are the `dm`'s
+between-session authoring and management procedures.
 
 **Boundaries that prevent role bleed:**
 - The two roles are separate primary agents; the player starts whichever phase they're in.
