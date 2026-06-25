@@ -88,6 +88,14 @@ to start `dm-runner` until that session plan exists** — the runner has nothing
 2. Delegate the plan to `session-planner` with that context.
 3. Review the returned plan against active arcs — does it advance what needs advancing? Adjust.
 4. Commit: `campaign: session N plan`.
+5. **Hand off spoiler-free.** The plan you just made is the spoiler — the player has not read it
+   and does not want it back. Do **not** report "the shape of" the session, list its beats, or name
+   the exit hook, reveals, NPC secrets, or what the session "focuses on." A numbered "here's what
+   happens" recap is the failure mode, even softened with "roughly." Say only, in a sentence or two,
+   that the session is planned and ready and where their character currently stands (nothing they
+   haven't already lived), then tell them to start `dm-runner`. The test: would a line tell the
+   player something their character doesn't already know? If yes, cut it. (See `session-plan`'s
+   "Handing off to the player" for the template.)
 
 ### POST-SESSION (after the player finishes a session with dm-runner)
 1. **Extract the log.** The runner's play was captured automatically to

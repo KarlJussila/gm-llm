@@ -85,6 +85,25 @@ campaign/sessions/session-{N}-plan.md
 
 Where `{N}` is the next session number. If the directory does not exist, create it.
 
+## Handing off to the player — spoiler-free
+
+**The plan you just wrote IS the spoiler.** The player has not read it and does not want it. When
+you report back, do **not** summarize it, paraphrase it, or describe "the shape of it." Naming the
+beats, the encounter seeds, the decision points, the exit hook/cliffhanger, NPC secrets, or what a
+reveal will turn out to be — all of that is exactly the content the file exists to keep behind the
+screen. A numbered "here's what happens" list is the failure mode, even when softened with "roughly"
+or "the shape of."
+
+The whole hand-off is **one or two sentences**, and contains only what the character already knows:
+
+> Session 2 is planned and ready. You'll pick up right where you left off — [one spoiler-free line
+> of the character's current situation, nothing they haven't already lived]. Start `dm-runner` when
+> you want to play.
+
+If you're tempted to add a clause about what's coming, what Seraine wants, what's behind the door,
+or what the session "focuses on" — cut it. The test: would reading this sentence tell the player
+something their character doesn't already know? If yes, it's a spoiler.
+
 ## Tone
 
 Write with a tactical, flexible, anticipatory tone. This is a working document for a DM about to run a session — clear, direct, and ready to be adapted on the fly. Avoid abstract theory; stay grounded in the specific details of this campaign.
