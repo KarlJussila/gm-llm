@@ -52,6 +52,16 @@ Write the review following this structure:
 
 11. **Player feedback routing** — Read the log's "Player feedback" section. For each item, note the guidance you distilled and which `campaign/feedback/{target}.md` file you wrote it to (see `campaign/feedback/README.md`). This bakes the feedback in for next time without editing the framework.
 
+## Verify against the transcript
+
+Write the assessment from the digest and the other campaign documents — that's what the digest is
+for, and it keeps your context lean. Then, **once the assessment is written**, cross-reference the
+raw play transcript (`campaign/sessions/session-{N}-transcript.md`) for the moments where exact
+dialogue, tone, or player intent carries nuance the digest may have flattened — engagement reads
+(what landed vs. fell flat), a player's stated reasoning, a verbatim line, a beat you're unsure the
+digest captured faithfully — and issue any necessary corrections or additions. Spot-check the
+moments that matter; don't reload the whole transcript up front.
+
 ## Review Principles
 
 - **Continuity check (audit).** The digest records every notable change; the dm has already applied
