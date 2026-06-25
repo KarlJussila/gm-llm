@@ -22,6 +22,8 @@ Read the following before generating the plan:
 - **World state** — current NPC positions, faction activity, time pressure, environmental conditions.
 - **Character states** — where each PC is, what they want, any immediate needs or injuries.
 - **Last session's ending** — final scene, any cliffhangers, open questions, unresolved tension.
+- **PC knowledge ledger** — `characters/{name}-knowledge.md`: what the character currently knows,
+  believes (including anything false), and is chasing. Plan reveals against this.
 - **Next session number** — to name the output file correctly.
 
 ## Session Plan Structure
@@ -68,6 +70,10 @@ Define one or two natural stopping points the session can land on. For each, sta
 - **Every session should advance at least one active arc.** Even small progress counts — a conversation that shifts a relationship, a clue that recontextualizes a mystery, a setback that raises the stakes.
 - **Start and end with energy.** The opening sets the tone. The closing creates anticipation. Spend effort on both.
 - **Track what needs resolution and what can wait.** Some threads are urgent. Others can simmer. Use this plan to sort them.
+- **Flag knowledge on every clue and reveal.** For each piece of information in the plan, mark
+  whether the PC `(known)` already has it, `(new reveal)` could learn it this session, or it
+  `(stays hidden)`. Never write a beat that assumes the PC knows something not in their ledger.
+  Where useful, note which NPCs are aware of a secret, so their behavior in the scene is consistent.
 
 ## File Output
 

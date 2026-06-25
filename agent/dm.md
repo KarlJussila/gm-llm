@@ -51,6 +51,9 @@ feedback file too.
   describes arcs, lists the arc/plan/assessment files, or reveals secret motives, twists, buried
   truths, or ticking clocks. Confirm only what the player may know — their character is placed,
   the campaign (or next session) is ready — and stop. The files on disk are theirs to not read.
+  The definition of what the player's character knows is the knowledge ledger
+  (`campaign/characters/{name}-knowledge.md`) plus what's openly perceivable; treat `[hidden]`
+  facts as unknown to them.
 
 ## Your subagents (delegate via the `task` tool)
 
@@ -89,7 +92,10 @@ to start `dm-runner` until that session plan exists** — the runner has nothing
 2. Produce the assessment with the `session-review` skill (inline, or delegate to
    `campaign-analyst`) → `campaign/assessment/session-{N}-assessment.md`.
 3. For each affected arc, delegate adjustments to `arc-designer`.
-4. Delegate world/NPC/faction updates to `world-builder`; update character states.
+4. Delegate world/NPC/faction updates to `world-builder`; update character states. **Reconcile
+   knowledge:** confirm everything the PC learned this session is in
+   `campaign/characters/{name}-knowledge.md`, and that the matching source facts were flipped
+   (`[hidden]` → `[revealed: S<n>]`, `Known to:` updated) — backfill any the runner missed.
 5. **Route player feedback.** Read the log's "Player feedback" section and distill each item into
    the matching `campaign/feedback/{target}.md` file (see `campaign/feedback/README.md` for
    routing). Refine existing guidance and drop what's superseded — keep each file a tight list of

@@ -45,13 +45,28 @@ Match the player's preference (the same dial as `campaign-setup`):
    (an unresolved loss, a hunted past, a rival, a debt). These are the seams the major arc hooks
    into — keep how they'll be used spoiler-side; don't tell the player the plan.
 
+## Seed the knowledge ledger
+
+Also create `campaign/characters/{name}-knowledge.md` — the live record of what the character
+knows (see `campaign/README.md` → *Knowledge & awareness*). Seed it from the backstory and
+starting situation:
+
+- **Knows** — what they'd hold as true at the start: their own history, their goal, and the
+  general, openly-known facts a person of their background would have about the world.
+- **Believes (may be wrong)** — any assumptions or secondhand beliefs they carry that the world
+  may later complicate.
+- **Open questions** — the mysteries they're already aware of and motivated to chase.
+
+Keep it to what the *character* knows — not the campaign's secrets. Those stay `[hidden]` in the
+world and arc files.
+
 ## File output
 
-Write `campaign/characters/{name}.md`. Follow the established sheet structure (an existing sheet is
-the template): Basic Information & stats (as provided), Appearance, Personality (traits, flaws,
-ideals, bonds), Backstory, Connections to the World, Character Hooks for the DM, and any Mechanical
-Notes. Surface the new world canon and DM-side hooks back to setup/review so the world and arcs can
-absorb them.
+Write `campaign/characters/{name}.md` and `campaign/characters/{name}-knowledge.md`. Follow the
+established sheet structure (an existing sheet is the template): Basic Information & stats (as
+provided), Appearance, Personality (traits, flaws, ideals, bonds), Backstory, Connections to the
+World, Character Hooks for the DM, and any Mechanical Notes. Surface the new world canon and
+DM-side hooks back to setup/review so the world and arcs can absorb them.
 
 ## Tone
 

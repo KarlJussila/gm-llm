@@ -29,7 +29,7 @@ consistent with established lore and connected to the campaign's themes. Read th
 - Personality and mannerisms
 - Motivation — what they want and why
 - Disposition toward the PCs — friendly, hostile, neutral, complicated
-- Secrets — what they know but aren't saying
+- Secrets — what they know but aren't saying (flag these; see *Awareness flags* below)
 - Current situation — what's happening to them right now
 
 ### Factions (`campaign/world/factions.md`)
@@ -56,6 +56,24 @@ Campaign-significant objects and artifacts (not mundane gear — that lives on c
 - A short history of how its state has changed
 During live play `dm-runner` keeps this current; you create or restructure it during init and
 post-session world updates. Verbatim text of any written item belongs in `campaign/documents/`.
+
+## Awareness flags
+
+Any secret, hidden motive, true nature, or planned reveal — for an NPC, location, faction, or
+item — is **flagged** so the system tracks who knows it (see *Knowledge & awareness* in
+`campaign/README.md`):
+
+- Prefix the fact with `[hidden]` (the PC doesn't know) — it becomes `[revealed: S<n>]` once the
+  PC learns it.
+- Add a `Known to:` line listing the in-world parties aware of it (NPCs, factions, and "the PC"
+  once revealed). This is what lets NPCs act only on what they actually know.
+
+Openly apparent details need no flag. Flag the secrets, not the surface. Example:
+
+```
+- [hidden] She's an Unbound operative working to accelerate the seal's collapse.
+  Known to: Maren, Unbound leadership.
+```
 
 ## Principles
 - **Every location has a hook** — a reason players would go there.

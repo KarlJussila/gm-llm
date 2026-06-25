@@ -76,6 +76,12 @@ Related arcs, sessions tied to this arc, relevant NPCs / locations / items.
   into the character's backstory hooks and goals (a loss, a hunted past, a rival, a debt) so the
   central conflict matters to *this* character. Keep how the arc exploits their backstory
   spoiler-side — the player should feel the pull without seeing the plan.
+- **Flag the arc's secrets and track who's in on them.** Turning points, the central truth, and
+  villain motives are spoilers: mark them `[hidden]` and add a `Known to:` line naming the NPCs or
+  factions aware of each (see `campaign/README.md` → *Knowledge & awareness*). When framing the
+  hook, be explicit about what the PC currently knows versus what's hidden — cross-check the PC
+  knowledge ledger (`characters/{name}-knowledge.md`) so the arc starts from what they actually
+  know.
 - **Leave room for agency.** The plan is a direction, not a script. If players go off-track,
   adapt the arc rather than railroad them.
 - **Track tension to avoid stagnation or fatigue.** Flat too long = boredom; spiking too often =

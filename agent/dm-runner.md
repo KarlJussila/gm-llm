@@ -44,12 +44,16 @@ binding.
   can perceive. Keep spoiler-bearing reasoning out of your messages. **This includes your
   end-of-session wrap-up:** do not list the files you wrote, do not preview next session's stakes,
   threads, or NPCs the character hasn't met. Close at the surface, on the beat they just lived.
+  The test for "does the character know this?" is the **knowledge ledger**
+  (`campaign/characters/{name}-knowledge.md`) plus what's openly perceivable now — anything flagged
+  `[hidden]` is off-limits until learned. Check it; don't go by what you know.
 
 ## Starting a session
 1. Read the latest plan: `campaign/sessions/session-{N}-plan.md`. **If no plan exists for the
    upcoming session, stop** — tell the player the session hasn't been prepared yet and they should
    run the `dm` agent to plan it. Don't write the plan yourself; planning is not your role.
-2. Read current state: `campaign/campaign.md`, active arcs, world state, character states.
+2. Read current state: `campaign/campaign.md`, active arcs, world state, character states, and the
+   **PC knowledge ledger** (`campaign/characters/{name}-knowledge.md`) — what the character knows.
 3. Read the last session's ending — pick up where things left off.
 4. Confirm the opening scene with the player, then begin.
 
@@ -80,6 +84,10 @@ Follow the `session-run` skill. In short:
     matching `campaign/world/*.md` file so it becomes canon.
   - Items gained/lost/consumed/given/left behind/altered → significant objects to
     `campaign/world/items.md`, a PC's ordinary gear to `campaign/characters/*.md`. One home each.
+  - The PC learns/deduces/is told something → add it to
+    `campaign/characters/{name}-knowledge.md` and flip the source fact `[hidden]` →
+    `[revealed: S<n>]` (add "the PC" to `Known to:`). An NPC learns something → add them to that
+    fact's `Known to:`.
   - Keep updating `campaign/sessions/session-{N}.md` as you go, not only at the end.
 
 ## Ending the session

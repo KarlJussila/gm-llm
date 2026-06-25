@@ -23,6 +23,8 @@ This skill reads:
 - **Current world/character state** — active character statuses, NPC locations, known world conditions
 - **Campaign tone and themes** — the established mood, genre conventions, and recurring themes
 - **Active arcs** — unresolved plot threads, ongoing character arcs, and pending consequences
+- **PC knowledge ledger** — `characters/{name}-knowledge.md`: what the character knows, believes,
+  and is chasing. Read this first; it defines what you can let the player act on.
 
 ## Real-Time Functions
 
@@ -87,6 +89,10 @@ screen**.
 
 - **Never reveal planned-but-undiscovered content in conversation.** No naming upcoming twists,
   unsprung encounters, NPC secrets, what's "supposed to" happen, or which beat comes next.
+- **Use the knowledge ledger as the test.** The PC knows only what's in
+  `characters/{name}-knowledge.md`, plus what is openly perceivable in the current scene. Anything
+  flagged `[hidden]` in the world/arc files is off-limits until the PC actually learns it in play.
+  When unsure whether the character knows something, check the ledger — don't go by what *you* know.
 - **Narrate only what the character perceives.** If the character can't see it, hear it, or know
   it, the player doesn't hear it from you either.
 - Keep all spoiler-bearing reasoning in the files and in your own working notes — not in
@@ -123,6 +129,11 @@ exactly what has no plan to reconstruct it from, and it's the easiest to lose.
 - **Item & object changes.** Anything the party gains, loses, consumes, gives away, leaves
   behind, or alters: significant objects → `world/items.md` (update owner/location/state); a PC's
   ordinary gear → that character's sheet. One home each — never keep two parallel lists.
+- **Knowledge changes → the ledger and the flags.** When the PC learns, deduces, or is told
+  something, add it to `characters/{name}-knowledge.md` (Knows / Believes / Open questions) **and**
+  flip the source fact `[hidden]` → `[revealed: S<n>]`, adding "the PC" to its `Known to:`. Record
+  beliefs too — including ones the PC has *wrong*. When an NPC learns something (e.g., the PC tells
+  them, or they witness it), add that NPC to the relevant fact's `Known to:`.
 - **Keep a running session log.** Maintain `campaign/sessions/session-{N}.md` as you go, not only
   at the end, so nothing is lost if the session runs long.
 
@@ -155,7 +166,7 @@ Hold a target exit in mind the whole time, and steer toward it.
 ## During Play, Suggest
 
 - **Environmental details** that set mood — lighting, sounds, smells, weather, signs of recent activity
-- **NPC reactions** based on established personality — a paranoid spymaster deflects; a loyal blacksmith offers help freely
+- **NPC reactions** based on established personality — a paranoid spymaster deflects; a loyal blacksmith offers help freely — and on what they *know*: an NPC acts only on information in their `Known to:` set, never on secrets they aren't party to
 - **Complications** that create interesting choices — not obstacles for their own sake, but tensions between two valid paths
 - **Ways to tie improvised content back to active arcs** — the stranger at the tavern has heard rumors about the party's quest; the storm delays travel toward the pending confrontation
 

@@ -78,6 +78,17 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 - Support diffing and version control of campaign changes
 - Keep session logs, character sheets, and world lore organized
 
+### Knowledge & Awareness Tracking
+- Track what the player character knows separately from what the DM knows, so the boundary is a
+  data structure rather than a behavioral guideline
+- A live PC knowledge ledger (`characters/{name}-knowledge.md`) — Knows / Believes (incl.
+  misinformation) / Open questions — read at session start and updated as the character learns
+- Awareness flags on stored facts (`[hidden]` / `[revealed: S<n>]`) with a `Known to:` list of the
+  in-world parties aware of each secret — so NPCs act only on what they know and information can
+  spread
+- Session plans flag each clue/reveal as known, a new reveal, or staying hidden, sourced from the
+  ledger
+
 ## Architecture
 
 Two primary agents the player starts directly, four subagents they delegate to, and a set of

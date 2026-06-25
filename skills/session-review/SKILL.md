@@ -18,7 +18,8 @@ This skill reads:
 - **Session plan** — `campaign/sessions/session-{N}-plan.md`
 - **Session notes / actual events** — `campaign/sessions/session-{N}.md` (incl. its "Captured
   this session" checklist)
-- **Character states** — `campaign/characters/*.md`
+- **Character states** — `campaign/characters/*.md` (incl. the PC knowledge ledger
+  `characters/{name}-knowledge.md`)
 - **Significant items** — `campaign/world/items.md`
 - **Documents recorded this session** — `campaign/documents/`
 - **Active arcs** — `campaign/narrative/arcs/*.md`
@@ -55,6 +56,9 @@ Write the review following this structure:
   mentions a document, improvised NPC/place, or item change that isn't in its home
   (`documents/`, `world/*.md`, `items.md`, character sheet), flag it and backfill now while the
   session is fresh — that data is unrecoverable later.
+- **Knowledge check:** verify every thing the PC learned this session is in the knowledge ledger,
+  and that the matching source facts were flipped (`[hidden]` → `[revealed: S<n>]`, `Known to:`
+  updated, including any NPCs who learned something). Backfill anything the runner missed.
 - Be honest about what worked and what didn't
 - Focus on player engagement — what made them excited vs. disengaged?
 - Track narrative momentum — are arcs advancing or stalling?

@@ -24,7 +24,8 @@ Read the following files to build the assessment:
 - `campaign/sessions/` — session logs, especially the latest 2-3
 - `campaign/world/` — world state files (locations, factions, NPCs, significant items)
 - `campaign/documents/` — verbatim in-world texts the party holds (clues players may act on)
-- `campaign/characters/` — character sheets, backstories, relationship maps
+- `campaign/characters/` — character sheets, backstories, relationship maps, and the PC knowledge
+  ledger (`{name}-knowledge.md` — what the character currently knows, believes, and is chasing)
 - `campaign/assessment/` — any previous assessments for trend comparison
 
 If a directory or file does not exist, note it as missing and skip it.

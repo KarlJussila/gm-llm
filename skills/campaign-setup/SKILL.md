@@ -91,8 +91,9 @@ Invite them to take one, adapt it, or bring their own concept.
 ## Stage 5 — Create the character
 
 Load the **`character-create`** skill and follow it, at the control level the player chose. It
-produces `campaign/characters/{name}.md`: concept, mechanical details (as provided), world
-placement, backstory, and DM-side hooks.
+produces `campaign/characters/{name}.md` (concept, mechanical details, world placement, backstory,
+DM-side hooks) and seeds `campaign/characters/{name}-knowledge.md` with what the character knows at
+the start.
 
 ## Stage 6 — Weave the character into the world & arcs
 
