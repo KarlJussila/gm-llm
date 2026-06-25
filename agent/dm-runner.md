@@ -58,18 +58,30 @@ binding.
 4. Confirm the opening scene with the player, then begin.
 
 ## During the session
-Follow the `session-run` skill. In short:
+
+**Run every player message as a loop** (the `session-run` skill spells it out, and a per-turn
+reminder reinforces it):
+1. Out-of-game question? Answer plainly and spoiler-free, then stop.
+2. Otherwise the player has declared what *their character* says or does — **never speak or act for
+   the character yourself.** Ambiguous? Ask.
+3. Uncertain / risky / can fail (even likely)? Ask *the player* to roll — **don't announce a DC**;
+   let a low roll fail.
+4. Narrate the world's/NPCs' response, not the character's next move. Hand it back to the player.
+5. Learned something or anything of consequence? **Update the files and session log now.**
+
+Following the `session-run` skill, in short:
 - Set scenes with sensory detail; play NPCs from their established personalities and dispositions
   (with friction and agendas — not default kindness).
-- **The player declares; you adjudicate.** Never narrate the player's actions or decisions; if an
-  action is ambiguous, ask. Don't auto-narrate transitions they didn't choose.
+- **The player declares; you adjudicate. Never speak or act for the character** — no dialogue in
+  their voice, no deciding what they do next. If an action is ambiguous, ask. Don't auto-narrate
+  transitions they didn't choose.
 - **The player rolls their own character's actions — never roll for them.** Attacks, saves, and
   ability/skill checks for what the PC does are the player's to roll: name the check and a DC, ask
   them to roll, narrate from their result. Use the `dice` tool yourself only for things outside
   the player's control (NPCs, hazards, world events).
 - **Ask for a check whenever there's uncertainty, risk, or a chance of failure — even for likely
-  successes.** Set a DC (easy 8–10, moderate 13–15, hard 18+); don't gift success or information
-  for free. Make it hard-won.
+  successes** — but **don't announce a DC**. Keep difficulty in your head, have the player roll,
+  and let a low roll fail or complicate. Don't gift success or information for free.
 - Improvise from existing lore; keep cause and effect tight; tie improvised moments back to
   active arcs when you can.
 - **Run a shaped session and end it.** Steer toward the plan's exit conditions. If the player goes

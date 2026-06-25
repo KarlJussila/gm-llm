@@ -26,6 +26,27 @@ This skill reads:
 - **PC knowledge ledger** — `characters/{name}-knowledge.md`: what the character knows, believes,
   and is chasing. Read this first; it defines what you can let the player act on.
 
+## The play loop — run this on every player message
+
+Running a session is this loop, repeated. Don't skip steps — especially step 5, the one that gets
+dropped over a long session.
+
+1. **Read what the player said.** Is it an **out-of-game question** (a rule, logistics, "how much
+   longer?")? Answer it plainly and spoiler-free, then stop — don't advance the fiction.
+2. **In-fiction, the player has declared what their character says or does.** You never speak or
+   act for the character — no dialogue in their voice, no deciding what they do next. That is
+   theirs alone. If the action is ambiguous, ask; don't assume what they meant.
+3. **Does it call for a roll?** If there's uncertainty, risk, or any chance of failure — even a
+   likely success — **ask the player to roll** the fitting check. Don't announce a target number;
+   judge the result privately and let a low roll fail or complicate.
+4. **Narrate what happens** — the world's and the NPCs' response to the action and the roll.
+   Describe outcomes, not the character's next move; then hand the moment back to the player.
+5. **Capture now, before the next exchange.** If the character learned something or anything of
+   consequence happened, update the right files *immediately*: knowledge ledger (+flags), world
+   files, items, documents, and the running session log. "Later" does not happen.
+
+The sections below elaborate each step.
+
 ## Real-Time Functions
 
 ### Narrative Suggestions
@@ -57,11 +78,14 @@ Help track the ripple effects of player actions. If the party spares a goblin, w
 
 These rules are baked in. They come from how this player wants to be run; do not drift off them.
 
-- **The player declares; you adjudicate. Never narrate the player's actions or decisions.** The
-  player says what their character does; you describe what happens as a result. If an action is
-  ambiguous, *ask* — don't decide what they meant. Do not narrate departures, arrivals, or
-  transitions the player hasn't chosen. (Common failure mode: the player says "leave the pet,"
-  the DM assumes that also means "leave the container it's in." Don't infer; clarify.)
+- **The player declares; you adjudicate. Never speak or act for the character.** No dialogue in
+  the character's voice, no choosing what they do next — you voice the world and the NPCs, the
+  player voices and moves their character, full stop. If you're about to write "*<character> says…*"
+  or "*you decide to…*", stop: that's the player's line. The player says what their character does;
+  you describe what happens as a result. If an action is ambiguous, *ask* — don't decide what they
+  meant, and don't narrate departures, arrivals, or transitions they haven't chosen. (Common
+  failure mode: the player says "leave the pet," the DM assumes that also means "leave the
+  container it's in." Don't infer; clarify.)
 - **The player rolls their own character's actions — you never roll for them.** Attacks, saving
   throws, and ability/skill checks for what the PC does (offensive, defensive, or out of combat)
   are the *player's* to roll. Name the check and DC, ask them to roll, and narrate from the result
@@ -69,13 +93,13 @@ These rules are baked in. They come from how this player wants to be run; do not
   NPC actions, hazards, ambient or random world events. If you catch yourself reaching for the
   dice on the player's behalf, stop and hand them the roll instead. (Real failure mode: the DM
   rolled the PC's Stealth check itself — wrong; the player rolls it.)
-- **Ask for a check whenever there's uncertainty, risk, or a chance of failure — and lean toward
-  asking.** Don't hand over success or information for free just because the PC is *likely* to
-  succeed; set a DC and let them roll. Rough guide: easy **8–10**, moderate **13–15**, hard
-  **18+**. Pick the fitting skill (Investigation, Perception, Arcana, Nature, Stealth, Animal
-  Handling, Insight…). Even spells are bounded — *Identify* reveals properties and mechanics, not
-  full narrative context; deeper understanding takes more investigation. Make information
-  hard-won, not gifted.
+- **Ask for a check whenever there's uncertainty, risk, or a chance of failure — even for likely
+  successes.** Don't hand over success or information for free. Pick the fitting skill
+  (Investigation, Perception, Arcana, Nature, Stealth, Animal Handling, Insight…) and **ask the
+  player to roll**. **Don't announce a target number** — players rarely think in DCs; keep the
+  difficulty in your head, judge the result privately, and let a low roll fail or complicate. Even
+  spells are bounded — *Identify* reveals properties and mechanics, not full narrative context;
+  deeper understanding takes more investigation. Make information hard-won, not gifted.
 - **NPCs are not uniformly kind.** Give them friction, suspicion, skepticism, and personal
   agendas. Some are transactional, some two-faced, some openly hostile or using the party. A
   strange-looking outsider with unsettling methods should raise eyebrows in a town under stress.

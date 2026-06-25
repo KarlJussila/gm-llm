@@ -124,6 +124,10 @@ Result / Evidence / Changes / Caveats report.
 
 - **Dice rolling:** the `dice` tool (opencode plugin at `.opencode/plugins/dice-roller.ts`) for
   random resolution during play.
+- **Per-turn reminder:** a plugin (`.opencode/plugins/dm-reminder.ts`) using the
+  `experimental.chat.system.transform` hook re-injects the runner's per-turn DM loop into the
+  system prompt on every request, gated to the `dm-runner` agent — so the loop resists decay over
+  a long session.
 - **Delegation:** the native `task` tool targeting `mode: subagent` agents — no subprocess
   spawning (`opencode run`).
 - **Markdown files:** all state is stored in human-readable markdown (no database).
