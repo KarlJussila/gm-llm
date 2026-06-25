@@ -60,6 +60,9 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 - Identify what worked and what didn't
 - Produce actionable insights for arc adjustment and future planning
 - Update character states, world state, and faction positions
+- The runner's one mandatory live capture is a comprehensive session log (plus verbatim
+  documents); the `dm` extracts structured state — knowledge, world canon, items — from that log
+  post-session, so note-taking during play stays low-friction
 
 ### Player Feedback Loop
 - Collect player feedback at session end (runner asks; recorded verbatim in the session log)
@@ -124,10 +127,11 @@ Result / Evidence / Changes / Caveats report.
 
 - **Dice rolling:** the `dice` tool (opencode plugin at `.opencode/plugins/dice-roller.ts`) for
   random resolution during play.
-- **Per-turn reminder:** a plugin (`.opencode/plugins/dm-reminder.ts`) using the
-  `experimental.chat.system.transform` hook re-injects the runner's per-turn DM loop into the
-  system prompt on every request, gated to the `dm-runner` agent — so the loop resists decay over
-  a long session.
+- **Per-turn reminder & note-taking enforcement:** a plugin (`.opencode/plugins/dm-reminder.ts`)
+  re-injects the runner's per-turn DM loop into the system prompt on every request
+  (`experimental.chat.system.transform`), and detects when a turn passed without a session-log
+  write (`tool.execute.after` + `chat.message`) to escalate the reminder next turn — gated to the
+  `dm-runner` agent. A trace is written to `/tmp/dm-reminder.log` for debugging whether it fires.
 - **Delegation:** the native `task` tool targeting `mode: subagent` agents — no subprocess
   spawning (`opencode run`).
 - **Markdown files:** all state is stored in human-readable markdown (no database).

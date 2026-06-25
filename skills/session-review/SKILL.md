@@ -52,10 +52,12 @@ Write the review following this structure:
 
 ## Review Principles
 
-- **Continuity check:** verify the runner actually captured what it should have. If the log
-  mentions a document, improvised NPC/place, or item change that isn't in its home
-  (`documents/`, `world/*.md`, `items.md`, character sheet), flag it and backfill now while the
-  session is fresh — that data is unrecoverable later.
+- **Extract structured state from the log.** By design, the runner's one mandatory live capture is
+  a comprehensive session log; it defers most structured updates to you. Walk the log and make sure
+  everything it records is reflected in its home: knowledge gained → the ledger
+  (+`[hidden]`/`Known to:` flags), documents → `documents/`, improvised canon → `world/*.md`, item
+  changes → `items.md` or the character sheet. Backfill whatever's missing while the session is
+  fresh — and if the log itself is thin, that's a process failure worth flagging.
 - **Knowledge check:** verify every thing the PC learned this session is in the knowledge ledger,
   and that the matching source facts were flipped (`[hidden]` → `[revealed: S<n>]`, `Known to:`
   updated, including any NPCs who learned something). Backfill anything the runner missed.

@@ -41,9 +41,12 @@ dropped over a long session.
    judge the result privately and let a low roll fail or complicate.
 4. **Narrate what happens** — the world's and the NPCs' response to the action and the roll.
    Describe outcomes, not the character's next move; then hand the moment back to the player.
-5. **Capture now, before the next exchange.** If the character learned something or anything of
-   consequence happened, update the right files *immediately*: knowledge ledger (+flags), world
-   files, items, documents, and the running session log. "Later" does not happen.
+5. **Log it — every turn, no exceptions.** Append to the running session log
+   (`campaign/sessions/session-{N}.md`) what the character did, learned, met, and changed this
+   turn — a line or two is enough. Do it *before* you finish responding; "later" does not happen,
+   and a thin log is the failure we're fixing. (Verbatim documents also can't wait — record those
+   the instant they appear. The other structured files can be reconstructed from a good log
+   afterward; see Capture.)
 
 The sections below elaborate each step.
 
@@ -100,6 +103,11 @@ These rules are baked in. They come from how this player wants to be run; do not
   difficulty in your head, judge the result privately, and let a low roll fail or complicate. Even
   spells are bounded — *Identify* reveals properties and mechanics, not full narrative context;
   deeper understanding takes more investigation. Make information hard-won, not gifted.
+- **Social checks count too.** Keep Charisma checks meaningful by using them where they matter:
+  call for a **Persuasion** check when the player genuinely tries to sway someone whose mind isn't
+  already made up, and **always require a Deception check when the player has their character lie
+  to an NPC.** Don't roll for idle chatter, but don't let consequential social moves auto-succeed
+  either.
 - **NPCs are not uniformly kind.** Give them friction, suspicion, skepticism, and personal
   agendas. Some are transactional, some two-faced, some openly hostile or using the party. A
   strange-looking outsider with unsettling methods should raise eyebrows in a town under stress.
@@ -132,32 +140,30 @@ screen**.
 
 ## Capture as you play
 
-Record the moment a thing is created or changes — you cannot reconstruct exact text or details
-after the session. (See `campaign/README.md` for the conventions.)
+The capture that **must** happen, every turn, is the running session log. Everything else can be
+reconstructed from a good log afterward — a thin log cannot. So the rule is simple: keep a
+comprehensive running log, and don't let the heavier structured updates block play.
 
-**Writing all your notes at the end does not count.** By then the details have degraded and you
-may have run out of context before reaching them. Note-taking is part of running each scene, not a
-closing chore: when one of the triggers below fires, pause and write it down *before* you narrate
-the next thing. This matters **most** when the session has gone off-script — improvised content is
-exactly what has no plan to reconstruct it from, and it's the easiest to lose.
-
-- **Verbatim documents → `campaign/documents/{slug}.md`.** The instant any written text is shown
-  to the player — letter, journal, inscription, sign, contract, book passage, or an overheard
-  line whose exact wording matters — write it down word-for-word. Never paraphrase a document the
-  player can read; they may quote it back sessions later. If it's partial or damaged, record what
-  is legible and note the gaps.
-- **Improvised canon → the matching world file.** The moment you invent something reusable — a
-  name, place, rumor, custom, minor NPC, faction detail — write it to `world/npcs.md`,
-  `world/locations.md`, or `world/factions.md` so it stays consistent. Improvisation you don't
-  record evaporates.
-- **Item & object changes.** Anything the party gains, loses, consumes, gives away, leaves
-  behind, or alters: significant objects → `world/items.md` (update owner/location/state); a PC's
-  ordinary gear → that character's sheet. One home each — never keep two parallel lists.
-- **Knowledge changes → the ledger and the flags.** When the PC learns, deduces, or is told
-  something, add it to `characters/{name}-knowledge.md` (Knows / Believes / Open questions) **and**
-  flip the source fact `[hidden]` → `[revealed: S<n>]`, adding "the PC" to its `Known to:`. Record
-  beliefs too — including ones the PC has *wrong*. When an NPC learns something (e.g., the PC tells
-  them, or they witness it), add that NPC to the relevant fact's `Known to:`.
+- **The running session log — required every turn (step 5 of the loop).** Append to
+  `campaign/sessions/session-{N}.md` as you play: what the character did, learned, who they met,
+  what changed. A line or two per turn is fine. Don't batch it for the end — "later" does not
+  happen, and the whole point is a comprehensive log the orchestrator can mine. This is the one
+  capture you never skip.
+- **Verbatim documents — also required, the moment they appear.** Any written text shown to the
+  player (letter, journal, inscription, sign, contract, book passage, or an overheard line whose
+  exact wording matters) → record it word-for-word in `campaign/documents/{slug}.md`. Besides the
+  log, this is the only thing that *cannot* be reconstructed later, so it can't wait. If it's
+  partial or damaged, record what's legible and note the gaps.
+- **Structured state — update live when it's natural, but never let it block the flow.** The
+  knowledge ledger (+`[hidden]`/`Known to:` flags), improvised world canon, and item changes are
+  ideally updated as they happen — but the orchestrator reconciles them from your log after the
+  session (see `session-review`). So if a clean update would interrupt play, get it into the log
+  and move on. The log is the floor; structured updates are the bonus:
+  - *Knowledge* — PC learns/deduces/is told something → ledger (Knows / Believes, incl. wrong
+    beliefs / Open questions) and flip the source `[hidden]` → `[revealed: S<n>]` (add "the PC" to
+    `Known to:`). An NPC learns something → add them to that fact's `Known to:`.
+  - *World canon* — a reusable name/place/rumor/minor NPC → the matching `world/*.md` file.
+  - *Items* — gained/lost/changed significant objects → `world/items.md`; a PC's gear → their sheet.
 - **Keep a running session log.** Maintain `campaign/sessions/session-{N}.md` as you go, not only
   at the end, so nothing is lost if the session runs long.
 

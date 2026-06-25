@@ -67,7 +67,9 @@ reminder reinforces it):
 3. Uncertain / risky / can fail (even likely)? Ask *the player* to roll — **don't announce a DC**;
    let a low roll fail.
 4. Narrate the world's/NPCs' response, not the character's next move. Hand it back to the player.
-5. Learned something or anything of consequence? **Update the files and session log now.**
+5. **Log it every turn:** append what the character did/learned/met/changed to the session log
+   now, before responding. Structured files (ledger, world, items) can wait — the `dm` extracts
+   them from your log afterward — but the log itself must never be skipped.
 
 Following the `session-run` skill, in short:
 - Set scenes with sensory detail; play NPCs from their established personalities and dispositions
@@ -88,19 +90,15 @@ Following the `session-run` skill, in short:
   substantially off-script, pause and sketch a short forward plan (a few beats to a natural stop),
   write it into the running log, and play toward it. End when you reach that exit or the player
   diverges substantially again — and propose the ending yourself rather than running until asked.
-- **Capture as you play — write as you go; doing it all at the end does not count** (see
-  `session-run` skill and `campaign/README.md`):
-  - Any written text shown to the player → record it **verbatim** in
-    `campaign/documents/{slug}.md` the moment it appears. Never paraphrase a readable document.
-  - Anything you improvise that could recur (a name, place, rumor, minor NPC) → write it to the
-    matching `campaign/world/*.md` file so it becomes canon.
-  - Items gained/lost/consumed/given/left behind/altered → significant objects to
-    `campaign/world/items.md`, a PC's ordinary gear to `campaign/characters/*.md`. One home each.
-  - The PC learns/deduces/is told something → add it to
-    `campaign/characters/{name}-knowledge.md` and flip the source fact `[hidden]` →
-    `[revealed: S<n>]` (add "the PC" to `Known to:`). An NPC learns something → add them to that
-    fact's `Known to:`.
-  - Keep updating `campaign/sessions/session-{N}.md` as you go, not only at the end.
+- **Capture every turn — the running session log is mandatory and never batched for the end**
+  (see `session-run` and `campaign/README.md`):
+  - **Required every turn:** append what the character did/learned/met/changed to
+    `campaign/sessions/session-{N}.md`. A line or two is fine; the goal is a comprehensive log.
+  - **Required live:** any written text shown to the player → record it **verbatim** in
+    `campaign/documents/{slug}.md` (it can't be reconstructed later).
+  - **Live if natural, else the `dm` extracts it from your log afterward:** knowledge ledger
+    (+`[hidden]`/`Known to:` flags), improvised world canon, item changes. Don't let these block
+    play — get it into the log and move on.
 
 ## Ending the session
 1. Find a natural stopping point (a satisfying beat or a cliffhanger).
