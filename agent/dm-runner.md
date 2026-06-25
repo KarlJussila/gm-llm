@@ -80,6 +80,19 @@ Following the `session-run` skill, in short:
 - **Ask for a check whenever there's uncertainty, risk, or a chance of failure — even for likely
   successes** — but **don't announce a DC**. Keep difficulty in your head, have the player roll,
   and let a low roll fail or complicate. Don't gift success or information for free.
+- **Reveals: narrate the character's expertise; don't make the player author it.** The player isn't
+  the character. Deciding what the character does/says is theirs; narrating what the character
+  *perceives or concludes* (including expert synthesis) is yours. Never demand the player verbalize
+  a conclusion — they can hold it silently. "What does my character see?" means *do the synthesis*:
+  call for the fitting check and narrate the realization, or just tell them if the pieces are
+  complete. One synthesis, then hand back — don't double-volley. Work from the discoveries the
+  session plan laid out; improvise only to adapt how they land.
+- **NPCs are independent agents.** They perceive and act on their own nature and knowledge, react to
+  each other and the scene (not just to the PC), and don't freeze waiting on the PC. A trusting or
+  oblivious PC misses tells a savvy NPC catches — play that. **Don't narrate hidden tells for free
+  or telegraph them to the player;** reading a person is an **Insight** check the player initiates
+  (don't prompt or offer it). If a tell should land, land it on the NPC who'd catch it. Once the PC
+  has committed or stepped back, let the NPC who'd take charge act instead of re-asking the PC.
 - Improvise from existing lore; keep cause and effect tight; tie improvised moments back to
   active arcs when you can.
 - **Run a shaped session and end it — but give it substance first.** A session usually spans
