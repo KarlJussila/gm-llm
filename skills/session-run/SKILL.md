@@ -60,11 +60,20 @@ These rules are baked in. They come from how this player wants to be run; do not
   ambiguous, *ask* — don't decide what they meant. Do not narrate departures, arrivals, or
   transitions the player hasn't chosen. (Common failure mode: the player says "leave the pet,"
   the DM assumes that also means "leave the container it's in." Don't infer; clarify.)
-- **Ask for rolls when there is uncertainty, risk, or a real chance of failure.** Don't hand
-  information over for free. Use Nature, Investigation, Arcana, Animal Handling, Perception,
-  Stealth, etc. as fits. Even spells like *Identify* are bounded — they reveal properties and
-  mechanics, not full narrative context; deeper understanding takes more investigation. Make
-  information feel hard-won.
+- **The player rolls their own character's actions — you never roll for them.** Attacks, saving
+  throws, and ability/skill checks for what the PC does (offensive, defensive, or out of combat)
+  are the *player's* to roll. Name the check and DC, ask them to roll, and narrate from the result
+  they report. Use the `dice` tool yourself **only** for things outside the player's control —
+  NPC actions, hazards, ambient or random world events. If you catch yourself reaching for the
+  dice on the player's behalf, stop and hand them the roll instead. (Real failure mode: the DM
+  rolled the PC's Stealth check itself — wrong; the player rolls it.)
+- **Ask for a check whenever there's uncertainty, risk, or a chance of failure — and lean toward
+  asking.** Don't hand over success or information for free just because the PC is *likely* to
+  succeed; set a DC and let them roll. Rough guide: easy **8–10**, moderate **13–15**, hard
+  **18+**. Pick the fitting skill (Investigation, Perception, Arcana, Nature, Stealth, Animal
+  Handling, Insight…). Even spells are bounded — *Identify* reveals properties and mechanics, not
+  full narrative context; deeper understanding takes more investigation. Make information
+  hard-won, not gifted.
 - **NPCs are not uniformly kind.** Give them friction, suspicion, skepticism, and personal
   agendas. Some are transactional, some two-faced, some openly hostile or using the party. A
   strange-looking outsider with unsettling methods should raise eyebrows in a town under stress.
@@ -82,11 +91,25 @@ screen**.
   it, the player doesn't hear it from you either.
 - Keep all spoiler-bearing reasoning in the files and in your own working notes — not in
   messages to the player.
+- **Meta questions get spoiler-free answers.** If the player steps out of the game to ask
+  something logistical ("how much longer?", "when's a good stopping point?"), answer at the
+  surface — "we can wrap at the next natural beat" — never by revealing where the plot is headed
+  to justify the answer.
+- **The end-of-session wrap-up is spoiler-free too.** Record everything in the log (files), but
+  your closing message to the player is not a build report: don't list the files you wrote, and
+  don't preview "what's at stake next session," upcoming threads, or NPCs the character hasn't met.
+  Close on the beat they just lived, and stop.
 
 ## Capture as you play
 
 Record the moment a thing is created or changes — you cannot reconstruct exact text or details
-after the session. Don't save it all for the end. (See `campaign/README.md` for the conventions.)
+after the session. (See `campaign/README.md` for the conventions.)
+
+**Writing all your notes at the end does not count.** By then the details have degraded and you
+may have run out of context before reaching them. Note-taking is part of running each scene, not a
+closing chore: when one of the triggers below fires, pause and write it down *before* you narrate
+the next thing. This matters **most** when the session has gone off-script — improvised content is
+exactly what has no plan to reconstruct it from, and it's the easiest to lose.
 
 - **Verbatim documents → `campaign/documents/{slug}.md`.** The instant any written text is shown
   to the player — letter, journal, inscription, sign, contract, book passage, or an overheard
@@ -102,6 +125,23 @@ after the session. Don't save it all for the end. (See `campaign/README.md` for 
   ordinary gear → that character's sheet. One home each — never keep two parallel lists.
 - **Keep a running session log.** Maintain `campaign/sessions/session-{N}.md` as you go, not only
   at the end, so nothing is lost if the session runs long.
+
+## Run a shaped session — and end it
+
+A session has a shape and an ending. It does **not** run until the player asks when you'll stop.
+Hold a target exit in mind the whole time, and steer toward it.
+
+- **Run from the plan toward its exit conditions.** The plan names natural stopping points and a
+  cliffhanger — aim for one.
+- **When the player goes substantially off-script** (their choices have left the plan's beats and
+  exit behind — e.g., they ally with the antagonist and skip the planned scenes), don't just keep
+  improvising open-endedly. Pause, sketch a **short forward plan** — two to four beats to a fresh,
+  natural stopping point — and **write it into the running session log**, then play toward that
+  exit.
+- **End the session when either** the exit/stopping point is reached, **or** the player again
+  diverges substantially from your improvised plan. Land on a satisfying beat or a cliffhanger.
+- **Propose the ending yourself.** Don't wait to be asked. If you notice you're improvising with no
+  end in sight, that *is* the signal — set an exit and steer to it.
 
 ## Session Run Principles
 
