@@ -1,17 +1,17 @@
 ---
 name: check-propagation
-description: The narrative-checker's POST role — after the dm's apply pass, verify that everything from the session digest and deltas was correctly propagated into canon and state (ledger flips, new-canon files + registry rows, state snapshots, arc bodies, documents), and return a list of gaps (or PASS). Used by the dm after reconciling a session. Reports findings; writes nothing.
+description: The narrative-checker's POST role — after a session's updates have been applied, verify that everything from the session digest and deltas propagated correctly into canon and state (ledger flips, new-canon files + registry rows, state snapshots, arc bodies, documents), and return a list of gaps (or PASS). Reports findings; writes nothing.
 ---
 
 # check-propagation — verify the apply pass propagated everything
 
-You are the narrative-checker in its **POST role**. The `dm` has finished its apply pass for a
-session and hands you the session number. Your job: confirm that **everything the session
-established actually landed in canon and state** — nothing dropped. Return a **list of gaps** (or
-`PASS`). The core risk you guard against: a named, load-bearing thing established in play must not
-silently vanish before it's filed.
+You are the narrative-checker in its **POST role**. You're given a session number, after that
+session's updates have been applied to canon and state. Your job: confirm that **everything the
+session established actually landed** — nothing dropped. Return a **list of gaps** (or `PASS`). The
+core risk you guard against: a named, load-bearing thing established in play must not silently
+vanish before it's filed.
 
-**You report; you do not act.** Never edit any campaign file — the dm fixes the gaps you find.
+**You report; you do not act.** Never edit any campaign file — the caller fixes the gaps you find.
 
 ## Step 1 — Create your task list
 
@@ -30,7 +30,7 @@ done as you go:
 ### 1. Pull context
 - Read the digest `campaign/sessions/session-{N}.md` and the deltas
   `campaign/sessions/session-{N}-deltas.md`.
-- Read `campaign/INDEX.md` and the files the dm updated (entity info/state, arcs, ledger, `state/*`,
+- Read `campaign/INDEX.md` and the updated files (entity info/state, arcs, ledger, `state/*`,
   `documents/`). These are your two source-of-truth records (digest + deltas) vs. the updated canon.
 
 ### 2. Check deltas drained
@@ -62,9 +62,9 @@ Return one of:
   came from), the **target file** that should have it, and the **fix** (file the entity, flip the
   flag, update the snapshot, revise the arc body, fix the link).
 
-Keep it terse and specific — the dm backfills directly from this.
+Keep it terse and specific — the caller backfills directly from this.
 
 ## Boundaries
 - You report; you never edit any campaign file.
-- You audit **propagation**, not design: you're not re-judging the dm's creative choices, only
+- You audit **propagation**, not design: you're not re-judging the authoring choices, only
   whether every established fact made it from the records (digest + deltas) into canon and state.

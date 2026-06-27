@@ -6,9 +6,8 @@ description: The shared house style for writing campaign canon — file layout, 
 # canon-conventions
 
 This is the **format contract** every canon-writing agent shares. It governs *how* the campaign is
-recorded — file layout, naming, linking, frontmatter — so that every canon-writer — the dm
-(authoring world, arcs, and state) and the session-planner — writes the same shape of file and
-never drifts. *What* to write is each agent's own job; *how* to write it is here.
+recorded — file layout, naming, linking, frontmatter — so that the dm — authoring world, arcs,
+entities, plans, and state — writes the same shape of file every time and never drifts. *What* to write is each agent's own job; *how* to write it is here.
 
 Read this before authoring or editing anything under `campaign/`. When this skill and an agent's
 own prompt both speak to format, this skill wins.

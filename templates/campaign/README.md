@@ -44,7 +44,7 @@ slots, coin); the player tracks those.
 | `characters/{slug}.md` | PC sheet — stats, personality, backstory, hooks | `dm` |
 | `characters/{slug}.state.md` | PC state — location, notable condition, key items, objective | `dm` (apply pass) |
 | `characters/{slug}.knowledge.md` | What the PC **Knows / Believes / Open questions** | `dm` (apply pass) |
-| `sessions/session-{N}-plan.md` | The plan for an upcoming session | `session-planner` |
+| `sessions/session-{N}-plan.md` | The plan for an upcoming session | `dm` |
 | `sessions/session-{N}-transcript.md` | Raw play transcript, captured automatically | `dm-transcript` plugin |
 | `sessions/session-{N}.md` | Structured session digest, extracted from the transcript | `log-extractor` |
 | `sessions/session-{N}-deltas.md` | Reconciliation log — new canon + arc divergence noted in play | checkers / plugin (during play) |

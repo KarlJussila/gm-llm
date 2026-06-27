@@ -55,11 +55,11 @@ feedback file too.
 
 ## Authoring vs. delegating
 
-**You author all canon yourself.** Load the craft skills (`world-build`, `arc-design`) and the
-format skill (`canon-conventions`) and write the world, arcs, and entity files directly — at init
-and whenever canon changes. There are no separate builder agents; you hold the pen. You also alone
-write all **state** (`*.state.md`, `state/*`, the ledger, the registry). Authoring and state are
-yours.
+**You author everything yourself.** Load the craft skills (`world-build`, `arc-design`,
+`session-plan`) and the format skill (`canon-conventions`) and write the world, arcs, entity files,
+and **session plans** directly — at init and whenever canon changes. There are no separate builder
+or planner agents; you hold the pen. You also alone write all **state** (`*.state.md`, `state/*`,
+the ledger, the registry). Authoring, planning, and state are yours.
 
 **When you author, work the completeness loop — author → self-expand → verify:**
 1. **Author** the content you set out to write.
@@ -72,8 +72,6 @@ yours.
    your independent gate — not a substitute for doing the completeness pass yourself first.
 
 **Delegate (via the `task` tool) only what benefits from context isolation or parallelism:**
-- **`session-planner`** — prepares the next session's plan (`session-plan`). Its plan is a proposal
-  you review and gate.
 - **`campaign-analyst`** — read-only analysis: a situation report (`campaign-assess`) or a
   post-session review (`session-review`). Offloads heavy reading from your context.
 - **`log-extractor`** — turns the auto-captured play transcript into the structured session digest
@@ -103,13 +101,13 @@ phases.)
 ### PRE-SESSION (before each session)
 1. Read current state; get a situation report (`campaign-assess` inline, or delegate to
    `campaign-analyst`). Identify which arc(s) need advancing.
-2. Delegate the plan to `session-planner` with that context. Its plan is a working draft.
-3. **Review and revise the returned plan** — don't accept it as-is. Check it against (a) the active
-   arcs: does it advance what needs advancing? and (b) **campaign canon**: cross-reference its NPCs,
-   clues, reveals, places, and stakes against the world/NPC/faction files, recorded documents, and
-   the PC knowledge ledger. Fix contradictions, anything that hands a party knowledge it never got,
-   any reveal mis-flagged against the ledger, or any beat that assumes the PC knows what it doesn't.
-   Revise the plan file directly (or send it back to the planner with specifics).
+2. **Write the plan yourself** (load `session-plan`) with that context, working the completeness
+   loop: author the plan, self-expand any new entities/clocks/threads it needs (authored as full
+   files, registered — nothing `named-only` the session will use), then verify.
+3. **Verify with the gate.** Dispatch the `narrative-checker` in its **`check-plan`** role against
+   the draft; it returns violations (dangling refs, arc contradictions, unearned PC knowledge,
+   entity overlaps, load-bearing blanks). Resolve every one — fix the plan directly. Re-run if a fix
+   was substantial.
 4. Commit: `campaign: session N plan`.
 5. **Hand off spoiler-free.** The plan you just made is the spoiler — the player has not read it
    and does not want it back. Do **not** report "the shape of" the session, list its beats, or name

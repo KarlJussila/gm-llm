@@ -127,9 +127,10 @@ The canon now exists; write the opening snapshot, true as of the start of sessio
 Commit everything: `campaign: init`.
 
 ## Stage 9 — Plan session 1
-Run the PRE-SESSION flow (see the `dm` agent): delegate to `session-planner`, review/gate the plan
-against the arc and canon, write `campaign/sessions/session-1-plan.md`, commit `campaign: session 1
-plan`. **Do not** tell the player to start `dm-runner` until this plan exists.
+Run the PRE-SESSION flow (see the `dm` agent): write the plan yourself (load `session-plan`), gate
+it with the `narrative-checker`'s `check-plan` role, resolve any violations, write
+`campaign/sessions/session-1-plan.md`, commit `campaign: session 1 plan`. **Do not** tell the player
+to start `dm-runner` until this plan exists.
 
 ## Stage 10 — Hand off  *(spoiler-free)*
 Confirm the campaign is ready and the character is placed. Recap only what the character would know

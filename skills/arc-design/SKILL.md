@@ -24,20 +24,18 @@ in `INDEX.md` (Arcs), link entities with `[[slug]]`, flag spoilers `[hidden]` + 
 The arc is **two files**: the **design** (`{slug}.md`, what you write) and the **state**
 (`{slug}.state.md`, a lightweight progress snapshot — written by the dm, not you). The design is a
 **living document**: it is *not edited during play* (divergence is logged to the deltas log
-instead), and it is **revised every session afterward** in the post-session arc pass, which assesses what
-structural and detail changes each arc needs after play — redirecting, accelerating, merging,
-deepening, recommitting answers — and reconciles the body toward what was actually played. The arc
-decaying into a stale status-line recap is the failure to avoid; the fix is that the *body* gets
-real revision, not that it's frozen. Status/progress stays out of the design and in the state file
-so the planner/runner have a quick at-a-glance read. You author the initial design; the keeper
-keeps it alive.
+instead), and it is **revised every session afterward** in the post-session arc pass, which assesses
+what structural and detail changes each arc needs after play — redirecting, accelerating, merging,
+deepening, recommitting answers — and reconciles the body toward what was actually played. Revise
+the **body**, not just a status line. Status/progress stays out of the design and lives in the state
+file, so the runner and the next plan get a quick at-a-glance read. You author the initial design.
 
 ## The rule that matters most: commit every answer
 
 > **An arc commits its load-bearing answers at design time. Never "DM decides."**
 
-This is the arc's whole job in the system: the session-planner and the runner **pull answers from
-the arc**. If the arc punts a fact downstream, a downstream agent fabricates one — and fabricates a
+This is the arc's whole job in the system: the dm (when planning) and the runner **pull answers
+from the arc**. If the arc punts a fact downstream, a downstream agent fabricates one — and a
 *different* one each time. So:
 
 - **Every turning point commits its answer** — the reveal, the identity, the consequence. Write the

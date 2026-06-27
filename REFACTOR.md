@@ -225,20 +225,20 @@ yields). Trivial ambient detail (a passing vendor's name) is the runner's to imp
 and gets logged at runtime — the *same* load-bearing line as the runtime harmless-color
 rule (§3b). PRE and RUNTIME share one threshold.
 
-### 4.1 The PRE pass — `dm`-orchestrated (subagents can't delegate)
+### 4.1 The PRE pass — `dm`, inline (author → self-expand → verify)
 1. **Situation report** — `campaign-analyst` (`campaign-assess`): tension, active
    threads, what needs attention.
-2. **`dm` picks the arc beat(s)** to advance and briefs `session-planner`.
-3. **`session-planner` writes the plan** (§4.2), referencing entities by registry
-   slug-link, and **flags** any fact/entity not yet in canon.
-4. **`dm` authors/stubs the flagged entities inline** (grounded in arc/canon),
-   so no plan reference dangles.
-5. **`dm` gates the assembled bundle** (§4.3), delegating the mechanical canon cross-ref
-   to **`narrative-checker`** — the *same engine* that gates runtime turns.
+2. **`dm` picks the arc beat(s)** to advance.
+3. **`dm` writes the plan inline** (loads `session-plan`; §4.2), referencing entities by
+   registry slug-link.
+4. **`dm` self-expands**: authors/stubs any entity the plan needs that isn't yet in canon
+   (grounded in arc/canon, full files, registered), so no plan reference dangles.
+5. **`dm` verifies** by dispatching **`narrative-checker`** in its **`check-plan`** role —
+   the *same engine* that gates runtime turns — and resolves every violation (§4.3).
 6. **`dm` finalizes, commits** (`campaign: session N plan` — plans are *campaign-repo*
    artifacts, not `.opencode`), and **hands off spoiler-free**.
 
-### 4.2 `session-planner` output contract
+### 4.2 The plan's output contract (the `dm` authors it; `session-plan` skill)
 - **Fact-resolution priority** for any identity/reveal/fact the session needs:
   (1) the **arc's** answer if it exists → (2) existing **canon/registry** → (3) else
   **decide it now and flag as new-canon-to-file.** Never blank, never punt.
@@ -418,10 +418,10 @@ the reconciliation log's divergence entries + the digest and reconciles the arc
 
 **Phases:** `INIT` (setup, once) · `PRE` (planning, before a session) · `PLAY` (live) ·
 `POST` (reconcile/adjust, after a session).
-**Agents:** `dm` (orchestrator; authors all canon + state inline) · `runner` · delegated:
-`SP` session-planner, `CA` campaign-analyst, `LE` log-extractor · RUNTIME: `NC`
-narrative-checker, `RC` rules-checker · *plugins* (deterministic). World/arc authoring is the
-`dm`'s (no builder/keeper agents — post-M1). See §7.
+**Agents:** `dm` (orchestrator; authors all canon, plans + state inline) · `runner` · delegated:
+`CA` campaign-analyst, `LE` log-extractor · RUNTIME: `NC` narrative-checker, `RC` rules-checker ·
+*plugins* (deterministic). `SP` below = the **dm's PRE planning pass** (inline; formerly a separate
+session-planner agent — culled). World/arc/plan authoring is all the `dm`'s. See §7.
 
 **Four governing rules:**
 1. **Single writer per artifact per phase.** Shared ownership is what produced the
@@ -454,7 +454,7 @@ narrative-checker, `RC` rules-checker · *plugins* (deterministic). World/arc au
 | `state/{current,calendar,threads,clocks}.md` | apply pass·POST | dm | runner (session start), SP, NC |
 
 **History — append-only**
-| `sessions/session-N-plan.md` | SP·PRE (bundle); revised by dm·PRE | dm | runner, NC, CA |
+| `sessions/session-N-plan.md` | dm·PRE (planning pass + self-gate via check-plan) | dm | runner, NC, CA |
 | `sessions/session-N-transcript.md` | transcript plugin·PLAY (auto) | — | LE, CA, NC (in-session) |
 | `sessions/session-N.md` (digest) | LE·POST (from transcript) | dm | CA, dm (apply) |
 | `sessions/session-N-deltas.md` (reconciliation log) | NC·PLAY (narrow write, scoped to this file) | — | dm apply pass·POST |
@@ -466,8 +466,9 @@ narrative-checker, `RC` rules-checker · *plugins* (deterministic). World/arc au
 
 **The canon/state ownership seam `[DECIDED, revised post-M1]`:**
 
-> The `dm` **authors all canon and writes all state**, as the single auditor. The only
-> delegated writer of a real campaign file is the `session-planner` (its plan, `dm`-gated).
+> The `dm` **authors all canon, plans, and state**, as the single auditor. No delegated agent
+> writes a real campaign file (analysts/extractor produce their own non-canon deliverables; the
+> narrative-checker writes only the deltas log).
 
 - **The apply pass is the `dm`** (not a delegate). It owns and performs all POST writes —
   new/changed canon (world, arcs, entities), every changed `*.state.md`, the four `state/*`
@@ -512,8 +513,8 @@ layout from an **empty directory**.
 **Ownership × timing matrix: designed** (§5.10). `[DECIDED]`
 
 **Ownership seam: decided** (§5.10, revised post-M1) — the `dm` authors all canon + writes
-all state (single auditor; matrix is its runbook). The only delegated file-writer is `SP`
-(its plan, `dm`-gated). **Builder/keeper agents culled** in favor of `dm`-inline authoring.
+all state (single auditor; matrix is its runbook). **No delegated agent writes a real campaign
+file.** **Builder/keeper/planner agents culled** in favor of `dm`-inline authoring.
 
 **Resolved this round:** Migrate-vs-rebuild = **rebuild**. Character creation = **stays a
 `dm` skill** (subagents can't touch the player). World/arc authoring = **`dm`-inline via
@@ -521,8 +522,8 @@ craft skills**, not builder/keeper agents (post-M1).
 
 Still open:
 - **Planning flow (§4): designed `[DECIDED]`** — the one rule (commit facts / leave path
-  open), the dm-orchestrated PRE bundle, the `session-planner` contract, the dm PRE
-  review-gate (reusing `narrative-checker`), "never say DM decides." Confirmed:
+  open), the dm's inline PRE planning pass, the plan output contract, the dm PRE
+  review-gate (reusing `narrative-checker` `check-plan`), "never say DM decides." Confirmed:
   load-bearing no-blanks threshold, existing plan section structure kept, NC/dm gate
   split. **Added:** planner has free license to create entities, but each must be
   **thoroughly documented** (full file, not a stub) and **overlap-checked** (name + role)
@@ -560,17 +561,16 @@ they don't drift in *how* they write. Disposition → agent prompt; format → s
 - `dm-runner` — orchestrates RUNTIME; `task: deny` → allow (calls checkers); adopts the
   per-turn check loop (§3).
 
-**Canon authoring is the `dm`'s, inline** (no builder/keeper agents). The dm writes world/arc/
-entity files directly at INIT *and* POST, gating its own work — with `narrative-checker` as the
-independent canon gate once built. The craft lives in **skills** the dm loads (`world-build`,
-`arc-design`), unified by the **`canon-conventions`** format skill. Disposition (init vs. surgical
+**Canon, plans, and state are the `dm`'s, inline** (no builder/keeper/planner agents). The dm writes
+world/arc/entity files **and session plans** directly at INIT, PRE, *and* POST — with
+`narrative-checker` as the independent gate (`check-plan` at PRE, `check-turn` at runtime,
+`check-propagation` at POST). The craft lives in **skills** the dm loads (`world-build`,
+`arc-design`, `session-plan`), unified by the **`canon-conventions`** format skill. Disposition (init vs. surgical
 maintenance) is handled by the dm's phase instructions, not by separate agents. `character-create`
 stays a dm-driven skill (player-facing). Trade-off: INIT context load sits on the dm — acceptable;
 reintroduce a builder agent only if it bloats.
 
 **Delegated subagents** (isolation / parallelism only):
-- `session-planner` — PRE plan; plan facts fully / leave path open; honor the arc as binding; its
-  plan is a dm-gated proposal.
 - `campaign-analyst` — assess (PRE) + review (POST); analysis only, writes its own deliverable. Keep.
 - `log-extractor` — transcript → digest, lossless, POST. Keep.
 - `narrative-checker` — canon/consistency gate (§3b); **reused by the `dm` PRE review**; **strictly
@@ -580,9 +580,10 @@ reintroduce a builder agent only if it bloats.
 **State application is the `dm` directly** (§5.10).
 
 **Net change:** the `canon-conventions` skill + two runtime checkers (`narrative-checker`,
-`rules-checker`). World/arc authoring folds **into the `dm`** (inline, via the existing craft
-skills) — no builder or keeper agents. *(Earlier drafts planned `world-builder`/`arc-builder`/
-`world-keeper`/`arc-keeper`; culled post-M1 in favor of dm-inline authoring.)*
+`rules-checker`). World/arc/**plan** authoring folds **into the `dm`** (inline, via the existing
+craft skills) — no builder, keeper, or planner agents. *(Earlier drafts planned `world-builder`/
+`arc-builder`/`world-keeper`/`arc-keeper`/`session-planner`; all culled in favor of dm-inline
+authoring with the `narrative-checker` as the independent gate.)*
 
 ---
 
@@ -621,17 +622,18 @@ Dependencies: `0 → 1 → 2 → {3, 4} → 5 → 6`.
 - ▶ **Milestone M1: PASSED** — INIT ran from empty; output reviewed at a skim. Findings folded back:
   builders/keepers culled, Stage 1/2 over-asking tightened.
 
-### Phase 2 — The gate *(reused by planning AND runtime)*
-- **2.1 `narrative-checker`** — canon/consistency/overlap/ledger gate; test standalone
-  against the M1 campaign + a seeded draft.
-- **2.2 `rules-checker`** — conduct gate, canon-free; test against seeded drafts.
-- ▶ **Review:** each checker catches its seeded violations and stays in its lane.
+### Phase 2 — The gate ✓ DONE *(reused by planning AND runtime)*
+- **2.1 `narrative-checker`** — thin role-loader; roles `check-turn`/`check-plan`/`check-propagation`
+  (decomposed by role). Writes only the scoped deltas log.
+- **2.2 `rules-checker`** — conduct gate, canon-free, checklist in-prompt.
+- All task-list-first; deny-`*` swept across every agent. *(Standalone seeded-draft test is
+  user-runnable; deferred to in-flow testing at M2/M3.)*
 
 ### Phase 3 — Planning → a reviewed plan
-- **3.1 `session-planner`** overhaul — the §4 contract (facts/path, honor arc, free-
-  license + thorough docs + overlap, slug-links, no blanks).
-- **3.2 `dm` PRE orchestration + review-gate** — assemble the bundle, reuse 2.1 for the
-  mechanical cross-ref, run the dm checklist; this also completes INIT's session-1 plan.
+- **3.1 `session-plan` skill overhaul** — the §4 contract (facts/path, honor arc, free-license +
+  thorough docs + overlap, slug-links, no blanks); the `dm` loads it (no planner agent).
+- **3.2 `dm` PRE pass + check-plan gate** — dm authors the plan inline (author → self-expand →
+  verify with `narrative-checker` `check-plan`); this also completes INIT's session-1 plan.
 - ▶ **Milestone M2:** generate session-1 plan as a bundle; review it, and watch the gate
   catch a seeded problem (a blank, an arc contradiction, a duplicate entity).
 

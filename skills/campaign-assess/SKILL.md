@@ -62,7 +62,7 @@ campaign/
     npcs.md
     events.md
   sessions/
-    session-1-plan.md         # plan written by session-planner
+    session-1-plan.md         # plan written by the dm
     session-1-transcript.md   # raw play transcript (auto-captured)
     session-1.md              # session digest (extracted from the transcript)
     ...
