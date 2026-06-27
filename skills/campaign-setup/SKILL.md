@@ -1,6 +1,6 @@
 ---
 name: campaign-setup
-description: Initialize a new D&D campaign through a guided, staged flow — from the player's target vibe (vague or specific) to a spoiler-free premise, a collaboratively built character, and at least one major arc woven into that character's backstory. Use when starting a brand-new campaign.
+description: Initialize a new D&D campaign from an empty directory — scaffold the file structure, gather the player's vibe, build the world, character, and arcs as gated proposals, initialize all state, plan session 1, and hand off spoiler-free. Run by the dm. Use when starting a brand-new campaign.
 ---
 
 # campaign-setup
@@ -11,114 +11,117 @@ Before running setup, read `campaign/feedback/campaign-setup.md` if it exists. I
 accumulated, player-specific guidance distilled from past campaigns. Treat it as binding and let
 it override the defaults here wherever they conflict.
 
-## Purpose
+## What this is
 
-Take a new campaign from nothing to ready-to-plan: gather what the player wants, design the world,
-present a premise and character hooks, build the character with them, and seed the arcs — without
-spoiling the surprises you're planting.
+A new campaign goes from an empty directory to ready-to-play. The **creative stages** (vibe, world,
+character, arcs) are collaborative and flexible — meet the player where they are. The **procedural
+stages** (scaffold, gate, state-init, commit, hand-off) are an exact ordered algorithm — follow the
+steps in order; don't skip or reorder them. You (the `dm`) run this; the authoring subagents propose
+files and you **gate** them.
 
-## Principles for the whole flow
+### Principles for the creative stages
+- **Meet the player where they are.** One word ("noir") or a full pitch — take whatever they give.
+- **Control dial** (offer at the world and character stages): *player-led* (they bring detail, you
+  organize) · *collaborative* (default — you propose, they choose) · *DM-led / "surprise me"* (they
+  give a vibe, you make the calls and present for a thumbs-up).
+- **Spoiler discipline.** Present setting, tone, and surface situation. Never reveal secrets,
+  twists, villains' true natures, or planned arcs — those go in files, not conversation.
+- **Don't over-build before the character exists.** Build enough world to present a premise; save
+  the major arcs until the character is made, so they can be personal.
 
-- **Meet the player where they are.** They may hand you one word ("noir") or a full pitch. Take
-  whatever they give; only ask for more if they want to be asked.
-- **Offer a control dial** at the world stage and the character stage:
-  - *Player-led* — they bring detailed ideas; you organize and fill gaps.
-  - *Collaborative* (default) — back-and-forth, you propose, they choose.
-  - *DM-led / "surprise me"* — they give a vibe and hand you the wheel; you make the calls and
-    present results for a thumbs-up.
-  Gauge which they want (ask if unsure) and flex each stage accordingly.
-- **Spoiler discipline.** Present setting, tone, and the surface situation. Never reveal the
-  secrets, twists, villains' true natures, or the arcs you're planning. Those go in the files,
-  not in conversation. (See the `session-run` spoiler rules — same boundary.)
-- **Don't over-build before the character exists.** Build enough world to present a premise and
-  offer hooks. Save the major arcs until the character is made, so they can be personal.
+### The gate (you run this on every authored bundle — stages 3, 5, 6)
+A subagent's output is a **proposal**, not canon. Before accepting it, check — and fix or send back:
+- **No blanks.** No "DM decides / TBD / as needed" for any load-bearing fact (canon-conventions §1).
+- **Registered.** Every created entity has an `INDEX.md` row; no entity is left unregistered.
+- **No dangling links.** Every `[[slug]]` resolves; nothing references an unfiled entity.
+- **No lingering `named-only`.** Anything the campaign will use is a full file, not a stub.
+- **No duplicates.** No new entity overlaps an existing one in name or role (check `INDEX.md`).
+- **Two-layer + flags.** Hidden truths are committed and flagged `[hidden]` + `Known to:`.
+- **Consistent.** Nothing contradicts `campaign.md`, the world, or another file.
 
-## Stage 0 — Scaffold
+---
 
-Do this first, before any conversation, if the campaign doesn't exist yet. It makes the working
-directory self-contained — the system builds its own structure and git repo.
+## Stage 0 — Scaffold the directory  *(exact steps; do first, before any conversation)*
 
-1. **Git repo.** If the project root is not a git repository, run `git init` there. This is the
-   *campaign* repository (the framework has its own under `.opencode/`).
-2. **Ignore the framework.** Ensure a root `.gitignore` exists containing `.opencode/`, so the
-   campaign repo never tracks the framework.
-3. **Structure & conventions.** Create the `campaign/` directory and copy the templates from
-   `.opencode/templates/campaign/` into it — this provides `campaign/README.md` (the directory
-   map and capture conventions) and `campaign/feedback/README.md` (the feedback routing guide).
-   The remaining directories (`world/`, `sessions/`, `characters/`, `narrative/arcs/`,
-   `documents/`, `assessment/`) are created lazily as files are written into them.
+1. **Campaign git repo.** If the project root is not a git repository, run `git init` there. This is
+   the *campaign* repo (the framework has its own under `.opencode/`).
+2. **Ignore the framework.** Ensure a root `.gitignore` contains `.opencode/`.
+3. **Structure.** Create `campaign/` and its tree:
+   `world/{npcs,factions,locations,items,regions}`, `arcs`, `state`, `characters`, `sessions`,
+   `assessment`, `documents`, `feedback`.
+4. **Conventions docs.** Copy `.opencode/templates/campaign/README.md` →
+   `campaign/README.md` and `.opencode/templates/campaign/feedback/README.md` →
+   `campaign/feedback/README.md`.
+5. **Registry.** Create `campaign/INDEX.md` from the `canon-conventions` `INDEX` template — section
+   headers only (PC, NPCs, Factions, Locations, Regions, Items, Arcs), empty tables.
+6. **Empty state docs.** Create `campaign/state/current.md`, `calendar.md`, `threads.md`,
+   `clocks.md` from their templates with `as-of: S1` and empty bodies. You populate them in Stage 7.
 
-The first commit happens at Stage 7.
+The first commit is Stage 8 — do not commit yet.
 
 ## Stage 1 — Vibe & control
+Ask one open question: what kind of campaign do they want — genre, vibe, premise, tone, or just a
+feeling, as vague or detailed as they like. Sense how much they're handing you vs. want to shape,
+and whether they want guiding questions or just want you to run.
 
-Ask one open question: what kind of campaign do they want? Genre, vibe, a specific premise, a
-tone, or just a feeling — as vague or as detailed as they like. Sense how much they're handing you
-vs. want to shape, and whether they'd like to be asked guiding questions or just let you run.
+## Stage 2 — Guided questions  *(optional — only if they want guidance or gave little)*
+Walk a standard set, letting them defer any to you: setting/world, tone, themes, stakes & scale,
+play-style mix, **content boundaries** (lines & veils — honor everywhere after), power level
+(starting level, power fantasy).
 
-## Stage 2 — Guided questions (optional)
+## Stage 3 — Build the world skeleton
+1. Synthesize their answers into a premise and central conflict.
+2. **Delegate to `world-builder`**: opening regions, key factions, a handful of NPCs, significant
+   items — enough to anchor a premise and hooks — as info files registered in `INDEX.md`. (It
+   reports initial-state facts; it does not write state.)
+3. **Gate** its output (checklist above). Fix or send back.
+4. Write a first-pass `campaign/campaign.md` (setting, tone, themes, stakes; record the content
+   boundaries here). Build the surface; hold the arcs.
 
-Only if the player wants guidance or gave you little. Walk a standard set, letting them answer or
-defer any to you ("you choose"):
-
-- **Setting / world** — genre, level of magic/tech, scope (a town, a kingdom, planes).
-- **Tone** — gritty ↔ heroic, light ↔ dark, grounded ↔ mythic, comedic ↔ serious.
-- **Themes** — what the campaign is *about* (loss, ambition, found family, corruption…).
-- **Stakes & scale** — personal, local, or world-shaking? Solo adventurer to epic?
-- **Play-style mix** — combat / roleplay / investigation / exploration balance.
-- **Content boundaries** — lines (never include) and veils (keep off-screen). Ask plainly; honor
-  them everywhere afterward.
-- **Power level** — starting level and the kind of power fantasy (underdog, rising hero…).
-
-## Stage 3 — Design the world skeleton
-
-Synthesize their answers into a premise and a central conflict. Then (the `campaign/` structure
-already exists from Stage 0 — see `campaign/README.md` for the layout):
-1. Delegate world-building to **`world-builder`** — opening locations, key factions, a handful of
-   NPCs, and any significant item — enough to anchor a premise and hooks.
-2. Write a first-pass `campaign/campaign.md` (overview: setting, tone, themes, stakes). Record
-   the content boundaries here too.
-Build the surface; hold the arcs.
-
-## Stage 4 — Present the premise & offer hooks
-
-Give the player a **spoiler-free** overview: the setting, the tone, and the situation as a
-newcomer would perceive it. Then offer **2–4 character hooks or archetypes** that fit this world
-and give them a foothold — each a role plus a tie into the situation (e.g., "a local whose village
-sits closest to the spreading blight," "a scholar chasing a rumor only this region can answer").
-Invite them to take one, adapt it, or bring their own concept.
+## Stage 4 — Present the premise & offer hooks  *(spoiler-free)*
+Give the player a newcomer's-eye overview (setting, tone, surface situation). Offer **2–4 character
+hooks** — each a role plus a tie into the situation. Invite them to take one, adapt it, or bring
+their own.
 
 ## Stage 5 — Create the character
-
-Load the **`character-create`** skill and follow it, at the control level the player chose. It
-produces `campaign/characters/{name}.md` (concept, mechanical details, world placement, backstory,
-DM-side hooks) and seeds `campaign/characters/{name}-knowledge.md` with what the character knows at
-the start.
+Load the **`character-create`** skill and follow it at the player's chosen control level. It writes
+`characters/{slug}.md` (sheet), `characters/{slug}.state.md` (initial state),
+`characters/{slug}.knowledge.md` (ledger), and registers the PC in `INDEX.md`. **Gate** the result.
+Note the backstory canon and DM-side hooks it surfaces, for the next stage.
 
 ## Stage 6 — Weave the character into the world & arcs
+1. **Fold in backstory canon.** For every new NPC/location/faction the backstory introduced,
+   **delegate to `world-builder`** to author and register it. **Gate.** Nothing the backstory names
+   stays unfiled.
+2. **Design the arc(s).** **Delegate to `arc-builder`**: at least one major arc woven into the
+   character's backstory hooks (keep *how* spoiler-side); optionally minor arcs. It writes the arc
+   design + `INDEX.md` Arcs row and reports the starting status; if it flags entities it needs that
+   don't exist, route those to `world-builder` first. **Gate.**
+3. **Write each arc's initial state.** Create `arcs/{slug}.state.md` from the template at the
+   reported starting status (usually `dormant`).
+4. Finalize `campaign/campaign.md`.
 
-Now that the character exists:
-1. Fold the character's backstory canon into the world (hometown, mentor, rival, patron, etc.) —
-   delegate to **`world-builder`** to add/adjust locations, NPCs, and factions so the world
-   already contains the people and places the backstory references.
-2. Delegate to **`arc-designer`**: create **at least one major arc** — and optionally minor arcs
-   or hooks — that weave into the character's backstory hooks and goals, so the central conflict
-   is personal. Keep *how* the arcs use their backstory spoiler-side.
-3. Finalize `campaign/campaign.md`.
+## Stage 7 — Initialize state  *(exact steps — you are the single writer of all state)*
+The canon now exists; write the opening snapshot, true as of the start of session 1:
+1. **Entity state.** For every stateful entity `world-builder` created, write `{slug}.state.md`
+   (`as-of: S1`) from its starting-state facts: location, notable condition, what it's doing.
+2. **`state/current.md`.** The opening scene: where the PC is, when, who's present, the immediate
+   situation, and the opening hook. This is the runner's resume baseline.
+3. **`state/calendar.md`.** The campaign's start date and any fixed calendar reference.
+4. **`state/threads.md`.** The leads the PC starts with (from backstory + opening hooks).
+5. **`state/clocks.md`.** Any time-pressure the arc set in motion at the start.
+6. **Verify.** `INDEX.md` lists every entity; no `[[slug]]` dangles; nothing reads `named-only`.
 
-## Stage 7 — Commit
-
+## Stage 8 — Commit
 Commit everything: `campaign: init`.
 
-## Stage 8 — Prepare the first session, then hand off (spoiler-free)
+## Stage 9 — Plan session 1
+Run the PRE-SESSION flow (see the `dm` agent): delegate to `session-planner`, review/gate the plan
+against the arc and canon, write `campaign/sessions/session-1-plan.md`, commit `campaign: session 1
+plan`. **Do not** tell the player to start `dm-runner` until this plan exists.
 
-1. **Plan session 1 before handing off.** Run the PRE-SESSION flow (see the `dm` agent's
-   lifecycle): delegate to `session-planner` to write `campaign/sessions/session-1-plan.md`,
-   review it against the arc, and commit `campaign: session 1 plan`. Do **not** tell the player to
-   start `dm-runner` until this plan exists — the runner reads the plan and has nothing to run
-   without it.
-2. **Give a spoiler-free hand-off.** Confirm the campaign is ready and their character is placed,
-   and recap only what their character would know — the surface situation and the hook that pulls
-   them in. **Do not** name or summarize the arc, list the arc/plan files, reveal faction secret
-   motives, or mention twists, buried truths, or ticking clocks — those live in files the player
-   has chosen not to read. Then tell them to start `dm-runner` when ready to play.
+## Stage 10 — Hand off  *(spoiler-free)*
+Confirm the campaign is ready and the character is placed. Recap only what the character would know
+— the surface situation and the hook. **Do not** name or summarize the arc, list arc/plan files,
+reveal secret motives, or mention twists or ticking clocks. Then tell the player to start
+`dm-runner` when ready.

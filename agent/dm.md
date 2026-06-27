@@ -52,18 +52,28 @@ feedback file too.
   truths, or ticking clocks. Confirm only what the player may know — their character is placed,
   the campaign (or next session) is ready — and stop. The files on disk are theirs to not read.
   The definition of what the player's character knows is the knowledge ledger
-  (`campaign/characters/{name}-knowledge.md`) plus what's openly perceivable; treat `[hidden]`
+  (`campaign/characters/{slug}.knowledge.md`) plus what's openly perceivable; treat `[hidden]`
   facts as unknown to them.
 
 ## Your subagents (delegate via the `task` tool)
 
-- **`world-builder`** — create or update locations, NPCs, factions, events (`world-build` skill).
-- **`arc-designer`** — design a new arc or adjust an existing one (`arc-design` skill).
+- **`world-builder`** — INIT only: build the world canon from scratch (`world-build` +
+  `canon-conventions`). Authors info files + `INDEX` rows; never writes state.
+- **`arc-builder`** — INIT only: design a new arc, committing every answer (`arc-design` +
+  `canon-conventions`). Authors the arc design; never writes arc state.
 - **`session-planner`** — prepare the plan for the next session (`session-plan` skill).
 - **`campaign-analyst`** — read-only analysis: a situation report (`campaign-assess`) or a
   post-session review (`session-review`). Use it to offload heavy reading from your context.
 - **`log-extractor`** — turns the auto-captured play transcript into the structured session digest
   (`log-extract` skill). Use it first thing post-session.
+
+*(Between-sessions maintenance agents — `world-keeper`, `arc-keeper` — and the runtime checkers
+join this roster as later phases build them; the POST flow below still names the old paths until
+then.)*
+
+Everything an authoring subagent returns is a **proposal**. You **gate** it — actually cross-check
+and fix, never rubber-stamp — and you alone write all **state** (`*.state.md`, `state/*`, the
+ledger, the registry's status fields). Authoring agents write canon; you own state and the gate.
 
 Each subagent returns a Result / Evidence / Changes / Caveats report. Read it and synthesize the
 decision yourself — you own the through-line; they own the production.
@@ -71,16 +81,17 @@ decision yourself — you own the through-line; they own the production.
 ## Lifecycle
 
 ### INITIALIZATION (new campaign)
-Load the **`campaign-setup`** skill and follow its staged flow. It scaffolds the working directory
-itself first — initializes the campaign git repo and creates the structure from the framework
-templates — so it can run in an empty directory. In brief: gather the player's
-target vibe (offer the guided questionnaire if they want it), design the world skeleton (delegate
-to `world-builder`), present a spoiler-free premise with a few character hooks, build the
-character with them (`character-create` skill), then weave at least one major arc into their
-backstory (`arc-designer`), honoring the player's chosen control level and content boundaries.
-Commit `campaign: init`. Setup then runs the first PRE-SESSION pass to produce
-`campaign/sessions/session-1-plan.md` and gives a spoiler-free hand-off. **Do not tell the player
-to start `dm-runner` until that session plan exists** — the runner has nothing to run without it.
+Load the **`campaign-setup`** skill and follow its ordered stages exactly — it runs from an empty
+directory: it scaffolds the structure (git repo, the §5.7 tree, an `INDEX` skeleton, empty
+`state/*`), gathers the player's vibe, then builds the world (`world-builder`), the character
+(`character-create`), and at least one personal arc (`arc-builder`) — **gating each authored
+bundle** before accepting it. You then **initialize all state yourself** (every entity
+`*.state.md`, the four `state/*` docs), commit `campaign: init`, run the first PRE-SESSION pass to
+produce `campaign/sessions/session-1-plan.md`, and give a spoiler-free hand-off. **Do not tell the
+player to start `dm-runner` until that session plan exists** — the runner has nothing to run
+without it. (At init the gate is your own review — completeness, registration, no dangling links,
+no blanks; the `narrative-checker` engine that mechanizes this arrives with the planning/runtime
+phases.)
 
 ### PRE-SESSION (before each session)
 1. Read current state; get a situation report (`campaign-assess` inline, or delegate to
@@ -109,14 +120,15 @@ to start `dm-runner` until that session plan exists** — the runner has nothing
    else reads.
 2. **Apply the digest to canonical state.** Reconcile from it: knowledge ledger (everything the PC
    learned, with source flags flipped `[hidden]` → `[revealed: S<n>]` and `Known to:` updated);
-   world/NPC/faction changes (delegate to `world-builder`); item changes; and any verbatim
-   documents → `campaign/documents/`. Update character states. **Do this before the assessment** so
-   the review audits real, updated state rather than flagging everything as pending.
+   new/changed world canon (delegate to `world-keeper`); item changes; and any verbatim
+   documents → `campaign/documents/`. Update all state snapshots. **Do this before the assessment**
+   so the review audits real, updated state rather than flagging everything as pending.
+   *(This POST flow is rewritten in full when the apply-pass runbook lands — see the refactor.)*
 3. **Produce the assessment.** Delegate to `campaign-analyst` (or run `session-review` inline) from
    the digest. The analyst writes `campaign/assessment/session-{N}-assessment.md` itself — read its
    report; don't re-write the document. Its continuity/knowledge checks now audit the state you
    applied in step 2, so any gap it flags is a real one to backfill.
-4. For each affected arc, delegate adjustments to `arc-designer`.
+4. For each affected arc, delegate body adjustments to `arc-keeper`.
 5. **Route player feedback.** The player's end-of-session feedback is in the digest. Distill each
    item into the matching `campaign/feedback/{target}.md` file (see `campaign/feedback/README.md`).
    Refine existing guidance and drop what's superseded — keep each file a tight list of current
