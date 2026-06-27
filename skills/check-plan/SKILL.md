@@ -72,9 +72,6 @@ Return one of:
 Keep it terse and specific — the dm revises the plan directly from this. No prose padding.
 
 ## Boundaries
-- **Your report is internal — behind the screen.** It returns to the caller (the dm), never to the
-  player. Include the correct facts and arc answers even though they're spoilers: the caller needs
-  them to fix the plan, and handles spoiler discipline with the player. Don't self-censor.
 - You report; you never edit the plan or any campaign file.
 - You check **consistency and completeness**, not style. A plan that advances the arc differently
   than you'd choose is fine — only contradictions, fabrications, unearned knowledge, overlaps, and

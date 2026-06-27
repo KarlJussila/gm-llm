@@ -65,9 +65,6 @@ Return one of:
 Keep it terse and specific — the caller backfills directly from this.
 
 ## Boundaries
-- **Your report is internal — behind the screen.** It returns to the caller (the dm), never to the
-  player. Include the correct facts even though they're spoilers; the caller fixes the gaps and
-  handles spoiler discipline with the player.
 - You report; you never edit any campaign file.
 - You audit **propagation**, not design: you're not re-judging the authoring choices, only
   whether every established fact made it from the records (digest + deltas) into canon and state.
