@@ -445,7 +445,7 @@ rules-checker · *plugins* (deterministic). See §7 for the lifecycle taxonomy.
 
 **Current state — snapshots, frozen during PLAY**
 | `world/**/{slug}.state.md` | apply pass·POST (digest+deltas) | dm | runner (session start), SP, NC |
-| `characters/{pc}.state.md` (PC location/HP/conditions/resources) | apply pass·POST (digest+deltas) | dm | runner (session start), SP, NC |
+| `characters/{pc}.state.md` (PC location/notable condition/key items/objective; no granular HP/slots) | apply pass·POST (digest+deltas) | dm | runner (session start), SP, NC |
 | `arcs/{arc}.state.md` | dm·POST (apply pass); AK·POST for body re-design | dm | SP, dm |
 | `state/{current,calendar,threads,clocks}.md` | apply pass·POST | dm | runner (session start), SP, NC |
 

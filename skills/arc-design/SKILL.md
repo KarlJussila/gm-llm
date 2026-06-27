@@ -18,13 +18,13 @@ the `arc-keeper` — so it is not here.
 ## Format is not your concern here — load canon-conventions + the arc templates
 
 **Load `canon-conventions` and follow it for all format**, and build the arc from the
-`arc-design` template (`arcs/{slug}.md`, the static design). The arc is a slug entity: register it
+`arc-design` template (`arcs/{slug}.md`, the design file). The arc is a slug entity: register it
 in `INDEX.md` (Arcs), link entities with `[[slug]]`, flag spoilers `[hidden]` + `Known to:`.
 
 The arc is **two files**: the **design** (`{slug}.md`, what you write) and the **state**
 (`{slug}.state.md`, a lightweight progress snapshot — written by the dm, not you). The design is a
-**living document**: it is *stable during play* (divergence is logged to the deltas log, never
-edited live), but it is **revised between sessions** by the `arc-keeper`, which assesses what
+**living document**: it is *not edited during play* (divergence is logged to the deltas log
+instead), and it is **revised every session afterward** by the `arc-keeper`, which assesses what
 structural and detail changes each arc needs after play — redirecting, accelerating, merging,
 deepening, recommitting answers — and reconciles the body toward what was actually played. The arc
 decaying into a stale status-line recap is the failure to avoid; the fix is that the *body* gets

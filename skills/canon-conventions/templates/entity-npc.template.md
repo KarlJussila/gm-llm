@@ -1,5 +1,5 @@
 <!--
-  NPC INFO file — static canon. Paired with {slug}.state.md.
+  NPC INFO file — canon (who they truly are). Paired with {slug}.state.md.
   Path: world/npcs/{slug}.md   Fill every <placeholder>; delete the guidance comments.
   Format rules: canon-conventions §3 (info/state pair) + §5 (flags). Commit every fact — no "DM decides".
 -->

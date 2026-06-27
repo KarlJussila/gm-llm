@@ -4,8 +4,8 @@
   Registered in INDEX (Arcs).
   This file is REVISED BETWEEN SESSIONS by the arc-keeper, which assesses what structural and detail
   changes each arc needs after play (redirect, accelerate, merge, deepen, recommit answers) — not
-  just a status bump. It is *stable during play* (divergence is logged to the deltas log, not edited
-  live) and reconciled afterward. "Played beats planned": revise the design toward what happened.
+  just a status bump. It is *not edited during play* (divergence is logged to the deltas log
+  instead) and reconciled afterward. "Played beats planned": revise the design toward what happened.
   THE RULE: every turning point and the central mystery COMMITS its load-bearing answer here. The
   session-planner pulls these answers. Never "DM decides". Flag spoilers [hidden] (canon-conventions §5).
 -->

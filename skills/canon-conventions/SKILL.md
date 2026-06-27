@@ -95,17 +95,19 @@ Every **stateful** entity (NPC, faction, active location, significant item, the 
 that share a slug stem and sit side by side**:
 
 - `{slug}.md` — **info / canon.** Who or what it *is*. Identity, personality, true allegiance,
-  secrets, agenda. **Static** — changes only when the underlying truth changes (rare), via a gated
-  edit.
+  secrets, agenda. Update it when the underlying truth changes — a secret is revealed, an allegiance
+  flips, who/what something is permanently shifts — via a gated edit.
 - `{slug}.state.md` — **state.** Where it *is now*. Current disposition, location, condition, what
   it's doing. **Mutable** — rewritten at session boundaries by the dm's apply pass.
 
 The **PC is a stateful entity like any other** and gets the full pair — `{slug}.md` (the sheet:
-class, abilities, fixed traits) + `{slug}.state.md` (current location, HP, conditions, resources,
-what's in hand) — **plus** one extra PC-specific file: `{slug}.knowledge.md`, the epistemic ledger
-of what the PC knows, believes, and wonders. The ledger sits *alongside* the state file; it does
-not replace it. Knowledge is not the PC's only mutable dimension — location and condition change
-too, and live in `.state.md` exactly as they do for an NPC.
+class, level, ability scores, features — update it on level-up, ability/feature change, or when a
+new spell/ability first appears) + `{slug}.state.md` (current location, notable condition, key
+items, objective) — **plus** one extra
+PC-specific file: `{slug}.knowledge.md`, the epistemic ledger of what the PC knows, believes, and
+wonders. The ledger sits *alongside* the state file; it does not replace it. **Don't track granular
+mechanical resources** (HP, spell slots, coin) in state — the player owns those; record only
+narratively significant state, exactly as for an NPC.
 
 **State files are session-boundary snapshots, not a live feed.** A `.state.md` is accurate at
 session *start* and is **frozen during play** — no agent rewrites it mid-session. During a session
@@ -206,14 +208,20 @@ One file, three jobs: **dedup guard** (owns the slug namespace), **slug→file r
 that has — or should have — a file is listed. Naming a thing in play or in a plan means it gets at
 least a registry row, so it is never silently re-invented as someone else.
 
-**What's registered:** the slug-addressed, file-backed things — NPCs, factions, locations, items,
-**regions**, and arcs. **Not** registered: the world-truth singletons (`overview/cosmology/history`)
-and the `state/*` docs (fixed paths), nor clocks/threads (they live in their dashboards, §4).
+**What's registered:** the slug-addressed, file-backed things — the **PC**, NPCs, factions,
+locations, items, **regions**, and arcs. **Not** registered: the world-truth singletons
+(`overview/cosmology/history`) and the `state/*` docs (fixed paths), nor clocks/threads (they live
+in their dashboards, §4).
 
 Format: a table per entity type. Each row maps a slug to its files, status, and a one-line "who/what."
 
 ```markdown
 # INDEX — Campaign Registry
+
+## PC
+| slug | name | status | info | state | one-line |
+|---|---|---|---|---|---|
+| bram-tully | Bram Tully | active | characters/bram-tully.md | characters/bram-tully.state.md | dockhand turned reluctant agent of the cell |
 
 ## NPCs
 | slug | name | status | info | state | one-line |

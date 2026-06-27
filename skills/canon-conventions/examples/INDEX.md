@@ -5,6 +5,11 @@
 -->
 # INDEX — Campaign Registry
 
+## PC
+| slug | name | status | info | state | one-line |
+|---|---|---|---|---|---|
+| bram-tully | Bram Tully | active | characters/bram-tully.md | characters/bram-tully.state.md | dockhand turned reluctant agent of the cell |
+
 ## NPCs
 | slug | name | status | info | state | one-line |
 |---|---|---|---|---|---|

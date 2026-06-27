@@ -1,5 +1,5 @@
 <!--
-  ITEM INFO file — static canon. Add a paired {slug}.state.md ONLY if the item is stateful
+  ITEM INFO file — canon (what it truly is). Add a paired {slug}.state.md ONLY if the item is stateful
   (custody, charges, condition change). Path: world/items/{slug}.md
   Fill every <placeholder>; delete the guidance comments. Format: canon-conventions §3 + §5.
   Significant objects/artifacts only — mundane gear lives on the character sheet.

@@ -1,5 +1,5 @@
 <!--
-  FACTION INFO file — static canon. Paired with {slug}.state.md.
+  FACTION INFO file — canon (what it truly is). Paired with {slug}.state.md.
   Path: world/factions/{slug}.md   Fill every <placeholder>; delete the guidance comments.
   Format rules: canon-conventions §3 + §5. Commit every fact — no "DM decides".
 -->

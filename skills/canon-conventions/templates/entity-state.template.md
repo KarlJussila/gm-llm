@@ -17,7 +17,8 @@ as-of: S<n>
 <Stance toward the PC / the current situation as of now — may differ from the baseline in the info file.>
 
 ## Condition
-<Health, status effects, resources, capacity — whatever's mutable and relevant.>
+<Narratively significant condition — wounded, captured, depleted, empowered. NOT point-by-point HP
+or resource counts; record what's worth remembering for the story.>
 
 ## Doing now / immediate intent
 <What this entity is currently up to or about to do.>

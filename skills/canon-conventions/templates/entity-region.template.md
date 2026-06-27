@@ -1,5 +1,5 @@
 <!--
-  REGION INFO file — static canon, map-scale. Add a paired {slug}.state.md ONLY if control/
+  REGION INFO file — canon, map-scale. Add a paired {slug}.state.md ONLY if control/
   occupation is contested and shifts. Path: world/regions/{slug}.md
   Fill every <placeholder>; delete the guidance comments. Format: canon-conventions §3 + §5.
   Regional history lives HERE as a section — it is not its own entity.

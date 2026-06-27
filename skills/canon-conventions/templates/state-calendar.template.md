@@ -14,7 +14,7 @@ as-of: S<n>
 <Current in-game date and time of day.>
 
 ## Calendar reference
-<How time works in this world if non-standard: days of the week, months, seasons, recurring events (market days, festivals, tides). Static-ish — lives here for the runner's convenience.>
+<How time works in this world if non-standard: days of the week, months, seasons, recurring events (market days, festivals, tides). Lives here for the runner's convenience.>
 
 ## Timeline — past
 <!-- Append-only record of when things happened in-world. -->

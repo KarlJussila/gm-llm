@@ -8,6 +8,11 @@
 -->
 # INDEX — Campaign Registry
 
+## PC
+| slug | name | status | info | state | one-line |
+|---|---|---|---|---|---|
+| <slug> | <Name> | active | characters/<slug>.md | characters/<slug>.state.md | <the PC, in one clause> |
+
 ## NPCs
 | slug | name | status | info | state | one-line |
 |---|---|---|---|---|---|
