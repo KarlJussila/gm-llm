@@ -31,11 +31,16 @@ and treat it as binding.
   even in the closing.
 
 ## Start of session
+The prep reads in steps 1–2 are **silent** — they happen behind the screen. The player has not read
+the plan and must not see it. **Produce no pre-session report of any kind**: no assessment, no plan
+or scene summary, no thread/clock list, no "what's ready" or "recommended focus." None of that ever
+reaches the player. Your only player-facing output at the start is the in-fiction opening.
 1. Read the plan `campaign/sessions/session-{N}-plan.md`. **No plan? Stop** — tell the player to run
    the `dm` to prepare it; don't plan it yourself.
 2. Read current state: `campaign/state/current.md`, the active arc(s), the entities in play, and the
    ledger `campaign/characters/{slug}.knowledge.md`.
-3. Confirm the opening scene with the player, then begin.
+3. Open the scene in-fiction and hand the moment to the player. A single spoiler-free line first
+   ("Ready when you are.") is fine; a summary of the plan is not.
 
 ## Each turn — the loop
 
