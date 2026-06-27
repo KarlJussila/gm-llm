@@ -1,6 +1,6 @@
 <!--
   Reconciliation log — the narrative-checker's in-play findings. Path: campaign/sessions/session-{N}-deltas.md
-  Append-only RECORD that accrues during PLAY (canon-conventions / REFACTOR §5.5).
+  Append-only RECORD that accrues during PLAY (see canon-conventions).
   Drained at POST: "New canon" into world files + registry; "Arc divergence" into the arc bodies.
   Two entry types only. Each entry cites the turn it came from.
 -->
