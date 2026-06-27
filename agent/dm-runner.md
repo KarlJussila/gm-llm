@@ -60,15 +60,14 @@ binding.
 4. **Write the turn in full** — the world's and NPCs' response as actual narration prose (the real
    text you'd send, not an outline), applying the `session-run` table craft.
 5. **Gate the draft before it reaches the player — every turn, no exceptions.** Dispatch **both**
-   checkers **in parallel** (two `task` calls in one batch), passing **only your drafted turn** — no
-   preamble, and don't tell the checker what to check (it has its own instructions). The checkers
-   self-serve everything else themselves (the player's messages and scene from the transcript, canon
-   and the ledger from the files).
-   - **`narrative-checker`**, role **`check-turn`** — canon/consistency/spoilers; logs the deltas itself.
-   - **`rules-checker`** — table conduct.
-   Each returns a violation list or `PASS`.
-6. **Self-correct** against the union of both lists in **one bounded pass** (fix what they flagged;
-   don't re-loop). The checkers are **authoritative** — resolve every violation before sending.
+   checkers **in parallel** (two `task` calls in one batch), each with **only your drafted turn as
+   the input** — nothing else. No preamble, no list of what to check, no files to verify against, no
+   "return PASS or violations." They already have their own instructions and find their own context;
+   adding any of that only derails them.
+   - **`narrative-checker`**, role **`check-turn`**
+   - **`rules-checker`**
+6. **Apply whatever they return**, in **one bounded pass** (fix what they flag; don't re-loop). They
+   are **authoritative** — resolve everything before sending.
 7. **Send** the corrected turn — **only the in-fiction narration, and lead with the fiction.** The
    player must not be able to tell a gate ran. No preamble, no "corrected turn:", no "my draft had
    X wrong", no narrating what you fixed, no citing canon or the checkers. Never paste or paraphrase

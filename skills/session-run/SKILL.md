@@ -59,22 +59,32 @@ or stage directions to yourself ("describe the room, then hand it back"). Write 
 first; the thing you check is that finished text. If you haven't written the turn, there's nothing
 to check.
 
-- **Dispatch both at once.** Issue two `task` calls in a single batch — don't wait on one before the
-  other:
-  - **`narrative-checker`**, role **`check-turn`** — canon/consistency and spoiler discipline. It
-    logs the turn's new-canon and arc-divergence deltas itself, so you don't have to.
-  - **`rules-checker`** — table conduct (agency, dice, metagame, pacing).
-- **Submit only your drafted turn — nothing else.** No preamble, and **don't tell the checker what
-  to check** (it has its own instructions). The checkers self-serve all their context themselves —
-  the player's messages and the scene so far from the running transcript, and (for the
-  narrative-checker) canon and the ledger. You don't relay any of it.
-- **They return violations, not rewrites.** Each gives `PASS` or a numbered list with the correct
-  facts and a fix instruction.
-- **Self-correct in one bounded pass.** Apply the union of both lists — fix exactly what they
-  flagged, then send. Don't re-draft wholesale or run the gate again; a "defer / don't assert it"
-  fix can't reintroduce the same class of problem.
-- **The checkers are authoritative.** Resolve every violation before the turn reaches the player —
-  cut the spoiler, ground the fabricated detail, call the missed roll.
+- **Dispatch both at once.** Issue two `task` calls in a single batch (don't wait on one before the
+  other):
+  - **`narrative-checker`**, role **`check-turn`**
+  - **`rules-checker`**
+- **The task input is your drafted turn and nothing else.** No preamble, no list of what to check,
+  no files to verify against, no "return PASS or violations." Each checker already has its own
+  instructions and finds its own context (the transcript, canon, the ledger); appending your own
+  verification instructions only derails it.
+
+  **Send exactly this — the bare draft:**
+  ```
+  The common room is low and smoke-stained, every table full. The barkeep looks up as the door
+  bangs shut, sets down his pitcher, and waits — his eyes lingering a moment too long on your face.
+  ```
+  **Not this** — preamble, a checklist, file paths, and an output instruction are all noise:
+  ```
+  Verify this drafted turn against the campaign canon and the PC ledger. Opening narration; no
+  player action yet.
+  DRAFTED TURN:
+  The common room is low and smoke-stained…
+  Please verify against: 1. campaign/campaign.md  2. campaign/characters/{pc}.md  3. …
+  Return PASS or a list of violations.
+  ```
+- **Apply whatever they return, in one bounded pass.** Fix exactly what they flag, then send — don't
+  re-draft wholesale or run the gate again. The checkers are **authoritative**: resolve everything
+  before the turn reaches the player.
 
 The gate is invisible to the player. When you send the corrected turn, send **only the in-fiction
 narration, starting at the first word of the scene** — no preamble, no "corrected turn:", no "my
