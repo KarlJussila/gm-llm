@@ -47,49 +47,23 @@ Running a session is this loop, repeated:
 
 The sections below elaborate each step.
 
-## The per-turn gate — every turn, before the player sees it
+## Checking each turn
 
-A drafted turn does not go straight to the player. First submit it to two independent checkers, in
-parallel, and fix what they flag. This is unconditional — every turn, no exceptions. It costs one
-round-trip and keeps you from shipping a contradiction, a fabrication, or a spoiler.
+Two checkers proofread every turn before the player sees it. After you write the turn (step 4):
 
-**What "the draft" is:** the **complete turn you're about to send** — the actual narration text the
-player would read, written out in full, in your own DM voice. It is **not** an outline, a summary,
-or stage directions to yourself ("describe the room, then hand it back"). Write the real prose
-first; the thing you check is that finished text. If you haven't written the turn, there's nothing
-to check.
+1. Call **`narrative-checker`** (role `check-turn`) and **`rules-checker`** — both at once.
+2. **The message you send each one is your turn text, copied verbatim — nothing else.** No preamble,
+   no instructions, no file list. They know their jobs and find their own context.
+3. **Fix whatever they report**, then send the player **only the finished narration** — never
+   mention the check, the draft, or what you changed.
 
-- **Dispatch both at once.** Issue two `task` calls in a single batch (don't wait on one before the
-  other):
-  - **`narrative-checker`**, role **`check-turn`**
-  - **`rules-checker`**
-- **The task input is your drafted turn and nothing else.** No preamble, no list of what to check,
-  no files to verify against, no "return PASS or violations." Each checker already has its own
-  instructions and finds its own context (the transcript, canon, the ledger); appending your own
-  verification instructions only derails it.
+The message to a checker is *just the turn*, like this:
 
-  **Send exactly this — the bare draft:**
-  ```
-  The common room is low and smoke-stained, every table full. The barkeep looks up as the door
-  bangs shut, sets down his pitcher, and waits — his eyes lingering a moment too long on your face.
-  ```
-  **Not this** — preamble, a checklist, file paths, and an output instruction are all noise:
-  ```
-  Verify this drafted turn against the campaign canon and the PC ledger. Opening narration; no
-  player action yet.
-  DRAFTED TURN:
-  The common room is low and smoke-stained…
-  Please verify against: 1. campaign/campaign.md  2. campaign/characters/{pc}.md  3. …
-  Return PASS or a list of violations.
-  ```
-- **Apply whatever they return, in one bounded pass.** Fix exactly what they flag, then send — don't
-  re-draft wholesale or run the gate again. The checkers are **authoritative**: resolve everything
-  before the turn reaches the player.
+> The common room is low and smoke-stained, every table full. The barkeep looks up as the door
+> bangs shut, sets down his pitcher, and waits — his eyes lingering a moment too long on your face.
 
-The gate is invisible to the player. When you send the corrected turn, send **only the in-fiction
-narration, starting at the first word of the scene** — no preamble, no "corrected turn:", no "my
-draft had X wrong," no citing canon or the checkers, no narrating what you changed. The whole
-check-and-correct loop is silent; the player experiences only the finished turn, in flow.
+Don't wrap it in anything — no "verify this against canon," no file list, no "return PASS or
+violations." That's noise, and it derails the checker.
 
 ## Real-Time Functions
 
