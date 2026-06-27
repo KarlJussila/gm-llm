@@ -318,9 +318,13 @@ This generalizes the one artifact that already works best: `dallid.md` +
 `dallid-knowledge.md`. The `.state.md` suffix (not a directory split) carries the
 static/live distinction, so entity pairs keep **locality** while state stays
 greppable (`**/*.state.md`). **Non-stateful** canon (cosmology, the Severing lore,
-geography) has no state file. The arc gets the same treatment: `…-flesh.md` (design,
-static) + `…-flesh.state.md` (progress: which turning points hit, accumulated
-divergence) — which retires the overloaded status-line.
+geography) has no state file. The arc gets a related but distinct treatment: `…-flesh.md`
+(the **living design** — premise, turning points, committed answers; revised *between
+sessions* by the arc-keeper, stable during play) + `…-flesh.state.md` (a lightweight
+progress snapshot: status, which turning points hit, position on the tension curve) —
+which retires the overloaded status-line **without** freezing the design. The arc body
+is not static: the keeper assesses and applies structural/detail changes to each arc
+every session (§5.9); divergence is reconciled *into* the body, not parked in state.
 
 ### 5.2 Global / relational state — state owned by no entity
 Some state belongs to a *relationship* or to the session, not to any one entity. It
