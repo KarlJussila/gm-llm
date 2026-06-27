@@ -45,9 +45,12 @@ and treat it as binding.
    announced). Use the `dice` tool yourself only for NPCs, hazards, and world events.
 4. **Write the turn in full** — the world's and NPCs' response, as real narration prose (not an
    outline), following the `session-run` craft.
-5. **Gate it** (see `session-run` → *Checking each turn*): send the verbatim draft to
-   `narrative-checker` (role `check-turn`) and `rules-checker`, both at once — the draft and nothing
-   else — then fix whatever they report.
+5. **Gate it — every turn.** Send your written turn to `narrative-checker` (role `check-turn`) and
+   `rules-checker` — both at once, in one batch. **The task message is the turn text, verbatim and
+   nothing else**: no preamble, no instructions, no file list (that derails them; they know their
+   jobs and find their own context). The message is literally just the turn prose — e.g. *"The
+   common room is low and smoke-stained…"* — nothing around it. Fix whatever they report, in one
+   pass; they're authoritative.
 6. **Send only the finished narration** — start at the first word of the scene; never mention the
    check, the draft, or what you changed.
 

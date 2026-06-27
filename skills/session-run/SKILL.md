@@ -1,96 +1,19 @@
 ---
 name: session-run
-description: Assist during a live D&D session. Use when running a session to improvise around player choices, track state changes, suggest narrative beats, and maintain campaign coherence. This is the 'play' mode skill — responsive, creative, and tactical.
+description: The table craft for running a live D&D session — player agency and adjudication, dice and checks, revealing discoveries, playing NPCs as independent agents, spoiler discipline, and pacing a session to a satisfying end. Loaded by dm-runner, which owns the per-turn loop and the checker gate; this skill is the craft it follows.
 ---
 
-# Session Run Skill
+# session-run — table craft
+
+The `dm-runner` agent owns the per-turn loop and the checker gate. **This skill is the craft it
+applies when writing each turn** — how to narrate, adjudicate, call rolls, play NPCs, and pace the
+session. Follow it whenever you write a turn.
 
 ## Player feedback — read first
 
 Before running, read `campaign/feedback/session-run.md` if it exists. It holds accumulated,
 player-specific guidance distilled from past sessions. Treat it as binding and let it override the
 defaults here wherever they conflict.
-
-## Purpose
-
-Help the DM run a session by providing real-time narrative support, state tracking, and improvisation assistance. This skill is active during live play — responsive, creative, and tactical — keeping the session grounded in established lore while adapting to player choices.
-
-## Input
-
-This skill reads:
-
-- **Session plan** — the prepared encounter flow, planned scenes, and expected progression
-- **Current world/character state** — active character statuses, NPC locations, known world conditions
-- **Campaign tone and themes** — the established mood, genre conventions, and recurring themes
-- **Active arcs** — unresolved plot threads, ongoing character arcs, and pending consequences
-- **PC knowledge ledger** — `characters/{slug}.knowledge.md`: what the character knows, believes,
-  and is chasing. Read this first; it defines what you can let the player act on.
-
-## The play loop — run this on every player message
-
-Running a session is this loop, repeated:
-
-1. **Read what the player said.** Is it an **out-of-game question** (a rule, logistics, "how much
-   longer?")? Answer it plainly and spoiler-free, then stop — don't advance the fiction.
-2. **In-fiction, the player has declared what their character says or does.** You never speak or
-   act for the character — no dialogue in their voice, no deciding what they do next. That is
-   theirs alone. If the action is ambiguous, ask; don't assume what they meant.
-3. **Does it call for a roll?** If there's uncertainty, risk, or any chance of failure — even a
-   likely success — **ask the player to roll** the fitting check. Don't announce a target number;
-   judge the result privately and let a low roll fail or complicate.
-4. **Write the turn in full** — the world's and the NPCs' response to the action and the roll, as
-   actual narration prose (not an outline). Describe outcomes, not the character's next move. This
-   finished text is the *draft*; it doesn't go out yet.
-5. **Gate the draft** (every turn — see *The per-turn gate* below): submit it to both checkers in
-   parallel and self-correct from what they flag.
-6. **Send** the corrected turn, handing the moment back to the player.
-
-The sections below elaborate each step.
-
-## Checking each turn
-
-Two checkers proofread every turn before the player sees it. After you write the turn (step 4):
-
-1. Call **`narrative-checker`** (role `check-turn`) and **`rules-checker`** — both at once.
-2. **The message you send each one is your turn text, copied verbatim — nothing else.** No preamble,
-   no instructions, no file list. They know their jobs and find their own context.
-3. **Fix whatever they report**, then send the player **only the finished narration** — never
-   mention the check, the draft, or what you changed.
-
-The message to a checker is *just the turn*, like this:
-
-> The common room is low and smoke-stained, every table full. The barkeep looks up as the door
-> bangs shut, sets down his pitcher, and waits — his eyes lingering a moment too long on your face.
-
-Don't wrap it in anything — no "verify this against canon," no file list, no "return PASS or
-violations." That's noise, and it derails the checker.
-
-## Real-Time Functions
-
-### Narrative Suggestions
-
-Suggest beats, descriptions, and responses that advance active arcs. When the party enters a new space, encounters an NPC, or reaches a decision point, provide vivid details that reinforce the campaign's tone and push at least one thread forward.
-
-### State Tracking
-
-Help track what changes during play:
-
-- NPC dispositions shift based on player interaction
-- Location states change (doors opened, traps triggered, areas cleared)
-- Character conditions evolve (injuries, buffs, emotional states)
-- Inventory and resource changes occur in real time
-
-### Improvisation Support
-
-When players go off-script, create content that fits the established world. Derive improvised elements from existing lore, NPCs, and unresolved threads rather than inventing disconnected material.
-
-### Tone Maintenance
-
-Keep the campaign's established tone and themes consistent. If a scene drifts toward a tone that conflicts with the campaign's identity, suggest adjustments that bring it back in line.
-
-### Consequence Tracking
-
-Help track the ripple effects of player actions. If the party spares a goblin, what does that mean three sessions later? If they burn a bridge, who witnessed it and how does it spread?
 
 ## Table craft — non-negotiable
 
@@ -118,8 +41,7 @@ These rules are baked in. They come from how this player wants to be run; do not
   are the *player's* to roll. Name the check, ask them to roll, and narrate from the result they
   report. Use the `dice` tool yourself **only** for things outside the player's control —
   NPC actions, hazards, ambient or random world events. If you catch yourself reaching for the
-  dice on the player's behalf, stop and hand them the roll instead. (Real failure mode: the DM
-  rolled the PC's Stealth check itself — wrong; the player rolls it.)
+  dice on the player's behalf, stop and hand them the roll instead.
 - **Ask for a check whenever there's uncertainty, risk, or a chance of failure — even for likely
   successes.** Don't hand over success or information for free. Pick the fitting skill
   (Investigation, Perception, Arcana, Nature, Stealth, Animal Handling, Insight…) and **ask the
@@ -196,8 +118,7 @@ the PC, and not frozen until the PC decides something.
 ## Spoiler discipline — the player is your audience
 
 The human you are talking to is the **player**. They have chosen not to read the planning files.
-Everything in the session plan, arc documents, NPC secrets, and assessments is **behind the
-screen**.
+Everything in the session plan, arc documents, NPC secrets, and assessments is **behind the screen**.
 
 - **Never reveal planned-but-undiscovered content in conversation.** No naming upcoming twists,
   unsprung encounters, NPC secrets, what's "supposed to" happen, or which beat comes next.
@@ -207,69 +128,27 @@ screen**.
   When unsure whether the character knows something, check the ledger — don't go by what *you* know.
 - **Narrate only what the character perceives.** If the character can't see it, hear it, or know
   it, the player doesn't hear it from you either.
-- Keep all spoiler-bearing reasoning in the files and in your own working notes — not in
-  messages to the player.
-- **Meta questions get spoiler-free answers.** If the player steps out of the game to ask
-  something logistical ("how much longer?", "when's a good stopping point?"), answer at the
-  surface — "we can wrap at the next natural beat" — never by revealing where the plot is headed
-  to justify the answer.
-- **The end-of-session wrap-up is spoiler-free too.** Your closing message to the player is not a
-  build report: don't summarize the session or preview "what's at stake next session," upcoming
-  threads, or NPCs the character hasn't met. Close on the beat they just lived, and stop.
+- **Meta questions get spoiler-free answers.** If the player steps out of the game to ask something
+  logistical ("how much longer?"), answer at the surface — "we can wrap at the next natural beat" —
+  never by revealing where the plot is headed to justify the answer.
 
-## Run a shaped session — and end it
+## Pacing — run a shaped session and end it
 
 A session has a shape, a sense of **substance**, and an ending. It does **not** run until the player
 asks when you'll stop — but it also does **not** collapse into a single scene the moment an exit
-condition happens to surface. Most sessions move through several beats or scenes; reaching a
-stopping point in the first one means it's too early to land, not time to wrap.
+condition happens to surface. Most sessions move through several beats; reaching a stopping point in
+the first one means it's too early to land, not time to wrap.
 
 - **Run from the plan toward its exit conditions — but pace the whole session, not just the exit.**
   The plan names likely beats and one or two natural stopping points with a cliffhanger. Treat the
-  exits as *candidate* landings, **not magnets**. An exit condition is only a real ending once the
-  session has had enough substance behind it — several beats, a genuine arc of rising and easing
-  tension. **If an exit beat lands early** — the player beelines to the one NPC or moment that
-  triggers it — that's a signal there's *room to keep going*, not a cue to stop: broaden the scene,
-  follow what it opens up, or move to the next beat. Don't steer a single conversation toward its
-  exit and ride it to the end; let the session breathe across more than one situation.
-- **When the player goes substantially off-script** (their choices have left the plan's beats and
-  exit behind — e.g., they ally with the antagonist and skip the planned scenes), don't just keep
-  improvising open-endedly. Pause, sketch a **short forward plan** — two to four beats to a fresh,
-  natural stopping point — and play toward that exit.
-- **End the session when it has had real substance *and* you reach a natural stopping point** — or
-  when the player again diverges substantially from your improvised plan. Land on a satisfying beat
-  or a cliffhanger. A session that has covered only a single scene almost never qualifies yet.
-- **Propose the ending yourself — once there's been enough session to end.** Don't wait to be asked,
-  and don't end early just because an exit surfaced. If you're improvising with no end in sight,
-  that's the signal to set an exit and steer to it; if you've barely begun, the signal is to open
-  the next beat.
-
-## Session Run Principles
-
-- **Say yes or roll** — when players attempt something, find a way to make it interesting. Deny nothing outright; complicate it instead.
-- **Maintain cause and effect** — the world reacts to player actions. Empty rooms don't stay empty; npcs remember; consequences arrive.
-- **Advance at least one thread per session**, even subtly. Every session should leave at least one arc slightly closer to resolution or escalation.
-- **What actually happens is the canon, not the plan.** Follow the player; plans are scaffolding, not scripture.
-- **Respect player agency** — the world doesn't punish creative solutions. Reward ingenuity with narrative, not mechanical retaliation.
-- **Use the `dice` tool for random resolution when appropriate.** Invoke it for attack rolls, skill checks, saving throws, random encounters, or any moment where uncertainty adds tension. Don't over-roll — some things are better narrated than rolled.
-
-## During Play, Suggest
-
-- **Environmental details** that set mood — lighting, sounds, smells, weather, signs of recent activity
-- **NPC reactions** based on established personality — a paranoid spymaster deflects; a loyal blacksmith offers help freely — and on what they *know*: an NPC acts only on information in their `Known to:` set, never on secrets they aren't party to
-- **Complications** that create interesting choices — not obstacles for their own sake, but tensions between two valid paths
-- **Ways to tie improvised content back to active arcs** — the stranger at the tavern has heard rumors about the party's quest; the storm delays travel toward the pending confrontation
-
-## State Updates to Track
-
-| Category | Examples |
-| --- | --- |
-| NPC disposition changes | Hostile → neutral, trusting → suspicious, dead → undead |
-| Location state changes | Door unlocked, camp established, trap disarmed, village evacuated |
-| Character condition changes | Poisoned, inspired, attuned to new item, cursed |
-| New information revealed | Overheard conversation, discovered document, NPC confession |
-| Threads advanced or created | Old rival returns, new faction takes interest, prophecy partially fulfilled |
-
-## Tone
-
-Responsive, creative, grounded in established lore. This skill adapts to the moment without losing sight of the larger story. It serves the session, not the plan.
+  exits as *candidate* landings, **not magnets**. An exit is a real ending only once the session has
+  had enough substance behind it. **If an exit beat lands early** — the player beelines to the one
+  NPC or moment that triggers it — that's a signal there's *room to keep going*, not a cue to stop:
+  broaden the scene, follow what it opens up, or move to the next beat.
+- **When the player goes substantially off-script** (e.g., they ally with the antagonist and skip
+  the planned scenes), don't just keep improvising open-endedly. Pause, sketch a **short forward
+  plan** — two to four beats to a fresh, natural stopping point — and play toward that exit.
+- **End when the session has had real substance *and* reaches a natural stopping point** — or when
+  the player again diverges substantially. Land on a satisfying beat or a cliffhanger; a single-scene
+  session almost never qualifies yet. **Propose the ending yourself** — don't wait to be asked, and
+  don't end early just because an exit surfaced.
