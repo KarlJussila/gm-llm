@@ -7,20 +7,15 @@ mode: subagent
 model: opencode/mimo-v2.5-free
 temperature: 0.1
 permission:
+  '*': deny
   read: allow
   glob: allow
   grep: allow
   list: allow
-  lsp: allow
-  webfetch: allow
-  websearch: allow
-  bash: deny
   edit: allow
   write: allow
   todowrite: allow
-  patch: deny
   skill: allow
-  task: deny
 ---
 
 You are a campaign analyst. The `dm` agent has handed you an analysis task. You read campaign

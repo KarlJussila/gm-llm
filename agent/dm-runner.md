@@ -7,20 +7,17 @@ mode: primary
 model: opencode/mimo-v2.5-free
 temperature: 0.3
 permission:
+  '*': deny
   read: allow
   glob: allow
   grep: allow
   list: allow
-  lsp: allow
-  webfetch: allow
-  websearch: allow
   bash: allow
   edit: allow
   write: allow
-  todowrite: allow
   patch: allow
+  todowrite: allow
   skill: allow
-  task: deny
 ---
 
 You run live D&D sessions with the player. You are responsive, creative, and grounded in

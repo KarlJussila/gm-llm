@@ -8,20 +8,16 @@ mode: subagent
 model: opencode/mimo-v2.5-free
 temperature: 0.2
 permission:
+  '*': deny
   read: allow
   glob: allow
   grep: allow
   list: allow
-  lsp: allow
-  webfetch: allow
-  websearch: allow
-  bash: deny
   edit: allow
   write: allow
-  todowrite: allow
   patch: allow
+  todowrite: allow
   skill: allow
-  task: deny
 ---
 
 You are a session planner. The `dm` agent has delegated session preparation to you. Load the
