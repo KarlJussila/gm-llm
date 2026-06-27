@@ -136,12 +136,15 @@ player message
   scene-so-far from the running transcript (`session-{N}-transcript.md`), and for the
   narrative-checker, the relevant canon files. The runner is no longer responsible for
   forwarding player messages or guessing what context a checker wants.
-- **Tooling / permissions.** `[DECIDED]` Both checkers get **read-only retrieval**
-  tools: `read`, `grep`, `glob`, `list`, and `bash` (to `tail`/`grep` the transcript
-  and pull files quickly). Their prompts scope that usage tightly enough that broad
-  tools aren't a concern. They **cannot mutate state**: `edit`, `write`, `patch`,
-  `task`, `webfetch`, `websearch` all denied — they report violations, they don't
-  change anything.
+- **Tooling / permissions.** `[DECIDED]` Permission pattern is **`'*': deny` then allow**
+  the specific tools (default-deny via wildcard, not piecewise). Both checkers get
+  **read retrieval**: `read`, `grep`, `glob`, `list`, `bash` (to `tail`/`grep` the
+  transcript and pull files), `todowrite` (each role builds its step checklist first),
+  and `skill` (to load its role skill). They do **not** touch canon: `edit`, `patch`,
+  `task`, `webfetch`, `websearch` denied. **One carve-out (§6 fork → a):** the
+  narrative-checker gets `write`, scoped by prompt to the single
+  `session-{N}-deltas.md` log (not canon) — it writes its own deltas so the runner
+  doesn't have to (keep the runner in creative flow). The rules-checker writes nothing.
 - **Runner needs `task` permission.** Currently `task: deny` in `dm-runner.md`. It must
   be allowed to call the checkers. It still does not plan/assess/adjust — it stays in
   the chair, but is allowed to consult. `[DECIDED]`
@@ -173,8 +176,9 @@ instruction:** for any NPC, location, item, faction, or documented fact *named* 
 drafted turn, **find and read its file** (grep the registry/`world/`) and verify the
 runner's details against it. It also pulls recent transcript turns for in-session
 context. Its consistency baseline is **canon ∪ state-at-session-start ∪ this-session
-transcript**, with the transcript superseding the (frozen) state snapshot for anything
-play has moved past — see §5.3. Supplies the runner the *correct* information it's
+transcript ∪ this-session deltas** (the new canon it has already logged this session),
+with transcript + deltas superseding the (frozen) state snapshot for anything play has
+moved past — see §5.3. Supplies the runner the *correct* information it's
 trampling, not just a flag. It also owns **spoiler discipline** (moved here from the
 rules-checker, because judging "did this reveal something the PC hasn't learned?"
 requires the knowledge ledger). `[PROPOSED for the spoiler move]`
@@ -453,7 +457,7 @@ narrative-checker, `RC` rules-checker · *plugins* (deterministic). World/arc au
 | `sessions/session-N-plan.md` | SP·PRE (bundle); revised by dm·PRE | dm | runner, NC, CA |
 | `sessions/session-N-transcript.md` | transcript plugin·PLAY (auto) | — | LE, CA, NC (in-session) |
 | `sessions/session-N.md` (digest) | LE·POST (from transcript) | dm | CA, dm (apply) |
-| `sessions/session-N-deltas.md` (reconciliation log) | NC·PLAY *(or plugin — §6)* | — | dm apply pass·POST |
+| `sessions/session-N-deltas.md` (reconciliation log) | NC·PLAY (narrow write, scoped to this file) | — | dm apply pass·POST |
 | `assessment/session-N-assessment.md` | CA·POST (from digest) | — | dm, SP (next PRE) |
 | `documents/*` (verbatim handouts) | LE/apply pass·POST (routed from transcript) | dm | runner, SP, NC |
 
@@ -490,19 +494,14 @@ the harmless-color threshold (log every new entity, block only contradictory/
 load-bearing). The one carried dependency is the new-canon **log destination**, which
 ships with the planning-side work (§4–§5).
 
-**One fork the runner side actually depends on — how checker findings reach the
-reconciliation log:**
-
-- **(a) Narrow append-only write for the narrative-checker.** A deliberate carve-out
-  from "checkers can't mutate state," scoped to the single `session-{N}-deltas.md`
-  scratch file — never canon. Simple to ship. Risk: a checker with any write access
-  could stray; relies on prompt scoping (and path-scoped permission if enforceable).
-- **(b) Extend capture to record checker verdicts.** The checker returns a structured
-  verdict; a plugin (the existing capture, extended) writes the new-canon/divergence
-  entries to the log. Keeps *all* agents write-free — consistent with the existing
-  "the runner just plays; this records" philosophy and with the hard lesson that
-  agents won't reliably self-document. More plumbing (track checker subagent sessions,
-  parse their output). `[OPEN — leaning (b) for consistency, (a) to ship fast]`
+**How checker findings reach the reconciliation log — RESOLVED → (a).** The
+narrative-checker **writes `session-{N}-deltas.md` itself** (a `write` carve-out scoped
+by prompt to that one non-canon file). Chosen over the plugin route to **keep the runner's
+load minimal** — the runner should stay in creative flow and never handle bookkeeping; the
+checker is already reading everything it needs to produce the deltas, so it logs them and
+returns only the violation list. The checker also reads the deltas it has already written
+this session, so its own logged canon is part of its consistency baseline (§3b).
+*(Rejected (b) plugin-capture: more plumbing, and the checker is the natural writer here.)*
 
 **Documentation model: designed** (§5) — info/state sibling pairs (`.state.md`
 suffix), global state docs, snapshot timing, registry/slug resolver, slug wikilinks +
@@ -521,9 +520,6 @@ all state (single auditor; matrix is its runbook). The only delegated file-write
 craft skills**, not builder/keeper agents (post-M1).
 
 Still open:
-- **Reconciliation-log write mechanism** (§3 a/b): NC narrow-write vs. plugin
-  capture. *(Least-privilege + the player-facing principle both nudge toward (b): keep
-  the runtime layer write-free and deterministic.)*
 - **Planning flow (§4): designed `[DECIDED]`** — the one rule (commit facts / leave path
   open), the dm-orchestrated PRE bundle, the `session-planner` contract, the dm PRE
   review-gate (reusing `narrative-checker`), "never say DM decides." Confirmed:
