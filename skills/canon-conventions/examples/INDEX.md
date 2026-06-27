@@ -22,6 +22,11 @@
 | saltgate | Saltgate | active | world/locations/saltgate.md | world/locations/saltgate.state.md | occupied port town; the campaign's home base |
 | old-watchtower | The Old Watchtower | dormant | world/locations/old-watchtower.md | world/locations/old-watchtower.state.md | abandoned headland tower the cell uses for signals |
 
+## Regions
+| slug | name | status | info | state | one-line |
+|---|---|---|---|---|---|
+| saltcoast | The Saltcoast | active | world/regions/saltcoast.md | world/regions/saltcoast.state.md | occupied coastal strip; contains Saltgate |
+
 ## Arcs
 | slug | name | status | design | state | one-line |
 |---|---|---|---|---|---|

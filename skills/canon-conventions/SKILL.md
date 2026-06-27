@@ -13,11 +13,17 @@ and never drift. *What* to write is each agent's own job; *how* to write it is h
 Read this before authoring or editing anything under `campaign/`. When this skill and an agent's
 own prompt both speak to format, this skill wins.
 
-**Templates and a worked example ship alongside this skill.** Copy from `templates/` (one per file
-type — entity info/state, `INDEX`, the four `state/*` docs, the session deltas log) and fill every
-`<placeholder>`, deleting the `<!-- guidance -->` comments. See `examples/` for a complete filled
-entity pair (`lysa-fenn.md` + `.state.md`) and a sample `INDEX.md` showing the target shape — the
-generic illustrative cast there carries through this skill's examples too.
+**Templates and a worked example ship alongside this skill.** Copy from `templates/` and fill every
+`<placeholder>`, deleting the `<!-- guidance -->` comments. There is one template per shape:
+- **Typed entity info** — `entity-npc`, `entity-faction`, `entity-location`, `entity-item`,
+  `entity-region` (each type has a different body; pick the matching one).
+- **`entity-state`** — one shared state shape for every stateful entity.
+- **World-truth docs** — `world-overview`, `world-cosmology`, `world-history` (non-entity setting
+  prose; see §3).
+- **`INDEX`**, the four **`state/*`** docs, and the **session deltas** log.
+
+See `examples/` for a complete filled entity pair (`lysa-fenn.md` + `.state.md`) and a sample
+`INDEX.md` — the generic illustrative cast there carries through this skill's examples too.
 
 ---
 
@@ -53,8 +59,8 @@ campaign/
 ├── INDEX.md                         # the registry / slug resolver (see §6)
 ├── campaign.md                      # premise, spoiler-free pitch
 ├── world/
-│   ├── cosmology.md  overview.md    # non-stateful world truth (no .state.md)
-│   ├── regions/      {slug}.md
+│   ├── overview.md  cosmology.md  history.md   # world-truth singletons (no slug, no .state.md, not in INDEX)
+│   ├── regions/      {slug}.md (+ {slug}.state.md if control is contested)
 │   ├── npcs/         {slug}.md + {slug}.state.md
 │   ├── factions/     {slug}.md + {slug}.state.md
 │   ├── locations/    {slug}.md + {slug}.state.md
@@ -73,7 +79,11 @@ campaign/
 └── feedback/         per-skill player-feedback files
 ```
 
-- **Non-stateful canon** (cosmology, the deep lore, fixed geography) gets **no** `.state.md`.
+- **World-truth singletons** — `overview.md`, `cosmology.md`, `history.md` — are non-entity setting
+  prose at fixed paths. They have **no slug, no `.state.md`, and no `INDEX` row** (like the `state/*`
+  docs). `history.md` is the world's **backstory** — the past that produced the present — and is
+  distinct from `state/calendar.md`, which is the *live* in-game clock (now and forward).
+- **Regional history** is a **section inside each region file**, not its own entity.
 - **Verbatim handouts** — the exact text of a letter, an inscription, an NPC's quoted line meant to
   be read aloud — go in `documents/`, not buried inside a digest or an entity file.
 
@@ -113,16 +123,17 @@ status: active       # active | dormant | dead | destroyed | hidden | named-only
 ---
 ```
 
-Body sections (adapt to type; omit what doesn't apply):
-- **Identity / Public role** — what's openly apparent.
-- **Personality / mannerisms** (NPC) or **Goals & methods** (faction) or **Description &
-  significance** (location/item).
-- **Deeper layer / true nature** — the real story, including hidden allegiances.
-- **Agenda / what they want.**
-- **What they know** — facts this entity is aware of (gates how they can act).
-- **Disposition toward the PC.**
-- **Secrets** — flagged per §5.
-- **Links** — `[[slug]]` references to related entities, arcs, threads (see §4).
+**The frontmatter above is universal; the body differs by type — use the matching template** in
+`templates/` (`entity-npc`, `entity-faction`, `entity-location`, `entity-item`, `entity-region`).
+They each follow the same arc: **surface** (what's openly apparent) → **deeper / hidden layer**
+(the committed truth beneath) → **secrets** (flagged, §5) → **links** (§4). What changes per type is
+the middle — an NPC has personality and an agenda; a faction has goals, structure, and reach; a
+location has features and hooks; a region carries its own **regional history** section.
+
+**World-truth docs are a separate, non-entity shape.** `overview.md`, `cosmology.md`, and
+`history.md` are setting prose, not entities — no slug frontmatter, no state file, not in `INDEX`.
+Use the `world-overview` / `world-cosmology` / `world-history` templates; they still carry the
+surface/hidden two-layer structure.
 
 ### State file (`{slug}.state.md`) frontmatter + sections
 
@@ -195,6 +206,10 @@ One file, three jobs: **dedup guard** (owns the slug namespace), **slug→file r
 that has — or should have — a file is listed. Naming a thing in play or in a plan means it gets at
 least a registry row, so it is never silently re-invented as someone else.
 
+**What's registered:** the slug-addressed, file-backed things — NPCs, factions, locations, items,
+**regions**, and arcs. **Not** registered: the world-truth singletons (`overview/cosmology/history`)
+and the `state/*` docs (fixed paths), nor clocks/threads (they live in their dashboards, §4).
+
 Format: a table per entity type. Each row maps a slug to its files, status, and a one-line "who/what."
 
 ```markdown
@@ -211,6 +226,10 @@ Format: a table per entity type. Each row maps a slug to its files, status, and 
 ...
 
 ## Locations
+...
+
+## Regions
+| slug | name | status | info | state | one-line |
 ...
 
 ## Items

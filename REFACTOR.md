@@ -377,8 +377,8 @@ would break entity-pair locality).
 campaign/
 ├── INDEX.md                      # registry / slug resolver
 ├── world/
-│   ├── cosmology.md  overview.md
-│   ├── regions/
+│   ├── overview.md  cosmology.md  history.md   # world-truth singletons (not in INDEX, no state)
+│   ├── regions/        coastlands.md (+ .state.md if control contested)   # slug entity; holds regional history
 │   ├── npcs/        kael.md + kael.state.md            (siblings)
 │   ├── factions/    wardens.md + wardens.state.md
 │   ├── locations/   foothills-lab.md + foothills-lab.state.md
@@ -431,8 +431,8 @@ rules-checker · *plugins* (deterministic). See §7 for the lifecycle taxonomy.
 | Artifact | Writer · phase | Gate | Read by |
 |---|---|---|---|
 | `INDEX.md` (registry/resolver) | WB·INIT (bulk); WK·PRE (staged-new + named-but-not-met stubs); WK·POST (entities asserted in play, from deltas) | dm | runner, NC, SP, AK, WK |
-| `world/{cosmology,overview,regions}` | WB·INIT; WK·POST if play establishes new world-truth | dm | SP, NC, AK |
-| `world/{npcs,factions,locations,items}/{slug}.md` (info) | WB·INIT; WK·PRE/POST for first-introduction | dm | runner, SP, NC, AK |
+| `world/{overview,cosmology,history}` (world-truth singletons) | WB·INIT; WK·POST if play establishes new world-truth | dm | SP, NC, AK |
+| `world/{npcs,factions,locations,items,regions}/{slug}.md` (info) | WB·INIT; WK·PRE/POST for first-introduction | dm | runner, SP, NC, AK |
 | `arcs/{arc}.md` (design) | AB·INIT; AK·POST when play overtakes design | dm | SP, NC, dm |
 
 **PC epistemic**
