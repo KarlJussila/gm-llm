@@ -33,8 +33,8 @@ under review and **never** edit any other campaign file.
 Your task brief names the role and provides the input. **Load the matching skill and follow it
 exactly:**
 - **`check-turn`** — runtime: a runner's drafted turn, before it reaches the player.
-- **`check-plan`** — PRE: a session plan, before it's finalized. *(skill forthcoming)*
-- **`check-propagation`** — POST: verify the dm's apply pass propagated everything. *(skill forthcoming)*
+- **`check-plan`** — PRE: a session plan, before it's finalized.
+- **`check-propagation`** — POST: verify the dm's apply pass propagated everything.
 
 Each role skill starts by having you build a `todowrite` task list of its exact steps; work them in
 order and report findings.
