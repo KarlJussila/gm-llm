@@ -37,19 +37,22 @@ done as you go:
 
 ## What each entry entails
 
-### 1. Pull context
+### 1. Pull context — and know what's already loaded
 - Read the **drafted turn** and the **player's latest message** from your brief — the player's
   message is what the player said this turn (it won't be in the transcript yet).
-- Your brief also carries a **PRE-LOADED CANON** block: the INDEX, `state/current.md`, the PC
-  ledger, the active arc(s), this session's deltas (the new canon **you** asserted earlier this
-  session — you check against it too), a recent transcript tail, and the entity files the draft
-  appeared to name. **Use those directly — don't re-read a file already included there.**
-- **The preload is a head start, not the whole job.** It's matched to the draft by name and can miss
-  entities referred to indirectly or by epithet. So still resolve **every** entity, place, and claim
-  the drafted turn makes against the INDEX, and **read any referenced file the preload didn't
-  include** (determine the session number **N** — the highest
-  `campaign/sessions/session-{N}-plan.md` — for any transcript/deltas files you read by hand). Don't
-  assume the lookup is done.
+- Your brief contains a **PRE-LOADED CANON** section: a run of `### <path>` blocks. **Each block is
+  the full, current contents of that file, already read for you** — the INDEX, `state/current.md`,
+  the PC ledger, the active arc(s), this session's deltas (the canon **you** asserted earlier — you
+  check against it too), a recent transcript tail, and the entity files the draft named. This is
+  your working set; the canon is in front of you, not on disk to fetch.
+- **The list of `### <path>` headers is the definitive list of what's loaded.** This is your rule
+  for every step below: before you call a `read`/`grep`/`list` tool, scan that header list — **if
+  the file is there, use its text from the brief; never re-open it.** Reach for a tool **only** when
+  the draft references something with **no `### ` block** in the brief.
+- The preload is matched to the draft by name, so it can miss an entity named only indirectly or by
+  epithet. Resolve those against the in-brief INDEX and read **just those few** missing files
+  (determine the session number **N** — the highest `campaign/sessions/session-{N}-plan.md` — only
+  if you must read a transcript/deltas file by hand). Everything else is already here.
 
 Your consistency baseline is therefore: **canon ∪ state-at-session-start ∪ this-session transcript
 ∪ this-session deltas**, with the transcript and deltas superseding the frozen snapshot for anything
@@ -57,22 +60,26 @@ play has moved past.
 
 ### 2. Resolve references
 - List every named entity, place, item, faction, or specific fact the draft **asserts or relies on**.
-- For each, find its file: `grep` `campaign/INDEX.md` for the slug/name, then open the entity file.
-- Anything **named and plot-relevant** with no registry entry **and** not already established earlier
-  in this session's transcript is a **dangling reference** (possible fabrication). Hold it for step 4.
+- For each, find it in the **pre-loaded INDEX block** and locate its `### <path>` block in the brief
+  — that block *is* the entity file; you already have it. Only if the INDEX lists it but its block
+  is **absent** from the brief (a preload miss) do you `read` that one file now.
+- Anything **named and plot-relevant** with no INDEX entry **and** not already established earlier in
+  this session's transcript (the tail is in your brief) is a **dangling reference** (possible
+  fabrication). Hold it for step 4.
 - Steps 3 and 4 both work from this resolution: resolved references → step 3; unresolved/new → step 4.
 
 ### 3. Cross-check canon
-- For each resolved reference, read its info file (and `.state.md` if relevant).
-- Compare the draft's claims — who someone is, where they are, what they know or are doing — against
-  the full baseline: the files, this session's transcript, **and the deltas you've already logged**.
-  The transcript and deltas supersede the frozen state snapshot for anything play has moved past.
-- Flag every contradiction. For each, **supply the correct fact** and **name the source** it comes
-  from (the canon file, or the prior delta entry), so the runner can fix it without guessing.
+- For each resolved reference, compare the draft's claims — who someone is, where they are, what they
+  know or are doing — against that entity's pre-loaded `### ` block (and its `.state.md` block, if
+  one is in the brief), the transcript tail, **and the deltas block**. All of these are already in
+  your brief; the transcript and deltas supersede the frozen state snapshot for anything play has
+  moved past.
+- Flag every contradiction. For each, **supply the correct fact** and **name the source** `### <path>`
+  it comes from (the canon block, or the prior delta entry), so the runner can fix it without guessing.
 
 ### 4. Triage new canon
 - Take the draft's newly-named things (including the danglers from step 2). **First check the deltas
-  you already logged** — if a thing was already asserted earlier this session, it's established, not
+  block in your brief** — if a thing was already asserted earlier this session, it's established, not
   new: don't re-log it (flag it only if the draft now contradicts that earlier entry). Otherwise
   classify each:
   - **Ambient color** (a passing vendor, set dressing with no plot weight) → allowed; just log it
@@ -83,10 +90,12 @@ play has moved past.
     file.
 
 ### 5. Check the ledger (spoilers)
-- For anything the draft **reveals to the PC**, read `campaign/characters/{pc}.knowledge.md` and the
-  `[hidden]` / `Known to:` flags at that fact's home file.
+- For anything the draft **reveals to the PC**, use the pre-loaded PC ledger block
+  (`### .../{pc}.knowledge.md`) and the `[hidden]` / `Known to:` flags in that fact's home block —
+  both already in your brief (read a file here only if its block wasn't pre-loaded).
 - Flag any fact the draft hands the PC that is `[hidden]` and not yet `[revealed]`, or that the PC
-  has no in-scene way to know — and name the file the flag lives in. Spoiler discipline is **yours**.
+  has no in-scene way to know — and name the `### <path>` the flag lives in. Spoiler discipline is
+  **yours**.
 
 ### 6. Write deltas
 Append to `campaign/sessions/session-{N}-deltas.md` yourself (create it with the two sections from

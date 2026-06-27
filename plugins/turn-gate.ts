@@ -189,14 +189,15 @@ export const TurnGatePlugin: Plugin = async ({ client, directory }) => {
     trace(`canon preload: ${sections.length} sections`)
     if (!sections.length) return ""
     return (
-      "--- PRE-LOADED CANON (a convenience starting set — NOT guaranteed complete) ---\n" +
-      "These files were read for you so you can skip re-reading them. The set is matched to the " +
-      "draft heuristically and may miss entities referred to indirectly or by epithet. Treat it as " +
-      "a head start, not the finished lookup: still resolve every entity, place, and claim the " +
-      "drafted turn makes against the INDEX, and read any referenced file not already included " +
-      "here. Do not assume the lookup is done.\n\n" +
+      "--- PRE-LOADED CANON — already read for you; do NOT re-read these ---\n" +
+      "Each `### <path>` block below is the FULL current contents of that file, read for you now. " +
+      "The list of `### ` paths is exactly what is already loaded. Before you call any read or grep " +
+      "tool, check that list: if a file appears below, use its text from here — do not re-open it. " +
+      "Use a read tool ONLY for a file the draft references that does NOT appear below. (The set is " +
+      "matched to the draft by name and can miss an entity named only indirectly or by epithet; " +
+      "resolve those against the INDEX block below and read just those few.)\n\n" +
       sections.join("\n\n") +
-      "\n\n"
+      "\n\n--- end pre-loaded canon ---\n\n"
     )
   }
 
