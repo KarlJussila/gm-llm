@@ -18,6 +18,7 @@ server down.
 import argparse
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -28,6 +29,10 @@ from pathlib import Path
 
 CHECKS_LOG = "/tmp/turn-gate-checks.log"
 PROJECT_ROOT = str(Path(__file__).resolve().parents[2])  # .opencode/dev -> repo root
+
+_COLOR = sys.stdout.isatty()
+def c(code, s):
+    return f"\033[{code}m{s}\033[0m" if _COLOR else s
 
 
 def post(base, path, directory, body, timeout):
@@ -63,6 +68,8 @@ def main():
     ap.add_argument("--dir", default=PROJECT_ROOT, help="campaign project dir")
     ap.add_argument("--kickoff", default="Let's begin the session.", help="first message to the DM")
     ap.add_argument("--turn-timeout", type=int, default=900, help="seconds to wait per model turn")
+    ap.add_argument("--delay", type=float, default=8.0, help="seconds to pause between turns (eases rate limits)")
+    ap.add_argument("--retries", type=int, default=6, help="retries per call on error/empty/rate-limit")
     ap.add_argument("--character", default=str(Path(__file__).resolve().parent / "dallid.player.md"),
                     help="player packet injected into the player's first message ('' to skip)")
     args = ap.parse_args()
@@ -71,7 +78,8 @@ def main():
 
     character = ""
     if args.character and os.path.exists(args.character):
-        character = Path(args.character).read_text()
+        # Strip HTML comments — those are dev notes for humans, not for the player.
+        character = re.sub(r"<!--.*?-->", "", Path(args.character).read_text(), flags=re.DOTALL).strip()
         print(f"[harness] player packet: {args.character} ({len(character)} chars)", flush=True)
     elif args.character:
         print(f"[harness] WARNING: no character packet at {args.character} — player runs blind", flush=True)
@@ -88,7 +96,9 @@ def main():
             new = f.read()
             checks_offset = f.tell()
         if new.strip():
-            print(new, end="", flush=True)
+            print(c("33", "\n┄┄┄┄┄┄ checker verdicts ┄┄┄┄┄┄"), flush=True)
+            print(c("2", new.rstrip()), flush=True)  # dim, so it recedes behind the fiction
+            print(c("33", "┄┄┄┄┄┄ end verdicts ┄┄┄┄┄┄\n"), flush=True)
 
     print(f"[harness] starting opencode serve on :{args.port} (dir={directory})", flush=True)
     serve_log = open("/tmp/autoplay-serve.log", "w")
@@ -114,14 +124,29 @@ def main():
         print(f"[harness] runner={runner_sid} player={player_sid}\n", flush=True)
 
         def ask(sid, agent, text):
-            resp = post(base, f"/session/{sid}/message", directory,
-                        {"agent": agent, "parts": [{"type": "text", "text": text}]},
-                        timeout=args.turn_timeout)
-            return last_text(resp)
+            # The free model rate-limits under autoplay's burst of calls (player +
+            # runner + two checkers per turn). Retry with backoff on errors or an
+            # empty reply so a transient throttle pauses the run instead of ending it.
+            body = {"agent": agent, "parts": [{"type": "text", "text": text}]}
+            for attempt in range(args.retries):
+                try:
+                    out = last_text(post(base, f"/session/{sid}/message", directory, body, timeout=args.turn_timeout))
+                    if out:
+                        return out
+                    reason = "empty reply (likely a rate-limited/errored stream)"
+                except urllib.error.HTTPError as e:
+                    detail = e.read().decode(errors="replace")[:160] if hasattr(e, "read") else ""
+                    reason = f"HTTP {e.code} {detail}"
+                except (urllib.error.URLError, OSError, ValueError) as e:
+                    reason = str(e)
+                wait = min(15 * (2 ** attempt), 120)
+                print(c("33", f"[harness] {agent} call failed: {reason} — retry {attempt + 1}/{args.retries} in {wait}s"), flush=True)
+                time.sleep(wait)
+            raise RuntimeError(f"{agent} failed after {args.retries} retries")
 
         # Kick off: the DM opens the scene.
         dm = ask(runner_sid, "dm-runner", args.kickoff)
-        print(f"━━ DM ━━\n{dm}\n", flush=True)
+        print(c("1;36", "\n━━━━━ DM ━━━━━") + f"\n{dm}\n", flush=True)
         echo_new_checks()
 
         for i in range(1, args.turns + 1):
@@ -133,11 +158,13 @@ def main():
             else:
                 msg = dm
             player = ask(player_sid, "player", msg)
-            print(f"━━ PLAYER (turn {i}) ━━\n{player}\n", flush=True)
+            print(c("1;32", f"\n━━━━━ PLAYER · turn {i} ━━━━━") + f"\n{player}\n", flush=True)
 
             dm = ask(runner_sid, "dm-runner", player)
-            print(f"━━ DM ━━\n{dm}\n", flush=True)
+            print(c("1;36", "\n━━━━━ DM ━━━━━") + f"\n{dm}\n", flush=True)
             echo_new_checks()
+            if i < args.turns and args.delay:
+                time.sleep(args.delay)
 
         print("[harness] done.", flush=True)
     finally:

@@ -42,20 +42,20 @@ function lastText(res: any): string {
 // Lets a person (or the autoplay harness) watch what the checkers actually said,
 // which the runner never surfaces. Separate from the terse timing trace.
 const CHECKS = "/tmp/turn-gate-checks.log"
-function logChecks(sessionID: string, narration: string, canon: string, conduct: string) {
+function logChecks(sessionID: string, playerMsg: string, narration: string, canon: string, conduct: string) {
   try {
+    const bar = "█".repeat(74)
+    const sec = (label: string, body: string) => `\n  ── ${label} ${"─".repeat(Math.max(0, 68 - label.length))}\n\n${body.trim()}\n`
     const block = [
-      `\n${"=".repeat(72)}`,
-      `check @ ${new Date().toISOString()} | session ${sessionID}`,
-      "-".repeat(72),
-      "NARRATION:",
-      narration,
       "",
-      "CANON (narrative-checker):",
-      canon,
       "",
-      "CONDUCT (rules-checker):",
-      conduct,
+      bar,
+      `  TURN CHECK   ${new Date().toISOString()}   ·   session ${sessionID}`,
+      bar,
+      sec("PLAYER MESSAGE (as the checkers received it)", playerMsg || "(none extracted)"),
+      sec("NARRATION (draft under check)", narration),
+      sec("CANON · narrative-checker", canon),
+      sec("CONDUCT · rules-checker", conduct),
       "",
     ].join("\n")
     appendFileSync(CHECKS, block)
@@ -319,7 +319,7 @@ export const TurnGatePlugin: Plugin = async ({ client, directory }) => {
             runChecker(parent, "narrative-checker", "check-turn", narrativeBrief),
             runChecker(parent, "rules-checker", "rules-check", conductBrief),
           ])
-          logChecks(parent, narration, narrativeOut, conductOut)
+          logChecks(parent, playerMsg, narration, narrativeOut, conductOut)
 
           return [
             "Two independent checks ran on your narration. Apply every fix in one pass, then send",
