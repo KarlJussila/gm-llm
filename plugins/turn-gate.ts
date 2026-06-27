@@ -38,6 +38,30 @@ function lastText(res: any): string {
   return texts.length ? texts[texts.length - 1].trim() : ""
 }
 
+// Human-readable record of every gate: the narration checked and both verdicts.
+// Lets a person (or the autoplay harness) watch what the checkers actually said,
+// which the runner never surfaces. Separate from the terse timing trace.
+const CHECKS = "/tmp/turn-gate-checks.log"
+function logChecks(sessionID: string, narration: string, canon: string, conduct: string) {
+  try {
+    const block = [
+      `\n${"=".repeat(72)}`,
+      `check @ ${new Date().toISOString()} | session ${sessionID}`,
+      "-".repeat(72),
+      "NARRATION:",
+      narration,
+      "",
+      "CANON (narrative-checker):",
+      canon,
+      "",
+      "CONDUCT (rules-checker):",
+      conduct,
+      "",
+    ].join("\n")
+    appendFileSync(CHECKS, block)
+  } catch {}
+}
+
 export const TurnGatePlugin: Plugin = async ({ client, directory }) => {
   // What the player said this turn. The transcript file is written only at turn
   // boundaries (session.idle), so mid-turn — exactly when check_turn runs — it
@@ -295,6 +319,7 @@ export const TurnGatePlugin: Plugin = async ({ client, directory }) => {
             runChecker(parent, "narrative-checker", "check-turn", narrativeBrief),
             runChecker(parent, "rules-checker", "rules-check", conductBrief),
           ])
+          logChecks(parent, narration, narrativeOut, conductOut)
 
           return [
             "Two independent checks ran on your narration. Apply every fix in one pass, then send",
