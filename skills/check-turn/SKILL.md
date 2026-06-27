@@ -38,17 +38,18 @@ done as you go:
 ## What each entry entails
 
 ### 1. Pull context
-- Read the **drafted turn** from your brief (the actual narration text the runner is about to send).
-- Read the **player's latest message** from your brief — what the player said this turn. This is the
-  current player input; it won't be in the transcript yet.
-- Determine the current session number **N** — the highest `campaign/sessions/session-{N}-plan.md`
-  (the session being played). Use that N for the transcript and deltas files below.
-- `tail` / read `campaign/sessions/session-{N}-transcript.md` for the earlier exchanges this session —
-  the scene as it stood going into this turn. The current turn (the brief's player message + drafted
-  turn) sits on top of it.
-- Read `campaign/state/current.md` for the session-start baseline.
-- Read `campaign/sessions/session-{N}-deltas.md` if it exists — the new canon **you** have already
-  asserted earlier this session. It is part of what's now established; you check against it too.
+- Read the **drafted turn** and the **player's latest message** from your brief — the player's
+  message is what the player said this turn (it won't be in the transcript yet).
+- Your brief also carries a **PRE-LOADED CANON** block: the INDEX, `state/current.md`, the PC
+  ledger, the active arc(s), this session's deltas (the new canon **you** asserted earlier this
+  session — you check against it too), a recent transcript tail, and the entity files the draft
+  appeared to name. **Use those directly — don't re-read a file already included there.**
+- **The preload is a head start, not the whole job.** It's matched to the draft by name and can miss
+  entities referred to indirectly or by epithet. So still resolve **every** entity, place, and claim
+  the drafted turn makes against the INDEX, and **read any referenced file the preload didn't
+  include** (determine the session number **N** — the highest
+  `campaign/sessions/session-{N}-plan.md` — for any transcript/deltas files you read by hand). Don't
+  assume the lookup is done.
 
 Your consistency baseline is therefore: **canon ∪ state-at-session-start ∪ this-session transcript
 ∪ this-session deltas**, with the transcript and deltas superseding the frozen snapshot for anything

@@ -1,6 +1,7 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
-import { appendFileSync } from "node:fs"
+import { appendFileSync, existsSync, readFileSync, readdirSync } from "node:fs"
+import { join } from "node:path"
 
 /**
  * The runtime turn gate as a single tool the runner calls with nothing but its
@@ -68,6 +69,135 @@ export const TurnGatePlugin: Plugin = async ({ client, directory }) => {
       trace(`latestPlayerMessage error: ${e?.message ?? e}`)
       return ""
     }
+  }
+
+  // --- Canon preload (narrative-checker only) -----------------------------
+  // The narrative-checker's latency is dominated by sequential file-read
+  // round-trips: it reads a fixed baseline plus the entity files the draft
+  // touches, one model turn each. We do those reads here instead — fast, local,
+  // deterministic — and hand the checker the text up front. Draft-specific
+  // matching is heuristic (entity names against INDEX), so the block is framed
+  // as an incomplete head start: the checker still resolves and reads anything
+  // it's missing (see the check-turn skill).
+
+  const CAMPAIGN = join(directory, "campaign")
+
+  function readRel(rel: string): string | null {
+    try {
+      const p = join(CAMPAIGN, rel)
+      return existsSync(p) ? readFileSync(p, "utf8") : null
+    } catch {
+      return null
+    }
+  }
+
+  function listRel(subdir: string, re: RegExp): string[] {
+    try {
+      return readdirSync(join(CAMPAIGN, subdir))
+        .filter((f) => re.test(f))
+        .map((f) => `${subdir}/${f}`)
+    } catch {
+      return []
+    }
+  }
+
+  // Highest session-{N}-plan.md — the session being played.
+  function latestSessionNumber(): number | null {
+    let max = 0
+    for (const f of listRel("sessions", /^session-\d+-plan\.md$/)) {
+      const m = f.match(/session-(\d+)-plan\.md$/)
+      if (m) max = Math.max(max, parseInt(m[1], 10))
+    }
+    return max > 0 ? max : null
+  }
+
+  type IndexEntry = { name: string; info: string | null; state: string | null }
+
+  // Parse the INDEX.md markdown tables into entity rows. Columns are
+  // | slug | name | status | info|design | state | one-line |.
+  function parseIndex(text: string): IndexEntry[] {
+    const out: IndexEntry[] = []
+    const isPath = (s: string) => !!s && s !== "—" && /\.md$/.test(s)
+    for (const line of text.split("\n")) {
+      if (!line.trimStart().startsWith("|")) continue
+      const c = line.split("|").map((x) => x.trim())
+      const cols = c.slice(1, c.length - 1) // drop the empty edges
+      if (cols.length < 5) continue
+      const [slug, name, , info, state] = cols
+      if (!slug || slug === "slug" || slug.startsWith("-")) continue // header/separator
+      out.push({ name, info: isPath(info) ? info : null, state: isPath(state) ? state : null })
+    }
+    return out
+  }
+
+  function escapeRe(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  }
+
+  // Match an entity by its full name and by distinctive name-words (>= 4
+  // chars), so "Magren" hits "Magren Soley". Liberal: a false match only
+  // preloads one extra small file, never drops correctness.
+  function nameMatches(name: string, hay: string): boolean {
+    const base = name.replace(/^the\s+/i, "").trim()
+    const terms = new Set<string>([base])
+    for (const tok of base.split(/[\s'-]+/)) if (tok.length >= 4) terms.add(tok)
+    for (const t of terms) {
+      if (!t) continue
+      if (new RegExp(`\\b${escapeRe(t.toLowerCase())}\\b`).test(hay)) return true
+    }
+    return false
+  }
+
+  function tailChars(text: string, n: number): string {
+    return text.length <= n ? text : "…\n" + text.slice(text.length - n)
+  }
+
+  // Build the canon block: always-needed baseline + entity files the draft
+  // names + a tail of the transcript. Returns "" if nothing could be read.
+  function canonPreload(draft: string): string {
+    const n = latestSessionNumber()
+    const indexText = readRel("INDEX.md") ?? ""
+    const hay = draft.toLowerCase()
+    const matched: string[] = []
+    for (const e of parseIndex(indexText)) {
+      if (!nameMatches(e.name, hay)) continue
+      if (e.info) matched.push(e.info)
+      if (e.state) matched.push(e.state)
+    }
+
+    const baseline = [
+      "INDEX.md",
+      "state/current.md",
+      ...listRel("characters", /\.knowledge\.md$/),
+      ...listRel("arcs", /\.md$/),
+      ...(n ? [`sessions/session-${n}-deltas.md`] : []),
+    ]
+
+    const seen = new Set<string>()
+    const sections: string[] = []
+    for (const rel of [...baseline, ...matched]) {
+      if (seen.has(rel)) continue
+      seen.add(rel)
+      const body = readRel(rel)
+      if (body == null) continue
+      sections.push(`### ${rel}\n${body.trim()}`)
+    }
+    if (n) {
+      const t = readRel(`sessions/session-${n}-transcript.md`)
+      if (t) sections.push(`### sessions/session-${n}-transcript.md (recent tail)\n${tailChars(t, 4000)}`)
+    }
+    trace(`canon preload: ${sections.length} sections`)
+    if (!sections.length) return ""
+    return (
+      "--- PRE-LOADED CANON (a convenience starting set — NOT guaranteed complete) ---\n" +
+      "These files were read for you so you can skip re-reading them. The set is matched to the " +
+      "draft heuristically and may miss entities referred to indirectly or by epithet. Treat it as " +
+      "a head start, not the finished lookup: still resolve every entity, place, and claim the " +
+      "drafted turn makes against the INDEX, and read any referenced file not already included " +
+      "here. Do not assume the lookup is done.\n\n" +
+      sections.join("\n\n") +
+      "\n\n"
+    )
   }
 
   // Spawn one checker as a child of the runner's session, hand it a
@@ -140,13 +270,16 @@ export const TurnGatePlugin: Plugin = async ({ client, directory }) => {
             : ""
 
           // Briefs are authored here, not by the model: correct role, correct
-          // draft, the player's real words, every call. The checkers find any
-          // further context (earlier scenes, canon) from disk.
+          // draft, the player's real words, every call. The narrative brief also
+          // carries pre-read canon (see canonPreload); the rules-checker is
+          // canon-free, so its brief stays lean.
+          const canon = canonPreload(narration)
           const narrativeBrief =
             "Role: check-turn. Verify the runner's drafted turn per your check-turn skill. The " +
             "player's latest message below is what the player said this turn; the drafted turn " +
             "is the narration about to be sent in response.\n\n" +
             playerContext +
+            canon +
             "--- DRAFTED TURN ---\n" +
             narration
           const conductBrief =
