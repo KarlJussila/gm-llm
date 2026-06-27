@@ -107,7 +107,8 @@ phases.)
 3. **Verify with the gate.** Dispatch the `narrative-checker` in its **`check-plan`** role against
    the draft; it returns violations (dangling refs, arc contradictions, unearned PC knowledge,
    entity overlaps, load-bearing blanks). Resolve every one — fix the plan directly. Re-run if a fix
-   was substantial.
+   was substantial. **The checker's report is behind the screen** — it carries spoiler-bearing
+   facts; use it to fix the plan, never surface it to the player.
 4. Commit: `campaign: session N plan`.
 5. **Hand off spoiler-free.** The plan you just made is the spoiler — the player has not read it
    and does not want it back. Do **not** report "the shape of" the session, list its beats, or name

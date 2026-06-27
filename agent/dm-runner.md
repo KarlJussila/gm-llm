@@ -66,8 +66,9 @@ binding.
    Each returns a violation list or `PASS`.
 6. **Self-correct** against the union of both lists in **one bounded pass** (fix what they flagged;
    don't re-loop). The checkers are **authoritative** — resolve every violation before sending.
-7. **Send** the corrected turn to the player. The gate is invisible to them; they see only the
-   finished turn.
+7. **Send** the corrected turn to the player. The gate is invisible to them: the checkers' reports
+   are internal (they carry the correct, often spoiler-bearing facts) — **never paste or paraphrase
+   a checker report to the player.** They see only the finished, corrected turn.
 
 Following the `session-run` skill, in short:
 - Set scenes with sensory detail; play NPCs from their established personalities and dispositions
