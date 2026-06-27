@@ -117,5 +117,5 @@ The test: would reading this sentence tell the player something their character 
 know? If yes, it's a spoiler — cut it.
 
 ## Tone
-Tactical, flexible, anticipatory — a working document for a session about to be run. Clear, direct,
-grounded in this campaign's specifics.
+Tactical, flexible, anticipatory — a working document for a DM about to run a session. Clear,
+direct, grounded in this campaign's specifics.
