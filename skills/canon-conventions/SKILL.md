@@ -13,6 +13,12 @@ and never drift. *What* to write is each agent's own job; *how* to write it is h
 Read this before authoring or editing anything under `campaign/`. When this skill and an agent's
 own prompt both speak to format, this skill wins.
 
+**Templates and a worked example ship alongside this skill.** Copy from `templates/` (one per file
+type — entity info/state, `INDEX`, the four `state/*` docs, the session deltas log) and fill every
+`<placeholder>`, deleting the `<!-- guidance -->` comments. See `examples/` for a complete filled
+entity pair (`lysa-fenn.md` + `.state.md`) and a sample `INDEX.md` showing the target shape — the
+generic illustrative cast there carries through this skill's examples too.
+
 ---
 
 ## 1. The one authoring rule
@@ -139,9 +145,13 @@ to any `clocks.md` clock they drive. Keep it short — state is the now, not the
 Canon is **densely cross-linked**. Linking is not decoration; it is the anti-fabrication tripwire.
 
 - **Every reference to a registered entity is a slug wikilink:** `[[lysa-fenn]]`,
-  `[[old-watchtower]]`, `[[failing-light]]`. Links resolve through `INDEX.md` (§6), never by
-  relative path — so files can move and only the registry path updates.
-- **A dangling link — a `[[slug]]` with no registry entry — is a fabrication tripwire.** It means
+  `[[old-watchtower]]`, `[[failing-light]]`. **Entity and arc links resolve through `INDEX.md`**
+  (§6) — never by relative path, so files can move and only the registry path updates. **Thread and
+  clock links** (`[[fenn-exposure]]`) are *not* in the registry — they resolve to their row inside
+  `state/threads.md` / `state/clocks.md`, which are their home. The registry holds only file-backed
+  things (entities and arcs).
+- **A dangling link — an entity/arc `[[slug]]` that resolves nowhere (no registry row, and for
+  clock/thread links no matching row in their dashboard) — is a fabrication tripwire.** It means
   one of two things: either the thing is real and must be **registered** (and, if load-bearing,
   fleshed out into a full file), or it was invented loosely and must be **grounded or removed**.
   The narrative-checker treats dangling links as findings; don't leave them.
