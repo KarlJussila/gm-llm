@@ -1,13 +1,13 @@
 ---
 name: session-run
-description: The table craft for running a live D&D session — player agency and adjudication, dice and checks, revealing discoveries, playing NPCs as independent agents, spoiler discipline, and pacing a session to a satisfying end. Loaded by dm-runner, which owns the per-turn loop and the checker gate; this skill is the craft it follows.
+description: The table craft for running a live D&D session — player agency and adjudication, dice and checks, revealing discoveries, playing NPCs as independent agents, spoiler discipline, and pacing a session to a satisfying end. Loaded by dm-runner, which owns the per-turn loop; this skill is the craft it follows.
 ---
 
 # session-run — table craft
 
-The `dm-runner` agent owns the per-turn loop and the checker gate. **This skill is the craft it
-applies when writing each turn** — how to narrate, adjudicate, call rolls, play NPCs, and pace the
-session. Follow it whenever you write a turn.
+The `dm-runner` agent owns the per-turn loop. **This skill is the craft it applies when writing each
+turn** — how to narrate, adjudicate, call rolls, play NPCs, and pace the session. Follow it whenever
+you write a turn.
 
 ## Player feedback — read first
 

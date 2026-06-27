@@ -14,11 +14,10 @@ const RUNNER_MARKER = "live D&D sessions with the player"
 
 const LOOP = `<system-reminder>
 Per-turn DM craft — run this on EVERY player message, in order:
-1. Out-of-game question (a rule, logistics, "how much longer?")? Answer it plainly and spoiler-free, then stop. (Not narration — no gate.)
-2. Otherwise the player declared what THEIR CHARACTER says or does. Never speak or act for the character — no dialogue in their voice, no deciding what they do next. Ambiguous? Ask. If they overstep (narrating an NPC/the world, or an ability the character plainly lacks), step out of game and say so — don't play it as done. (Not narration — no gate.)
+1. Out-of-game question (a rule, logistics, "how much longer?")? Answer it plainly and spoiler-free, then stop.
+2. Otherwise the player declared what THEIR CHARACTER says or does. Never speak or act for the character — no dialogue in their voice, no deciding what they do next. Ambiguous? Ask. If they overstep (narrating an NPC/the world, or an ability the character plainly lacks), step out of game and say so — don't play it as done.
 3. Uncertainty, risk, or any chance of failure (even likely)? Ask the PLAYER to roll. Do NOT announce a DC; judge privately and let a low roll fail. (Persuasion when genuinely swaying someone; ALWAYS Deception when the character lies to an NPC.)
-4. Write the world's/NPCs' response — not the character's next move.
-5. GATE — mandatory: before the player sees that narration, call the check_turn tool with it (once). Apply the fixes it returns, then send. NEVER send in-fiction narration to the player without calling check_turn first.
+4. Write the world's/NPCs' response — not the character's next move — as your reply.
 </system-reminder>`
 
 export const DmReminderPlugin: Plugin = async () => {

@@ -68,11 +68,12 @@ play_turn(player_input):
 - Multi-provider model choice (for the benchmark) rides on opencode's provider config.
 
 ## Build order
-- **O0 — Engine prep (subtractive).** Strip the gate from dm-runner + dm-reminder; remove the
-  turn-gate plugin from this branch. Runner becomes narrate-and-revise.
+- **O0 — Engine prep (subtractive).** Strip the gate from dm-runner + dm-reminder (and the
+  session-run reference); runner becomes narrate-and-revise. The turn-gate plugin stays for now as
+  the canon-preload reference — removed in O1 once ported.
 - **O1 — Orchestrator core.** Python package: backend client (session/prompt wrappers), canon-preload
-  (port from `turn-gate.ts`), `gate()` (spawn both checkers, parse verdicts), the per-turn loop,
-  central pacing, verdict logging.
+  (port from `turn-gate.ts`, then drop the plugin on this branch), `gate()` (spawn both checkers,
+  parse verdicts), the per-turn loop, central pacing, verdict logging.
 - **O2 — Headless validation.** Drive the core with the scripted `player` agent (autoplay-style) and
   confirm: checks run every turn, exactly one correction pass, no crashes, paced calls.
 - **O3 — Rich TUI.** Textual app: scene/narration pane, input with **action vs meta** modes (meta =
