@@ -67,7 +67,11 @@ def main():
     ap.add_argument("--port", type=int, default=4181)
     ap.add_argument("--dir", default=PROJECT_ROOT, help="campaign project dir")
     ap.add_argument("--kickoff", default="Let's begin the session.", help="first message to the DM")
-    ap.add_argument("--turn-timeout", type=int, default=900, help="seconds to wait per model turn")
+    # A normal gated turn runs ~2-4 min; a rate-limited call instead *hangs*
+    # (the server retries the 429 with the connection held open), so keep this
+    # tight enough that a hang fails fast and the retry/backoff kicks in rather
+    # than blocking for many minutes.
+    ap.add_argument("--turn-timeout", type=int, default=360, help="seconds to wait per model turn before retrying")
     ap.add_argument("--delay", type=float, default=8.0, help="seconds to pause between turns (eases rate limits)")
     ap.add_argument("--retries", type=int, default=6, help="retries per call on error/empty/rate-limit")
     ap.add_argument("--character", default=str(Path(__file__).resolve().parent / "dallid.player.md"),
