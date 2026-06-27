@@ -1,178 +1,118 @@
 #!/usr/bin/env python3
 """
-Autoplay harness — watch the runner run a session without playing it yourself.
+Autoplay — headless validation of the orchestrator core.
 
-Boots a headless `opencode serve` (which loads the project plugins, so the
-check_turn gate and transcript capture all fire normally), then ping-pongs two
-sessions: a `player` agent and the `dm-runner`. Each exchange is streamed to the
-console, and after every DM turn the new check verdicts (written by the turn-gate
-plugin to /tmp/turn-gate-checks.log) are echoed inline — so you see narration,
-checks, and the player's reply in one stream.
+Boots a real opencode backend, builds the orchestrator `Game` (which owns the
+deterministic gate), and drives it with the scripted `player` agent — so we can
+watch the loop run end-to-end without a human: the runner drafts, the gate runs
+EVERY turn, one bounded correction, paced calls. The check verdicts print inline.
 
     python3 .opencode/dev/autoplay.py --turns 12
 
-Nothing here is part of the engine; it's a dev rig. Ctrl-C stops it and shuts the
-server down.
+This is a dev rig, not the engine. Ctrl-C stops it and shuts the server down.
 """
 
 import argparse
-import json
 import os
 import re
-import signal
-import subprocess
 import sys
-import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
-CHECKS_LOG = "/tmp/turn-gate-checks.log"
-PROJECT_ROOT = str(Path(__file__).resolve().parents[2])  # .opencode/dev -> repo root
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # put .opencode on the path
+from orchestrator import Backend, BackendError, CanonPreloader, Gate, Game  # noqa: E402
+
+PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
 
 _COLOR = sys.stdout.isatty()
 def c(code, s):
     return f"\033[{code}m{s}\033[0m" if _COLOR else s
 
 
-def post(base, path, directory, body, timeout):
-    url = f"{base}{path}?directory={urllib.parse.quote(directory)}"
-    data = json.dumps(body).encode()
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode())
+def show_dm(text):
+    print(c("1;36", "\n━━━━━ DM ━━━━━") + f"\n{text}\n", flush=True)
 
 
-def wait_for_server(base, directory, deadline):
-    """Block until the server answers a session-create, returning the new id."""
-    last = None
-    while time.time() < deadline:
-        try:
-            return post(base, "/session", directory, {}, timeout=10)["id"]
-        except (urllib.error.URLError, ConnectionError, OSError, KeyError) as e:
-            last = e
-            time.sleep(0.5)
-    raise RuntimeError(f"server never came up: {last}")
+def show_player(i, text):
+    print(c("1;32", f"\n━━━━━ PLAYER · turn {i} ━━━━━") + f"\n{text}\n", flush=True)
 
 
-def last_text(resp):
-    parts = resp.get("parts", []) if isinstance(resp, dict) else []
-    texts = [p.get("text", "") for p in parts if p.get("type") == "text" and p.get("text")]
-    return texts[-1].strip() if texts else ""
+def show_gate(tr):
+    g = tr.gate
+    nv = "PASS" if g.narrative.passed else "VIOLATIONS"
+    cv = "PASS" if g.conduct.passed else "VIOLATIONS"
+    status = "CORRECTED" if tr.corrected else "clean"
+    print(c("33", f"┄┄ gate: canon {nv} · conduct {cv} · {status} · {g.canon_sections} canon sections ┄┄"), flush=True)
+    if not g.narrative.passed:
+        print(c("2", "CANON:\n" + g.narrative.report.strip()), flush=True)
+    if not g.conduct.passed:
+        print(c("2", "CONDUCT:\n" + g.conduct.report.strip()), flush=True)
+    if tr.corrected or not g.narrative.passed or not g.conduct.passed:
+        print("", flush=True)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--turns", type=int, default=10, help="player/DM exchanges to run")
+    ap.add_argument("--turns", type=int, default=10)
     ap.add_argument("--port", type=int, default=4181)
-    ap.add_argument("--dir", default=PROJECT_ROOT, help="campaign project dir")
-    ap.add_argument("--kickoff", default="Let's begin the session.", help="first message to the DM")
-    # A normal gated turn runs ~2-4 min; a rate-limited call instead *hangs*
-    # (the server retries the 429 with the connection held open), so keep this
-    # tight enough that a hang fails fast and the retry/backoff kicks in rather
-    # than blocking for many minutes.
-    ap.add_argument("--turn-timeout", type=int, default=360, help="seconds to wait per model turn before retrying")
-    ap.add_argument("--delay", type=float, default=8.0, help="seconds to pause between turns (eases rate limits)")
-    ap.add_argument("--retries", type=int, default=6, help="retries per call on error/empty/rate-limit")
+    ap.add_argument("--dir", default=PROJECT_ROOT)
+    ap.add_argument("--kickoff", default="Let's begin the session.")
+    ap.add_argument("--min-gap", type=float, default=1.0, help="min seconds between any two model calls")
     ap.add_argument("--character", default=str(Path(__file__).resolve().parent / "dallid.player.md"),
                     help="player packet injected into the player's first message ('' to skip)")
     args = ap.parse_args()
     directory = str(Path(args.dir).resolve())
-    base = f"http://127.0.0.1:{args.port}"
 
     character = ""
     if args.character and os.path.exists(args.character):
-        # Strip HTML comments — those are dev notes for humans, not for the player.
         character = re.sub(r"<!--.*?-->", "", Path(args.character).read_text(), flags=re.DOTALL).strip()
         print(f"[harness] player packet: {args.character} ({len(character)} chars)", flush=True)
     elif args.character:
         print(f"[harness] WARNING: no character packet at {args.character} — player runs blind", flush=True)
 
-    # Only show check verdicts written from this run forward.
-    checks_offset = os.path.getsize(CHECKS_LOG) if os.path.exists(CHECKS_LOG) else 0
-
-    def echo_new_checks():
-        nonlocal checks_offset
-        if not os.path.exists(CHECKS_LOG):
-            return
-        with open(CHECKS_LOG, "r", errors="replace") as f:
-            f.seek(checks_offset)
-            new = f.read()
-            checks_offset = f.tell()
-        if new.strip():
-            print(c("33", "\n┄┄┄┄┄┄ checker verdicts ┄┄┄┄┄┄"), flush=True)
-            print(c("2", new.rstrip()), flush=True)  # dim, so it recedes behind the fiction
-            print(c("33", "┄┄┄┄┄┄ end verdicts ┄┄┄┄┄┄\n"), flush=True)
+    def on_retry(agent, attempt, wait, reason):
+        print(c("33", f"[harness] {agent} call failed: {reason} — retry {attempt} in {wait}s"), flush=True)
 
     print(f"[harness] starting opencode serve on :{args.port} (dir={directory})", flush=True)
-    serve_log = open("/tmp/autoplay-serve.log", "w")
-    serve = subprocess.Popen(
-        ["opencode", "serve", "--port", str(args.port)],
-        cwd=directory, stdout=serve_log, stderr=subprocess.STDOUT,
-    )
-
-    def shutdown(*_):
-        print("\n[harness] shutting down…", flush=True)
-        try:
-            serve.send_signal(signal.SIGINT)
-            serve.wait(timeout=10)
-        except Exception:
-            serve.kill()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, shutdown)
-
+    backend = Backend(directory, port=args.port, min_call_gap=args.min_gap)
+    backend.on_retry = on_retry
     try:
-        runner_sid = wait_for_server(base, directory, deadline=time.time() + 60)
-        player_sid = post(base, "/session", directory, {"title": "autoplay-player"}, timeout=10)["id"]
-        print(f"[harness] runner={runner_sid} player={player_sid}\n", flush=True)
+        backend.start()
+        gate = Gate(backend, CanonPreloader(directory))
+        game = Game(backend, gate, checks_log="/tmp/orchestrator-checks.log")
+        player_sid = backend.create_session("autoplay-player")
+        print(f"[harness] runner={game.runner_sid} player={player_sid}", flush=True)
 
-        def ask(sid, agent, text):
-            # The free model rate-limits under autoplay's burst of calls (player +
-            # runner + two checkers per turn). Retry with backoff on errors or an
-            # empty reply so a transient throttle pauses the run instead of ending it.
-            body = {"agent": agent, "parts": [{"type": "text", "text": text}]}
-            for attempt in range(args.retries):
-                try:
-                    out = last_text(post(base, f"/session/{sid}/message", directory, body, timeout=args.turn_timeout))
-                    if out:
-                        return out
-                    reason = "empty reply (likely a rate-limited/errored stream)"
-                except urllib.error.HTTPError as e:
-                    detail = e.read().decode(errors="replace")[:160] if hasattr(e, "read") else ""
-                    reason = f"HTTP {e.code} {detail}"
-                except (urllib.error.URLError, OSError, ValueError) as e:
-                    reason = str(e)
-                wait = min(15 * (2 ** attempt), 120)
-                print(c("33", f"[harness] {agent} call failed: {reason} — retry {attempt + 1}/{args.retries} in {wait}s"), flush=True)
-                time.sleep(wait)
-            raise RuntimeError(f"{agent} failed after {args.retries} retries")
+        def waiting(msg):
+            print(c("2", f"[harness] {msg}"), flush=True)
 
-        # Kick off: the DM opens the scene.
-        dm = ask(runner_sid, "dm-runner", args.kickoff)
-        print(c("1;36", "\n━━━━━ DM ━━━━━") + f"\n{dm}\n", flush=True)
-        echo_new_checks()
+        waiting("opening the scene — first model call (silent up to the timeout if rate-limited)…")
+        tr = game.start(args.kickoff)
+        show_dm(tr.final)
+        show_gate(tr)
 
         for i in range(1, args.turns + 1):
-            # Establish the character on turn 1 by prepending the packet to the
-            # first thing the player sees; it persists in the player's session.
+            msg = tr.final
             if i == 1 and character:
                 msg = (f"[YOUR CHARACTER — read this, then stay in character for the rest of the session]\n\n"
-                       f"{character}\n\n[The session begins. The DM says:]\n\n{dm}")
-            else:
-                msg = dm
-            player = ask(player_sid, "player", msg)
-            print(c("1;32", f"\n━━━━━ PLAYER · turn {i} ━━━━━") + f"\n{player}\n", flush=True)
+                       f"{character}\n\n[The session begins. The DM says:]\n\n{tr.final}")
+            waiting(f"turn {i}: waiting on the player…")
+            player = backend.prompt(player_sid, "player", msg)
+            show_player(i, player)
 
-            dm = ask(runner_sid, "dm-runner", player)
-            print(c("1;36", "\n━━━━━ DM ━━━━━") + f"\n{dm}\n", flush=True)
-            echo_new_checks()
-            if i < args.turns and args.delay:
-                time.sleep(args.delay)
+            waiting(f"turn {i}: waiting on the DM (draft + gate)…")
+            tr = game.turn(player)
+            show_dm(tr.final)
+            show_gate(tr)
 
         print("[harness] done.", flush=True)
+    except BackendError as e:
+        print(c("1;31", f"[harness] backend gave up: {e}"), flush=True)
+        print("[harness] (likely still rate-limited — try again later)", flush=True)
+    except KeyboardInterrupt:
+        print("\n[harness] interrupted.", flush=True)
     finally:
-        shutdown()
+        print("[harness] shutting down server…", flush=True)
+        backend.stop()
 
 
 if __name__ == "__main__":
