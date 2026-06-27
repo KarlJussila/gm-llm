@@ -44,7 +44,7 @@ Match the player's preference (the same dial as `campaign-setup`):
 3. **Placement in the world.** Decide where they're from, why they're here now, and their ties to
    existing locations, factions, and NPCs — as `[[slug]]` links, consistent with established lore.
    Where the backstory needs **new** people or places, note them (see *Backstory canon*) — don't
-   author full world files here; that's `world-builder`'s job, coordinated by the dm.
+   author full world files here; the dm folds those into the world afterward (campaign-setup Stage 6).
 4. **Backstory.** Build it at the player's chosen depth: origin, formative events, bonds, goals,
    flaws, secrets. Keep it consistent with the world and its tone/content boundaries.
 5. **DM-side hooks.** Distill 1–3 threads from the backstory the arcs can later hook into (a loss,
@@ -75,9 +75,9 @@ Then **register the PC** in `INDEX.md` (PC section).
 ## Hand back to setup
 
 Surface to the dm, for the world and arcs to absorb:
-- **Backstory canon** — every new NPC/location/faction the backstory introduced, so the dm routes
-  it to `world-builder` to author and register (nothing the backstory names stays unfiled).
-- **DM-side hooks** — the 1–3 threads, so `arc-builder` can make an arc personal to this PC.
+- **Backstory canon** — every new NPC/location/faction the backstory introduced, so the dm authors
+  and registers it (nothing the backstory names stays unfiled).
+- **DM-side hooks** — the 1–3 threads, so the dm can make an arc personal to this PC.
 
 ## Tone
 Collaborative and curious. The character is the player's; your job is to make them fit the world and

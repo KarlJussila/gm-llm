@@ -1,6 +1,6 @@
 ---
 name: world-build
-description: The craft of authoring D&D world content — cosmology, regions, NPCs, factions, locations, and significant items — as layered, living, internally consistent canon. Covers WHAT makes good world content and HOW to design it; the file format/layout/linking is owned by the canon-conventions skill, which you load alongside this. Used during campaign init (world-builder) and when adding world content later (world-keeper).
+description: The craft of authoring D&D world content — cosmology, regions, NPCs, factions, locations, and significant items — as layered, living, internally consistent canon. Covers WHAT makes good world content and HOW to design it; the file format/layout/linking is owned by the canon-conventions skill, which you load alongside this. Loaded by the dm to author world content at campaign init and whenever canon changes.
 ---
 
 # world-build

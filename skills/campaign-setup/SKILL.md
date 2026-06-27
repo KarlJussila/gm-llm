@@ -16,8 +16,11 @@ it override the defaults here wherever they conflict.
 A new campaign goes from an empty directory to ready-to-play. The **creative stages** (vibe, world,
 character, arcs) are collaborative and flexible — meet the player where they are. The **procedural
 stages** (scaffold, gate, state-init, commit, hand-off) are an exact ordered algorithm — follow the
-steps in order; don't skip or reorder them. You (the `dm`) run this; the authoring subagents propose
-files and you **gate** them.
+steps in order; don't skip or reorder them. You (the `dm`) run this and **author the canon yourself**
+— load the craft skills (`world-build`, `arc-design`) and the format skill (`canon-conventions`) and
+write the files directly. After authoring each bundle you **gate your own work** with the checklist
+below. (The independent canon gate — the `narrative-checker` — comes online in the planning/runtime
+phases; at init the gate is your own review.)
 
 ### Principles for the creative stages
 - **Meet the player where they are.** One word ("noir") or a full pitch — take whatever they give.
@@ -29,8 +32,8 @@ files and you **gate** them.
 - **Don't over-build before the character exists.** Build enough world to present a premise; save
   the major arcs until the character is made, so they can be personal.
 
-### The gate (you run this on every authored bundle — stages 3, 5, 6)
-A subagent's output is a **proposal**, not canon. Before accepting it, check — and fix or send back:
+### The gate (run this after authoring each bundle — stages 3, 5, 6)
+After you write a bundle of canon, review it against this checklist and fix anything that fails:
 - **No blanks.** No "DM decides / TBD / as needed" for any load-bearing fact (canon-conventions §1).
 - **Registered.** Every created entity has an `INDEX.md` row; no entity is left unregistered.
 - **No dangling links.** Every `[[slug]]` resolves; nothing references an unfiled entity.
@@ -60,21 +63,29 @@ A subagent's output is a **proposal**, not canon. Before accepting it, check —
 The first commit is Stage 8 — do not commit yet.
 
 ## Stage 1 — Vibe & control
-Ask one open question: what kind of campaign do they want — genre, vibe, premise, tone, or just a
-feeling, as vague or detailed as they like. Sense how much they're handing you vs. want to shape,
-and whether they want guiding questions or just want you to run.
+If the player hasn't already said what they want, ask one open question: what kind of campaign do
+they want — genre, vibe, premise, tone, or just a feeling, as vague or detailed as they like.
 
-## Stage 2 — Guided questions  *(optional — only if they want guidance or gave little)*
-Walk a standard set, letting them defer any to you: setting/world, tone, themes, stakes & scale,
-play-style mix, **content boundaries** (lines & veils — honor everywhere after), power level
-(starting level, power fantasy).
+**First, mine what they've already told you.** Read their opening message and extract every
+dimension they've already specified (genre, tone, themes, premise, scope, etc.). **Do not re-ask
+what they've already answered** — it reads as not listening. Then judge how much they're handing you
+vs. want to shape, and whether they want guiding questions or just want you to run with it.
+
+## Stage 2 — Guided questions  *(optional — skip if the brief is already rich)*
+Only if they want to be guided **or** left a dimension genuinely blank that you need. Ask **only**
+about the gaps — never the dimensions they already covered — and let them defer any to you. The full
+set, for reference: setting/world, tone, themes, stakes & scale, play-style mix, **content
+boundaries** (lines & veils — honor everywhere after), power level (starting level, power fantasy).
+If they gave a full pitch, skip straight to Stage 3 and only circle back for a missing essential
+(e.g. content boundaries) — ideally folded into a single short confirm, not a questionnaire.
 
 ## Stage 3 — Build the world skeleton
 1. Synthesize their answers into a premise and central conflict.
-2. **Delegate to `world-builder`**: opening regions, key factions, a handful of NPCs, significant
-   items — enough to anchor a premise and hooks — as info files registered in `INDEX.md`. (It
-   reports initial-state facts; it does not write state.)
-3. **Gate** its output (checklist above). Fix or send back.
+2. **Author the world yourself** — load `world-build` (craft) and `canon-conventions` (format):
+   opening regions, key factions, a handful of NPCs, significant items, and the world-truth
+   singletons (`overview`/`cosmology`/`history`) — enough to anchor a premise and hooks. Write the
+   info files and register each in `INDEX.md`. Don't write state yet (Stage 7).
+3. **Gate** what you wrote (checklist above).
 4. Write a first-pass `campaign/campaign.md` (setting, tone, themes, stakes; record the content
    boundaries here). Build the surface; hold the arcs.
 
@@ -90,20 +101,20 @@ Load the **`character-create`** skill and follow it at the player's chosen contr
 Note the backstory canon and DM-side hooks it surfaces, for the next stage.
 
 ## Stage 6 — Weave the character into the world & arcs
-1. **Fold in backstory canon.** For every new NPC/location/faction the backstory introduced,
-   **delegate to `world-builder`** to author and register it. **Gate.** Nothing the backstory names
-   stays unfiled.
-2. **Design the arc(s).** **Delegate to `arc-builder`**: at least one major arc woven into the
-   character's backstory hooks (keep *how* spoiler-side); optionally minor arcs. It writes the arc
-   design + `INDEX.md` Arcs row and reports the starting status; if it flags entities it needs that
-   don't exist, route those to `world-builder` first. **Gate.**
-3. **Write each arc's initial state.** Create `arcs/{slug}.state.md` from the template at the
-   reported starting status (usually `dormant`).
+1. **Fold in backstory canon.** For every new NPC/location/faction the backstory introduced, author
+   and register it yourself (`world-build` + `canon-conventions`). **Gate.** Nothing the backstory
+   names stays unfiled.
+2. **Design the arc(s).** Load `arc-design` + `canon-conventions` and author at least one major arc
+   woven into the character's backstory hooks (keep *how* spoiler-side); optionally minor arcs.
+   Commit every answer (no "DM decides"). Write the arc design + its `INDEX.md` Arcs row. If the arc
+   needs an entity that doesn't exist yet, author that entity first. **Gate.**
+3. **Write each arc's initial state.** Create `arcs/{slug}.state.md` from the template at its
+   starting status (usually `dormant`).
 4. Finalize `campaign/campaign.md`.
 
 ## Stage 7 — Initialize state  *(exact steps — you are the single writer of all state)*
 The canon now exists; write the opening snapshot, true as of the start of session 1:
-1. **Entity state.** For every stateful entity `world-builder` created, write `{slug}.state.md`
+1. **Entity state.** For every stateful entity you created, write `{slug}.state.md`
    (`as-of: S1`) from its starting-state facts: location, notable condition, what it's doing.
 2. **`state/current.md`.** The opening scene: where the PC is, when, who's present, the immediate
    situation, and the opening hook. This is the runner's resume baseline.

@@ -1,7 +1,7 @@
 <!--
   Reconciliation log — the narrative-checker's in-play findings. Path: campaign/sessions/session-{N}-deltas.md
   Append-only RECORD that accrues during PLAY (canon-conventions / REFACTOR §5.5).
-  Drained at POST: "New canon" by world-keeper + registry; "Arc divergence" by arc-keeper.
+  Drained at POST: "New canon" into world files + registry; "Arc divergence" into the arc bodies.
   Two entry types only. Each entry cites the turn it came from.
 -->
 # Session <N> — Deltas
@@ -15,7 +15,7 @@
 
 ## Arc divergence
 <!-- Where play departed from the arc/plan. Played beats planned — these are logged, not corrected;
-     the arc-keeper reconciles the arc body/state to them at POST. -->
+     the post-session arc pass reconciles the arc body/state to them at POST. -->
 | turn | what diverged | affected arc/beat | notes |
 |---|---|---|---|
 | <t> | <how play departed from the plan/arc> | <[[arc-slug]] / turning point> | <consequence for the arc> |

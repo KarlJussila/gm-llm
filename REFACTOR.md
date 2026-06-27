@@ -95,7 +95,7 @@ where each layer trusts the layer below to hold continuity, and none actually do
 - **The checkers are fully authoritative.** When a checker reports a violation, the
   runner must resolve it before the turn reaches the player.
 - **Delegated output is a proposal, not canon.** Any agent the DM delegates to
-  (planner, world-builder, arc-builder) produces drafts; the DM must actually review
+  (the planner) produces drafts; the DM must actually review
   and edit them, not rubber-stamp. The DM needs teeth.
 - **Subagents are pure workers.** They cannot delegate (no `task`) and **cannot touch
   the player.** Anything player-facing — character creation, any prompt or question to
@@ -227,7 +227,7 @@ rule (§3b). PRE and RUNTIME share one threshold.
 2. **`dm` picks the arc beat(s)** to advance and briefs `session-planner`.
 3. **`session-planner` writes the plan** (§4.2), referencing entities by registry
    slug-link, and **flags** any fact/entity not yet in canon.
-4. **`dm` has `world-keeper` author/stub the flagged entities** (grounded in arc/canon),
+4. **`dm` authors/stubs the flagged entities inline** (grounded in arc/canon),
    so no plan reference dangles.
 5. **`dm` gates the assembled bundle** (§4.3), delegating the mechanical canon cross-ref
    to **`narrative-checker`** — the *same engine* that gates runtime turns.
@@ -280,7 +280,7 @@ the `dm`:
 The same `narrative-checker` engine that gates runtime turns gates the plan — so the
 **Eratha-Voss class of failure is caught a stage earlier, at planning, automatically.**
 
-### 4.4 "Never say DM decides" — `arc-builder` + `arc-keeper`
+### 4.4 "Never say DM decides" — the `dm` (arc authoring)
 The arc commits its answers at design time (Thaddeus's fate, the intruder's identity) —
 those are what the planner *pulls*. Arc agents never defer a fact to "the DM decides";
 that's §4.0 at the arc layer. The `dm`-gate rejects arcs or plans that punt.
@@ -296,7 +296,7 @@ was nearly empty in the fifth — which is the root of most runner/planner failu
 | Bucket | Purpose | Owner | Cadence |
 |---|---|---|---|
 | **Canon / truth** | who/what things *are* (incl. hidden) | design agents + DM gate | rarely |
-| **Narrative design** | the planned story + *the answers* | arc-builder/-keeper + DM gate | rarely |
+| **Narrative design** | the planned story + *the answers* | dm (arc authoring) | per session |
 | **PC epistemic** | what the PC knows/believes/wonders | apply pass | per session |
 | **History** | what happened (append-only) | capture + extractor | per session |
 | **Current state ("the now")** | where everyone/everything *is now* | apply pass | per session |
@@ -320,7 +320,7 @@ static/live distinction, so entity pairs keep **locality** while state stays
 greppable (`**/*.state.md`). **Non-stateful** canon (cosmology, the Severing lore,
 geography) has no state file. The arc gets a related but distinct treatment: `…-flesh.md`
 (the **living design** — premise, turning points, committed answers; revised *between
-sessions* by the arc-keeper, stable during play) + `…-flesh.state.md` (a lightweight
+sessions* by the dm, not edited during play) + `…-flesh.state.md` (a lightweight
 progress snapshot: status, which turning points hit, position on the tension curve) —
 which retires the overloaded status-line **without** freezing the design. The arc body
 is not static: the keeper assesses and applies structural/detail changes to each arc
@@ -356,7 +356,7 @@ checks *against* it; the planner bundle and the reconciliation log *feed* it.
 
 ### 5.5 Reconciliation log — `sessions/session-{N}-deltas.md` `[DESIGNED]`
 Destination for the narrative-checker's in-play findings; two entry types —
-**new-canon asserted** (drained post-session by world-builder + registry) and **arc
+**new-canon asserted** (drained post-session by the dm into world files + registry) and **arc
 divergence** (drained by the arc adjuster). **Capture finding:** the existing
 `dm-transcript.ts` plugin records only player↔runner *text* from the runner's own
 session; checkers are separate subagent sessions, invisible to it — their findings must
@@ -414,10 +414,10 @@ the reconciliation log's divergence entries + the digest and reconciles the arc
 
 **Phases:** `INIT` (setup, once) · `PRE` (planning, before a session) · `PLAY` (live) ·
 `POST` (reconcile/adjust, after a session).
-**Agents:** `dm` (orchestrator) · `runner` · INIT: `WB` world-builder, `AB`
-arc-builder · BETWEEN: `SP` session-planner, `WK` world-keeper, `AK` arc-keeper,
-`CA` campaign-analyst, `LE` log-extractor · RUNTIME: `NC` narrative-checker, `RC`
-rules-checker · *plugins* (deterministic). See §7 for the lifecycle taxonomy.
+**Agents:** `dm` (orchestrator; authors all canon + state inline) · `runner` · delegated:
+`SP` session-planner, `CA` campaign-analyst, `LE` log-extractor · RUNTIME: `NC`
+narrative-checker, `RC` rules-checker · *plugins* (deterministic). World/arc authoring is the
+`dm`'s (no builder/keeper agents — post-M1). See §7.
 
 **Four governing rules:**
 1. **Single writer per artifact per phase.** Shared ownership is what produced the
@@ -434,10 +434,10 @@ rules-checker · *plugins* (deterministic). See §7 for the lifecycle taxonomy.
 **Canon / truth**
 | Artifact | Writer · phase | Gate | Read by |
 |---|---|---|---|
-| `INDEX.md` (registry/resolver) | WB·INIT (bulk); WK·PRE (staged-new + named-but-not-met stubs); WK·POST (entities asserted in play, from deltas) | dm | runner, NC, SP, AK, WK |
-| `world/{overview,cosmology,history}` (world-truth singletons) | WB·INIT; WK·POST if play establishes new world-truth | dm | SP, NC, AK |
-| `world/{npcs,factions,locations,items,regions}/{slug}.md` (info) | WB·INIT; WK·PRE/POST for first-introduction | dm | runner, SP, NC, AK |
-| `arcs/{arc}.md` (design) | AB·INIT; AK·POST when play overtakes design | dm | SP, NC, dm |
+| `INDEX.md` (registry/resolver) | dm·INIT (bulk); dm·PRE (staged-new + named-but-not-met stubs); dm·POST (entities asserted in play, from deltas) | dm | runner, NC, SP |
+| `world/{overview,cosmology,history}` (world-truth singletons) | dm·INIT; dm·POST if play establishes new world-truth | dm | SP, NC |
+| `world/{npcs,factions,locations,items,regions}/{slug}.md` (info) | dm·INIT; dm·PRE/POST for first-introduction | dm | runner, SP, NC |
+| `arcs/{arc}.md` (design) | dm·INIT; dm·POST when play overtakes design | dm | SP, NC, dm |
 
 **PC epistemic**
 | `characters/{pc}.md` (sheet) | dm·INIT; POST on level-up/permanent change | dm | runner, SP, NC |
@@ -446,39 +446,38 @@ rules-checker · *plugins* (deterministic). See §7 for the lifecycle taxonomy.
 **Current state — snapshots, frozen during PLAY**
 | `world/**/{slug}.state.md` | apply pass·POST (digest+deltas) | dm | runner (session start), SP, NC |
 | `characters/{pc}.state.md` (PC location/notable condition/key items/objective; no granular HP/slots) | apply pass·POST (digest+deltas) | dm | runner (session start), SP, NC |
-| `arcs/{arc}.state.md` | dm·POST (apply pass); AK·POST for body re-design | dm | SP, dm |
+| `arcs/{arc}.state.md` | dm·POST (apply pass; body re-design is also the dm's) | dm | SP, dm |
 | `state/{current,calendar,threads,clocks}.md` | apply pass·POST | dm | runner (session start), SP, NC |
 
 **History — append-only**
 | `sessions/session-N-plan.md` | SP·PRE (bundle); revised by dm·PRE | dm | runner, NC, CA |
 | `sessions/session-N-transcript.md` | transcript plugin·PLAY (auto) | — | LE, CA, NC (in-session) |
-| `sessions/session-N.md` (digest) | LE·POST (from transcript) | dm | CA, dm (apply), AK |
-| `sessions/session-N-deltas.md` (reconciliation log) | NC·PLAY *(or plugin — §6)* | — | apply pass (WB/AD/dm)·POST |
+| `sessions/session-N.md` (digest) | LE·POST (from transcript) | dm | CA, dm (apply) |
+| `sessions/session-N-deltas.md` (reconciliation log) | NC·PLAY *(or plugin — §6)* | — | dm apply pass·POST |
 | `assessment/session-N-assessment.md` | CA·POST (from digest) | — | dm, SP (next PRE) |
 | `documents/*` (verbatim handouts) | LE/apply pass·POST (routed from transcript) | dm | runner, SP, NC |
 
 **Process**
 | `feedback/*.md` | dm·POST (from digest's player-feedback section) | — | the targeted skill/agent, at its phase |
 
-**The canon/state ownership seam `[DECIDED]`:**
+**The canon/state ownership seam `[DECIDED, revised post-M1]`:**
 
-> Design/authoring agents write real files **as proposals**; the `dm` is the **single
-> auditor** that owns all *state* reconciliation and *gates* all canon.
+> The `dm` **authors all canon and writes all state**, as the single auditor. The only
+> delegated writer of a real campaign file is the `session-planner` (its plan, `dm`-gated).
 
-- **The apply pass is the `dm`** (not a delegate). It owns and performs all POST state
-  writes — every changed `*.state.md`, the four `state/*` docs, the ledger, the
-  registry's status/state fields, document routing. One mind auditing the whole pass is
-  what smooths inconsistencies. It hands genuinely design-heavy *sub-tasks* (a rich new
-  NPC info file for an entity that emerged in play) to `world-keeper`, then integrate +
-  gate — owning the spine without doing every creative bit.
+- **The apply pass is the `dm`** (not a delegate). It owns and performs all POST writes —
+  new/changed canon (world, arcs, entities), every changed `*.state.md`, the four `state/*`
+  docs, the ledger, the registry, document routing. One mind auditing the whole pass is
+  what smooths inconsistencies, and the same mind authored the canon, so there's no
+  hand-off to drop.
 - **§5.10 is the `dm`'s POST runbook.** Teeth come from the matrix-as-checklist: a
   closed list where every changed entity and every delta entry must be accounted for.
   Mitigates the heavy-single-pass risk (the way Corvin got dropped) by keeping it
   *transcription from structured digest+deltas, not re-analysis*.
-- **Authoring agents write real files.** INIT: `WB`/`AB` build the world + arcs.
-  BETWEEN: `SP` writes the plan, `WK` authors entity files + registry stubs, `AK`
-  revises the arc — all as `dm`-gated proposals. (Multi-step file-writing is fine for
-  capable agents; the gate is the control, not withholding the pen.)
+- **Why inline, not delegated authoring:** same model everywhere (no quality gain from a
+  worker), and the author/gate split only enabled rubber-stamping. The independent check
+  is the `narrative-checker`, not a separate author. The craft lives in skills the `dm`
+  loads (`world-build`, `arc-design`, `canon-conventions`).
 
 ---
 
@@ -513,13 +512,13 @@ layout from an **empty directory**.
 
 **Ownership × timing matrix: designed** (§5.10). `[DECIDED]`
 
-**Ownership seam: decided** (§5.10) — apply pass = `dm` (single auditor; matrix is its
-runbook); authoring agents (`SP`/`WB`/`AB`) write real files as `dm`-gated proposals.
+**Ownership seam: decided** (§5.10, revised post-M1) — the `dm` authors all canon + writes
+all state (single auditor; matrix is its runbook). The only delegated file-writer is `SP`
+(its plan, `dm`-gated). **Builder/keeper agents culled** in favor of `dm`-inline authoring.
 
-**Resolved this round:** PRE bundle orchestration = `dm` orchestrates `SP` (plan) +
-`world-keeper` (entity files), assembles + gates (the §7 split settles it).
-Migrate-vs-rebuild = **rebuild**. Character creation = **stays a `dm` skill** (subagents
-can't touch the player). Names finalized: `world-keeper` / `arc-keeper`.
+**Resolved this round:** Migrate-vs-rebuild = **rebuild**. Character creation = **stays a
+`dm` skill** (subagents can't touch the player). World/arc authoring = **`dm`-inline via
+craft skills**, not builder/keeper agents (post-M1).
 
 Still open:
 - **Reconciliation-log write mechanism** (§3 a/b): NC narrow-write vs. plugin
@@ -532,18 +531,23 @@ Still open:
   split. **Added:** planner has free license to create entities, but each must be
   **thoroughly documented** (full file, not a stub) and **overlap-checked** (name + role)
   against existing entities — so the planner authors its own new-entity files via the
-  conventions skill (refines the earlier PRE-orchestration lean; `world-keeper` is for
-  deeper/POST authoring).
+  conventions skill (the `dm` handles deeper/POST authoring inline).
 - **Build-time check:** does opencode support a *per-skill* allowlist, or only blanket
   `skill: allow/deny`? (Affects how §2 least-privilege is enforced for skills.)
 
 ## 7. Agent inventory — lifecycle taxonomy
 
+> **Post-M1 revision (2026-06-26).** Running INIT showed the `dm` authoring world/arc canon
+> *inline* rather than delegating, and it worked. Decision: **cull the builder/keeper agents; the
+> `dm` authors all canon inline** via the craft skills. Two premises corrected: (1) **every** agent
+> (dm, runner, subagents) runs the **same** model (`mimo-v2.5-free`) — there's no quality gain from
+> delegating authoring; (2) the engine **targets a modest, non-frontier model** — reliability must
+> come from *prompt structure*, not model smarts. Hence the `narrative-checker` must be **strictly
+> algorithmic**, likely **decomposed into focused checking skills**.
+
 **Architectural constraint (verified):** every subagent has `task: deny` — only the
 `dm` and `dm-runner` (primaries) can spawn agents. **Subagents cannot delegate.** All
-multi-agent orchestration (the PRE bundle, the POST pass) is the conductors'.
-*(Aside: all subagents run on `mimo-v2.5-free`, which leaks foreign-language tokens —
-matters most for checker reliability. Model choice, out of scope.)*
+multi-agent orchestration is the conductors'.
 
 **Organizing principle: split by disposition (lifecycle), unify by format.** An INIT
 prompt ("create from a brief") and a maintenance prompt ("surgical change against a
@@ -554,42 +558,35 @@ canon-conventions skill** (registry, slug-links, info/state suffix, file layout)
 they don't drift in *how* they write. Disposition → agent prompt; format → shared skill.
 
 **Conductors (primary):**
-- `dm` — orchestrates INIT and BETWEEN-SESSIONS; owns the apply pass + all gates. Stays
-  unified (splitting the conductor fragments through-line ownership). Must *actually
-  invoke* `arc-keeper` on divergence instead of doing status-line recaps itself.
+- `dm` — orchestrates INIT and BETWEEN-SESSIONS; **authors all canon inline** (world, arcs,
+  entities) via `world-build` / `arc-design` / `canon-conventions`; owns the apply pass + all
+  gates + all state. Must *actually revise arc bodies* on divergence, not do status-line recaps.
 - `dm-runner` — orchestrates RUNTIME; `task: deny` → allow (calls checkers); adopts the
   per-turn check loop (§3).
 
-**INIT workers** (greenfield, once):
-- `world-builder` — build the world skeleton from scratch.
-- `arc-builder` — design a new arc (current Mode A).
-- `character-builder`? — currently a `character-create` skill the `dm` drives; promote
-  to an agent or leave as a dm-driven skill. *(Open — minor; §6.)*
+**Canon authoring is the `dm`'s, inline** (no builder/keeper agents). The dm writes world/arc/
+entity files directly at INIT *and* POST, gating its own work — with `narrative-checker` as the
+independent canon gate once built. The craft lives in **skills** the dm loads (`world-build`,
+`arc-design`), unified by the **`canon-conventions`** format skill. Disposition (init vs. surgical
+maintenance) is handled by the dm's phase instructions, not by separate agents. `character-create`
+stays a dm-driven skill (player-facing). Trade-off: INIT context load sits on the dm — acceptable;
+reintroduce a builder agent only if it bloats.
 
-**BETWEEN-SESSIONS workers** (surgical maintenance):
-- `session-planner` — PRE plan; plan facts fully / leave path open; honor the arc as
-  binding; its plan is one part of the dm-orchestrated bundle.
-- `world-keeper` — **NEW (split from world-builder).** Authors new/changed canon files
-  (info `*.md`) as gated proposals — at PRE (entities the planner needs, e.g. Corvin)
-  *and* POST (entities that emerged in play, from deltas). One agent, both phases.
-- `arc-keeper` — **NEW (split from arc-builder's Mode B).** Revises the arc body POST
-  when play overtakes design; never retcon.
-- `campaign-analyst` — assess (PRE) + review (POST); analysis only, writes its own
-  deliverable. Working well — keep.
-- `log-extractor` — transcript → digest, lossless, POST. Working well — keep.
+**Delegated subagents** (isolation / parallelism only):
+- `session-planner` — PRE plan; plan facts fully / leave path open; honor the arc as binding; its
+  plan is a dm-gated proposal.
+- `campaign-analyst` — assess (PRE) + review (POST); analysis only, writes its own deliverable. Keep.
+- `log-extractor` — transcript → digest, lossless, POST. Keep.
+- `narrative-checker` — canon/consistency gate (§3b); **reused by the `dm` PRE review**; **strictly
+  algorithmic, decomposed into focused checking skills** (the many-jobs problem).
+- `rules-checker` — conduct gate, canon-free (§3a); strictly algorithmic.
 
-**RUNTIME workers** (live):
-- `narrative-checker` — canon/consistency gate (§3b); **reused by the `dm` PRE bundle
-  review** (same "check against canon" job, two callers).
-- `rules-checker` — conduct gate, canon-free (§3a).
+**State application is the `dm` directly** (§5.10).
 
-**State application is nobody's worker job — it's the `dm` directly** (§5.10). The
-`world-keeper` authors *canon* only; the `dm` writes all *state*.
-
-**Net change:** four new agents (`world-keeper`, `arc-keeper`, `narrative-checker`,
-`rules-checker`) + the conventions skill; `world-builder`/`arc-builder` narrow to
-INIT-only. The split is concerns, not capabilities — most of `world-keeper`/
-`arc-keeper` already exists inside today's `world-builder`/`arc-builder`.
+**Net change:** the `canon-conventions` skill + two runtime checkers (`narrative-checker`,
+`rules-checker`). World/arc authoring folds **into the `dm`** (inline, via the existing craft
+skills) — no builder or keeper agents. *(Earlier drafts planned `world-builder`/`arc-builder`/
+`world-keeper`/`arc-keeper`; culled post-M1 in favor of dm-inline authoring.)*
 
 ---
 
@@ -615,16 +612,18 @@ Dependencies: `0 → 1 → 2 → {3, 4} → 5 → 6`.
   produce in it.
 - ▶ **Review:** does the format actually read cleanly and capture what each flow needs?
 
-### Phase 1 — INIT producers → a fresh campaign
-- **1.1 `world-builder`** rewrite — author world canon in the new layout, conventions-
-  compliant, registered, info/state split.
-- **1.2 `arc-builder`** rewrite — design the arc; **commit every answer** (no "DM decides").
-- **1.3 `character-create` skill** — PC info + knowledge ledger in the new format
-  (dm-driven; player-facing, so it stays a primary's skill).
+### Phase 1 — INIT producers → a fresh campaign ✓ DONE
+- **1.1 `world-build` skill** — world-authoring craft in the new layout; format → conventions.
+  *(The `world-builder` agent was built then culled post-M1; the `dm` authors world inline.)*
+- **1.2 `arc-design` skill + arc templates** — design craft; **commit every answer**; arc design is
+  a living doc. *(The `arc-builder` agent was built then culled post-M1; the `dm` authors arcs inline.)*
+- **1.3 `character-create` skill** — PC triple (sheet/state/knowledge) in the new format
+  (dm-driven; player-facing).
 - **1.4 `dm` INIT orchestration** (campaign-setup) — scaffold §5.7 from an **empty dir**,
-  init `INDEX` + empty `state/*`, sequence 1.1–1.3, gate each.
-- ▶ **Milestone M1:** run INIT from empty → review a complete fresh campaign (canon +
-  registry + empty state) before any flow consumes it.
+  init `INDEX` + empty `state/*`, `dm` authors world/character/arc inline and gates each, `dm`
+  initializes all state.
+- ▶ **Milestone M1: PASSED** — INIT ran from empty; output reviewed at a skim. Findings folded back:
+  builders/keepers culled, Stage 1/2 over-asking tightened.
 
 ### Phase 2 — The gate *(reused by planning AND runtime)*
 - **2.1 `narrative-checker`** — canon/consistency/overlap/ledger gate; test standalone
@@ -651,10 +650,10 @@ Dependencies: `0 → 1 → 2 → {3, 4} → 5 → 6`.
 ### Phase 5 — POST reconcile → updated canon/state
 - **5.1 `log-extractor`** — keep; minor (digest references deltas).
 - **5.2 `campaign-analyst`** — keep; minor (reads new layout).
-- **5.3 `world-keeper`** — POST canon authoring from deltas (new-entity files, gated).
-- **5.4 `arc-keeper`** — POST arc-body adjustment from divergence deltas.
-- **5.5 `dm` POST apply-pass runbook** — the §5.10 checklist: write all state files,
-  ledger, registry, route documents; orchestrate 5.1–5.4; gate.
+- **5.3 `dm` POST apply-pass runbook** — the §5.10 checklist, all done by the `dm` inline: drain the
+  deltas (author new-canon entity/world files + registry; reconcile arc bodies — *not* a status
+  bump), write all state files + ledger, route documents; gate throughout. *(POST canon authoring
+  folds into the `dm`; no `world-keeper`/`arc-keeper` agents — post-M1.)*
 - ▶ **Milestone M4:** reconcile M3; review updated state/ledger/registry/arc — verify
   nothing dropped (the Corvin test) and the arc body actually moved.
 

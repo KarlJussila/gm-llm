@@ -2,8 +2,8 @@
   ARC DESIGN file — the LIVING narrative design. Path: campaign/arcs/{slug}.md
   Paired with {slug}.state.md (a lightweight progress snapshot — see arc-state.template).
   Registered in INDEX (Arcs).
-  This file is REVISED BETWEEN SESSIONS by the arc-keeper, which assesses what structural and detail
-  changes each arc needs after play (redirect, accelerate, merge, deepen, recommit answers) — not
+  This file is REVISED BETWEEN SESSIONS in the post-session arc pass, which assesses what structural
+  and detail changes each arc needs after play (redirect, accelerate, merge, deepen, recommit) — not
   just a status bump. It is *not edited during play* (divergence is logged to the deltas log
   instead) and reconciled afterward. "Played beats planned": revise the design toward what happened.
   THE RULE: every turning point and the central mystery COMMITS its load-bearing answer here. The
@@ -54,7 +54,7 @@ point sits on the curve.>
 <[[slug]] references to related arcs, key NPCs/factions/locations/items, and the PC's backstory hooks.>
 
 ## Adjustment log
-<!-- The arc-keeper appends here each session it revises this arc: what in the structure/details
-     changed and why, keyed to the session that prompted it. Provenance of the body's evolution. -->
+<!-- The post-session arc pass appends here each session it revises this arc: what in the
+     structure/details changed and why, keyed to the session. Provenance of the body's evolution. -->
 - **S<n>:** <what changed in the arc and why (the play that prompted it)>
 
