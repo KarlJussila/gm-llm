@@ -1,93 +1,79 @@
 ---
 name: world-build
-description: Create and maintain D&D world content — locations, NPCs, factions, and pending world events. Use during campaign initialization and to update world state after sessions. Produces or updates the files under campaign/world/.
+description: The craft of authoring D&D world content — cosmology, regions, NPCs, factions, locations, and significant items — as layered, living, internally consistent canon. Covers WHAT makes good world content and HOW to design it; the file format/layout/linking is owned by the canon-conventions skill, which you load alongside this. Used during campaign init (world-builder) and when adding world content later (world-keeper).
 ---
 
 # world-build
 
 ## Player feedback — read first
 
-Before creating or updating world content, read `campaign/feedback/world-build.md` if it exists.
-It holds accumulated, player-specific guidance distilled from past sessions. Treat it as binding
-and let it override the defaults here wherever they conflict.
+Before creating world content, read `campaign/feedback/world-build.md` if it exists. It holds
+accumulated, player-specific guidance distilled from past sessions. Treat it as binding and let it
+override the defaults here wherever they conflict.
 
-Create the living backdrop of the campaign: locations, NPCs, factions, and events. Keep it
-consistent with established lore and connected to the campaign's themes. Read the existing
-`campaign/world/` files and `campaign/campaign.md` before adding or changing anything.
+## Format is not your concern here — load canon-conventions
 
-## Content types
+**Load the `canon-conventions` skill and follow it for all format**: the file layout under
+`campaign/`, the entity info/state file pair and their frontmatter, `[[slug]]` linking, the
+`INDEX.md` registry, and awareness/`[hidden]` flags. This skill is purely about *what* to author
+and *what makes it good*. Where the two overlap, canon-conventions wins on format.
 
-### Locations (`campaign/world/locations.md`)
-- Name and description
-- Significance — why does this place matter to the campaign?
-- Current state — intact, damaged, occupied, abandoned
-- Hooks — what draws players here?
-- Connections to other locations
+The one rule from there that governs world authoring most: **commit every world-fact now; leave
+open only what the player decides.** An NPC's true allegiance, a faction's real goal, the secret a
+location holds — decide them at authoring time. Never write "DM decides."
 
-### NPCs (`campaign/world/npcs.md`)
-- Name, role, appearance
-- Personality and mannerisms
-- Motivation — what they want and why
-- Disposition toward the PCs — friendly, hostile, neutral, complicated
-- Secrets — what they know but aren't saying (flag these; see *Awareness flags* below)
-- Current situation — what's happening to them right now
+## What the world is made of
 
-### Factions (`campaign/world/factions.md`)
-- Name and description
-- Goals and methods
-- Leader and key members
-- Relationship to other factions
-- Current activity — what are they doing right now?
-- How they might intersect with the PCs
+- **World truth** (`world/overview.md`, `world/cosmology.md`, `world/history.md`) — non-entity
+  setting prose. `overview` is the premise, central conflict, surface situation, themes, and the
+  **hidden layer** (what's *really* going on); `cosmology` is how reality works and the truth
+  beneath it; `history` is the world's **backstory** — the past that produced the present (distinct
+  from the live `state/calendar.md` clock). Non-stateful, not in `INDEX`. Use the `world-overview` /
+  `world-cosmology` / `world-history` templates.
+- **Regions** (`world/regions/`) — the places at map scale: geography, who holds them, notable
+  places within, culture, and **regional history** (a section in the region file, not a separate
+  entity), and how they connect.
+- **NPCs** (`world/npcs/`) — the people. Each an info/state pair.
+- **Factions** (`world/factions/`) — the organizations with goals and reach.
+- **Locations** (`world/locations/`) — the specific places play happens.
+- **Significant items** (`world/items/`) — campaign-weight objects and artifacts (not mundane
+  gear — that lives on the character sheet). Verbatim text of any written item goes in
+  `documents/`, referenced from the item file.
 
-### Events (`campaign/world/events.md`)
-Pending world events — things happening whether or not players are present:
-- What is happening
-- When (in-game time)
-- Impact on the world
-- How players might learn about it
-- How it connects to active arcs
+## Design in two layers
 
-### Significant items (`campaign/world/items.md`)
-Campaign-significant objects and artifacts (not mundane gear — that lives on character sheets):
-- What it is and why it matters
-- Current owner / location
-- Current state
-- A short history of how its state has changed
-During live play `dm-runner` keeps this current; you create or restructure it during init and
-post-session world updates. Verbatim text of any written item belongs in `campaign/documents/`.
+The strongest world content has a **surface** (what anyone observes) and a **hidden layer** (the
+truth beneath). Author both, and flag the hidden parts per canon-conventions §5 (`[hidden]` +
+`Known to:`) so the system tracks who knows what.
 
-## Awareness flags
+- **Surface:** the public role, the apparent situation, what a newcomer perceives.
+- **Hidden:** the true allegiance, the real motive, the secret the place keeps, the actual cause of
+  the visible symptoms. This is where the campaign's tension lives.
 
-Any secret, hidden motive, true nature, or planned reveal — for an NPC, location, faction, or
-item — is **flagged** so the system tracks who knows it (see *Knowledge & awareness* in
-`campaign/README.md`):
+Commit the hidden layer to the file even when no one will discover it soon — that's what lets the
+runner and the checkers stay consistent, and what stops a downstream agent from inventing a
+contradictory "truth."
 
-- Prefix the fact with `[hidden]` (the PC doesn't know) — it becomes `[revealed: S<n>]` once the
-  PC learns it.
-- Add a `Known to:` line listing the in-world parties aware of it (NPCs, factions, and "the PC"
-  once revealed). This is what lets NPCs act only on what they actually know.
+## Craft principles
 
-Openly apparent details need no flag. Flag the secrets, not the surface. Example:
+- **Every location has a hook** — a concrete reason a player would go there.
+- **Every NPC wants something** — a flat NPC is forgettable. Give them an active agenda that
+  shapes how they act when the PC isn't steering.
+- **NPCs are not uniformly kind.** Kindness is a choice an NPC makes, not a default. Give them
+  friction, suspicion, self-interest, and their own agendas. A stranger's manner, methods, or
+  reputation can and should raise eyebrows. (Mirrors the table craft in `session-run`.)
+- **Factions have competing goals** — overlapping, conflicting aims are where interesting pressure
+  comes from. Map how each faction relates to the others and how it might intersect the PC.
+- **The world acts on its own.** Things happen whether or not the PC is present. Capture in-motion
+  situations and pressures (a faction's plan in progress, a deadline approaching) so the world
+  feels alive — and so they can become threads and clocks (`state/threads.md`, `state/clocks.md`).
+- **Tie to the campaign's themes.** Every piece should serve what the campaign is *about*.
+- **Stay internally consistent.** Read existing world files and `campaign.md` before adding
+  anything; never contradict established canon. Check `INDEX.md` before creating an entity so you
+  reuse what exists instead of spawning a near-duplicate.
 
-```
-- [hidden] She's an Unbound operative working to accelerate the seal's collapse.
-  Known to: Maren, Unbound leadership.
-```
+## What "good" looks like when you're done
 
-## Principles
-- **Every location has a hook** — a reason players would go there.
-- **Every NPC wants something** — flat NPCs are forgettable.
-- **NPCs are not uniformly kind.** Give them friction, suspicion, and personal agendas. Kindness
-  is a choice an NPC makes, not a default setting. A stranger's appearance, methods, or
-  reputation can and should raise eyebrows. (This mirrors the table craft in `session-run`.)
-- **Factions have competing goals** — that's where interesting conflict comes from.
-- **The world feels alive** — things happen when players aren't looking.
-- **Maintain internal consistency** — don't contradict established facts. Connect to campaign
-  themes when possible.
-
-## File output
-Update the relevant file(s) under `campaign/world/`. Create the file if it doesn't exist.
-
-## Tone
-Make the world feel real and lived-in. Every detail should serve the campaign.
+- Each entity reads as a real, motivated presence with a surface and a committed hidden layer.
+- Every load-bearing fact is decided — no blanks, no "DM decides."
+- Everything is registered, linked, and format-clean per canon-conventions.
