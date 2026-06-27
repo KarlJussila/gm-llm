@@ -46,9 +46,16 @@ done as you go:
 
 ### 1. Pull context
 - Read the **drafted turn** from your brief (the actual narration the runner is about to send).
-- `tail` / read `campaign/sessions/session-{N}-transcript.md` for the recent exchanges — the
-  player's actual words and how many scenes have run this session (N = the highest
-  `session-{N}-plan.md`). That plus the feedback note are the only files you read.
+- Read the **player's latest message** from your brief — what the player said this turn. This is
+  your authority for player agency: judge the draft against *these* words. Anything the draft
+  renders that the player put in this message (their stated action, caution, timing, where they go,
+  what they say) is faithful, not "acting for the character" — flag only what the player did **not**
+  supply. (What the player *said* is not automatically what *happens*: the runner may reasonably
+  push back on a nonsensical declaration rather than narrate it as done — that isn't a violation.)
+- `tail` / read `campaign/sessions/session-{N}-transcript.md` only for earlier scenes — how many
+  scenes have run this session, for pacing (N = the highest `session-{N}-plan.md`). The current
+  turn won't be in it yet; the brief is the source for this turn. That plus the feedback note are
+  the only files you read.
 
 ### 2. Check player agency
 Flag any of:

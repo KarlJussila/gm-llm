@@ -39,10 +39,13 @@ done as you go:
 
 ### 1. Pull context
 - Read the **drafted turn** from your brief (the actual narration text the runner is about to send).
+- Read the **player's latest message** from your brief — what the player said this turn. This is the
+  current player input; it won't be in the transcript yet.
 - Determine the current session number **N** — the highest `campaign/sessions/session-{N}-plan.md`
   (the session being played). Use that N for the transcript and deltas files below.
-- `tail` / read `campaign/sessions/session-{N}-transcript.md` for the recent exchanges — the
-  player's actual recent words and the scene as it now stands.
+- `tail` / read `campaign/sessions/session-{N}-transcript.md` for the earlier exchanges this session —
+  the scene as it stood going into this turn. The current turn (the brief's player message + drafted
+  turn) sits on top of it.
 - Read `campaign/state/current.md` for the session-start baseline.
 - Read `campaign/sessions/session-{N}-deltas.md` if it exists — the new canon **you** have already
   asserted earlier this session. It is part of what's now established; you check against it too.
