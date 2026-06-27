@@ -38,6 +38,8 @@ done as you go:
 
 ### 1. Pull context
 - Read the drafted turn from your brief.
+- Determine the current session number **N** — the highest `campaign/sessions/session-{N}-plan.md`
+  (the session being played). Use that N for the transcript and deltas files below.
 - `tail` / read `campaign/sessions/session-{N}-transcript.md` for the last several exchanges — the
   player's actual recent words and the scene as it now stands.
 - Read `campaign/state/current.md` for the session-start baseline.

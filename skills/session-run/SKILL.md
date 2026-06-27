@@ -23,7 +23,7 @@ This skill reads:
 - **Current world/character state** — active character statuses, NPC locations, known world conditions
 - **Campaign tone and themes** — the established mood, genre conventions, and recurring themes
 - **Active arcs** — unresolved plot threads, ongoing character arcs, and pending consequences
-- **PC knowledge ledger** — `characters/{name}-knowledge.md`: what the character knows, believes,
+- **PC knowledge ledger** — `characters/{slug}.knowledge.md`: what the character knows, believes,
   and is chasing. Read this first; it defines what you can let the player act on.
 
 ## The play loop — run this on every player message
@@ -38,10 +38,37 @@ Running a session is this loop, repeated:
 3. **Does it call for a roll?** If there's uncertainty, risk, or any chance of failure — even a
    likely success — **ask the player to roll** the fitting check. Don't announce a target number;
    judge the result privately and let a low roll fail or complicate.
-4. **Narrate what happens** — the world's and the NPCs' response to the action and the roll.
-   Describe outcomes, not the character's next move; then hand the moment back to the player.
+4. **Draft the turn** — the world's and the NPCs' response to the action and the roll. Describe
+   outcomes, not the character's next move. This is a *draft*; it doesn't go out yet.
+5. **Gate the draft** (every turn — see *The per-turn gate* below): submit it to both checkers in
+   parallel and self-correct from what they flag.
+6. **Send** the corrected turn, handing the moment back to the player.
 
 The sections below elaborate each step.
+
+## The per-turn gate — every turn, before the player sees it
+
+A drafted turn does not go straight to the player. First submit it to two independent checkers, in
+parallel, and fix what they flag. This is unconditional — every turn, no exceptions. It costs one
+round-trip and keeps you from shipping a contradiction, a fabrication, or a spoiler.
+
+- **Dispatch both at once.** Issue two `task` calls in a single batch — don't wait on one before the
+  other:
+  - **`narrative-checker`**, role **`check-turn`** — canon/consistency and spoiler discipline. It
+    logs the turn's new-canon and arc-divergence deltas itself, so you don't have to.
+  - **`rules-checker`** — table conduct (agency, dice, metagame, pacing).
+- **Submit only your drafted turn.** The checkers self-serve everything else — they read the running
+  transcript and the canon/ledger themselves. You don't relay the player's messages or pull files
+  for them; that keeps your hands free for the scene.
+- **They return violations, not rewrites.** Each gives `PASS` or a numbered list with the correct
+  facts and a fix instruction.
+- **Self-correct in one bounded pass.** Apply the union of both lists — fix exactly what they
+  flagged, then send. Don't re-draft wholesale or run the gate again; a "defer / don't assert it"
+  fix can't reintroduce the same class of problem.
+- **The checkers are authoritative.** Resolve every violation before the turn reaches the player —
+  cut the spoiler, ground the fabricated detail, call the missed roll.
+
+The gate is invisible to the player; they experience only the finished turn, in flow.
 
 ## Real-Time Functions
 
@@ -180,7 +207,7 @@ screen**.
 - **Never reveal planned-but-undiscovered content in conversation.** No naming upcoming twists,
   unsprung encounters, NPC secrets, what's "supposed to" happen, or which beat comes next.
 - **Use the knowledge ledger as the test.** The PC knows only what's in
-  `characters/{name}-knowledge.md`, plus what is openly perceivable in the current scene. Anything
+  `characters/{slug}.knowledge.md`, plus what is openly perceivable in the current scene. Anything
   flagged `[hidden]` in the world/arc files is off-limits until the PC actually learns it in play.
   When unsure whether the character knows something, check the ledger — don't go by what *you* know.
 - **Narrate only what the character perceives.** If the character can't see it, hear it, or know
