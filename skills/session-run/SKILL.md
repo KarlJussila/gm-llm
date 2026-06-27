@@ -76,7 +76,10 @@ to check.
 - **The checkers are authoritative.** Resolve every violation before the turn reaches the player —
   cut the spoiler, ground the fabricated detail, call the missed roll.
 
-The gate is invisible to the player; they experience only the finished turn, in flow.
+The gate is invisible to the player. When you send the corrected turn, send **only the in-fiction
+narration, starting at the first word of the scene** — no preamble, no "corrected turn:", no "my
+draft had X wrong," no citing canon or the checkers, no narrating what you changed. The whole
+check-and-correct loop is silent; the player experiences only the finished turn, in flow.
 
 ## Real-Time Functions
 
