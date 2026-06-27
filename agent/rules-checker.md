@@ -82,11 +82,12 @@ Flag any of:
   single scene), or otherwise mismanages the session's arc.
 
 ### 6. Report
-Return one of:
-- **`PASS`** — no conduct violations.
-- **A numbered violation list** — for each: which rule, the offending text, and the **fix
-  instruction** (hand the choice back to the player, call for the roll, drop the DC, rephrase
+**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
+line. Then:
+- on **`VERDICT: PASS`** — stop there (no conduct violations).
+- on **`VERDICT: VIOLATIONS`** — a numbered list, for each: which rule, the offending text, and the
+  **fix instruction** (hand the choice back to the player, call for the roll, drop the DC, rephrase
   in-world, keep the scene going).
 
-Keep it terse and specific — the runner acts on this directly, under time pressure. No prose
-padding, no narrative/canon commentary (that's the other checker's job).
+Keep it terse and specific — it's acted on directly, under time pressure. No prose padding, no
+narrative/canon commentary (that's the other checker's job).

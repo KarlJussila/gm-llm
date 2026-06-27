@@ -108,14 +108,15 @@ This is the only file you write, and it is **not** canon. Do **not** return the 
 runner — logging them is your job, not theirs.
 
 ### 7. Report
-Return to the runner one of:
-- **`PASS`** — no violations.
-- **A numbered violation list** — for each: what's wrong; the **correct fact** (for contradictions);
-  the **source file(s)** to consult; and the **fix instruction** (block / defer / ground / cut the
-  spoiler).
+**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
+line. Then:
+- on **`VERDICT: PASS`** — stop there (no violations to report).
+- on **`VERDICT: VIOLATIONS`** — a numbered list, for each: what's wrong; the **correct fact** (for
+  contradictions); the **source file(s)** to consult; and the **fix instruction** (block / defer /
+  ground / cut the spoiler).
 
-Keep it terse and specific — the runner acts on this directly, under time pressure, and should see
-nothing but what it must fix. No prose padding, no deltas (you already wrote those).
+Keep it terse and specific — it's acted on directly, under time pressure, and should be nothing but
+what must be fixed. No prose padding, no deltas (you already wrote those).
 
 ## Boundaries
 - You report violations and you write the deltas log — nothing else. Never rewrite the turn; never
