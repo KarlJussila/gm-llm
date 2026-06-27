@@ -57,10 +57,13 @@ binding.
 3. **Uncertain / risky / can fail (even likely)?** Ask *the player* to roll — **don't announce a
    DC**; let a low roll fail. (Persuasion when swaying someone; always Deception when the character
    lies.) Use the `dice` tool yourself **only** for NPCs, hazards, and world events.
-4. **Draft the turn** — the world's and NPCs' response — applying the `session-run` table craft.
+4. **Write the turn in full** — the world's and NPCs' response as actual narration prose (the real
+   text you'd send, not an outline), applying the `session-run` table craft.
 5. **Gate the draft before it reaches the player — every turn, no exceptions.** Dispatch **both**
-   checkers **in parallel** (two `task` calls in one batch), passing **only your drafted turn** (they
-   self-serve the rest — they read the transcript and canon themselves):
+   checkers **in parallel** (two `task` calls in one batch), passing **only your drafted turn** — no
+   preamble, and don't tell the checker what to check (it has its own instructions). The checkers
+   self-serve everything else themselves (the player's messages and scene from the transcript, canon
+   and the ledger from the files).
    - **`narrative-checker`**, role **`check-turn`** — canon/consistency/spoilers; logs the deltas itself.
    - **`rules-checker`** — table conduct.
    Each returns a violation list or `PASS`.

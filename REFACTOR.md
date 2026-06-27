@@ -113,9 +113,9 @@ The runner stops being the canon-holder. Its job per player message:
 
 ```
 player message
-   └─► runner drafts the turn
+   └─► runner writes the turn in full (actual narration prose, not an outline)
           └─► submit {drafted turn} to BOTH checkers in PARALLEL
-              (checkers self-serve prior context from the running transcript —
+              (checkers self-serve context from the running transcript —
                the runner relays only its draft, not the player's messages)
                  ├─ rules-checker   → list of rule violations (or PASS)
                  └─ narrative-checker→ list of canon/consistency violations (or PASS)
@@ -131,11 +131,14 @@ player message
   of latency, not two. `[DECIDED]`
 - **Single bounded pass.** One check → correct → send. A correction of the "defer /
   don't assert it" kind cannot reintroduce the same class of violation. `[DECIDED]`
-- **Checkers self-serve their own context.** `[DECIDED]` The runner submits *only its
-  draft*. Each checker retrieves what it needs — the player's recent messages and the
+- **The "draft" is the actual turn text.** `[DECIDED]` The runner writes the full
+  narration prose it's about to send — not an outline or stage directions. There's
+  nothing to check until the turn is written.
+- **Checkers self-serve their own context; the runner submits *only* its draft.**
+  `[DECIDED]` Each checker retrieves what it needs — the player's recent messages and the
   scene-so-far from the running transcript (`session-{N}-transcript.md`), and for the
-  narrative-checker, the relevant canon files. The runner is no longer responsible for
-  forwarding player messages or guessing what context a checker wants.
+  narrative-checker the canon/ledger files. The runner doesn't relay player messages, add
+  a preamble, or tell the checker what to check (it has its own instructions).
 - **Tooling / permissions.** `[DECIDED]` Permission pattern is **`'*': deny` then allow**
   the specific tools (default-deny via wildcard, not piecewise). Both checkers get
   **read retrieval**: `read`, `grep`, `glob`, `list`, `bash` (to `tail`/`grep` the

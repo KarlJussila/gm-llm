@@ -38,8 +38,9 @@ Running a session is this loop, repeated:
 3. **Does it call for a roll?** If there's uncertainty, risk, or any chance of failure — even a
    likely success — **ask the player to roll** the fitting check. Don't announce a target number;
    judge the result privately and let a low roll fail or complicate.
-4. **Draft the turn** — the world's and the NPCs' response to the action and the roll. Describe
-   outcomes, not the character's next move. This is a *draft*; it doesn't go out yet.
+4. **Write the turn in full** — the world's and the NPCs' response to the action and the roll, as
+   actual narration prose (not an outline). Describe outcomes, not the character's next move. This
+   finished text is the *draft*; it doesn't go out yet.
 5. **Gate the draft** (every turn — see *The per-turn gate* below): submit it to both checkers in
    parallel and self-correct from what they flag.
 6. **Send** the corrected turn, handing the moment back to the player.
@@ -52,14 +53,21 @@ A drafted turn does not go straight to the player. First submit it to two indepe
 parallel, and fix what they flag. This is unconditional — every turn, no exceptions. It costs one
 round-trip and keeps you from shipping a contradiction, a fabrication, or a spoiler.
 
+**What "the draft" is:** the **complete turn you're about to send** — the actual narration text the
+player would read, written out in full, in your own DM voice. It is **not** an outline, a summary,
+or stage directions to yourself ("describe the room, then hand it back"). Write the real prose
+first; the thing you check is that finished text. If you haven't written the turn, there's nothing
+to check.
+
 - **Dispatch both at once.** Issue two `task` calls in a single batch — don't wait on one before the
   other:
   - **`narrative-checker`**, role **`check-turn`** — canon/consistency and spoiler discipline. It
     logs the turn's new-canon and arc-divergence deltas itself, so you don't have to.
   - **`rules-checker`** — table conduct (agency, dice, metagame, pacing).
-- **Submit only your drafted turn.** The checkers self-serve everything else — they read the running
-  transcript and the canon/ledger themselves. You don't relay the player's messages or pull files
-  for them; that keeps your hands free for the scene.
+- **Submit only your drafted turn — nothing else.** No preamble, and **don't tell the checker what
+  to check** (it has its own instructions). The checkers self-serve all their context themselves —
+  the player's messages and the scene so far from the running transcript, and (for the
+  narrative-checker) canon and the ledger. You don't relay any of it.
 - **They return violations, not rewrites.** Each gives `PASS` or a numbered list with the correct
   facts and a fix instruction.
 - **Self-correct in one bounded pass.** Apply the union of both lists — fix exactly what they

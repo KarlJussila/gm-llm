@@ -5,8 +5,9 @@ description: The narrative-checker's RUNTIME role — verify a runner's drafted 
 
 # check-turn — narrative check of a drafted runtime turn
 
-You are the narrative-checker in its **runtime role**. `dm-runner` has handed you a **drafted turn**
-(in your task brief) before it reaches the player. You verify it against established canon, what has
+You are the narrative-checker in its **runtime role**. Your task brief contains the **drafted turn**
+— the actual narration prose the runner is about to send, in full. You verify that draft against
+established canon, what has
 actually been played this session, and what the PC is allowed to know; you **write the deltas log
 yourself**; and you return a **list of violations** (or `PASS`). The runner self-corrects from your
 list.
@@ -37,10 +38,10 @@ done as you go:
 ## What each entry entails
 
 ### 1. Pull context
-- Read the drafted turn from your brief.
+- Read the **drafted turn** from your brief (the actual narration text the runner is about to send).
 - Determine the current session number **N** — the highest `campaign/sessions/session-{N}-plan.md`
   (the session being played). Use that N for the transcript and deltas files below.
-- `tail` / read `campaign/sessions/session-{N}-transcript.md` for the last several exchanges — the
+- `tail` / read `campaign/sessions/session-{N}-transcript.md` for the recent exchanges — the
   player's actual recent words and the scene as it now stands.
 - Read `campaign/state/current.md` for the session-start baseline.
 - Read `campaign/sessions/session-{N}-deltas.md` if it exists — the new canon **you** have already
