@@ -67,9 +67,12 @@ class Game:
 
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
         """The opening scene — gated like any turn (it's player-facing narration).
-        Resets the transcript and records the opening narration (no player line)."""
+        Resets the transcript and records the opening narration (no player line).
+        The runner opens with its prepared context (plan + canon) loaded in front of
+        it, so it isn't relying on its own file reads to know the session."""
         self._init_transcript()
-        tr = self._gated_turn(kickoff, kickoff, opening=True)
+        opening = self._runner_preload() + kickoff
+        tr = self._gated_turn(opening, kickoff, opening=True)
         self._save_runner_sid()  # so a later run can reattach this session
         return tr
 
@@ -89,7 +92,10 @@ class Game:
         if saved and self.backend.session_valid(saved):
             self.runner_sid = saved                       # fast path: live session, context intact
         else:
-            self.backend.prompt(self.runner_sid, self.runner_agent, _RESUME_PRIME + transcript)
+            # durable path: a fresh session has neither the plan nor the play so far —
+            # give it both (prepared context, then the transcript to continue from).
+            prime = self._runner_preload() + _RESUME_PRIME + transcript
+            self.backend.prompt(self.runner_sid, self.runner_agent, prime)
         self._save_runner_sid()
         return _last_dm_beat(transcript)
 
@@ -148,6 +154,18 @@ class Game:
         try:
             return self.transcript_path.read_text() if self.transcript_path.is_file() else ""
         except OSError:
+            return ""
+
+    def _runner_preload(self) -> str:
+        """The runner's prepared context block (plan + canon), via the gate's
+        preloader. Empty string if no preloader is wired (e.g. a mock gate) — the
+        runner then falls back to reading the files itself per its prompt."""
+        pre = getattr(self.gate, "preloader", None)
+        if pre is None:
+            return ""
+        try:
+            return pre.runner_preload(self.session)
+        except Exception:
             return ""
 
     # -- session-id persistence (for resume reattach) -----------------------

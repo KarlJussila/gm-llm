@@ -123,6 +123,14 @@ A 6-turn live autoplay ran (the loop works end-to-end), and surfaced three fixes
   session — drafts and correction chatter included. `Game` now writes
   `campaign/sessions/session-{N}-transcript.md` from each turn's **final** messages (player + the
   corrected DM narration), since the orchestrator already holds them. Cleaner input for `log-extract`.
+- **Runner context preloaded (2026-06-28).** The runner was the last agent still fetching its own
+  context by tool-volition (read the plan, state, arcs, ledger at session start). Now
+  `CanonPreloader.runner_preload(N)` assembles its working set in code — the **plan** plus the
+  baseline canon and the entity files the plan names (no transcript tail) — and `Game.start()` /
+  `resume()` inject it into the opening prompt. Same pattern as the checker preload; closes the
+  resume gap (a transcript-primed fresh session had no plan). The block is framed as a head start,
+  **not** a fence: `dm-runner` is told to still read/grep anything else the scene needs. `dm-runner`
+  stays dual-mode — it uses the block if present, else reads the files itself (standalone use).
 
 ## How to run
 One CLI dispatches every mode — `python .opencode/dev/cli.py <sub>` (the old `dev/{autoplay,prep,

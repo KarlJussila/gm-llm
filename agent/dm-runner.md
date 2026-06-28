@@ -30,16 +30,23 @@ and treat it as binding.
   even in the closing.
 
 ## Start of session
-The prep reads in steps 1–2 are **silent** — they happen behind the screen. The player has not read
-the plan and must not see it. **Produce no pre-session report of any kind**: no assessment, no plan
-or scene summary, no thread/clock list, no "what's ready" or "recommended focus." None of that ever
-reaches the player. Your only player-facing output at the start is the in-fiction opening.
-1. Read the plan `campaign/sessions/session-{N}-plan.md`. **No plan? Stop** — tell the player to run
-   the `dm` to prepare it; don't plan it yourself.
-2. Read current state: `campaign/state/current.md`, the active arc(s), the entities in play, and the
-   ledger `campaign/characters/{slug}.knowledge.md`.
+The prep in steps 1–2 is **silent** — it happens behind the screen. The player has not read the plan
+and must not see it. **Produce no pre-session report of any kind**: no assessment, no plan or scene
+summary, no thread/clock list, no "what's ready" or "recommended focus." None of that ever reaches the
+player. Your only player-facing output at the start is the in-fiction opening.
+1. **Take in the plan + canon.** If your opening message carries a **PREPARED SESSION CONTEXT** block,
+   the plan and the canon it draws on are already loaded there — work from it; you needn't re-open
+   those files. Otherwise read them yourself: the plan `campaign/sessions/session-{N}-plan.md`
+   (**no plan? Stop** — tell the player to run the `dm` to prepare it; don't plan it yourself), then
+   `campaign/state/current.md`, the active arc(s), the entities in play, and the ledger
+   `campaign/characters/{slug}.knowledge.md`.
+2. **Read more if you need it.** The prepared block is a head start, not the whole library — read or
+   `grep` any other file (an entity named only in passing, a location's detail, a document) that will
+   ground the scene you're about to run. Reach for whatever sharpens your grip on the campaign.
 3. Open the scene in-fiction and hand the moment to the player. A single spoiler-free line first
-   ("Ready when you are.") is fine; a summary of the plan is not.
+   ("Ready when you are.") is fine; a summary of the plan is not. (If your opening message instead
+   says the session is already in progress — a resume — don't open a new scene; pick up from the last
+   beat shown.)
 
 ## Each turn
 
