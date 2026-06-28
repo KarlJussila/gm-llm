@@ -22,10 +22,19 @@ reads this clean record after the session.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+_RESUME_PRIME = (
+    "This session is already in progress. Below is the play so far — the established record of "
+    "everything that has happened, your own narration included. Absorb it as canon you have already "
+    "narrated. Do NOT summarize it, re-narrate it, or open a new scene; the player has lived all of "
+    "it. Reply only with a one-line acknowledgement that you are caught up, then wait — the player's "
+    "next message continues seamlessly from the final beat below.\n\n--- PLAY SO FAR ---\n"
+)
 
 
 @dataclass
@@ -60,7 +69,29 @@ class Game:
         """The opening scene — gated like any turn (it's player-facing narration).
         Resets the transcript and records the opening narration (no player line)."""
         self._init_transcript()
-        return self._gated_turn(kickoff, kickoff, opening=True)
+        tr = self._gated_turn(kickoff, kickoff, opening=True)
+        self._save_runner_sid()  # so a later run can reattach this session
+        return tr
+
+    def resume(self) -> str | None:
+        """Resume an in-progress session. Returns the scene to continue from (the last
+        DM beat in the transcript), or None if there's nothing to resume — in which
+        case the caller should `start()` instead.
+
+        Two paths (chosen automatically): if the runner session from a prior run is
+        still live on the server, **reattach** to it (its full context is intact);
+        otherwise **rebuild** the context in a fresh session by priming it with the
+        transcript. Either way the transcript file is appended to, never reset."""
+        transcript = self._read_transcript()
+        if not transcript.strip():
+            return None
+        saved = self._load_runner_sid()
+        if saved and self.backend.session_valid(saved):
+            self.runner_sid = saved                       # fast path: live session, context intact
+        else:
+            self.backend.prompt(self.runner_sid, self.runner_agent, _RESUME_PRIME + transcript)
+        self._save_runner_sid()
+        return _last_dm_beat(transcript)
 
     def turn(self, player_input: str) -> TurnResult:
         return self._gated_turn(player_input, player_input)
@@ -111,6 +142,42 @@ class Game:
         except OSError:
             pass
 
+    def _read_transcript(self) -> str:
+        if not self.transcript_path:
+            return ""
+        try:
+            return self.transcript_path.read_text() if self.transcript_path.is_file() else ""
+        except OSError:
+            return ""
+
+    # -- session-id persistence (for resume reattach) -----------------------
+
+    def _state_path(self) -> Path | None:
+        """Where we stash the runner session id — under `.opencode/.orchestrator/`,
+        which the campaign repo gitignores, so it never lands in a commit."""
+        if not self.session:
+            return None
+        return Path(self.backend.directory) / ".opencode" / ".orchestrator" / f"session-{self.session}.json"
+
+    def _save_runner_sid(self) -> None:
+        p = self._state_path()
+        if not p:
+            return
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps({"runner_sid": self.runner_sid}))
+        except OSError:
+            pass
+
+    def _load_runner_sid(self) -> str | None:
+        p = self._state_path()
+        if not p:
+            return None
+        try:
+            return json.loads(p.read_text()).get("runner_sid")
+        except (OSError, ValueError):
+            return None
+
     def _log(self, tr: TurnResult) -> None:
         if not self.checks_log:
             return
@@ -119,6 +186,17 @@ class Game:
                 f.write(_format_block(tr))
         except OSError:
             pass
+
+
+def _last_dm_beat(transcript: str) -> str:
+    """The last `## DM` block in a transcript — the scene a resume continues from."""
+    parts = re.split(r"(?m)^## (Player|DM)[ \t]*$", transcript)
+    # re.split with one capture group yields [pre, label, body, label, body, ...]
+    last = ""
+    for i in range(1, len(parts) - 1, 2):
+        if parts[i] == "DM":
+            last = parts[i + 1].strip()
+    return last
 
 
 def _latest_session(sessions_dir: Path) -> int | None:

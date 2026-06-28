@@ -113,6 +113,11 @@ class Backend:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode())
 
+    def _raw_get(self, path: str, timeout: int) -> dict:
+        req = urllib.request.Request(self._url(path), method="GET")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode())
+
     def _raw_create(self, body: dict) -> dict:
         return self._raw_post("/session", body, timeout=10)
 
@@ -135,6 +140,19 @@ class Backend:
         if not sid:
             raise BackendError("session create returned no id")
         return sid
+
+    def session_valid(self, session_id: str) -> bool:
+        """True if `session_id` still exists on the server (so a resume can reattach
+        to it with its context intact). Fails *safe*: any error — a 404, a wrong
+        endpoint, a hiccup — returns False, so the caller falls back to rebuilding
+        from the transcript rather than reattaching to a dead session."""
+        if not session_id:
+            return False
+        try:
+            self._raw_get(f"/session/{session_id}/message", timeout=10)
+            return True
+        except (urllib.error.URLError, OSError, ValueError):
+            return False
 
     def prompt(self, session_id: str, agent: str, text: str) -> str:
         """Prompt `agent` on `session_id`; return its final text. Retries on

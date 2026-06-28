@@ -2,8 +2,8 @@
 description: >-
   TEST HARNESS ONLY — an autoplay "player" that drives a solo session against
   dm-runner so the loop can be observed without a human at the keyboard. Not part
-  of the campaign engine; spawned by dev/autoplay.py. Plays one character, blind
-  to all canon, responding only to the DM's narration.
+  of the campaign engine; spawned by the CLI's `play` loop. Plays one character,
+  blind to all canon, responding only to the DM's narration.
 mode: primary
 model: opencode/mimo-v2.5-free
 temperature: 0.8

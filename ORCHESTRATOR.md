@@ -61,7 +61,7 @@ play_turn(player_input):
 
 ## Backend interaction
 - Orchestrator boots (or attaches to) `opencode serve`; talks over the documented HTTP API
-  (`session.create`, `session.prompt` with `agent`) — exactly what `dev/autoplay.py` already does.
+  (`session.create`, `session.prompt` with `agent`) — exactly what the CLI's `play` loop does.
 - One persistent **runner session** for the game; **checker sessions** spawned per turn.
 - Central **pacing/throttle**: the orchestrator serializes or rate-limits calls so we stop bursting
   the model's rate limit (the failure that kept killing autoplay).
@@ -74,9 +74,11 @@ play_turn(player_input):
   `canon.py` (preload, ported from `turn-gate.ts`; plugin removed), `gate.py` (`Gate.check` →
   spawn both checkers, parse the `VERDICT:` line), `loop.py` (`Game`: deterministic turn → gate →
   one bounded correction), central pacing + verdict logging. Mock-tested.
-- **O2 — Headless validation. ✓ built (live run still owed).** `dev/autoplay.py` drives the core
-  with the scripted `player` agent. Infra-validated without model calls; **the live model run is
-  still blocked on the rate limit.**
+- **O2 — Headless validation. ✓ built; ran live (2026-06-27).** The CLI's `play` loop (was
+  `dev/autoplay.py`) drives the core with the scripted `player` agent. A 6-turn live autoplay
+  confirmed the loop end-to-end (and drove the hardening pass below). `play --resume` continues the
+  latest session from its transcript (reattach the live runner session if it's still up, else rebuild
+  context from the transcript).
 - **O3 — Rich TUI. ✓ DONE.** `tui/` Textual app: scene pane, action/meta input, toggleable
   behind-the-screen verdict pane, `/roll` + `/meta` + `/quit`, `--theme`, dracula default. Runs on
   `MockGame` offline; `--live` for the real backend.
@@ -88,7 +90,7 @@ play_turn(player_input):
   author `session-{N}-plan.md`, gates it in code, applies **one** bounded correction, and commits
   deterministically (`campaign: session N plan`). `check-plan` skill now emits the `VERDICT:` first
   line and consumes the pre-loaded canon block (back-compatible with the dm's standalone dispatch at
-  init / post-session). Entry point: `dev/prep.py --session N [--commit]`. Mock-/infra-validated; the
+  init / post-session). Entry point: `cli.py prep --session N [--commit]`. Mock-/infra-validated; the
   live model run is blocked on the same rate limit as O2.
 - **O6 — POST reconcile. ✓ DONE (live run still owed).** The carried-forward Phase 5, orchestrated
   the same way as O5. `Gate.check_propagation(N)` reuses the spawn-and-parse-VERDICT engine,
@@ -101,7 +103,7 @@ play_turn(player_input):
   commits deterministically (`campaign: post-session N updates`). `check-propagation` skill now emits
   the `VERDICT:` line. The PRE/POST determinism is shared in `orchestrator/phase.py`
   (`apply_one_correction` — the one-correction-no-re-gate invariant — and `commit_campaign`), which
-  `Planner` now also uses. Entry point: `dev/reconcile.py --session N [--commit] [--prep]`, where
+  `Planner` now also uses. Entry point: `cli.py reconcile --session N [--commit] [--prep]`, where
   `--prep` sequences reconcile(N) → prep(N+1). Mock-/infra-validated; live run owed.
 
 ## Hardening from the first live run (2026-06-27)
@@ -121,6 +123,20 @@ A 6-turn live autoplay ran (the loop works end-to-end), and surfaced three fixes
   session — drafts and correction chatter included. `Game` now writes
   `campaign/sessions/session-{N}-transcript.md` from each turn's **final** messages (player + the
   corrected DM narration), since the orchestrator already holds them. Cleaner input for `log-extract`.
+
+## How to run
+One CLI dispatches every mode — `python .opencode/dev/cli.py <sub>` (the old `dev/{autoplay,prep,
+reconcile}.py` are folded in and retired):
+- `play --turns 6 [--resume]` — drive the gated loop with the scripted `player`. `--resume`
+  continues the latest session from its transcript instead of opening a fresh scene.
+- `prep --session N [--commit]` — orchestrated PRE planning.
+- `reconcile --session N [--commit] [--prep]` — orchestrated POST reconcile; `--prep` chains prep(N+1).
+- `tui [--live] [--theme …]` — the Textual app (mock by default; needs the venv's textual).
+- `ping [N]` — N back-to-back rate-limit probes (`dev/ping.sh`).
+- `bench` — stub; the O4 model-vs-model sweep lands here.
+
+Verdict/correction blocks stream to `/tmp/orchestrator-checks.log`; the resume sidecar (the runner
+session id, for reattach) lives under `.opencode/.orchestrator/` (gitignored).
 
 ## Open questions (resolve as we build)
 - **Verdict parsing.** Checkers currently return prose ("PASS" or a numbered list). The orchestrator
