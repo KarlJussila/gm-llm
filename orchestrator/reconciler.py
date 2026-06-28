@@ -104,13 +104,12 @@ def _sec(label: str, body: str) -> str:
 def _format_block(rr: ReconcileResult) -> str:
     bar = "#" * 74
     g = rr.gate
-    nv = "PASS" if g.narrative.passed else "VIOLATIONS"
     return "\n\n".join([
         "", bar,
         f"  RECONCILE session {rr.n}  ·  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
         f"{'CORRECTED' if rr.corrected else 'clean'}  ·  "
         f"{'committed' if rr.committed else 'uncommitted'}",
         bar,
-        _sec(f"CHECK-PROPAGATION · {nv}", g.narrative.report),
+        _sec(f"CHECK-PROPAGATION · {g.narrative.label}", g.narrative.report),
         "",
     ])

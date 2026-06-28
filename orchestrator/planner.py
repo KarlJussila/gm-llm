@@ -119,13 +119,12 @@ def _sec(label: str, body: str) -> str:
 def _format_block(pr: PrepResult) -> str:
     bar = "#" * 74
     g = pr.gate
-    nv = "PASS" if g.narrative.passed else "VIOLATIONS"
     return "\n\n".join([
         "", bar,
         f"  PREP session {pr.n}  ·  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
         f"{'CORRECTED' if pr.corrected else 'clean'}  ·  "
         f"{'committed' if pr.committed else 'uncommitted'}  ·  canon {g.canon_sections} sections",
         bar,
-        _sec(f"CHECK-PLAN · {nv}", g.narrative.report),
+        _sec(f"CHECK-PLAN · {g.narrative.label}", g.narrative.report),
         "",
     ])

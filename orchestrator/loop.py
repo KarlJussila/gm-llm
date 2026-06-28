@@ -237,16 +237,14 @@ def _sec(label: str, body: str) -> str:
 def _format_block(tr: TurnResult) -> str:
     bar = "█" * 74
     g = tr.gate
-    nv = "PASS" if g.narrative.passed else "VIOLATIONS"
-    cv = "PASS" if g.conduct.passed else "VIOLATIONS"
     blocks = [
         "", bar,
         f"  TURN  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
         f"{'CORRECTED' if tr.corrected else 'clean'}  ·  canon {g.canon_sections} sections",
         bar,
         _sec("PLAYER", tr.player_input),
-        _sec(f"CANON · {nv}", g.narrative.report),
-        _sec(f"CONDUCT · {cv}", g.conduct.report),
+        _sec(f"CANON · {g.narrative.label}", g.narrative.report),
+        _sec(f"CONDUCT · {g.conduct.label}", g.conduct.report),
     ]
     if tr.corrected:
         blocks.append(_sec("DRAFT (pre-correction)", tr.draft))

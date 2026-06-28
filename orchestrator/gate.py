@@ -32,6 +32,14 @@ class Verdict:
     agent: str
     passed: bool
     report: str  # full text, for the correction brief and logging
+    empty_violation: bool = False  # stamped VIOLATIONS with no findings → downgraded to pass
+
+    @property
+    def label(self) -> str:
+        """Human label for logs/UI, distinguishing a real pass from a downgraded one."""
+        if self.empty_violation:
+            return "PASS (empty VIOLATIONS — checker gave no findings)"
+        return "PASS" if self.passed else "VIOLATIONS"
 
 
 @dataclass
@@ -110,9 +118,10 @@ def parse_verdict(agent: str, text: str) -> Verdict:
         m = _VERDICT_RE.search(lines[i])
         if m:
             passed = m.group(1).upper() == "PASS"
-            if not passed and not "\n".join(lines[:i] + lines[i + 1:]).strip():
+            empty = not passed and not "\n".join(lines[:i] + lines[i + 1:]).strip()
+            if empty:
                 passed = True  # VIOLATIONS with an empty body → nothing to act on
-            return Verdict(agent, passed, text)
+            return Verdict(agent, passed, text, empty_violation=empty)
     return Verdict(agent, passed=False, report=text)
 
 

@@ -59,6 +59,15 @@ def _show_dm(text):
 def _show_player(i, text):
     print(c("1;32", f"\n━━━━━ PLAYER · turn {i} ━━━━━") + f"\n{text}\n", flush=True)
 
+def _empty_note(*verdicts):
+    """Surface a checker that stamped VIOLATIONS with no findings (downgraded to a
+    pass) — so a checker not doing its job doesn't disappear silently."""
+    for v in verdicts:
+        if getattr(v, "empty_violation", False):
+            print(c("1;31", f"┄┄ note: {v.agent} stamped VIOLATIONS with no findings — "
+                            f"treated as PASS (checker output was just the verdict line) ┄┄"), flush=True)
+
+
 def _show_gate(tr):
     g = tr.gate
     nv = "PASS" if g.narrative.passed else "VIOLATIONS"
@@ -69,6 +78,7 @@ def _show_gate(tr):
         print(c("2", "CANON:\n" + g.narrative.report.strip()), flush=True)
     if not g.conduct.passed:
         print(c("2", "CONDUCT:\n" + g.conduct.report.strip()), flush=True)
+    _empty_note(g.narrative, g.conduct)
 
 
 def _player_intro(character, story, scene):
@@ -157,6 +167,7 @@ def cmd_prep(args):
                       f"{'committed' if pr.committed else 'uncommitted'} · {pr.gate.canon_sections} canon sections ┄┄"), flush=True)
         if not pr.gate.narrative.passed:
             print(c("2", pr.gate.narrative.report.strip()), flush=True)
+        _empty_note(pr.gate.narrative)
         print(c("1;36", f"\n━━━━━ session {pr.n} planned ({len(pr.plan)} chars) ━━━━━"), flush=True)
         print("[harness] done.", flush=True)
     except BackendError as e:
@@ -182,6 +193,7 @@ def cmd_reconcile(args):
                       f"{'committed' if rr.committed else 'uncommitted'} ┄┄"), flush=True)
         if not rr.gate.narrative.passed:
             print(c("2", rr.gate.narrative.report.strip()), flush=True)
+        _empty_note(rr.gate.narrative)
         print(c("1;36", f"\n━━━━━ session {rr.n} reconciled ━━━━━"), flush=True)
 
         if args.prep:
@@ -191,6 +203,7 @@ def cmd_reconcile(args):
             nv = "PASS" if pr.gate.narrative.passed else "VIOLATIONS"
             print(c("33", f"┄┄ check-plan (session {pr.n}): {nv} · {'CORRECTED' if pr.corrected else 'clean'} · "
                           f"{'committed' if pr.committed else 'uncommitted'} ┄┄"), flush=True)
+            _empty_note(pr.gate.narrative)
             print(c("1;36", f"━━━━━ session {pr.n} planned ━━━━━"), flush=True)
         print("[harness] done.", flush=True)
     except BackendError as e:
