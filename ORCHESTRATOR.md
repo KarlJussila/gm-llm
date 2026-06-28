@@ -90,9 +90,19 @@ play_turn(player_input):
   line and consumes the pre-loaded canon block (back-compatible with the dm's standalone dispatch at
   init / post-session). Entry point: `dev/prep.py --session N [--commit]`. Mock-/infra-validated; the
   live model run is blocked on the same rate limit as O2.
-- **O6 — POST reconcile.** The carried-forward Phase 5, orchestrated the same way: the orchestrator
-  drives the `dm` apply-pass (drain deltas → author new canon + reconcile arc bodies → write state +
-  ledger), gated in code by `check-propagation`. `log-extractor` + `campaign-analyst` support it.
+- **O6 — POST reconcile. ✓ DONE (live run still owed).** The carried-forward Phase 5, orchestrated
+  the same way as O5. `Gate.check_propagation(N)` reuses the spawn-and-parse-VERDICT engine,
+  narrative-only, **no preload** (propagation is a whole-repo audit — digest + deltas vs. the updated
+  files — not a single draft) → `PropagationGateResult`. New `orchestrator/reconciler.py`:
+  `Reconciler.reconcile_session(N)` drives the `dm` apply-pass (digest → drain deltas → author new
+  canon + reconcile arc bodies → flip ledger → write state → route docs/feedback; `log-extractor` +
+  `campaign-analyst` are the dm's own delegated helpers), then gates `check-propagation` **in code**
+  — the gate that the skill defined but no flow ever wired — applies one bounded correction, and
+  commits deterministically (`campaign: post-session N updates`). `check-propagation` skill now emits
+  the `VERDICT:` line. The PRE/POST determinism is shared in `orchestrator/phase.py`
+  (`apply_one_correction` — the one-correction-no-re-gate invariant — and `commit_campaign`), which
+  `Planner` now also uses. Entry point: `dev/reconcile.py --session N [--commit] [--prep]`, where
+  `--prep` sequences reconcile(N) → prep(N+1). Mock-/infra-validated; live run owed.
 
 ## Open questions (resolve as we build)
 - **Verdict parsing.** Checkers currently return prose ("PASS" or a numbered list). The orchestrator
@@ -113,14 +123,15 @@ git history, and the canon/doc model it designed is now codified in the `canon-c
 templates. Two pieces of that plan were **never built** and remain live — the orchestrator triggers
 them but doesn't change their design:
 
-- **POST reconcile (was Phase 5).** Between sessions the `dm` runs an apply-pass, inline: drain
-  `session-{N}-deltas.md` — author new-canon entity/world files + update `INDEX`, and **reconcile the
-  arc bodies** (a real revision, not a status-line bump) — then write all `state/*` files + the PC
-  ledger and route documents, gating throughout with `narrative-checker` `check-propagation`. Two
-  delegated subagents support it: `log-extractor` (transcript → lossless digest) and
-  `campaign-analyst` (assess/review). Done-test: reconcile a played session and verify nothing dropped
-  and the arc body actually moved. Under the orchestrator, this is a between-sessions run the
-  orchestrator sequences (the dm-inline authoring is unchanged).
+- **POST reconcile (was Phase 5). ✓ built as O6.** Between sessions the `dm` runs an apply-pass,
+  inline: drain `session-{N}-deltas.md` — author new-canon entity/world files + update `INDEX`, and
+  **reconcile the arc bodies** (a real revision, not a status-line bump) — then write all `state/*`
+  files + the PC ledger and route documents. Two delegated subagents support it: `log-extractor`
+  (transcript → lossless digest) and `campaign-analyst` (assess/review) — both still the dm's own
+  delegations. The **gate** (`check-propagation`), which the skill defined but no flow ran, is now
+  wired by the orchestrator **in code** (`Reconciler` → `Gate.check_propagation`), not by model
+  volition. Done-test (live, owed): reconcile a played session and verify nothing dropped and the arc
+  body actually moved.
 - **Cross-cutting (was Phase 6).** Least-privilege tool/skill allowlist audit across all agents; and a
   **model-choice** pass — checker reliability and rate limits on `mimo-v2.5-free` (now sharper, since
   the orchestrator can route checkers to a different/own-key provider).

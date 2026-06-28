@@ -23,10 +23,11 @@ dm's standalone PRE-SESSION flow (used at init / post-session) is left untouched
 
 from __future__ import annotations
 
-import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+from .phase import apply_one_correction, commit_campaign
 
 _AUTHOR_BRIEF = (
     "Prepare session {n}. Run your PRE-SESSION planning pass: read current state and the active "
@@ -86,45 +87,20 @@ class Planner:
 
         # 2. Gate it in code — always, narrative-only.
         result = self.gate.check_plan(plan)
-        corrected = False
 
-        # 3. Exactly one bounded correction. We do NOT re-gate the revision —
-        #    bounded by construction; if it still trips, it stands and the log shows it.
-        if result.violations:
-            self.backend.prompt(self.dm_sid, self.dm_agent, result.correction_brief())
+        # 3. Exactly one bounded correction (no re-gate). Re-read the file after.
+        corrected = apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
+        if corrected:
             plan = self._read_plan(n)
-            corrected = True
 
         # 4. Commit deterministically (the orchestrator owns git, not the model).
-        committed = self._commit(n) if commit else False
+        committed = commit_campaign(self.root, f"campaign: session {n} plan") if commit else False
 
         pr = PrepResult(n, plan, result, corrected, committed)
         self._log(pr)
         if self.on_prep:
             self.on_prep(pr)
         return pr
-
-    def _commit(self, n: int) -> bool:
-        """Commit the plan pass to the campaign repo. Stages only `campaign/`;
-        no-ops if the pass produced no change. Best-effort — a git failure never
-        breaks prep."""
-        try:
-            staged = subprocess.run(
-                ["git", "add", "--", "campaign"],
-                cwd=self.root, capture_output=True, text=True)
-            if staged.returncode != 0:
-                return False
-            dirty = subprocess.run(
-                ["git", "diff", "--cached", "--quiet"],
-                cwd=self.root, capture_output=True, text=True)
-            if dirty.returncode == 0:  # nothing staged -> nothing to commit
-                return False
-            done = subprocess.run(
-                ["git", "commit", "-m", f"campaign: session {n} plan"],
-                cwd=self.root, capture_output=True, text=True)
-            return done.returncode == 0
-        except OSError:
-            return False
 
     def _log(self, pr: PrepResult) -> None:
         if not self.checks_log:

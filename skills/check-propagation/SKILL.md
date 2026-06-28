@@ -56,11 +56,12 @@ done as you go:
   Flag dangling links and registry/disk mismatches.
 
 ### 6. Report
-Return one of:
-- **`PASS`** — everything propagated.
-- **A numbered gap list** — for each: what's missing, the **source** (which digest/delta entry it
-  came from), the **target file** that should have it, and the **fix** (file the entity, flip the
-  flag, update the snapshot, revise the arc body, fix the link).
+**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
+line. Then:
+- on **`VERDICT: PASS`** — stop there (everything propagated; no gaps to report).
+- on **`VERDICT: VIOLATIONS`** — a numbered gap list, for each: what's missing, the **source** (which
+  digest/delta entry it came from), the **target file** that should have it, and the **fix** (file
+  the entity, flip the flag, update the snapshot, revise the arc body, fix the link).
 
 Keep it terse and specific — the caller backfills directly from this.
 
