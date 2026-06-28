@@ -109,7 +109,6 @@ class CanonPreloader:
             ["INDEX.md", "state/current.md"]
             + self._list("characters", re.compile(r"\.knowledge\.md$"))
             + self._list("arcs", re.compile(r"\.md$"))
-            + ([f"sessions/session-{n}-deltas.md"] if n else [])
         )
 
         seen: set[str] = set()

@@ -82,12 +82,22 @@ Flag any of:
   single scene), or otherwise mismanages the session's arc.
 
 ### 6. Report
-**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
-line. Then:
-- on **`VERDICT: PASS`** — stop there (no conduct violations).
-- on **`VERDICT: VIOLATIONS`** — a numbered list, for each: which rule, the offending text, and the
-  **fix instruction** (hand the choice back to the player, call for the roll, drop the DC, rephrase
+First write your findings:
+- **no conduct violations** — write nothing here.
+- **violations** — a numbered list, for each: which rule, the offending text, and the **fix
+  instruction** (hand the choice back to the player, call for the roll, drop the DC, rephrase
   in-world, keep the scene going).
+
+Then end with the verdict. **The very last line of your output must be exactly one of:**
+
+```
+VERDICT: PASS
+VERDICT: VIOLATIONS
+```
+
+Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
+it. `PASS` if and only if your list above is empty; `VIOLATIONS` if you listed anything. This line is
+read by a machine; if it's missing or altered the turn is treated as failed.
 
 Keep it terse and specific — it's acted on directly, under time pressure. No prose padding, no
 narrative/canon commentary (that's the other checker's job).

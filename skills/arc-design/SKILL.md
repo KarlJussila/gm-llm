@@ -23,8 +23,8 @@ in `INDEX.md` (Arcs), link entities with `[[slug]]`, flag spoilers `[hidden]` + 
 
 The arc is **two files**: the **design** (`{slug}.md`, what you write) and the **state**
 (`{slug}.state.md`, a lightweight progress snapshot — written by the dm, not you). The design is a
-**living document**: it is *not edited during play* (divergence is logged to the deltas log
-instead), and it is **revised every session afterward** in the post-session arc pass, which assesses
+**living document**: it is *not edited during play* (divergence surfaces from the session digest
+afterward instead), and it is **revised every session afterward** in the post-session arc pass, which assesses
 what structural and detail changes each arc needs after play — redirecting, accelerating, merging,
 deepening, recommitting answers — and reconciles the body toward what was actually played. Revise
 the **body**, not just a status line. Status/progress stays out of the design and lives in the state

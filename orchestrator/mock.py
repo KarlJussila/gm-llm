@@ -41,8 +41,8 @@ class MockGame:
         narrative = Verdict(
             "narrative-checker", clean,
             "VERDICT: PASS" if clean else
-            "VERDICT: VIOLATIONS\n1. Magren's hair is grey-streaked, not black — fix the description "
-            "(source: world/npcs/magren-soley.md).",
+            "1. Magren's hair is grey-streaked, not black — fix the description "
+            "(source: world/npcs/magren-soley.md).\nVERDICT: VIOLATIONS",
         )
         conduct = Verdict("rules-checker", True, "VERDICT: PASS")
         gate = GateResult(narrative, conduct, player_msg, canon_sections=9)

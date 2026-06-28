@@ -1,6 +1,6 @@
 ---
 name: check-propagation
-description: The narrative-checker's POST role — after a session's updates have been applied, verify that everything from the session digest and deltas propagated correctly into canon and state (ledger flips, new-canon files + registry rows, state snapshots, arc bodies, documents), and return a list of gaps (or PASS). Reports findings; writes nothing.
+description: The narrative-checker's POST role — after a session's updates have been applied, verify that everything from the session digest propagated correctly into canon and state (ledger flips, new-canon files + registry rows, state snapshots, arc bodies, documents), and return a list of gaps (or PASS). Reports findings; writes nothing.
 ---
 
 # check-propagation — verify the apply pass propagated everything
@@ -19,7 +19,7 @@ Use your `todowrite` tool to create exactly these entries, then work them in ord
 done as you go:
 
 1. Pull context
-2. Check deltas drained
+2. Check new canon filed
 3. Check ledger propagation
 4. Check state propagation
 5. Check registry integrity
@@ -28,17 +28,19 @@ done as you go:
 ## What each entry entails
 
 ### 1. Pull context
-- Read the digest `campaign/sessions/session-{N}.md` and the deltas
-  `campaign/sessions/session-{N}-deltas.md`.
+- Read the digest `campaign/sessions/session-{N}.md` — the structured extraction of what was played.
+  It is your **single source-of-truth record** for what the session established.
 - Read `campaign/INDEX.md` and the updated files (entity info/state, arcs, ledger, `state/*`,
-  `documents/`). These are your two source-of-truth records (digest + deltas) vs. the updated canon.
+  `documents/`). You're checking the digest (the record) against the updated canon (what landed).
 
-### 2. Check deltas drained
-- For every **new-canon** entry in the deltas: confirm it now has an `INDEX.md` row **and** a real
-  file (a load-bearing one a full file, not a lingering `named-only`). Flag any that's still
-  unfiled or stub-only.
-- For every **arc-divergence** entry: confirm it's reflected in the arc body/`.state.md` (the body
-  was actually revised, not just a status bump). Flag any divergence left unreconciled.
+### 2. Check new canon filed
+- For every **new or changed NPC/location/faction/event** in the digest's *World canon* section
+  (including anything the DM improvised): confirm it now has an `INDEX.md` row **and** a real file (a
+  load-bearing one a full file, not a lingering `named-only`). Flag any that's still unfiled or
+  stub-only.
+- For every **plan/arc divergence** in the digest's *Plan vs. actual* section: confirm it's reflected
+  in the arc body/`.state.md` (the body was actually revised, not just a status bump). Flag any
+  divergence left unreconciled.
 
 ### 3. Check ledger propagation
 - For every reveal in the digest (something the PC learned): confirm the fact's home file flipped
@@ -46,7 +48,7 @@ done as you go:
   `campaign/characters/{pc}.knowledge.md`. Flag any reveal that updated only one layer or neither.
 
 ### 4. Check state propagation
-- For every entity whose situation changed in play (per digest/deltas): confirm its `.state.md` was
+- For every entity whose situation changed in play (per the digest): confirm its `.state.md` was
   updated to `as-of: S{N}`. Confirm `state/current.md` reflects the new scene, `state/calendar.md`
   advanced, and any new/closed `threads`/`clocks` were applied. Flag stale snapshots.
 
@@ -56,16 +58,26 @@ done as you go:
   Flag dangling links and registry/disk mismatches.
 
 ### 6. Report
-**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
-line. Then:
-- on **`VERDICT: PASS`** — stop there (everything propagated; no gaps to report).
-- on **`VERDICT: VIOLATIONS`** — a numbered gap list, for each: what's missing, the **source** (which
-  digest/delta entry it came from), the **target file** that should have it, and the **fix** (file
-  the entity, flip the flag, update the snapshot, revise the arc body, fix the link).
+First write your findings:
+- **everything propagated** — write nothing here.
+- **gaps** — a numbered list, for each: what's missing, the **source** (which digest entry it came
+  from), the **target file** that should have it, and the **fix** (file the entity, flip the flag,
+  update the snapshot, revise the arc body, fix the link).
+
+Then end with the verdict. **The very last line of your output must be exactly one of:**
+
+```
+VERDICT: PASS
+VERDICT: VIOLATIONS
+```
+
+Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
+it. `PASS` if and only if your gap list above is empty; `VIOLATIONS` if you listed anything. This
+line is read by a machine; if it's missing or altered the pass is treated as failed.
 
 Keep it terse and specific — the caller backfills directly from this.
 
 ## Boundaries
 - You report; you never edit any campaign file.
 - You audit **propagation**, not design: you're not re-judging the authoring choices, only
-  whether every established fact made it from the records (digest + deltas) into canon and state.
+  whether every established fact made it from the record (the digest) into canon and state.

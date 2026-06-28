@@ -19,7 +19,7 @@ own prompt both speak to format, this skill wins.
 - **`entity-state`** — one shared state shape for every stateful entity.
 - **World-truth docs** — `world-overview`, `world-cosmology`, `world-history` (non-entity setting
   prose; see §3).
-- **`INDEX`**, the four **`state/*`** docs, and the **session deltas** log.
+- **`INDEX`** and the four **`state/*`** docs.
 
 See `examples/` for a complete filled entity pair (`lysa-fenn.md` + `.state.md`) and a sample
 `INDEX.md` — the generic illustrative cast there carries through this skill's examples too.
@@ -71,8 +71,7 @@ campaign/
 │   ├── threads.md                   # active leads/threads (a thread spans entities)
 │   └── clocks.md                    # time-pressure dashboard (all clocks in one place)
 ├── characters/       {slug}.md + {slug}.state.md + {slug}.knowledge.md   # PC: sheet, state, ledger
-├── sessions/         session-N-plan.md  session-N-transcript.md
-│                     session-N.md (digest)  session-N-deltas.md
+├── sessions/         session-N-plan.md  session-N-transcript.md  session-N.md (digest)
 ├── assessment/       session-N-assessment.md
 ├── documents/        verbatim handouts (letters, inscriptions, quoted text)
 └── feedback/         per-skill player-feedback files
@@ -257,7 +256,7 @@ Format: a table per entity type. Each row maps a slug to its files, status, and 
   that got named in play. Nothing should still read `named-only` once a PRE or POST pass has run —
   a lingering `named-only` is a dropped-entity bug.
 - The narrative-checker checks *against* the registry; the planner bundle and the post-session
-  deltas log *feed* it. The dm gates every addition.
+  digest *feed* it. The dm gates every addition.
 
 ---
 

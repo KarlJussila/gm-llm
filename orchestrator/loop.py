@@ -6,6 +6,13 @@ ALWAYS runs, and on violations the runner gets exactly ONE bounded correction pa
 before the result is returned. No tool the model can forget to call; no re-check
 loop; nothing reaches the player (or the benchmark's scorer) until the loop says so.
 
+The orchestrator also owns the **transcript**: because it holds each turn's final
+messages, it writes `campaign/sessions/session-{N}-transcript.md` itself — the
+player's message and the *corrected* DM narration per turn, never the discarded
+draft or the gate's correction chatter. (This replaces the old capture plugin, which
+recorded the raw runner session — drafts, corrections and all.) `log-extractor` then
+reads this clean record after the session.
+
 `Game` is the headless core. Interfaces (the TUI, the benchmark) drive it:
   g = Game(backend, gate)
   g.start()                 # runner opens the scene (gated)
@@ -15,8 +22,10 @@ loop; nothing reaches the player (or the benchmark's scorer) until the loop says
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 
 
 @dataclass
@@ -30,27 +39,39 @@ class TurnResult:
 
 class Game:
     def __init__(self, backend, gate, runner_agent: str = "dm-runner",
-                 on_turn=None, checks_log: str | None = None):
+                 on_turn=None, checks_log: str | None = None,
+                 campaign_dir: str | None = None, session: int | None = None,
+                 transcript: bool = True):
         self.backend = backend
         self.gate = gate
         self.runner_agent = runner_agent
         self.on_turn = on_turn
         self.checks_log = checks_log
         self.runner_sid = backend.create_session("dm-runner game")
+        # The session being played = the highest plan on disk, unless told otherwise.
+        self.campaign = Path(campaign_dir) if campaign_dir else Path(backend.directory) / "campaign"
+        self.session = session if session is not None else _latest_session(self.campaign / "sessions")
+        self.transcript_path = (
+            self.campaign / "sessions" / f"session-{self.session}-transcript.md"
+            if (transcript and self.session) else None
+        )
 
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
-        """The opening scene — gated like any turn (it's player-facing narration)."""
-        return self._gated_turn(kickoff, kickoff)
+        """The opening scene — gated like any turn (it's player-facing narration).
+        Resets the transcript and records the opening narration (no player line)."""
+        self._init_transcript()
+        return self._gated_turn(kickoff, kickoff, opening=True)
 
     def turn(self, player_input: str) -> TurnResult:
         return self._gated_turn(player_input, player_input)
 
     def meta(self, question: str) -> str:
         """An out-of-game question. The runner answers it (spoiler-free, per its
-        prompt); the orchestrator does NOT gate it — it isn't narration."""
+        prompt); the orchestrator does NOT gate it — it isn't narration, and it
+        never reaches the transcript."""
         return self.backend.prompt(self.runner_sid, self.runner_agent, question)
 
-    def _gated_turn(self, message: str, player_msg: str) -> TurnResult:
+    def _gated_turn(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
         draft = self.backend.prompt(self.runner_sid, self.runner_agent, message)
         result = self.gate.check(draft, player_msg)
         final, corrected = draft, False
@@ -60,10 +81,35 @@ class Game:
             final = self.backend.prompt(self.runner_sid, self.runner_agent, result.correction_brief())
             corrected = True
         tr = TurnResult(player_msg, draft, final, result, corrected)
+        self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
         self._log(tr)
         if self.on_turn:
             self.on_turn(tr)
         return tr
+
+    # -- transcript (final messages only) -----------------------------------
+
+    def _init_transcript(self) -> None:
+        if not self.transcript_path:
+            return
+        try:
+            self.transcript_path.parent.mkdir(parents=True, exist_ok=True)
+            self.transcript_path.write_text(f"# Session {self.session} — transcript\n\n")
+        except OSError:
+            pass
+
+    def _append_transcript(self, player_msg: str, final: str, opening: bool) -> None:
+        if not self.transcript_path:
+            return
+        blocks = []
+        if not opening:  # the opening has no player line — it's the runner's scene-set
+            blocks += ["## Player", "", player_msg.strip(), ""]
+        blocks += ["## DM", "", final.strip(), ""]
+        try:
+            with open(self.transcript_path, "a") as f:
+                f.write("\n".join(blocks) + "\n")
+        except OSError:
+            pass
 
     def _log(self, tr: TurnResult) -> None:
         if not self.checks_log:
@@ -73,6 +119,19 @@ class Game:
                 f.write(_format_block(tr))
         except OSError:
             pass
+
+
+def _latest_session(sessions_dir: Path) -> int | None:
+    """The session being played: the highest `session-{N}-plan.md` on disk."""
+    n = 0
+    try:
+        for f in Path(sessions_dir).iterdir():
+            m = re.match(r"session-(\d+)-plan\.md$", f.name)
+            if m:
+                n = max(n, int(m.group(1)))
+    except OSError:
+        return None
+    return n or None
 
 
 def _sec(label: str, body: str) -> str:

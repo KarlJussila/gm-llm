@@ -45,9 +45,8 @@ slots, coin); the player tracks those.
 | `characters/{slug}.state.md` | PC state — location, notable condition, key items, objective | `dm` (apply pass) |
 | `characters/{slug}.knowledge.md` | What the PC **Knows / Believes / Open questions** | `dm` (apply pass) |
 | `sessions/session-{N}-plan.md` | The plan for an upcoming session | `dm` |
-| `sessions/session-{N}-transcript.md` | Raw play transcript, captured automatically | `dm-transcript` plugin |
+| `sessions/session-{N}-transcript.md` | Play transcript (final messages), written each turn | orchestrator |
 | `sessions/session-{N}.md` | Structured session digest, extracted from the transcript | `log-extractor` |
-| `sessions/session-{N}-deltas.md` | Reconciliation log — new canon + arc divergence noted in play | checkers / plugin (during play) |
 | `assessment/session-{N}-assessment.md` | Post-session analysis & arc recommendations | `campaign-analyst` |
 | `documents/{slug}.md` | **Verbatim** text of in-world written materials | `dm` (post-session) |
 | `feedback/{target}.md` | Distilled player guidance, loaded by the named skill/agent | `dm` |
@@ -57,14 +56,15 @@ the `state/*` docs sit at fixed paths; clocks and threads live in their dashboar
 
 ## How a session is captured
 
-Note-taking is **automatic** — the runner just plays. During the session the full conversation is
-recorded to `sessions/session-{N}-transcript.md` by the capture plugin
-(`.opencode/plugins/dm-transcript.ts`), and the runtime checkers note new canon and arc divergence
-to `sessions/session-{N}-deltas.md`. After the session the `dm`:
+Note-taking is **automatic** — the runner just plays. During the session the orchestrator writes the
+final player + DM messages of each turn to `sessions/session-{N}-transcript.md` (the corrected
+narration, not drafts). The runtime checkers only verify and report — they record nothing. After the
+session the `dm`:
 
 1. delegates to `log-extractor`, which reads the transcript and writes the structured digest
-   `sessions/session-{N}.md` — a lossless extraction of every notable change, then
-2. **applies** the digest + deltas to canonical state: the knowledge ledger (flipping
+   `sessions/session-{N}.md` — a lossless extraction of every notable change (including new canon
+   improvised in play and where the session diverged from the plan), then
+2. **applies** the digest to canonical state: the knowledge ledger (flipping
    `[hidden]` → `[revealed: S<n>]`), entity info for new/changed canon, all `*.state.md` snapshots,
    the `state/*` docs, the registry, and verbatim `documents/` — then runs the assessment and
    reconciles each arc.

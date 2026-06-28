@@ -2,7 +2,7 @@
 POST-session reconcile — orchestrated.
 
 After the player finishes a session, the canon has to absorb what happened: extract
-the transcript into the digest, drain the deltas, author the new-canon files +
+the transcript into the digest, then from that digest author the new-canon files +
 registry rows, reconcile the arc bodies (a real revision, not a status bump), flip
 the ledger, and update every state snapshot. That apply pass is the `dm`'s — it
 holds the pen and delegates `log-extractor` / `campaign-analyst` as it needs them.
@@ -35,12 +35,11 @@ from .phase import apply_one_correction, commit_campaign
 _APPLY_BRIEF = (
     "Reconcile session {n} now — the player has finished it. Run your POST-SESSION apply pass: "
     "extract the transcript into the digest (`campaign/sessions/session-{n}.md`, delegate "
-    "`log-extractor`), drain `campaign/sessions/session-{n}-deltas.md`, author + register every "
-    "new-canon entity/world file, reconcile each affected arc body (a real revision, not a status "
-    "bump), flip the ledger (`[hidden]` -> `[revealed: S{n}]`, `Known to:`), update all state "
-    "snapshots, route any verbatim documents, and distill the player's feedback into "
-    "`campaign/feedback/`. Work the completeness loop; leave nothing the session established "
-    "unfiled.\n\n"
+    "`log-extractor`), then from that digest author + register every new-canon entity/world file, "
+    "reconcile each affected arc body (a real revision, not a status bump), flip the ledger "
+    "(`[hidden]` -> `[revealed: S{n}]`, `Known to:`), update all state snapshots, route any verbatim "
+    "documents, and distill the player's feedback into `campaign/feedback/`. Work the completeness "
+    "loop; leave nothing the session established unfiled.\n\n"
     "For this pass the result is gated and committed FOR you, and the next session is prepped "
     "separately: do NOT run check-propagation yourself, do NOT run git, and do NOT prepare session "
     "{next_n}. When the apply pass is done, stop and report only that it is reconciled — spoiler-free."
@@ -69,7 +68,7 @@ class Reconciler:
         self.dm_sid = backend.create_session("dm reconcile")
 
     def reconcile_session(self, n: int, commit: bool = False) -> ReconcileResult:
-        # 1. The dm runs the apply pass (digest, deltas, canon, arcs, state, ledger, feedback).
+        # 1. The dm runs the apply pass (digest, canon, arcs, state, ledger, feedback).
         self.backend.prompt(self.dm_sid, self.dm_agent,
                             _APPLY_BRIEF.format(n=n, next_n=n + 1))
 

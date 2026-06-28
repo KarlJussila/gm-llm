@@ -3,8 +3,8 @@ The gate — run the independent checks on drafted content, in code.
 
 This is what the runner (and the dm, at planning) used to invoke as a tool; now the
 orchestrator owns it, so it runs by construction (never skipped) and the result is
-parsed deterministically rather than sniffed from prose. Each checker's first line
-is a machine-readable `VERDICT: PASS | VIOLATIONS`.
+parsed deterministically rather than sniffed from prose. Each checker ends with a
+machine-readable `VERDICT: PASS | VIOLATIONS` on its last line.
 
 Three shapes share one spawn-and-parse engine:
   - `check(narration, player_msg)` — the RUNTIME gate: narrative-checker (canon,
@@ -15,8 +15,8 @@ Three shapes share one spawn-and-parse engine:
     conduct to police and no player message), with the pre-loaded canon block.
   - `check_propagation(n)` — the POST gate: narrative-checker only, verifying that
     session N's updates landed in canon and state. No preload — the checker reads
-    N's records (digest + deltas) against the updated files itself; there's no
-    single draft to match names against.
+    N's digest against the updated files itself; there's no single draft to match
+    names against.
 
 Each checker runs as a fresh session per call.
 """
@@ -95,9 +95,12 @@ _VERDICT_RE = re.compile(r"VERDICT:\s*(PASS|VIOLATIONS)", re.I)
 
 
 def parse_verdict(agent: str, text: str) -> Verdict:
-    """Read the machine-readable verdict. Absent/garbled → fail safe to
-    VIOLATIONS so the report still reaches the runner rather than slipping by."""
-    for line in text.splitlines():
+    """Read the machine-readable verdict, which the checkers emit on their LAST
+    line (a modest model concludes after working its steps). We scan bottom-up and
+    take the last match, so a stray earlier mention (a quoted example, a step note)
+    can't pre-empt the real verdict. Absent/garbled → fail safe to VIOLATIONS so the
+    report still reaches the caller rather than slipping by."""
+    for line in reversed(text.splitlines()):
         m = _VERDICT_RE.search(line)
         if m:
             return Verdict(agent, m.group(1).upper() == "PASS", text)
@@ -137,9 +140,9 @@ def _plan_brief(plan: str, canon: str) -> str:
 def _propagation_brief(n: int) -> str:
     return (
         f"Role: check-propagation. Session {n}'s updates have been applied to canon and state. Verify "
-        "that everything the session established — per the digest and deltas — propagated correctly "
-        "into canon, the ledger, state snapshots, arc bodies, and the registry, per your "
-        "check-propagation skill. Read what you need from disk; report gaps."
+        "that everything the session established — per the digest — propagated correctly into canon, "
+        "the ledger, state snapshots, arc bodies, and the registry, per your check-propagation skill. "
+        "Read what you need from disk; report gaps."
     )
 
 
@@ -177,8 +180,8 @@ class Gate:
 
     def check_propagation(self, n: int) -> PropagationGateResult:
         """The POST gate: narrative-only check that session N's apply pass landed
-        everywhere. No preload — propagation is a whole-repo audit (digest + deltas
-        vs. the updated files), not a single draft, so the checker reads on demand."""
+        everywhere. No preload — propagation is a whole-repo audit (the digest vs.
+        the updated files), not a single draft, so the checker reads on demand."""
         return PropagationGateResult(
             narrative=self._run("check-propagation", "narrative-checker", _propagation_brief(n)),
             session=n,

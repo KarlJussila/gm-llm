@@ -72,12 +72,22 @@ done as you go:
   the *player's path* open.
 
 ### 7. Report
-**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
-line. Then:
-- on **`VERDICT: PASS`** — stop there (no violations to report).
-- on **`VERDICT: VIOLATIONS`** — a numbered list, for each: what's wrong; the **correct fact / arc
-  answer** where relevant; the **source file(s)** to consult; and the **fix instruction** (ground it,
-  pull the arc answer, re-flag, merge/differentiate, fill the blank).
+First write your findings:
+- **no violations** — write nothing here.
+- **violations** — a numbered list, for each: what's wrong; the **correct fact / arc answer** where
+  relevant; the **source file(s)** to consult; and the **fix instruction** (ground it, pull the arc
+  answer, re-flag, merge/differentiate, fill the blank).
+
+Then end with the verdict. **The very last line of your output must be exactly one of:**
+
+```
+VERDICT: PASS
+VERDICT: VIOLATIONS
+```
+
+Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
+it. `PASS` if and only if your list above is empty; `VIOLATIONS` if you listed anything. This line is
+read by a machine; if it's missing or altered the plan is treated as failed.
 
 Keep it terse and specific — the dm revises the plan directly from this. No prose padding.
 

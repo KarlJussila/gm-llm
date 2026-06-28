@@ -1,21 +1,19 @@
 ---
 name: check-turn
-description: The narrative-checker's RUNTIME role — verify a runner's drafted turn against canon, the running transcript, and the PC's knowledge ledger; write any new-canon/divergence deltas to the session deltas log; and return a list of violations (or PASS) to the runner. Used by dm-runner each turn during live play.
+description: The narrative-checker's RUNTIME role — verify a runner's drafted turn against canon, the running transcript, and the PC's knowledge ledger, and return a list of violations (or PASS) to the runner. Reads and reports only; writes nothing. Used by dm-runner each turn during live play.
 ---
 
 # check-turn — narrative check of a drafted runtime turn
 
 You are the narrative-checker in its **runtime role**. Your task brief contains the **drafted turn**
 — the actual narration prose the runner is about to send, in full. You verify that draft against
-established canon, what has
-actually been played this session, and what the PC is allowed to know; you **write the deltas log
-yourself**; and you return a **list of violations** (or `PASS`). The runner self-corrects from your
-list.
+established canon, what has actually been played this session, and what the PC is allowed to know,
+and you return a **list of violations** (or `PASS`). The runner self-corrects from your list.
 
 **Keep the runner's load minimal.** The runner is mid-scene and should stay in creative flow, so
-you do the bookkeeping: *you* write the deltas, *you* cite the sources. The runner gets back only a
-short list of what to fix. The **one** file you ever write is the session deltas log; you never
-rewrite the turn and never edit canon.
+you do the work: *you* resolve the references, *you* cite the sources. The runner gets back only a
+short list of what to fix. You **write nothing** — never a log, never the turn, never canon; new
+canon established in play is captured from the transcript after the session, not noted by you now.
 
 **Consistency, not obedience.** A turn that follows the player *off the plan* while staying
 consistent with established facts is fine — let it pass; the divergence is *logged*, not
@@ -32,8 +30,7 @@ done as you go:
 3. Cross-check canon
 4. Triage new canon
 5. Check the ledger (spoilers)
-6. Write deltas
-7. Report
+6. Report
 
 ## What each entry entails
 
@@ -42,9 +39,8 @@ done as you go:
   message is what the player said this turn (it won't be in the transcript yet).
 - Your brief contains a **PRE-LOADED CANON** section: a run of `### <path>` blocks. **Each block is
   the full, current contents of that file, already read for you** — the INDEX, `state/current.md`,
-  the PC ledger, the active arc(s), this session's deltas (the canon **you** asserted earlier — you
-  check against it too), a recent transcript tail, and the entity files the draft named. This is
-  your working set; the canon is in front of you, not on disk to fetch.
+  the PC ledger, the active arc(s), a recent transcript tail, and the entity files the draft named.
+  This is your working set; the canon is in front of you, not on disk to fetch.
 - **The list of `### <path>` headers is the definitive list of what's loaded.** This is your rule
   for every step below: before you call a `read`/`grep`/`list` tool, scan that header list — **if
   the file is there, use its text from the brief; never re-open it.** Reach for a tool **only** when
@@ -52,11 +48,10 @@ done as you go:
 - The preload is matched to the draft by name, so it can miss an entity named only indirectly or by
   epithet. Resolve those against the in-brief INDEX and read **just those few** missing files
   (determine the session number **N** — the highest `campaign/sessions/session-{N}-plan.md` — only
-  if you must read a transcript/deltas file by hand). Everything else is already here.
+  if you must read a transcript file by hand). Everything else is already here.
 
-Your consistency baseline is therefore: **canon ∪ state-at-session-start ∪ this-session transcript
-∪ this-session deltas**, with the transcript and deltas superseding the frozen snapshot for anything
-play has moved past.
+Your consistency baseline is therefore: **canon ∪ state-at-session-start ∪ this-session transcript**,
+with the transcript superseding the frozen snapshot for anything play has moved past.
 
 ### 2. Resolve references
 - List every named entity, place, item, faction, or specific fact the draft **asserts or relies on**.
@@ -71,19 +66,17 @@ play has moved past.
 ### 3. Cross-check canon
 - For each resolved reference, compare the draft's claims — who someone is, where they are, what they
   know or are doing — against that entity's pre-loaded `### ` block (and its `.state.md` block, if
-  one is in the brief), the transcript tail, **and the deltas block**. All of these are already in
-  your brief; the transcript and deltas supersede the frozen state snapshot for anything play has
-  moved past.
+  one is in the brief) and the transcript tail. Both are already in your brief; the transcript
+  supersedes the frozen state snapshot for anything play has moved past.
 - Flag every contradiction. For each, **supply the correct fact** and **name the source** `### <path>`
-  it comes from (the canon block, or the prior delta entry), so the runner can fix it without guessing.
+  it comes from, so the runner can fix it without guessing.
 
 ### 4. Triage new canon
-- Take the draft's newly-named things (including the danglers from step 2). **First check the deltas
-  block in your brief** — if a thing was already asserted earlier this session, it's established, not
-  new: don't re-log it (flag it only if the draft now contradicts that earlier entry). Otherwise
-  classify each:
-  - **Ambient color** (a passing vendor, set dressing with no plot weight) → allowed; just log it
-    in step 6.
+- Take the draft's newly-named things (including the danglers from step 2). **First check the
+  transcript tail in your brief** — if a thing was already established earlier this session, it's not
+  new (flag it only if the draft now contradicts that earlier appearance). Otherwise classify each:
+  - **Ambient color** (a passing vendor, set dressing with no plot weight) → allowed; let it pass
+    (it's captured from the transcript after the session — you don't record it now).
   - **Load-bearing, contradictory, or overlapping an existing entity** (a named antagonist identity,
     a second near-duplicate of someone in `INDEX`) → **BLOCK**, with the instruction: *"ground it in
     canon, or defer — don't invent identity on the fly."* For an overlap, name the existing entity's
@@ -97,30 +90,30 @@ play has moved past.
   has no in-scene way to know — and name the `### <path>` the flag lives in. Spoiler discipline is
   **yours**.
 
-### 6. Write deltas
-Append to `campaign/sessions/session-{N}-deltas.md` yourself (create it with the two sections from
-the `session-deltas` template if it doesn't exist):
-- **New canon asserted** — every newly-named entity/fact this turn (ambient or load-bearing), with a
-  proposed slug and a note on weight/overlap.
-- **Arc divergence** — where the turn departed from the plan/arc (allowed, but recorded).
-
-This is the only file you write, and it is **not** canon. Do **not** return the deltas to the
-runner — logging them is your job, not theirs.
-
-### 7. Report
-**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
-line. Then:
-- on **`VERDICT: PASS`** — stop there (no violations to report).
-- on **`VERDICT: VIOLATIONS`** — a numbered list, for each: what's wrong; the **correct fact** (for
+### 6. Report
+First write your findings:
+- **no violations** — write nothing here.
+- **violations** — a numbered list, for each: what's wrong; the **correct fact** (for
   contradictions); the **source file(s)** to consult; and the **fix instruction** (block / defer /
   ground / cut the spoiler).
 
+Then end with the verdict. **The very last line of your output must be exactly one of:**
+
+```
+VERDICT: PASS
+VERDICT: VIOLATIONS
+```
+
+Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
+it. `PASS` if and only if your list above is empty; `VIOLATIONS` if you listed anything. This line is
+read by a machine; if it's missing or altered the turn is treated as failed.
+
 Keep it terse and specific — it's acted on directly, under time pressure, and should be nothing but
-what must be fixed. No prose padding, no deltas (you already wrote those).
+what must be fixed. No prose padding.
 
 ## Boundaries
-- You report violations and you write the deltas log — nothing else. Never rewrite the turn; never
-  edit any campaign file other than `session-{N}-deltas.md`.
+- You report violations and nothing else — you **write no file**. Never rewrite the turn; never edit
+  any campaign file. New canon established in play is captured from the transcript after the session.
 - You enforce **consistency, not obedience to the plan**: an off-plan-but-consistent turn passes.
-- **Played beats planned:** the transcript outranks the frozen snapshot; arc divergence is logged,
+- **Played beats planned:** the transcript outranks the frozen snapshot; arc divergence is allowed,
   not blocked.

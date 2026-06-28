@@ -7,11 +7,13 @@ description: Turn an auto-captured play transcript into the structured session d
 
 ## Purpose
 
-The session runner no longer writes notes by hand — the play transcript is captured automatically
-to `campaign/sessions/session-{N}-transcript.md`. This skill reads that raw transcript and produces
-the **structured digest** `campaign/sessions/session-{N}.md`: the canonical session log the rest of
-the system reads. The job is **lossless extraction, not summarization** — preserve every specific
-(names, numbers, exact learned facts, verbatim document text). When in doubt, keep it.
+The play transcript — each turn's final player and DM messages — is recorded to
+`campaign/sessions/session-{N}-transcript.md` as the session runs. This skill reads that transcript
+and produces the **structured digest** `campaign/sessions/session-{N}.md`: the canonical session log
+the rest of the system reads, and the **single record** of what the session established (new canon
+improvised in play, plan divergence, everything the PC learned). The job is **lossless extraction,
+not summarization** — preserve every specific (names, numbers, exact learned facts, verbatim document
+text). When in doubt, keep it.
 
 ## Read in chunks — never load the whole transcript at once
 

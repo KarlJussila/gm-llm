@@ -92,9 +92,9 @@ play_turn(player_input):
   live model run is blocked on the same rate limit as O2.
 - **O6 — POST reconcile. ✓ DONE (live run still owed).** The carried-forward Phase 5, orchestrated
   the same way as O5. `Gate.check_propagation(N)` reuses the spawn-and-parse-VERDICT engine,
-  narrative-only, **no preload** (propagation is a whole-repo audit — digest + deltas vs. the updated
+  narrative-only, **no preload** (propagation is a whole-repo audit — the digest vs. the updated
   files — not a single draft) → `PropagationGateResult`. New `orchestrator/reconciler.py`:
-  `Reconciler.reconcile_session(N)` drives the `dm` apply-pass (digest → drain deltas → author new
+  `Reconciler.reconcile_session(N)` drives the `dm` apply-pass (transcript → digest → author new
   canon + reconcile arc bodies → flip ledger → write state → route docs/feedback; `log-extractor` +
   `campaign-analyst` are the dm's own delegated helpers), then gates `check-propagation` **in code**
   — the gate that the skill defined but no flow ever wired — applies one bounded correction, and
@@ -103,6 +103,24 @@ play_turn(player_input):
   (`apply_one_correction` — the one-correction-no-re-gate invariant — and `commit_campaign`), which
   `Planner` now also uses. Entry point: `dev/reconcile.py --session N [--commit] [--prep]`, where
   `--prep` sequences reconcile(N) → prep(N+1). Mock-/infra-validated; live run owed.
+
+## Hardening from the first live run (2026-06-27)
+A 6-turn live autoplay ran (the loop works end-to-end), and surfaced three fixes:
+- **Verdict at the end, not the start.** A modest checker concludes *after* working its steps, so
+  forcing `VERDICT:` on the first line fought the grain — passing turns came back with no parseable
+  line and fail-safed to VIOLATIONS, flagging nearly every turn. The line now goes on the checker's
+  **last** line (hardened wording in all three skills + `rules-checker`), and `parse_verdict` reads
+  the **last** match. Fail-safe to VIOLATIONS unchanged.
+- **No runtime deltas.** The narrative-checker no longer writes `session-{N}-deltas.md`. The file was
+  redundant (the checker re-reads the transcript for context anyway, and `log-extract`'s taxonomy
+  already captures new-canon + plan-divergence), and worse, *stale*: the checker would flag a thing,
+  the runner would change it on correction, and the logged delta no longer matched the sent turn. The
+  whole deltas concept is retired — `narrative-checker` is now fully read-only; POST sources the
+  **digest** alone; the `session-deltas` template is deleted.
+- **Orchestrator owns the transcript.** `dm-transcript.ts` (deleted) captured the *raw* runner
+  session — drafts and correction chatter included. `Game` now writes
+  `campaign/sessions/session-{N}-transcript.md` from each turn's **final** messages (player + the
+  corrected DM narration), since the orchestrator already holds them. Cleaner input for `log-extract`.
 
 ## Open questions (resolve as we build)
 - **Verdict parsing.** Checkers currently return prose ("PASS" or a numbered list). The orchestrator
