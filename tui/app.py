@@ -29,10 +29,11 @@ from textual.widgets import Footer, Header, Input, Static
 
 class PlayApp(App):
     CSS = """
-    #scene  { width: 2fr; border: round $primary;  padding: 0 1; }
-    #screen { width: 1fr; border: round $warning;  padding: 0 1; }
+    #main   { height: 1fr; }
+    #scene  { width: 2fr; border: round $primary;   padding: 0 1; }
+    #screen { width: 1fr; border: round $secondary; padding: 0 1; }
     #screen.hidden { display: none; }
-    #cmd { dock: bottom; border: tall $accent; }
+    #cmd { height: 3; border: tall $accent; }
     #cmd:disabled { border: tall $surface; }
     """
 
@@ -53,17 +54,18 @@ class PlayApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Horizontal():
+        with Horizontal(id="main"):
             with VerticalScroll(id="scene"):
                 yield Static(id="scene-body", markup=True)
-            with VerticalScroll(id="screen"):
+            with VerticalScroll(id="screen", classes="hidden"):
                 yield Static(id="screen-body", markup=True)
         yield Input(id="cmd")
         yield Footer()
 
     def on_mount(self) -> None:
-        self._write("screen", "[bold]behind the screen[/bold] — gate verdicts")
-        self._write("scene", "[dim]ctrl+t action/meta · ctrl+g behind-screen · /roll 2d6+3 · /meta <q>[/dim]")
+        self.theme = "nord"
+        self._write("screen", "[b]behind the screen[/b] — gate verdicts")
+        self._write("scene", "[$text-muted]ctrl+t action/meta · ctrl+g behind-screen · /roll 2d6+3 · /meta <q>[/]")
         self._sync_input()
         self.sub_title = "ACTION mode"
         self.run_worker(self._open(), exclusive=True)
@@ -116,21 +118,21 @@ class PlayApp(App):
         # so you can report it in your next action.
         if text.lower().startswith("/roll"):
             result = roll_expr(text[5:].strip())
-            self._write("scene", f"\n[yellow]{result or 'could not parse — try /roll 2d6+3'}[/yellow]")
+            self._write("scene", f"\n[$warning]{result or 'could not parse — try /roll 2d6+3'}[/]")
             return
         # /meta — an out-of-game question without switching modes.
         if text.lower().startswith("/meta"):
             q = text[5:].strip()
             if q:
-                self._write("scene", f"\n[dim]You (out-of-game)  {escape(q)}[/dim]")
+                self._write("scene", f"\n[$text-muted]You (out-of-game)  {escape(q)}[/]")
                 self.run_worker(self._do_meta(q), exclusive=True)
             return
 
         if self.mode == "action":
-            self._write("scene", f"\n[bold green]You[/bold green]  {escape(text)}")
+            self._write("scene", f"\n[$success]You[/]  {escape(text)}")
             self.run_worker(self._do_turn(text), exclusive=True)
         else:
-            self._write("scene", f"\n[dim]You (out-of-game)  {escape(text)}[/dim]")
+            self._write("scene", f"\n[$text-muted]You (out-of-game)  {escape(text)}[/]")
             self.run_worker(self._do_meta(text), exclusive=True)
 
     async def _do_turn(self, text: str) -> None:
@@ -143,25 +145,25 @@ class PlayApp(App):
     async def _do_meta(self, question: str) -> None:
         self._busy(True)
         answer = await asyncio.to_thread(self.game.meta, question)
-        self._write("scene", f"[dim]DM (out-of-game)  {escape(answer)}[/dim]")
+        self._write("scene", f"[$text-muted]DM (out-of-game)  {escape(answer)}[/]")
         self._busy(False)
 
     # -- rendering ----------------------------------------------------------
 
     def _render_dm(self, tr) -> None:
-        self._write("scene", f"\n[bold cyan]DM[/bold cyan]  {escape(tr.final)}")
+        self._write("scene", f"\n[$accent]DM[/]  {escape(tr.final)}")
 
     def _render_gate(self, tr) -> None:
         self._turn += 1
         g = tr.gate
-        nv = "[green]PASS[/green]" if g.narrative.passed else "[red]VIOLATIONS[/red]"
-        cv = "[green]PASS[/green]" if g.conduct.passed else "[red]VIOLATIONS[/red]"
-        status = "[yellow]CORRECTED[/yellow]" if tr.corrected else "[green]clean[/green]"
-        self._write("screen", f"\n[bold]turn {self._turn}[/bold]  canon {nv} · conduct {cv} · {status} · {g.canon_sections} canon")
+        nv = "[$success]PASS[/]" if g.narrative.passed else "[$error]VIOLATIONS[/]"
+        cv = "[$success]PASS[/]" if g.conduct.passed else "[$error]VIOLATIONS[/]"
+        status = "[$warning]CORRECTED[/]" if tr.corrected else "[$success]clean[/]"
+        self._write("screen", f"\n[b]turn {self._turn}[/b]  canon {nv} · conduct {cv} · {status} · {g.canon_sections} canon")
         if not g.narrative.passed:
-            self._write("screen", f"[red]canon[/red]\n{escape(g.narrative.report.strip())}")
+            self._write("screen", f"[$error]canon[/]\n{escape(g.narrative.report.strip())}")
         if not g.conduct.passed:
-            self._write("screen", f"[red]conduct[/red]\n{escape(g.conduct.report.strip())}")
+            self._write("screen", f"[$error]conduct[/]\n{escape(g.conduct.report.strip())}")
 
     # -- actions ------------------------------------------------------------
 
