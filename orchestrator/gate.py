@@ -99,11 +99,20 @@ def parse_verdict(agent: str, text: str) -> Verdict:
     line (a modest model concludes after working its steps). We scan bottom-up and
     take the last match, so a stray earlier mention (a quoted example, a step note)
     can't pre-empt the real verdict. Absent/garbled → fail safe to VIOLATIONS so the
-    report still reaches the caller rather than slipping by."""
-    for line in reversed(text.splitlines()):
-        m = _VERDICT_RE.search(line)
+    report still reaches the caller rather than slipping by.
+
+    Guard: a `VIOLATIONS` verdict with **no findings body** (just the verdict line,
+    nothing above it) is not actionable — there's nothing for the caller to fix — so
+    we treat it as a pass. Modest models sometimes stamp the verdict without listing
+    anything; without this, that fires a content-free correction."""
+    lines = text.splitlines()
+    for i in range(len(lines) - 1, -1, -1):
+        m = _VERDICT_RE.search(lines[i])
         if m:
-            return Verdict(agent, m.group(1).upper() == "PASS", text)
+            passed = m.group(1).upper() == "PASS"
+            if not passed and not "\n".join(lines[:i] + lines[i + 1:]).strip():
+                passed = True  # VIOLATIONS with an empty body → nothing to act on
+            return Verdict(agent, passed, text)
     return Verdict(agent, passed=False, report=text)
 
 

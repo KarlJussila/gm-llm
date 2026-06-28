@@ -96,7 +96,9 @@ VERDICT: VIOLATIONS
 ```
 
 Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
-it. `PASS` if and only if your list above is empty; `VIOLATIONS` if you listed anything. This line is
+it. **The verdict and its list are one unit: never write `VERDICT: VIOLATIONS` without the numbered
+findings above it.** If you cannot point to a specific offending line and its fix, there is no
+violation — write `VERDICT: PASS`. So: `PASS` if and only if your list above is empty. This line is
 read by a machine; if it's missing or altered the turn is treated as failed.
 
 Keep it terse and specific — it's acted on directly, under time pressure. No prose padding, no

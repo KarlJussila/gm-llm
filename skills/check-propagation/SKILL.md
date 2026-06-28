@@ -72,8 +72,10 @@ VERDICT: VIOLATIONS
 ```
 
 Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
-it. `PASS` if and only if your gap list above is empty; `VIOLATIONS` if you listed anything. This
-line is read by a machine; if it's missing or altered the pass is treated as failed.
+it. **The verdict and its list are one unit: never write `VERDICT: VIOLATIONS` without the numbered
+gap list above it.** If you cannot point to a specific gap and its fix, nothing is missing — write
+`VERDICT: PASS`. So: `PASS` if and only if your gap list above is empty. This line is read by a
+machine; if it's missing or altered the pass is treated as failed.
 
 Keep it terse and specific — the caller backfills directly from this.
 
