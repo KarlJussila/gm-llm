@@ -19,12 +19,14 @@ talk to this, never to opencode directly.
 from __future__ import annotations
 
 import json
+import os
 import signal
 import subprocess
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -53,6 +55,10 @@ class Backend:
         self._owns_server = False
         self._last_call = 0.0
         self.on_retry = None  # optional callback(agent, attempt, wait, reason)
+        # Raw-response logging: set ORCH_DEBUG=1 to dump every model reply's full
+        # part structure (so we can see findings split across parts, etc.).
+        self.debug_log = os.environ.get("ORCH_DEBUG_LOG", "/tmp/orchestrator-raw.log")
+        self._debug = bool(os.environ.get("ORCH_DEBUG"))
 
     # -- server lifecycle ---------------------------------------------------
 
@@ -128,10 +134,40 @@ class Backend:
         self._last_call = time.time()
 
     @staticmethod
-    def _last_text(resp: dict) -> str:
+    def _text_parts(resp: dict) -> list[str]:
         parts = resp.get("parts", []) if isinstance(resp, dict) else []
-        texts = [p.get("text", "") for p in parts if p.get("type") == "text" and p.get("text")]
+        return [p.get("text", "") for p in parts if p.get("type") == "text" and p.get("text")]
+
+    @classmethod
+    def _last_text(cls, resp: dict) -> str:
+        texts = cls._text_parts(resp)
         return texts[-1].strip() if texts else ""
+
+    @classmethod
+    def _all_text(cls, resp: dict) -> str:
+        """Every text part joined — for replies whose content spans parts (e.g. a
+        checker that runs a `todowrite` list, then writes its findings and its
+        `VERDICT:` line in separate parts: `_last_text` would keep only the verdict)."""
+        return "\n".join(t.strip() for t in cls._text_parts(resp)).strip()
+
+    def _dump_parts(self, session_id: str, agent: str, resp: dict, out: str) -> None:
+        """ORCH_DEBUG: append the reply's full part structure, so we can see whether
+        a checker's findings landed in an earlier part than its verdict (which
+        `_last_text` would drop) vs. the model genuinely emitting only the verdict."""
+        try:
+            parts = resp.get("parts", []) if isinstance(resp, dict) else []
+            types = [p.get("type") for p in parts]
+            texts = [p.get("text", "") for p in parts if p.get("type") == "text" and p.get("text")]
+            with open(self.debug_log, "a") as f:
+                f.write(f"\n{'=' * 72}\n{datetime.now(timezone.utc).isoformat(timespec='seconds')}  "
+                        f"agent={agent}  session={session_id}\n")
+                f.write(f"part types ({len(parts)}): {types}\n")
+                f.write(f"text parts: {len(texts)}\n")
+                for i, t in enumerate(texts):
+                    f.write(f"--- text part {i} ---\n{t}\n")
+                f.write(f"--- _last_text returned (what parse_verdict sees) ---\n{out}\n")
+        except OSError:
+            pass
 
     # -- public API ---------------------------------------------------------
 
@@ -154,14 +190,21 @@ class Backend:
         except (urllib.error.URLError, OSError, ValueError):
             return False
 
-    def prompt(self, session_id: str, agent: str, text: str) -> str:
-        """Prompt `agent` on `session_id`; return its final text. Retries on
-        failure/empty/timeout with backoff, paced to ease rate limits."""
+    def prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
+        """Prompt `agent` on `session_id`; return its text. Retries on
+        failure/empty/timeout with backoff, paced to ease rate limits.
+
+        `whole=True` joins every text part (use for checkers, whose findings and
+        verdict can land in separate parts); the default returns the last part (the
+        runner's narration, which is a single clean block)."""
         body = {"agent": agent, "parts": [{"type": "text", "text": text}]}
         for attempt in range(self.retries):
             self._pace()
             try:
-                out = self._last_text(self._raw_post(f"/session/{session_id}/message", body, self.turn_timeout))
+                resp = self._raw_post(f"/session/{session_id}/message", body, self.turn_timeout)
+                out = self._all_text(resp) if whole else self._last_text(resp)
+                if self._debug:
+                    self._dump_parts(session_id, agent, resp, out)
                 if out:
                     return out
                 reason = "empty reply (likely a rate-limited/errored stream)"

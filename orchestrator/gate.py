@@ -172,9 +172,11 @@ class Gate:
     def _run(self, title: str, agent: str, brief: str) -> Verdict:
         """Spawn a fresh checker session, prompt it, parse its VERDICT line.
         Serial and paced by the backend — keeps us off the rate limit that
-        parallel fan-out kept tripping."""
+        parallel fan-out kept tripping. `whole=True`: a checker runs a todowrite
+        list then reports, so its findings and verdict can span text parts — we
+        need all of them, not just the last."""
         sid = self.backend.create_session(title)
-        return parse_verdict(agent, self.backend.prompt(sid, agent, brief))
+        return parse_verdict(agent, self.backend.prompt(sid, agent, brief, whole=True))
 
     def check(self, narration: str, player_msg: str) -> GateResult:
         canon = self.preloader.build(narration)
