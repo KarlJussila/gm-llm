@@ -143,14 +143,12 @@ between-session authoring and management procedures.
 
 - **Dice rolling:** the `dice` tool (opencode plugin at `.opencode/plugins/dice-roller.ts`) for
   random resolution during play.
-- **Per-turn craft reminder:** a plugin (`.opencode/plugins/dm-reminder.ts`) re-injects the
-  runner's per-turn DM *craft* loop into the system prompt on every request
-  (`experimental.chat.system.transform`), gated to the `dm-runner` agent — so the craft resists
-  decay over a long session.
-- **Automatic transcript capture:** a plugin (`.opencode/plugins/dm-transcript.ts`) tracks the
-  `dm-runner` session and, on each `session.idle`, fetches the conversation via the opencode client
-  and writes `campaign/sessions/session-{N}-transcript.md`. Note-taking never depends on the model.
-  (Trace at `/tmp/dm-transcript.log`.)
+- **Per-turn craft reminder:** the orchestrator (`orchestrator/loop.py`) prepends the runner's
+  per-turn DM *craft* loop (agency, ask-for-a-roll, narrate-the-response) to each player message, so
+  the craft stays salient and resists decay over a long session.
+- **Automatic transcript capture:** the orchestrator writes
+  `campaign/sessions/session-{N}-transcript.md` from each turn's final messages (player + corrected
+  DM narration). Note-taking never depends on the model.
 - **Delegation:** the native `task` tool targeting `mode: subagent` agents — no subprocess
   spawning (`opencode run`).
 - **Markdown files:** all state is stored in human-readable markdown (no database).

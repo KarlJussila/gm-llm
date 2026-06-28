@@ -53,7 +53,8 @@ play_turn(player_input):
 - **dm-runner:** drop the gate step and the `check_turn` permission. The loop becomes: out-of-game? /
   in-fiction action / roll? / write narration → return. Add: "if you receive checker notes, revise
   your last narration per them."
-- **dm-reminder plugin:** drop the gate step; keep the craft loop (agency / rolls / narrate).
+- **dm-reminder plugin:** drop the gate step; keep the craft loop (agency / rolls / narrate). *(Later
+  moved into the orchestrator and the plugin retired — see Hardening.)*
 - **turn-gate plugin:** obsolete for play. Its canon-preload logic **ports into the orchestrator**
   (Python). The plugin stays on `main` only.
 - **narrative-checker / rules-checker + their skills:** unchanged. The orchestrator invokes them with
@@ -123,6 +124,13 @@ A 6-turn live autoplay ran (the loop works end-to-end), and surfaced three fixes
   session — drafts and correction chatter included. `Game` now writes
   `campaign/sessions/session-{N}-transcript.md` from each turn's **final** messages (player + the
   corrected DM narration), since the orchestrator already holds them. Cleaner input for `log-extract`.
+- **Per-turn reminder moved into the orchestrator (2026-06-28).** The runner had stopped asking for
+  rolls over a session (the checker sometimes had to flag it). The craft loop lived in the
+  `dm-reminder` plugin (system-prompt injection); it now rides in front of each player message from
+  `Game.turn()` — the most salient slot — with a beefed-up "ask for a roll, frequently" step
+  (any skill/uncertainty/perception/social check; outcome a gradient set by difficulty **and** the
+  reported roll). `session-run` got the same emphasis with worked examples. Plugin retired. (The gate
+  and transcript still see only the clean player message.)
 - **Runner context preloaded (2026-06-28).** The runner was the last agent still fetching its own
   context by tool-volition (read the plan, state, arcs, ledger at session start). Now
   `CanonPreloader.runner_preload(N)` assembles its working set in code — the **plan** plus the

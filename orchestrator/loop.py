@@ -13,6 +13,12 @@ draft or the gate's correction chatter. (This replaces the old capture plugin, w
 recorded the raw runner session — drafts, corrections and all.) `log-extractor` then
 reads this clean record after the session.
 
+It also owns the **per-turn craft reminder**: the turn algorithm (agency, ask-for-a-
+roll, narrate-the-response) rides in front of each player message, fresh every turn
+so it can't decay over a long session. (This replaces the old `dm-reminder` plugin,
+which pushed the same loop into the system prompt — the user message is more salient
+and the orchestrator already drives the prompt.)
+
 `Game` is the headless core. Interfaces (the TUI, the benchmark) drive it:
   g = Game(backend, gate)
   g.start()                 # runner opens the scene (gated)
@@ -27,6 +33,25 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+_TURN_REMINDER = (
+    "<turn-reminder>\n"
+    "Per-turn DM craft — run this on EVERY player message, in order:\n"
+    "1. Out-of-game question (a rule, logistics, \"how much longer?\")? Answer it plainly and "
+    "spoiler-free, then stop.\n"
+    "2. Otherwise the player declared what THEIR CHARACTER says or does. Never speak or act for the "
+    "character. Ambiguous? Ask. If they overstep (narrating an NPC or the world, or an ability the "
+    "character plainly lacks), step out of game and say so — don't play it as done.\n"
+    "3. ASK FOR A ROLL — and ask frequently. If the action involves ANY skill, uncertainty, or "
+    "chance of failure (even when success is likely), or the player is trying to find/perceive "
+    "something, recalling what their character would know about a subject, or persuading/deceiving "
+    "an NPC — name the fitting skill and ask the PLAYER to roll. Don't hand success or information "
+    "over for free; when in doubt, ask. Don't announce a DC. Then set the outcome from BOTH the "
+    "task's difficulty AND the value they report — success and failure are a gradient, not just "
+    "pass/fail.\n"
+    "4. Write the world's and the NPCs' response — not the character's next move — as your reply.\n"
+    "</turn-reminder>"
+)
 
 _RESUME_PRIME = (
     "This session is already in progress. Below is the play so far — the established record of "
@@ -100,7 +125,12 @@ class Game:
         return _last_dm_beat(transcript)
 
     def turn(self, player_input: str) -> TurnResult:
-        return self._gated_turn(player_input, player_input)
+        # The per-turn craft reminder rides in front of the player's message — the
+        # most salient slot, fresh every turn, so the algorithm (especially "ask for
+        # a roll") doesn't decay over a long session. The gate and the transcript see
+        # only the clean player_msg, never the reminder.
+        message = f"{_TURN_REMINDER}\n\n--- PLAYER MESSAGE ---\n{player_input}"
+        return self._gated_turn(message, player_input)
 
     def meta(self, question: str) -> str:
         """An out-of-game question. The runner answers it (spoiler-free, per its
