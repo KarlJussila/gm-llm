@@ -74,8 +74,15 @@ Flag any of:
   check whenever the PC lies.
 
 ### 4. Check metagame leakage
-- Flag out-of-world / system language addressed to the player ("session", "the module", "stat
-  block", "the DM", rules jargon) — anything that breaks the in-fiction frame.
+- Flag **production** language addressed to the player — terms for the apparatus behind the screen:
+  "session", "the plan/module", "the arc", "stat block", "NPC", "as the DM", "the player". Anything
+  that names the machinery of running the game breaks the in-fiction frame.
+- **Dice mechanics are NOT leakage — they are the shared language of the table.** Naming a skill and
+  asking for a roll ("make a Perception check", "roll Insight", "give me a Persuasion roll", "roll a
+  d20", "with advantage") is the sanctioned table convention and is exactly what the dice rules
+  require. **Never flag a named check, skill name, or die as metagame leakage.** Players speak in
+  these terms; they do not break immersion. Only the DC is withheld (and that's the dice rule's job,
+  step 3) — the skill name is said aloud on purpose.
 
 ### 5. Check pacing
 - Flag a turn that proposes to **wrap or end** when little has happened (e.g. winding down after a
