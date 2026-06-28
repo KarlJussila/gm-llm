@@ -43,10 +43,11 @@ class PlayApp(App):
         ("ctrl+q", "quit", "Quit"),
     ]
 
-    def __init__(self, game, cleanup=None):
+    def __init__(self, game, cleanup=None, theme: str = "dracula"):
         super().__init__()
         self.game = game
         self.cleanup = cleanup
+        self._theme = theme
         self.mode = "action"
         self._turn = 0
         self._scene: list[str] = []
@@ -63,9 +64,9 @@ class PlayApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        self.theme = "nord"
+        self.theme = self._theme if self._theme in self.available_themes else "dracula"
         self._write("screen", "[b]behind the screen[/b] — gate verdicts")
-        self._write("scene", "[$text-muted]ctrl+t action/meta · ctrl+g behind-screen · /roll 2d6+3 · /meta <q>[/]")
+        self._write("scene", "[$text-muted]ctrl+t action/meta · ctrl+g behind-screen · /roll 2d6+3 · /meta <q> · /quit[/]")
         self._sync_input()
         self.sub_title = "ACTION mode"
         self.run_worker(self._open(), exclusive=True)
@@ -114,6 +115,9 @@ class PlayApp(App):
         if not text:
             return
 
+        if text.lower() in ("/quit", "/exit", "/q"):
+            self.exit()
+            return
         # /roll — a local dice helper; doesn't take a turn, just shows the result
         # so you can report it in your next action.
         if text.lower().startswith("/roll"):

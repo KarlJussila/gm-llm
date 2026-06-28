@@ -18,6 +18,8 @@ def main() -> None:
     ap.add_argument("--live", action="store_true", help="use a real opencode backend (default: mock)")
     ap.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]))
     ap.add_argument("--port", type=int, default=4181)
+    ap.add_argument("--theme", default="dracula",
+                    help="Textual theme (e.g. dracula, tokyo-night, gruvbox, catppuccin-mocha, nord)")
     args = ap.parse_args()
 
     cleanup = None
@@ -32,7 +34,7 @@ def main() -> None:
         game = MockGame()
         title = "Campaign — orchestrator (MOCK)"
 
-    app = PlayApp(game, cleanup=cleanup)
+    app = PlayApp(game, cleanup=cleanup, theme=args.theme)
     app.title = title
     app.run()
 
