@@ -68,18 +68,29 @@ play_turn(player_input):
 - Multi-provider model choice (for the benchmark) rides on opencode's provider config.
 
 ## Build order
-- **O0 — Engine prep (subtractive).** Strip the gate from dm-runner + dm-reminder (and the
-  session-run reference); runner becomes narrate-and-revise. The turn-gate plugin stays for now as
-  the canon-preload reference — removed in O1 once ported.
-- **O1 — Orchestrator core.** Python package: backend client (session/prompt wrappers), canon-preload
-  (port from `turn-gate.ts`, then drop the plugin on this branch), `gate()` (spawn both checkers,
-  parse verdicts), the per-turn loop, central pacing, verdict logging.
-- **O2 — Headless validation.** Drive the core with the scripted `player` agent (autoplay-style) and
-  confirm: checks run every turn, exactly one correction pass, no crashes, paced calls.
-- **O3 — Rich TUI.** Textual app: scene/narration pane, input with **action vs meta** modes (meta =
-  out-of-game question, ungated), and a toggleable **behind-the-screen** pane (verdicts + timing).
+- **O0 — Engine prep (subtractive). ✓ DONE.** Stripped the gate from dm-runner + dm-reminder (and the
+  session-run reference); runner is now narrate-and-revise.
+- **O1 — Orchestrator core. ✓ DONE.** `orchestrator/` package: `backend.py` (client),
+  `canon.py` (preload, ported from `turn-gate.ts`; plugin removed), `gate.py` (`Gate.check` →
+  spawn both checkers, parse the `VERDICT:` line), `loop.py` (`Game`: deterministic turn → gate →
+  one bounded correction), central pacing + verdict logging. Mock-tested.
+- **O2 — Headless validation. ✓ built (live run still owed).** `dev/autoplay.py` drives the core
+  with the scripted `player` agent. Infra-validated without model calls; **the live model run is
+  still blocked on the rate limit.**
+- **O3 — Rich TUI. ✓ DONE.** `tui/` Textual app: scene pane, action/meta input, toggleable
+  behind-the-screen verdict pane, `/roll` + `/meta` + `/quit`, `--theme`, dracula default. Runs on
+  `MockGame` offline; `--live` for the real backend.
 - **O4 — Benchmark.** Swap the human for a scripted/model player; turn gate verdicts into scores;
-  sweep models via opencode providers.
+  sweep models via opencode providers. (Shares the core; do after a live run confirms the loop.)
+- **O5 — PRE planning (NEXT).** The `dm`'s planning still uses the old model-volition gating (it
+  authors the plan inline, then *dispatches* `narrative-checker` `check-plan` via the `task` tool) —
+  the same pattern we removed from runtime, and not driven by the orchestrator. Orchestrate it: the
+  orchestrator drives the `dm` to author the plan, then runs `check-plan` **in code** (the `Gate`
+  pattern generalizes — narrative-only, no conduct check; input is a plan, not a turn), applies a
+  bounded correction, commits — and sequences plan → play so the orchestrator can prep a session.
+- **O6 — POST reconcile.** The carried-forward Phase 5, orchestrated the same way: the orchestrator
+  drives the `dm` apply-pass (drain deltas → author new canon + reconcile arc bodies → write state +
+  ledger), gated in code by `check-propagation`. `log-extractor` + `campaign-analyst` support it.
 
 ## Open questions (resolve as we build)
 - **Verdict parsing.** Checkers currently return prose ("PASS" or a numbered list). The orchestrator
