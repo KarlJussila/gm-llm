@@ -29,16 +29,25 @@ done as you go:
 
 ## What each entry entails
 
-### 1. Pull context
-- Read the draft plan (path in your brief).
-- Read the arc(s) it advances (`campaign/arcs/{slug}.md` + `.state.md`) and `campaign/INDEX.md`.
-- Read the PC ledger `campaign/characters/{pc}.knowledge.md`.
+### 1. Pull context — and know what's already loaded
+- Read the **draft plan** from your brief. It's there **inline** (the full plan text) or as a
+  **path** to read — use whichever your brief gives.
+- If your brief contains a **PRE-LOADED CANON** section — a run of `### <path>` blocks — **each block
+  is the full, current contents of that file, already read for you** (the INDEX, `state/current.md`,
+  the PC ledger, the active arc(s), the entity files the plan named). That header list is the
+  definitive set of what's loaded: before you `read`/`grep`/`list`, scan it — **if the file is there,
+  use its text from the brief; never re-open it.** Reach for a tool only for something the plan
+  references that has **no `### ` block**.
+- If your brief has **no** pre-loaded canon block, read canon from disk yourself: the arc(s) it
+  advances (`campaign/arcs/{slug}.md` + `.state.md`), `campaign/INDEX.md`, and the PC ledger
+  `campaign/characters/{pc}.knowledge.md`.
 
 ### 2. Resolve references
 - List every entity, place, item, faction, or fact the plan names or relies on.
-- For each, `grep` `INDEX.md` and open the file. Flag anything that **doesn't resolve**, that's a
-  bare `named-only` stub the plan will actually *use* (must be a full file before play), or that the
-  plan references without a `[[slug]]` link.
+- For each, locate it in the **INDEX** (the pre-loaded block, or `grep INDEX.md`) and find its file
+  — its pre-loaded `### <path>` block if present, else open it. Flag anything that **doesn't
+  resolve**, that's a bare `named-only` stub the plan will actually *use* (must be a full file before
+  play), or that the plan references without a `[[slug]]` link.
 
 ### 3. Honor the arc
 - For every identity, reveal, or answer the plan supplies, compare it to the arc's committed
@@ -63,11 +72,12 @@ done as you go:
   the *player's path* open.
 
 ### 7. Report
-Return one of:
-- **`PASS`** — no violations.
-- **A numbered violation list** — for each: what's wrong; the **correct fact / arc answer** where
-  relevant; the **source file(s)** to consult; and the **fix instruction** (ground it, pull the arc
-  answer, re-flag, merge/differentiate, fill the blank).
+**Your first line must be exactly `VERDICT: PASS` or `VERDICT: VIOLATIONS`** — nothing else on that
+line. Then:
+- on **`VERDICT: PASS`** — stop there (no violations to report).
+- on **`VERDICT: VIOLATIONS`** — a numbered list, for each: what's wrong; the **correct fact / arc
+  answer** where relevant; the **source file(s)** to consult; and the **fix instruction** (ground it,
+  pull the arc answer, re-flag, merge/differentiate, fill the blank).
 
 Keep it terse and specific — the dm revises the plan directly from this. No prose padding.
 

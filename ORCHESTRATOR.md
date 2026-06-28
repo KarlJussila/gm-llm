@@ -82,12 +82,14 @@ play_turn(player_input):
   `MockGame` offline; `--live` for the real backend.
 - **O4 — Benchmark.** Swap the human for a scripted/model player; turn gate verdicts into scores;
   sweep models via opencode providers. (Shares the core; do after a live run confirms the loop.)
-- **O5 — PRE planning (NEXT).** The `dm`'s planning still uses the old model-volition gating (it
-  authors the plan inline, then *dispatches* `narrative-checker` `check-plan` via the `task` tool) —
-  the same pattern we removed from runtime, and not driven by the orchestrator. Orchestrate it: the
-  orchestrator drives the `dm` to author the plan, then runs `check-plan` **in code** (the `Gate`
-  pattern generalizes — narrative-only, no conduct check; input is a plan, not a turn), applies a
-  bounded correction, commits — and sequences plan → play so the orchestrator can prep a session.
+- **O5 — PRE planning. ✓ DONE (live run still owed).** The `Gate` generalized: `Gate.check_plan(plan)`
+  reuses the spawn-and-parse-VERDICT engine, narrative-only (no conduct), canon via `CanonPreloader`
+  → `PlanGateResult`. New `orchestrator/planner.py`: `Planner.prep_session(N)` drives the `dm` to
+  author `session-{N}-plan.md`, gates it in code, applies **one** bounded correction, and commits
+  deterministically (`campaign: session N plan`). `check-plan` skill now emits the `VERDICT:` first
+  line and consumes the pre-loaded canon block (back-compatible with the dm's standalone dispatch at
+  init / post-session). Entry point: `dev/prep.py --session N [--commit]`. Mock-/infra-validated; the
+  live model run is blocked on the same rate limit as O2.
 - **O6 — POST reconcile.** The carried-forward Phase 5, orchestrated the same way: the orchestrator
   drives the `dm` apply-pass (drain deltas → author new canon + reconcile arc bodies → write state +
   ledger), gated in code by `check-propagation`. `log-extractor` + `campaign-analyst` support it.

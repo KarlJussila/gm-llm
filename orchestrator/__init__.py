@@ -7,10 +7,13 @@ on `Game`; nothing here depends on the interface.
 
 from .backend import Backend, BackendError
 from .canon import CanonPreloader
-from .gate import Gate, GateResult, Verdict
+from .gate import Gate, GateResult, PlanGateResult, Verdict
 from .loop import Game, TurnResult
+from .planner import Planner, PlannerError, PrepResult
 
 __all__ = [
     "Backend", "BackendError", "CanonPreloader",
-    "Gate", "GateResult", "Verdict", "Game", "TurnResult",
+    "Gate", "GateResult", "PlanGateResult", "Verdict",
+    "Game", "TurnResult",
+    "Planner", "PlannerError", "PrepResult",
 ]

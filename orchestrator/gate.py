@@ -1,15 +1,20 @@
 """
-The gate — run the two independent checks on a drafted turn, in code.
+The gate — run the independent checks on drafted content, in code.
 
-This is what the runner used to invoke as a tool; now the orchestrator owns it, so
-it runs every turn by construction (never skipped) and the result is parsed
-deterministically rather than sniffed from prose. Each checker's first line is a
-machine-readable `VERDICT: PASS | VIOLATIONS`.
+This is what the runner (and the dm, at planning) used to invoke as a tool; now the
+orchestrator owns it, so it runs by construction (never skipped) and the result is
+parsed deterministically rather than sniffed from prose. Each checker's first line
+is a machine-readable `VERDICT: PASS | VIOLATIONS`.
 
-The narrative-checker (canon) gets the pre-loaded canon block; the rules-checker
-(conduct) is canon-free and gets only the player's words + the draft. Both run as
-fresh sessions per turn. The orchestrator supplies the player's message directly —
-it owns the loop, so nothing has to fetch it from a transcript.
+Two shapes share one spawn-and-parse engine:
+  - `check(narration, player_msg)` — the RUNTIME gate: narrative-checker (canon,
+    with the pre-loaded canon block) + rules-checker (conduct, canon-free, only the
+    player's words + the draft). The orchestrator supplies the player's message
+    directly — it owns the loop, so nothing has to fetch it from a transcript.
+  - `check_plan(plan)` — the PRE gate: narrative-checker only (a plan has no
+    conduct to police and no player message), with the pre-loaded canon block.
+
+Each checker runs as a fresh session per call.
 """
 
 from __future__ import annotations
@@ -47,6 +52,23 @@ class GateResult:
         return "\n\n".join(parts)
 
 
+@dataclass
+class PlanGateResult:
+    narrative: Verdict
+    canon_sections: int
+
+    @property
+    def violations(self) -> bool:
+        return not self.narrative.passed
+
+    def correction_brief(self) -> str:
+        """The message handed back to the dm to revise the plan file it just wrote."""
+        return ("Notes on the session plan you just wrote. Apply these fixes to the plan file in "
+                "place — re-author the affected parts, ground or fill what's flagged, change nothing "
+                "else, and report only when done.\n\n"
+                "— Canon —\n" + self.narrative.report.strip())
+
+
 _VERDICT_RE = re.compile(r"VERDICT:\s*(PASS|VIOLATIONS)", re.I)
 
 
@@ -81,22 +103,43 @@ def _conduct_brief(player_msg: str, narration: str) -> str:
     )
 
 
+def _plan_brief(plan: str, canon: str) -> str:
+    return (
+        "Role: check-plan. Verify the draft session plan below per your check-plan skill. The plan is "
+        "the full text the dm just authored, inline here, before it is finalized.\n\n"
+        f"{canon}"
+        f"--- DRAFT SESSION PLAN ---\n{plan}"
+    )
+
+
 class Gate:
     def __init__(self, backend, preloader):
         self.backend = backend
         self.preloader = preloader
 
+    def _run(self, title: str, agent: str, brief: str) -> Verdict:
+        """Spawn a fresh checker session, prompt it, parse its VERDICT line.
+        Serial and paced by the backend — keeps us off the rate limit that
+        parallel fan-out kept tripping."""
+        sid = self.backend.create_session(title)
+        return parse_verdict(agent, self.backend.prompt(sid, agent, brief))
+
     def check(self, narration: str, player_msg: str) -> GateResult:
         canon = self.preloader.build(narration)
-        # Serial, paced by the backend — keeps us off the rate limit that
-        # parallel fan-out kept tripping.
-        ns = self.backend.create_session("check-turn")
-        n_out = self.backend.prompt(ns, "narrative-checker", _narrative_brief(player_msg, canon, narration))
-        cs = self.backend.create_session("rules-check")
-        c_out = self.backend.prompt(cs, "rules-checker", _conduct_brief(player_msg, narration))
         return GateResult(
-            narrative=parse_verdict("narrative-checker", n_out),
-            conduct=parse_verdict("rules-checker", c_out),
+            narrative=self._run("check-turn", "narrative-checker",
+                                _narrative_brief(player_msg, canon, narration)),
+            conduct=self._run("rules-check", "rules-checker",
+                              _conduct_brief(player_msg, narration)),
             player_msg=player_msg,
+            canon_sections=canon.count("\n### "),
+        )
+
+    def check_plan(self, plan: str) -> PlanGateResult:
+        """The PRE gate: narrative-only check of a draft session plan. The plan text
+        drives the canon preload exactly as a draft turn does (names match by name)."""
+        canon = self.preloader.build(plan)
+        return PlanGateResult(
+            narrative=self._run("check-plan", "narrative-checker", _plan_brief(plan, canon)),
             canon_sections=canon.count("\n### "),
         )
