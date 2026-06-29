@@ -40,7 +40,8 @@ done as you go:
 3. Check dice & uncertainty
 4. Check metagame leakage
 5. Check pacing
-6. Report
+6. Write findings
+7. Emit the verdict line
 
 ## What each entry entails
 
@@ -90,14 +91,21 @@ Flag any of:
 - Flag a turn that proposes to **wrap or end** when little has happened (e.g. winding down after a
   single scene), or otherwise mismanages the session's arc.
 
-### 6. Report
-First write your findings:
-- **no conduct violations** — write nothing here.
+### 6. Write findings
+Write the findings — and **only** the findings:
+- **no conduct violations** — write **nothing** here. No summary, no "conduct looks clean"
+  walkthrough; an empty findings section is correct and expected on a pass.
 - **violations** — a numbered list, for each: which rule, the offending text, and the **fix
   instruction** (hand the choice back to the player, call for the roll, drop the DC, rephrase
   in-world, keep the scene going).
 
-Then end with the verdict. **The very last line of your output must be exactly one of:**
+Keep it terse and specific — it's acted on directly, under time pressure. No prose padding, no
+narrative/canon commentary (that's the other checker's job).
+
+### 7. Emit the verdict line
+The **last thing you write — always, including on a clean pass — is the verdict line.** After the
+findings (or after nothing, if there were none), end your output with **exactly one of these as the
+final line**:
 
 ```
 VERDICT: PASS
@@ -105,10 +113,7 @@ VERDICT: VIOLATIONS
 ```
 
 Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
-it. **The verdict and its list are one unit: never write `VERDICT: VIOLATIONS` without the numbered
-findings above it.** If you cannot point to a specific offending line and its fix, there is no
-violation — write `VERDICT: PASS`. So: `PASS` if and only if your list above is empty. This line is
-read by a machine; if it's missing or altered the turn is treated as failed.
-
-Keep it terse and specific — it's acted on directly, under time pressure. No prose padding, no
-narrative/canon commentary (that's the other checker's job).
+it. **This line is mandatory on every report.** A report that trails off in prose — "no issues",
+"conduct is fine" — with no `VERDICT:` line is read by the machine as **failed**, even when you meant
+PASS. Write `VERDICT: PASS` if and only if your findings list above is empty; the verdict and its
+list are one unit — never `VERDICT: VIOLATIONS` without the numbered findings above it.
