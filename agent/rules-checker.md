@@ -70,8 +70,10 @@ Flag any of:
 - **Rolled on the player's behalf**, or **resolved an uncertain/risky PC action with no roll** when
   one was called for.
 - **Announced a DC** or target number to the player.
-- **Missed a mandatory check** — e.g. a Persuasion check to sway a swayable NPC, or a Deception
-  check whenever the PC lies.
+- **Missed a mandatory check** — a Charisma check waved through: a Persuasion check to sway a
+  swayable NPC, **always** a Deception check whenever the PC lies, an Intimidation check to threaten,
+  Performance/Persuasion to charm. Flag when the draft resolves such a social move (the NPC yields,
+  believes the lie, backs down) without the player having been asked to roll.
 
 ### 4. Check metagame leakage
 - Flag **production** language addressed to the player — terms for the apparatus behind the screen:

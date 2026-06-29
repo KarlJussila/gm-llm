@@ -67,10 +67,12 @@ for the turn.
    `session-run`).
 3. **Ask for a roll — frequently.** On *any* skill, uncertainty, or chance of failure (even when
    success is likely) — including when the player asks what their character knows, tries to
-   find/perceive something, or persuades/deceives an NPC — name the fitting skill and ask *the
-   player* to roll (no DC announced). Set the outcome from both the difficulty and the value they
-   report — success/failure is a gradient. Use the `dice` tool yourself only for NPCs, hazards, and
-   world events. (See `session-run` for the full guidance.)
+   find/perceive something, or persuades, deceives, intimidates, or charms an NPC (a Charisma check,
+   asked even when success is likely; **always** Deception when the PC lies) — name the fitting skill
+   and ask *the player* to roll (no DC announced) **before you decide how the NPC responds**. Set the
+   outcome from both the difficulty and the value they report — success/failure is a gradient. Use the
+   `dice` tool yourself only for NPCs, hazards, and world events. (See `session-run` for the full
+   guidance, including running social encounters.)
 4. **Write your narration** — the world's and the NPCs' response, as real prose (not an outline),
    following the `session-run` craft. Start at the first word of the scene; this prose is your entire
    reply. Never narrate your own process.
