@@ -136,6 +136,19 @@ stages are written to make that cheap.
 - **`check-digest` + `check-feedback`** are the new checker tasks; completeness is a deterministic
   lint *plus* the narrative checker, not either alone.
 
+## Backlog (deferred — not blocking the slices above)
+
+- **Rehome in-code prompts to standalone files.** Every brief the orchestrator sends is currently a
+  Python string constant — `_APPLY_BRIEF` (reconciler), `_AUTHOR_BRIEF` (planner), `_TURN_REMINDER`
+  + the correction prompt (loop), the gate's check briefs, etc. Move each to its own loadable file
+  (e.g. `orchestrator/prompts/*.md`) that the code reads at startup, so prompts can be edited and
+  reviewed as prose without touching code and stay campaign-agnostic in one place. Cross-cuts the
+  whole orchestrator — do it as a single dedicated pass, ideally before/with slice (ii) so the new
+  stage briefs land as files from the start, not more inline constants.
+- **PC-side / init refactor.** The PC entity gets no Vitals contract yet (`type: pc` is skipped by
+  the lint). The player-facing init flow (character creation, campaign setup) is its own larger
+  refactor the player flagged as next after this one — fold a PC vitals/stat contract into it then.
+
 ## Done-tests
 
 - (i) An NPC authored to the new template carries every required identity field; the lint fails a
