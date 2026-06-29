@@ -32,6 +32,7 @@ sys.path.insert(0, str(OPENCODE))   # put .opencode on the path
 from orchestrator import (  # noqa: E402
     Backend, BackendError, CanonPreloader, Gate, Game, Planner, Reconciler,
 )
+from orchestrator.stream import EventTap  # noqa: E402
 
 _COLOR = sys.stdout.isatty()
 def c(code, s):
@@ -40,11 +41,17 @@ def c(code, s):
 
 # ───────────────────────── shared backend plumbing ─────────────────────────
 
-def _backend(args):
+def _backend(args, default_timeout: int = 360):
+    """`default_timeout` is the per model-call socket timeout when the user hasn't
+    overridden it. Runtime turns are short, but a between-session apply pass is one
+    long `dm` call (log-extractor + every write) and needs a generous ceiling — the
+    POST response only lands when the whole pass finishes, so too short a timeout
+    kills a working call and the retry re-runs it."""
+    timeout = args.turn_timeout or default_timeout
     def on_retry(agent, attempt, wait, reason):
         print(c("33", f"[harness] {agent} call failed: {reason} — retry {attempt} in {wait}s"), flush=True)
-    print(f"[harness] starting opencode serve on :{args.port} (dir={args.dir})", flush=True)
-    b = Backend(args.dir, port=args.port, min_call_gap=args.min_gap)
+    print(f"[harness] starting opencode serve on :{args.port} (dir={args.dir}, call-timeout={timeout}s)", flush=True)
+    b = Backend(args.dir, port=args.port, min_call_gap=args.min_gap, turn_timeout=timeout)
     b.on_retry = on_retry
     return b
 
@@ -106,8 +113,12 @@ def cmd_play(args):
         print(f"[harness] WARNING: no character packet at {args.character} — player runs blind", flush=True)
 
     backend = _backend(args)
+    tap = None
     try:
         backend.start()
+        tap = EventTap(backend.base, backend.directory).start() if args.stream else None
+        if tap:
+            print(c("2", "[harness] streaming live model output (--stream)…"), flush=True)
         game = Game(backend, Gate(backend, CanonPreloader(args.dir)), checks_log=CHECKS_LOG)
         player_sid = backend.create_session("play-player")
         print(f"[harness] runner={game.runner_sid} player={player_sid} session={game.session}", flush=True)
@@ -148,6 +159,8 @@ def cmd_play(args):
     except KeyboardInterrupt:
         print("\n[harness] interrupted.", flush=True)
     finally:
+        if tap:
+            tap.stop()
         print("[harness] shutting down server…", flush=True)
         backend.stop()
 
@@ -155,9 +168,11 @@ def cmd_play(args):
 # ──────────────────────────────── prep ─────────────────────────────────────
 
 def cmd_prep(args):
-    backend = _backend(args)
+    backend = _backend(args, default_timeout=1800)
+    tap = None
     try:
         backend.start()
+        tap = EventTap(backend.base, backend.directory).start() if args.stream else None
         gate = Gate(backend, CanonPreloader(args.dir))
         planner = Planner(backend, gate, checks_log=CHECKS_LOG)
         print(c("2", f"[harness] prepping session {args.session} — the dm authors, then the gate runs…"), flush=True)
@@ -165,7 +180,7 @@ def cmd_prep(args):
         nv = "PASS" if pr.gate.narrative.passed else "VIOLATIONS"
         print(c("33", f"\n┄┄ check-plan: {nv} · {'CORRECTED' if pr.corrected else 'clean'} · "
                       f"{'committed' if pr.committed else 'uncommitted'} · {pr.gate.canon_sections} canon sections ┄┄"), flush=True)
-        if not pr.gate.narrative.passed:
+        if not args.stream and not pr.gate.narrative.passed:
             print(c("2", pr.gate.narrative.report.strip()), flush=True)
         _empty_note(pr.gate.narrative)
         print(c("1;36", f"\n━━━━━ session {pr.n} planned ({len(pr.plan)} chars) ━━━━━"), flush=True)
@@ -175,15 +190,19 @@ def cmd_prep(args):
     except KeyboardInterrupt:
         print("\n[harness] interrupted.", flush=True)
     finally:
+        if tap:
+            tap.stop()
         backend.stop()
 
 
 # ─────────────────────────────── reconcile ─────────────────────────────────
 
 def cmd_reconcile(args):
-    backend = _backend(args)
+    backend = _backend(args, default_timeout=1800)
+    tap = None
     try:
         backend.start()
+        tap = EventTap(backend.base, backend.directory).start() if args.stream else None
         gate = Gate(backend, CanonPreloader(args.dir))
         reconciler = Reconciler(backend, gate, checks_log=CHECKS_LOG)
         print(c("2", f"[harness] reconciling session {args.session} — the dm applies, then the gate runs…"), flush=True)
@@ -191,7 +210,7 @@ def cmd_reconcile(args):
         nv = "PASS" if rr.gate.narrative.passed else "VIOLATIONS"
         print(c("33", f"\n┄┄ check-propagation: {nv} · {'CORRECTED' if rr.corrected else 'clean'} · "
                       f"{'committed' if rr.committed else 'uncommitted'} ┄┄"), flush=True)
-        if not rr.gate.narrative.passed:
+        if not args.stream and not rr.gate.narrative.passed:
             print(c("2", rr.gate.narrative.report.strip()), flush=True)
         _empty_note(rr.gate.narrative)
         print(c("1;36", f"\n━━━━━ session {rr.n} reconciled ━━━━━"), flush=True)
@@ -211,6 +230,8 @@ def cmd_reconcile(args):
     except KeyboardInterrupt:
         print("\n[harness] interrupted.", flush=True)
     finally:
+        if tap:
+            tap.stop()
         backend.stop()
 
 
@@ -249,6 +270,11 @@ def main():
     common.add_argument("--dir", default=str(ROOT))
     common.add_argument("--port", type=int, default=4181)
     common.add_argument("--min-gap", type=float, default=1.0, help="min seconds between any two model calls")
+    common.add_argument("--stream", action="store_true",
+                        help="stream the dm/checker output live as it generates (verbose)")
+    common.add_argument("--turn-timeout", type=int, default=0,
+                        help="per model-call timeout in seconds (0 = per-command default; "
+                             "play=360, prep/reconcile=1800). Raise for very long apply passes.")
 
     p = sub.add_parser("play", parents=[common], help="drive the gated loop with the scripted player")
     p.add_argument("--turns", type=int, default=6)
