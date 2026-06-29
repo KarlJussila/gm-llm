@@ -80,6 +80,10 @@ class Game:
         self.gate = gate
         self.runner_agent = runner_agent
         self.on_turn = on_turn
+        # True only while the (single, bounded) correction prompt is in flight — left
+        # set if that prompt is cancelled, so revert_last_turn knows to roll back past
+        # the correction brief to the player's own message. Reset at the next op.
+        self._correcting = False
         self.checks_log = checks_log
         self.runner_sid = backend.create_session("dm-runner game")
         # The session being played = the highest plan on disk, unless told otherwise.
@@ -136,16 +140,43 @@ class Game:
         """An out-of-game question. The runner answers it (spoiler-free, per its
         prompt); the orchestrator does NOT gate it — it isn't narration, and it
         never reaches the transcript."""
+        self._correcting = False
         return self.backend.prompt(self.runner_sid, self.runner_agent, question)
 
+    def abort(self) -> bool:
+        """Cancel the model call in flight for the current turn (the UI's cancel
+        key, e.g. after a mistype). The blocked `start`/`turn`/`meta` raises
+        `BackendCancelled`, which unwinds before `_gated_turn` reaches the
+        transcript append — so a cancelled turn leaves no trace in canon or state.
+        Returns True if there was a live call to cancel."""
+        return self.backend.abort()
+
+    def revert_last_turn(self) -> bool:
+        """After a cancel, roll the runner session back over the abandoned turn (see
+        Backend.revert_to_recent_user). The transcript and state were never touched
+        (the cancel raised before they were written); this just clears the turn's
+        messages from the runner's own context so the next turn continues clean. Call
+        once the cancelled call has unwound.
+
+        Reverts to the player's own message — `back=2` if the cancel landed in the
+        correction pass (reaching past the correction brief), else `back=1`. Either
+        way the whole turn goes, never a half (the correction is bounded to one pass,
+        so a turn adds at most two user messages)."""
+        return self.backend.revert_to_recent_user(self.runner_sid, back=2 if self._correcting else 1)
+
     def _gated_turn(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
+        self._correcting = False
         draft = self.backend.prompt(self.runner_sid, self.runner_agent, message)
         result = self.gate.check(draft, player_msg)
         final, corrected = draft, False
         if result.violations:
             # Exactly one correction pass. We do NOT re-gate the revision — bounded
             # by construction; if it's still imperfect it goes out and the log shows it.
+            # _correcting brackets the correction prompt: if it's cancelled it stays
+            # set, so revert_last_turn rolls back past the brief to the player message.
+            self._correcting = True
             final = self.backend.prompt(self.runner_sid, self.runner_agent, result.correction_brief())
+            self._correcting = False
             corrected = True
         tr = TurnResult(player_msg, draft, final, result, corrected)
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft

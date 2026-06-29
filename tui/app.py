@@ -26,6 +26,8 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Header, Input, Static
 
+from orchestrator.backend import BackendCancelled
+
 
 class PlayApp(App):
     CSS = """
@@ -40,6 +42,7 @@ class PlayApp(App):
     BINDINGS = [
         ("ctrl+g", "toggle_screen", "Behind-screen"),
         ("ctrl+t", "toggle_mode", "Action/Meta"),
+        ("ctrl+x", "cancel", "Cancel turn"),
         ("ctrl+q", "quit", "Quit"),
     ]
 
@@ -66,7 +69,7 @@ class PlayApp(App):
     def on_mount(self) -> None:
         self.theme = self._theme if self._theme in self.available_themes else "dracula"
         self._write("screen", "[b]behind the screen[/b] — gate verdicts")
-        self._write("scene", "[$text-muted]ctrl+t action/meta · ctrl+g behind-screen · /roll 2d6+3 · /meta <q> · /quit[/]")
+        self._write("scene", "[$text-muted]ctrl+t action/meta · ctrl+g behind-screen · ctrl+x cancel · /roll 2d6+3 · /meta <q> · /quit[/]")
         self._sync_input()
         self.sub_title = "ACTION mode"
         self.run_worker(self._open(), exclusive=True)
@@ -105,7 +108,11 @@ class PlayApp(App):
 
     async def _open(self) -> None:
         self._busy(True)
-        tr = await asyncio.to_thread(self.game.start)
+        try:
+            tr = await asyncio.to_thread(self.game.start)
+        except BackendCancelled:
+            self._cancelled_note()
+            return
         self._render_dm(tr)
         self._busy(False)
 
@@ -141,15 +148,53 @@ class PlayApp(App):
 
     async def _do_turn(self, text: str) -> None:
         self._busy(True)
-        tr = await asyncio.to_thread(self.game.turn, text)
+        try:
+            tr = await asyncio.to_thread(self.game.turn, text)
+        except BackendCancelled:
+            await self._cancel_cleanup(text)
+            return
         self._render_dm(tr)
         self._render_gate(tr)
         self._busy(False)
 
     async def _do_meta(self, question: str) -> None:
         self._busy(True)
-        answer = await asyncio.to_thread(self.game.meta, question)
+        try:
+            answer = await asyncio.to_thread(self.game.meta, question)
+        except BackendCancelled:
+            await self._cancel_cleanup(question)
+            return
         self._write("scene", f"[$text-muted]DM (out-of-game)  {escape(answer)}[/]")
+        self._busy(False)
+
+    # -- cancel (ctrl+x) ----------------------------------------------------
+
+    def action_cancel(self) -> None:
+        """Cancel a turn that's mid-flight — e.g. you mistyped and don't want to wait
+        out the model call. Aborts the in-flight call so the UI frees up instead of
+        locking; the running worker then unwinds with a 'cancelled' note. No-op when
+        nothing is running (the input is live)."""
+        if not self.query_one("#cmd", Input).disabled:
+            return
+        self.run_worker(self._do_cancel(), exclusive=False)
+
+    async def _do_cancel(self) -> None:
+        # The abort POST is quick but still blocks — off the UI thread it goes.
+        await asyncio.to_thread(self.game.abort)
+
+    async def _cancel_cleanup(self, text: str) -> None:
+        """After a cancelled turn/meta: drop the abandoned exchange from the runner's
+        context, free the input, and drop the cancelled message back in the box so
+        you can fix the typo and resend instead of retyping it."""
+        await asyncio.to_thread(self.game.revert_last_turn)
+        self._busy(False)
+        inp = self.query_one("#cmd", Input)
+        inp.value = text
+        inp.cursor_position = len(text)
+        self._write("scene", "\n[$warning]— cancelled — your message is back in the box —[/]")
+
+    def _cancelled_note(self, msg: str = "— cancelled —") -> None:
+        self._write("scene", f"\n[$warning]{msg}[/]")
         self._busy(False)
 
     # -- rendering ----------------------------------------------------------

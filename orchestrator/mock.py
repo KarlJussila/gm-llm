@@ -37,6 +37,12 @@ class MockGame:
     def meta(self, question: str) -> str:
         return "(out-of-game) We can wrap at the next natural beat — no rush."
 
+    def abort(self) -> bool:
+        return False  # mock turns resolve instantly — nothing in flight to cancel
+
+    def revert_last_turn(self) -> bool:
+        return False  # no backend session to roll back
+
     def _result(self, narration, player_msg, clean=True, corrected=False) -> TurnResult:
         narrative = Verdict(
             "narrative-checker", clean,

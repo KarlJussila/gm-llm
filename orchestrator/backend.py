@@ -22,6 +22,7 @@ import json
 import os
 import signal
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -31,6 +32,13 @@ from pathlib import Path
 
 
 class BackendError(RuntimeError):
+    pass
+
+
+class BackendCancelled(BackendError):
+    """The in-flight call was cancelled via `abort()` (e.g. the player hit the
+    cancel key after a mistype). Raised instead of returning a partial/empty reply
+    or retrying, so the turn unwinds cleanly before anything is committed."""
     pass
 
 
@@ -54,6 +62,11 @@ class Backend:
         self._proc: subprocess.Popen | None = None
         self._owns_server = False
         self._last_call = 0.0
+        # Cancellation: `abort()` (any thread) sets the event and aborts the session
+        # whose id is parked in `_inflight_sid`; the running `prompt` loop sees the
+        # event and raises BackendCancelled instead of retrying/returning.
+        self._cancel = threading.Event()
+        self._inflight_sid: str | None = None
         self.on_retry = None  # optional callback(agent, attempt, wait, reason)
         # Raw-response logging: set ORCH_DEBUG=1 to dump every model reply's full
         # part structure (so we can see findings split across parts, etc.).
@@ -190,31 +203,91 @@ class Backend:
         except (urllib.error.URLError, OSError, ValueError):
             return False
 
+    def abort(self) -> bool:
+        """Cancel the `prompt` call currently in flight, if any. Safe to call from
+        another thread (the UI thread, while a turn blocks in a worker): it sets the
+        cancel flag — so the prompt loop stops retrying, breaks its backoff, and
+        discards any partial reply — and POSTs the server-side abort so the model
+        actually stops generating. Returns True if there was a live call to abort."""
+        sid = self._inflight_sid
+        self._cancel.set()
+        if not sid:
+            return False
+        try:
+            self._raw_post(f"/session/{sid}/abort", {}, timeout=10)
+        except (urllib.error.URLError, OSError, ValueError):
+            pass  # best-effort: the cancel flag already frees the loop
+        return True
+
+    def revert_to_recent_user(self, session_id: str, back: int = 1) -> bool:
+        """Revert `session_id` to the `back`-th most recent *user* message — dropping
+        it and everything after it (e.g. a just-aborted assistant reply). `back=1` is
+        the last user message (a cancel during the draft); `back=2` reaches past one
+        intervening user message — a correction brief — to the player's own message,
+        so cancelling mid-correction rolls back the whole turn, not just the
+        correction. opencode finalizes the removal on the next prompt to this
+        session, so a cancelled-then-retyped turn continues from clean context.
+        Best-effort: any error (or too few user messages) leaves the session as-is."""
+        try:
+            msgs = self._raw_get(f"/session/{session_id}/message", timeout=10)
+        except (urllib.error.URLError, OSError, ValueError):
+            return False
+        users = [
+            m["info"]["id"]
+            for m in (msgs if isinstance(msgs, list) else [])
+            if isinstance(m, dict) and m.get("info", {}).get("role") == "user" and m["info"].get("id")
+        ]
+        if not users:
+            return False
+        target = users[-back] if len(users) >= back else users[0]
+        try:
+            self._raw_post(f"/session/{session_id}/revert", {"messageID": target}, timeout=10)
+            return True
+        except (urllib.error.URLError, OSError, ValueError):
+            return False
+
     def prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
         """Prompt `agent` on `session_id`; return its text. Retries on
         failure/empty/timeout with backoff, paced to ease rate limits.
 
         `whole=True` joins every text part (use for checkers, whose findings and
         verdict can land in separate parts); the default returns the last part (the
-        runner's narration, which is a single clean block)."""
+        runner's narration, which is a single clean block).
+
+        Cancellable: `abort()` from another thread raises BackendCancelled here
+        rather than retrying or returning a partial reply."""
         body = {"agent": agent, "parts": [{"type": "text", "text": text}]}
-        for attempt in range(self.retries):
-            self._pace()
-            try:
-                resp = self._raw_post(f"/session/{session_id}/message", body, self.turn_timeout)
-                out = self._all_text(resp) if whole else self._last_text(resp)
-                if self._debug:
-                    self._dump_parts(session_id, agent, resp, out)
-                if out:
-                    return out
-                reason = "empty reply (likely a rate-limited/errored stream)"
-            except urllib.error.HTTPError as e:
-                detail = e.read().decode(errors="replace")[:160] if hasattr(e, "read") else ""
-                reason = f"HTTP {e.code} {detail}"
-            except (urllib.error.URLError, OSError, ValueError) as e:
-                reason = str(e)
-            wait = min(15 * (2 ** attempt), 120)
-            if self.on_retry:
-                self.on_retry(agent, attempt + 1, wait, reason)
-            time.sleep(wait)
-        raise BackendError(f"{agent} failed after {self.retries} retries")
+        self._cancel.clear()
+        self._inflight_sid = session_id
+        try:
+            for attempt in range(self.retries):
+                self._pace()
+                try:
+                    resp = self._raw_post(f"/session/{session_id}/message", body, self.turn_timeout)
+                    if self._cancel.is_set():
+                        raise BackendCancelled(f"{agent} call cancelled")
+                    out = self._all_text(resp) if whole else self._last_text(resp)
+                    if self._debug:
+                        self._dump_parts(session_id, agent, resp, out)
+                    if out:
+                        return out
+                    reason = "empty reply (likely a rate-limited/errored stream)"
+                except BackendCancelled:
+                    raise
+                except urllib.error.HTTPError as e:
+                    if self._cancel.is_set():
+                        raise BackendCancelled(f"{agent} call cancelled")
+                    detail = e.read().decode(errors="replace")[:160] if hasattr(e, "read") else ""
+                    reason = f"HTTP {e.code} {detail}"
+                except (urllib.error.URLError, OSError, ValueError) as e:
+                    if self._cancel.is_set():
+                        raise BackendCancelled(f"{agent} call cancelled")
+                    reason = str(e)
+                wait = min(15 * (2 ** attempt), 120)
+                if self.on_retry:
+                    self.on_retry(agent, attempt + 1, wait, reason)
+                if self._cancel.wait(wait):  # interruptible backoff — abort breaks the wait
+                    raise BackendCancelled(f"{agent} call cancelled")
+            raise BackendError(f"{agent} failed after {self.retries} retries")
+        finally:
+            self._inflight_sid = None
