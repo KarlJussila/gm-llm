@@ -1,0 +1,1 @@
+Gaps found verifying that the session {session} digest faithfully captures the transcript. Fix each one in the digest `campaign/sessions/session-{session}.md` — add the dropped beat, remove or correct the unsupported claim, restore the exact figure or document text as noted — change nothing else, and report only when done.

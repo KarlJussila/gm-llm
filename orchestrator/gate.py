@@ -94,6 +94,36 @@ class PropagationGateResult:
                 + "\n\n— Propagation —\n" + self.narrative.report.strip())
 
 
+@dataclass
+class DigestGateResult:
+    narrative: Verdict
+    session: int
+
+    @property
+    def violations(self) -> bool:
+        return not self.narrative.passed
+
+    def correction_brief(self) -> str:
+        """The message handed back to the digest's author (log-extractor) to fix it."""
+        return (load("correct-digest").format(session=self.session)
+                + "\n\n— Digest —\n" + self.narrative.report.strip())
+
+
+@dataclass
+class FeedbackGateResult:
+    narrative: Verdict
+    session: int
+
+    @property
+    def violations(self) -> bool:
+        return not self.narrative.passed
+
+    def correction_brief(self) -> str:
+        """The message handed back to the feedback curator (analyst) to fix the files."""
+        return (load("correct-feedback").format(session=self.session)
+                + "\n\n— Feedback —\n" + self.narrative.report.strip())
+
+
 _VERDICT_RE = re.compile(r"VERDICT:\s*(PASS|VIOLATIONS)", re.I)
 
 
@@ -136,6 +166,14 @@ def _propagation_brief(n: int) -> str:
     return load("check-propagation-brief").format(n=n)
 
 
+def _digest_brief(n: int) -> str:
+    return load("check-digest-brief").format(n=n)
+
+
+def _feedback_brief(n: int) -> str:
+    return load("check-feedback-brief").format(n=n)
+
+
 class Gate:
     def __init__(self, backend, preloader):
         self.backend = backend
@@ -176,5 +214,23 @@ class Gate:
         the updated files), not a single draft, so the checker reads on demand."""
         return PropagationGateResult(
             narrative=self._run("check-propagation", "narrative-checker", _propagation_brief(n)),
+            session=n,
+        )
+
+    def check_digest(self, n: int) -> DigestGateResult:
+        """The first POST gate: the digest vs. the transcript. No preload —
+        source-fidelity (did the extraction keep faith with what was played), which
+        the checker reads on demand, not a canon comparison."""
+        return DigestGateResult(
+            narrative=self._run("check-digest", "narrative-checker", _digest_brief(n)),
+            session=n,
+        )
+
+    def check_feedback(self, n: int) -> FeedbackGateResult:
+        """A POST gate: the curated feedback files vs. the player's actual words. No
+        preload — the checker reads the digest's feedback section and the feedback
+        files on demand."""
+        return FeedbackGateResult(
+            narrative=self._run("check-feedback", "narrative-checker", _feedback_brief(n)),
             session=n,
         )

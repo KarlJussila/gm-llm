@@ -1,0 +1,1 @@
+Gaps found verifying that session {session}'s player feedback was curated faithfully. Fix each one in the relevant `campaign/feedback/` file — add the dropped guidance, remove or correct the unsupported entry, reroute it to the right file, or distill it as noted — change nothing else, and report only when done.
