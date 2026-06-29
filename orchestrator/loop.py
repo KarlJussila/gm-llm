@@ -34,37 +34,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-_TURN_REMINDER = (
-    "<turn-reminder>\n"
-    "Per-turn DM craft — run this on EVERY player message, in order:\n"
-    "1. Out-of-game question (a rule, logistics, \"how much longer?\")? Answer it plainly and "
-    "spoiler-free, then stop.\n"
-    "2. Otherwise the player declared what THEIR CHARACTER says or does. Never speak or act for the "
-    "character. Ambiguous? Ask. If they overstep (narrating an NPC or the world, or an ability the "
-    "character plainly lacks), step out of game and say so — don't play it as done.\n"
-    "3. ASK FOR A ROLL — and ask frequently. If the action involves ANY skill, uncertainty, or "
-    "chance of failure (even when success is likely), or the player is trying to find/perceive "
-    "something, recalling what their character would know about a subject, or persuading, deceiving, "
-    "intimidating, or charming an NPC (a Charisma check — ask even when success is likely, and ALWAYS "
-    "Deception when the PC lies) — name the fitting skill and ask the PLAYER to roll BEFORE you decide "
-    "how the NPC responds. Don't hand success or information "
-    "over for free; when in doubt, ask. Don't announce a DC. Then set the outcome from BOTH the "
-    "task's difficulty AND the value they report — success and failure are a gradient, not just "
-    "pass/fail.\n"
-    "4. Apply the craft that fits the beat — a conversation or NPC-driven beat by social-play, an "
-    "investigation/lore/realization by discoveries, always within session-run's table craft and "
-    "spoiler rules — then write the world's and the NPCs' response (not the character's next move) as "
-    "your reply.\n"
-    "</turn-reminder>"
-)
-
-_RESUME_PRIME = (
-    "This session is already in progress. Below is the play so far — the established record of "
-    "everything that has happened, your own narration included. Absorb it as canon you have already "
-    "narrated. Do NOT summarize it, re-narrate it, or open a new scene; the player has lived all of "
-    "it. Reply only with a one-line acknowledgement that you are caught up, then wait — the player's "
-    "next message continues seamlessly from the final beat below.\n\n--- PLAY SO FAR ---\n"
-)
+from .prompts import load
 
 
 @dataclass
@@ -128,7 +98,7 @@ class Game:
         else:
             # durable path: a fresh session has neither the plan nor the play so far —
             # give it both (prepared context, then the transcript to continue from).
-            prime = self._runner_preload() + _RESUME_PRIME + transcript
+            prime = self._runner_preload() + load("resume-prime") + "\n" + transcript
             self.backend.prompt(self.runner_sid, self.runner_agent, prime)
         self._save_runner_sid()
         return _last_dm_beat(transcript)
@@ -138,7 +108,7 @@ class Game:
         # most salient slot, fresh every turn, so the algorithm (especially "ask for
         # a roll") doesn't decay over a long session. The gate and the transcript see
         # only the clean player_msg, never the reminder.
-        message = f"{_TURN_REMINDER}\n\n--- PLAYER MESSAGE ---\n{player_input}"
+        message = f"{load('turn-reminder')}\n\n--- PLAYER MESSAGE ---\n{player_input}"
         return self._gated_turn(message, player_input)
 
     def meta(self, question: str) -> str:

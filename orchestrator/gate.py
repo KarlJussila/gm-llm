@@ -26,6 +26,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .prompts import load
+
 
 @dataclass
 class Verdict:
@@ -55,8 +57,7 @@ class GateResult:
 
     def correction_brief(self) -> str:
         """The message handed back to the runner to revise its narration."""
-        parts = ["Notes on the narration you just wrote. Apply these fixes and output the corrected "
-                 "narration only — change nothing else, and say nothing about the change.\n"]
+        parts = [load("correct-turn") + "\n"]
         if not self.narrative.passed:
             parts.append("— Canon —\n" + self.narrative.report.strip())
         if not self.conduct.passed:
@@ -75,10 +76,7 @@ class PlanGateResult:
 
     def correction_brief(self) -> str:
         """The message handed back to the dm to revise the plan file it just wrote."""
-        return ("Notes on the session plan you just wrote. Apply these fixes to the plan file in "
-                "place — re-author the affected parts, ground or fill what's flagged, change nothing "
-                "else, and report only when done.\n\n"
-                "— Canon —\n" + self.narrative.report.strip())
+        return load("correct-plan") + "\n\n— Canon —\n" + self.narrative.report.strip()
 
 
 @dataclass
@@ -92,11 +90,8 @@ class PropagationGateResult:
 
     def correction_brief(self) -> str:
         """The message handed back to the dm to backfill the gaps from its apply pass."""
-        return (f"Gaps found verifying that session {self.session}'s updates propagated into canon "
-                "and state. Backfill each one — file the entity, flip the flag, update the snapshot, "
-                "revise the arc body, or fix the link as noted — change nothing else, and report "
-                "only when done.\n\n"
-                "— Propagation —\n" + self.narrative.report.strip())
+        return (load("correct-propagation").format(session=self.session)
+                + "\n\n— Propagation —\n" + self.narrative.report.strip())
 
 
 _VERDICT_RE = re.compile(r"VERDICT:\s*(PASS|VIOLATIONS)", re.I)
@@ -126,42 +121,19 @@ def parse_verdict(agent: str, text: str) -> Verdict:
 
 
 def _narrative_brief(player_msg: str, canon: str, narration: str) -> str:
-    return (
-        "Role: check-turn. Verify the runner's drafted turn per your check-turn skill. The player's "
-        "latest message below is what the player said this turn; the drafted turn is the narration "
-        "about to be sent in response.\n\n"
-        f"--- PLAYER'S LATEST MESSAGE (what the player said this turn) ---\n{player_msg}\n\n"
-        f"{canon}"
-        f"--- DRAFTED TURN ---\n{narration}"
-    )
+    return load("check-turn-brief").format(player_msg=player_msg, canon=canon, narration=narration)
 
 
 def _conduct_brief(player_msg: str, narration: str) -> str:
-    return (
-        "Check the runner's drafted turn for conduct violations. The player's latest message below is "
-        "what the player said this turn; the drafted turn is the narration about to be sent in "
-        "response.\n\n"
-        f"--- PLAYER'S LATEST MESSAGE (what the player said this turn) ---\n{player_msg}\n\n"
-        f"--- DRAFTED TURN ---\n{narration}"
-    )
+    return load("check-conduct-brief").format(player_msg=player_msg, narration=narration)
 
 
 def _plan_brief(plan: str, canon: str) -> str:
-    return (
-        "Role: check-plan. Verify the draft session plan below per your check-plan skill. The plan is "
-        "the full text the dm just authored, inline here, before it is finalized.\n\n"
-        f"{canon}"
-        f"--- DRAFT SESSION PLAN ---\n{plan}"
-    )
+    return load("check-plan-brief").format(plan=plan, canon=canon)
 
 
 def _propagation_brief(n: int) -> str:
-    return (
-        f"Role: check-propagation. Session {n}'s updates have been applied to canon and state. Verify "
-        "that everything the session established — per the digest — propagated correctly into canon, "
-        "the ledger, state snapshots, arc bodies, and the registry, per your check-propagation skill. "
-        "Read what you need from disk; report gaps."
-    )
+    return load("check-propagation-brief").format(n=n)
 
 
 class Gate:

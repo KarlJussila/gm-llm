@@ -28,17 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .phase import apply_one_correction, commit_campaign
-
-_AUTHOR_BRIEF = (
-    "Prepare session {n}. Run your PRE-SESSION planning pass: read current state and the active "
-    "arc(s), identify which arc(s) to advance, then author the plan yourself into "
-    "`campaign/sessions/session-{n}-plan.md`. Load `session-plan` and `canon-conventions`, work the "
-    "completeness loop (author -> self-expand -> verify), and author + register every new entity the "
-    "plan needs as a full file. Commit every load-bearing fact; leave open only the player's path.\n\n"
-    "For this pass the plan is gated and committed FOR you: do NOT dispatch the narrative-checker "
-    "yourself, and do NOT run git. When the plan file is written, stop and report only that it is "
-    "ready — spoiler-free, no summary of its contents."
-)
+from .prompts import load
 
 
 @dataclass
@@ -79,7 +69,7 @@ class Planner:
 
     def prep_session(self, n: int, commit: bool = False) -> PrepResult:
         # 1. The dm authors the plan file (and any new entities it pulls in).
-        self.backend.prompt(self.dm_sid, self.dm_agent, _AUTHOR_BRIEF.format(n=n))
+        self.backend.prompt(self.dm_sid, self.dm_agent, load("author-brief").format(n=n))
         plan = self._read_plan(n)
         if not plan:
             raise PlannerError(

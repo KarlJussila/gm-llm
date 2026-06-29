@@ -17,28 +17,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-_HEADER = (
-    "--- PRE-LOADED CANON — already read for you; do NOT re-read these ---\n"
-    "Each `### <path>` block below is the FULL current contents of that file, read for you now. "
-    "The list of `### ` paths is exactly what is already loaded. Before you call any read or grep "
-    "tool, check that list: if a file appears below, use its text from here — do not re-open it. "
-    "Use a read tool ONLY for a file the draft references that does NOT appear below. (The set is "
-    "matched to the draft by name and can miss an entity named only indirectly or by epithet; "
-    "resolve those against the INDEX block below and read just those few.)\n\n"
-)
-
-_RUNNER_HEADER = (
-    "--- PREPARED SESSION CONTEXT — read for you; you need not re-open these ---\n"
-    "This is your working set for the session, assembled and read for you now: the SESSION PLAN "
-    "(your prepared script — it is full of spoilers that are yours to hold, never to leak to the "
-    "player) followed by the standing canon it draws on — the registry, current state, the active "
-    "arc(s), the PC's knowledge ledger, and the entity files the plan names. Each `### <path>` block "
-    "is that file's full current contents; use it from here rather than re-opening the file.\n"
-    "This is a head start, not a fence. If the scene reaches for something not below — an entity the "
-    "plan names only in passing, a location's finer detail, anything you want to ground a moment in — "
-    "go read or grep it. Stay grounded in canon and reach for whatever deepens your grip on the "
-    "campaign and this session.\n\n"
-)
+from .prompts import load
 
 
 class CanonPreloader:
@@ -151,7 +130,7 @@ class CanonPreloader:
                 sections.append(f"### sessions/session-{n}-transcript.md (recent tail)\n{_tail(t, 4000)}")
         if not sections:
             return ""
-        return _HEADER + "\n\n".join(sections) + "\n\n--- end pre-loaded canon ---\n\n"
+        return load("canon-header") + "\n\n" + "\n\n".join(sections) + "\n\n--- end pre-loaded canon ---\n\n"
 
     def runner_preload(self, n: int | None = None) -> str:
         """The runner's opening working set: the session plan, plus the standing canon
@@ -165,7 +144,7 @@ class CanonPreloader:
         blocks += self._render(self._baseline() + self._matched_entities(plan or ""))
         if not blocks:
             return ""
-        return _RUNNER_HEADER + "\n\n".join(blocks) + "\n\n--- end prepared context ---\n\n"
+        return load("runner-header") + "\n\n" + "\n\n".join(blocks) + "\n\n--- end prepared context ---\n\n"
 
 
 def _tail(text: str, n: int) -> str:

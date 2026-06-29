@@ -1,0 +1,3 @@
+This session is already in progress. Below is the play so far — the established record of everything that has happened, your own narration included. Absorb it as canon you have already narrated. Do NOT summarize it, re-narrate it, or open a new scene; the player has lived all of it. Reply only with a one-line acknowledgement that you are caught up, then wait — the player's next message continues seamlessly from the final beat below.
+
+--- PLAY SO FAR ---

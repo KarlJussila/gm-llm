@@ -1,0 +1,1 @@
+Role: check-propagation. Session {n}'s updates have been applied to canon and state. Verify that everything the session established — per the digest — propagated correctly into canon, the ledger, state snapshots, arc bodies, and the registry, per your check-propagation skill. Read what you need from disk; report gaps.

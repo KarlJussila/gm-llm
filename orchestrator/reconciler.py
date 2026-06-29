@@ -31,19 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .phase import apply_one_correction, commit_campaign
-
-_APPLY_BRIEF = (
-    "Reconcile session {n} now — the player has finished it. Run your POST-SESSION apply pass: "
-    "extract the transcript into the digest (`campaign/sessions/session-{n}.md`, delegate "
-    "`log-extractor`), then from that digest author + register every new-canon entity/world file, "
-    "reconcile each affected arc body (a real revision, not a status bump), flip the ledger "
-    "(`[hidden]` -> `[revealed: S{n}]`, `Known to:`), update all state snapshots, route any verbatim "
-    "documents, and distill the player's feedback into `campaign/feedback/`. Work the completeness "
-    "loop; leave nothing the session established unfiled.\n\n"
-    "For this pass the result is gated and committed FOR you, and the next session is prepped "
-    "separately: do NOT run check-propagation yourself, do NOT run git, and do NOT prepare session "
-    "{next_n}. When the apply pass is done, stop and report only that it is reconciled — spoiler-free."
-)
+from .prompts import load
 
 
 @dataclass
@@ -70,7 +58,7 @@ class Reconciler:
     def reconcile_session(self, n: int, commit: bool = False) -> ReconcileResult:
         # 1. The dm runs the apply pass (digest, canon, arcs, state, ledger, feedback).
         self.backend.prompt(self.dm_sid, self.dm_agent,
-                            _APPLY_BRIEF.format(n=n, next_n=n + 1))
+                            load("apply-brief").format(n=n, next_n=n + 1))
 
         # 2. Gate it in code — always, narrative-only, a whole-repo propagation audit.
         result = self.gate.check_propagation(n)
