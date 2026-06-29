@@ -51,7 +51,10 @@ _TURN_REMINDER = (
     "over for free; when in doubt, ask. Don't announce a DC. Then set the outcome from BOTH the "
     "task's difficulty AND the value they report — success and failure are a gradient, not just "
     "pass/fail.\n"
-    "4. Write the world's and the NPCs' response — not the character's next move — as your reply.\n"
+    "4. Apply the craft that fits the beat — a conversation or NPC-driven beat by social-play, an "
+    "investigation/lore/realization by discoveries, always within session-run's table craft and "
+    "spoiler rules — then write the world's and the NPCs' response (not the character's next move) as "
+    "your reply.\n"
     "</turn-reminder>"
 )
 

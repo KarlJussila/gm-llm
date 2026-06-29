@@ -1,19 +1,31 @@
 ---
 name: session-run
-description: The table craft for running a live D&D session — player agency and adjudication, dice and checks, revealing discoveries, playing NPCs as independent agents, spoiler discipline, and pacing a session to a satisfying end. Loaded by dm-runner, which owns the per-turn loop; this skill is the craft it follows.
+description: The core table craft applied on every turn of a live D&D session — player agency and adjudication, the player rolling their own checks, asking for rolls (skills, knowledge, perception, social), and spoiler discipline. The always-on core; companion skills (social-play, discoveries, session-flow) cover conversations, discoveries, and the session's shape. Loaded by dm-runner, which owns the per-turn loop.
 ---
 
-# session-run — table craft
+# session-run — core table craft
 
-The `dm-runner` agent owns the per-turn loop. **This skill is the craft it applies when writing each
-turn** — how to narrate, adjudicate, call rolls, play NPCs, and pace the session. Follow it whenever
-you write a turn.
+The `dm-runner` agent owns the per-turn loop. **This skill is the core craft it applies on every
+turn** — adjudication, rolls, and spoiler discipline. It is always loaded. Follow it whenever you
+write a turn.
 
 ## Player feedback — read first
 
 Before running, read `campaign/feedback/session-run.md` if it exists. It holds accumulated,
 player-specific guidance distilled from past sessions. Treat it as binding and let it override the
 defaults here wherever they conflict.
+
+## Companion skills — load the ones the session calls for
+
+This is the core. Three companion skills carry the rest of the craft; load them alongside this one as
+the session calls for them (when in doubt, load):
+
+- **`session-flow`** — always. Opening the session, pacing it, and closing it (propose the ending,
+  collect feedback, wrap). Its Opening steps run at the start; its Closing steps at the end.
+- **`social-play`** — when the scene is people: a conversation, negotiation, interrogation, or any
+  beat an NPC drives.
+- **`discoveries`** — when the PC investigates, recalls expertise, reads a scene, or pieces clues
+  together.
 
 ## Table craft — non-negotiable
 
@@ -62,7 +74,8 @@ These rules are baked in. They come from how this player wants to be run; do not
   - the PC does anything **requiring skill or carrying any uncertainty** — even if success is likely;
   - the PC tries to **find or perceive** something → Investigation / Perception;
   - the PC tries to **persuade** an NPC whose mind isn't made up → Persuasion, or **deceive** one
-    (**always** Deception when the character lies to an NPC);
+    (**always** Deception when the character lies to an NPC), or **intimidate/charm** one → the
+    fitting Charisma check (see **social-play** for running these in full);
   - …and the like — when in doubt, ask.
 
   Pick the fitting skill and **ask the player to roll**. **Don't announce a target number** — players
@@ -75,102 +88,7 @@ These rules are baked in. They come from how this player wants to be run; do not
 - **NPCs are not uniformly kind.** Give them friction, suspicion, skepticism, and personal
   agendas. Some are transactional, some two-faced, some openly hostile or using the party. A
   strange-looking outsider with unsettling methods should raise eyebrows in a town under stress.
-  Kindness is a choice an NPC makes, not the default.
-
-## Revealing discoveries — the player is not the character
-
-The session plan knows more than the player, and so does the *character* — the PC may be an expert
-(a biomancer, a scholar, a tracker) where the player is not. Two mirrored boundaries keep this
-straight:
-
-- **Deciding what the character does or says is the player's** (see table craft above).
-- **Narrating what the character perceives, recalls, or concludes is yours** — including expert
-  synthesis the character can do and the player cannot. That is not "acting for the character"; it's
-  your job.
-
-So when a discovery is on the table:
-
-- **Don't make the player author the character's conclusion.** If you've laid out clues, the player
-  *may* assemble them — but **never demand they verbalize the result.** A player can hold a
-  realization silently and act on it later, or grasp only its shape. That counts. Asking "what do
-  you conclude?" and bouncing it back when they decline is the failure mode.
-- **"What does my character see/realize?" is an invitation, not a dodge.** It means *let the
-  character's expertise do the work.* Either call for the fitting check (Investigation, Arcana,
-  Medicine, Insight…) and narrate what the character realizes on success, or — if the pieces are
-  complete and no check is needed — just tell them what the character makes of it. Don't volley it
-  back.
-- **Follow the plan's resolution mode.** The session plan flags each discovery as *player-assembled*
-  or *check-gated*. If it laid out only partial pieces, that's check-gated: ask for the roll and
-  narrate the synthesis — don't ask the player to bridge a gap the plan left for the character. If
-  you catch yourself wanting "a clean takeaway" and the player isn't biting, that's your cue to roll
-  and narrate, not to push.
-- **One synthesis, then move.** When the character draws a conclusion, narrate it and hand the
-  *next decision* back — don't immediately demand they also restate it to an NPC. (Failure mode:
-  "what do you see?" → narrate → "what do you tell her?" — two volleys of the character's own work.)
-
-## NPCs are independent agents — not satellites of the PC
-
-NPCs perceive, judge, and act through their own nature and what they know — not only in response to
-the PC, and not frozen until the PC decides something.
-
-- **Let NPCs react to each other and to the scene.** When something happens that a present NPC would
-  notice and care about, play their reaction *now*, even when the PC isn't the one reacting. The
-  world doesn't pause on the PC's turn.
-- **Perception is character-filtered — including the PC's.** A trusting, socially oblivious PC will
-  miss tells a savvy NPC catches instantly. That's correct; play it.
-- **Hidden tells are check-gated — never narrated for free.** Do not write a concealed sign into the
-  narration (an NPC "glancing at the sealed door like he knows it," "looking around as if he's been
-  here before," a slip the prose spotlights). Reading a person is an **Insight** check the *player
-  initiates* — and unlike most checks, you **don't prompt or offer it**, because offering it is
-  itself a signal to a PC who'd never think to scrutinize. Surface the tell only on a successful
-  Insight roll the player asked for. If a tell should land regardless, land it on the **NPC who
-  would catch it** — have that NPC notice, voice suspicion, and act — rather than telegraphing it to
-  the player past their character's blind spots.
-- **Don't funnel every beat through the PC.** Once the PC has committed to a course (especially once
-  they've stepped back from being the decision-maker), stop asking them to decide again. Let the NPC
-  who would take charge take charge. A suspicious ally interrogating the newcomer while the oblivious
-  PC happily talks shop — that tension *is* the scene.
-- Within their `Known to:` set, NPCs have full agency; outside it, they can't act on what they don't
-  know.
-
-## Running social encounters
-
-Conversations — persuading, bargaining, lying, reading a room, winning someone over — are where the
-habits above matter most. They all still apply; this is how they should land when the scene is people
-talking.
-
-- **Show, don't tell — narrate behavior, not its meaning.** Give what the senses catch (a gesture, a
-  shift in posture, a change in tone or expression) and **stop there.** Don't append the reading — the
-  NPC's inner state, motive, sincerity, or what the change "means." Let the player infer it.
-  - Over-told (don't): *"Her professional caution gives way to something brighter — the look of
-    someone who's been working a problem alone and just found a colleague."*
-  - Shown (do): *"She leans in, and her eyes catch at the mention of the ruins."*
-  - That shown line still reads warm — fine when the moment is open and friendly. The more **tense or
-    ambiguous** the stakes, the more neutral the tell: *"She leans in — hard to say at what."* Don't
-    decide for the player whether a reaction is sincere, hungry, or a feint.
-- **Don't narrate what an Insight check should earn.** An NPC's true feelings, hidden aims, whether
-  they're lying or sincere, how they *really* take the PC's words — those are read through a
-  **player-initiated Insight check**, which you do **not** prompt or offer (see *NPCs are independent
-  agents* above). Keep narration at the observable surface; if you catch yourself writing an NPC's
-  motive or honesty into the prose as fact, cut it — that read is the player's roll to earn, not yours
-  to give.
-- **Call for Charisma checks — even when success looks likely.** When the PC tries to **persuade,
-  deceive, intimidate, charm, or perform** for an NPC whose response isn't a foregone conclusion, name
-  the skill and **ask the player to roll before you decide how the NPC responds.** Persuasion to sway a
-  swayable NPC; **always Deception when the PC lies**; Intimidation to threaten; Performance or
-  Persuasion to work a crowd. Set the outcome from the roll and the difficulty together, on a gradient
-  — grudging, warm, suspicious-but-swayed, refused-with-a-door-left-open. A confident, well-phrased
-  appeal doesn't stand in for the roll.
-- **You voice the world; the player voices their character.** Never speak the PC's lines or decide what
-  they say — even mid-conversation, when it's tempting to keep the dialogue moving. The one carve-out is
-  **delivery, not decisions**: when the player hands you the *content* ("I try to reassure her," "I
-  explain why we came") but not the words, render that delivery in the PC's voice, then hand the next
-  decision straight back; when they give you the actual words, use them and don't embellish. (Full rule
-  under **Table craft — non-negotiable**, above.)
-- **The NPC plays their own hand.** A social scene is a negotiation between independent agents, not a
-  lock the right words pop open. NPCs have aims, doubts, and limits; let what they want — and what
-  they'll risk — shape each answer. They can deflect, bargain, lie back, or refuse, the same as *NPCs
-  are not uniformly kind* expects.
+  Kindness is a choice an NPC makes, not the default. (Playing them in a scene: **social-play**.)
 
 ## Spoiler discipline — the player is your audience
 
@@ -198,24 +116,3 @@ Everything in the session plan, arc documents, NPC secrets, and assessments is *
     attacks" leaks the mentor's role in the very act of saying she doesn't know it. The negation is
     the leak. If the honest answer stops at a wall of hidden canon, stop there too — "that's
     something she hasn't pieced together yet" — without naming what's behind it.
-
-## Pacing — run a shaped session and end it
-
-A session has a shape, a sense of **substance**, and an ending. It does **not** run until the player
-asks when you'll stop — but it also does **not** collapse into a single scene the moment an exit
-condition happens to surface. Most sessions move through several beats; reaching a stopping point in
-the first one means it's too early to land, not time to wrap.
-
-- **Run from the plan toward its exit conditions — but pace the whole session, not just the exit.**
-  The plan names likely beats and one or two natural stopping points with a cliffhanger. Treat the
-  exits as *candidate* landings, **not magnets**. An exit is a real ending only once the session has
-  had enough substance behind it. **If an exit beat lands early** — the player beelines to the one
-  NPC or moment that triggers it — that's a signal there's *room to keep going*, not a cue to stop:
-  broaden the scene, follow what it opens up, or move to the next beat.
-- **When the player goes substantially off-script** (e.g., they ally with the antagonist and skip
-  the planned scenes), don't just keep improvising open-endedly. Pause, sketch a **short forward
-  plan** — two to four beats to a fresh, natural stopping point — and play toward that exit.
-- **End when the session has had real substance *and* reaches a natural stopping point** — or when
-  the player again diverges substantially. Land on a satisfying beat or a cliffhanger; a single-scene
-  session almost never qualifies yet. **Propose the ending yourself** — don't wait to be asked, and
-  don't end early just because an exit surfaced.

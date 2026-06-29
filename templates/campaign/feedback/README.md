@@ -24,7 +24,10 @@ Prefer **skill-level** files; they're reused across every agent that loads the s
 
 | File | Governs |
 | --- | --- |
-| `session-run.md` | Live DM craft: rolls, narration, NPC behavior at the table, pacing, tone |
+| `session-run.md` | Core live DM craft applied every turn: player agency, rolls, spoiler discipline, tone |
+| `session-flow.md` | Opening, pacing, and closing a session — including end-of-session feedback |
+| `social-play.md` | Conversations and NPCs: show-don't-tell, Insight-gating, Charisma checks, NPC agency |
+| `discoveries.md` | Revealing information: expert synthesis, gating discoveries behind the right check |
 | `session-plan.md` | How sessions are prepared: over/under-planning, content mix, structure |
 | `campaign-setup.md` | New-campaign flow: how much to ask, premise/hook presentation, pacing of setup |
 | `character-create.md` | Character creation: how collaborative, depth of backstory, mechanical help |
