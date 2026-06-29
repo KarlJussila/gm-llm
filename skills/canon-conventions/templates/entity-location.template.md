@@ -12,6 +12,14 @@ status: <active | dormant | destroyed | hidden | named-only>
 
 # <Canonical Name>
 
+## Vitals
+<!-- Required at-a-glance basics — fill EVERY line with a committed value (no <placeholder>, no "TBD"). -->
+- **Kind:** <what sort of place — tavern, fortress, ruin, shrine, market square, …>
+- **Region:** <[[region-slug]] this sits in>
+- **Setting:** <the settlement it's in, or wilderness context — [[location-slug]] / "open coast" / …>
+- **Controlled by:** <[[faction-slug]] or [[npc-slug]] who holds it, or "unclaimed">
+- **Scale:** <how big — a single room, a building, a district, a sprawling complex>
+
 ## Description
 <What it looks, sounds, and feels like — enough for the runner to set a scene here.>
 

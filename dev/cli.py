@@ -259,6 +259,27 @@ def cmd_bench(args):
     sys.exit(2)
 
 
+def cmd_lint(args):
+    """Deterministic entity-completeness lint — no backend, no model calls."""
+    from orchestrator.completeness import lint_dir
+    reports = lint_dir(args.dir)
+    incomplete = [r for r in reports if not r.ok]
+    for r in reports:
+        rel = r.path.relative_to(args.dir) if r.path.is_absolute() else r.path
+        if r.ok:
+            print(c("32", f"  ✓ {rel}"))
+        else:
+            detail = []
+            if r.missing:
+                detail.append("missing: " + ", ".join(r.missing))
+            if r.missing_sections:
+                detail.append("sections: " + ", ".join(r.missing_sections))
+            print(c("31", f"  ✗ {rel}  [{r.type}]  " + "  ·  ".join(detail)))
+    n, bad = len(reports), len(incomplete)
+    print(c("1;36", f"\n━━ {n - bad}/{n} entity files complete ━━"))
+    sys.exit(1 if incomplete else 0)
+
+
 # ──────────────────────────────── parser ───────────────────────────────────
 
 def main():
@@ -306,6 +327,10 @@ def main():
 
     p = sub.add_parser("bench", help="model-vs-model benchmark (not yet wired)")
     p.set_defaults(func=cmd_bench)
+
+    p = sub.add_parser("lint", help="check entity files against the completeness contract")
+    p.add_argument("--dir", default=str(ROOT))
+    p.set_defaults(func=cmd_lint)
 
     args = ap.parse_args()
     args.func(args)

@@ -14,6 +14,14 @@ status: <active | dormant | destroyed | hidden | named-only>
 
 # <Canonical Name>
 
+## Vitals
+<!-- Required at-a-glance basics — fill EVERY line with a committed value (no <placeholder>, no "TBD").
+     Current owner / custody is MUTABLE — that goes in {slug}.state.md, not here. -->
+- **Kind:** <what sort of object — weapon, relic, document, key, tool, trinket, …>
+- **Rarity:** <standard D&D rarity — mundane | common | uncommon | rare | very rare | legendary | artifact>
+- **Form:** <material, size, appearance in brief — "a palm-sized iron disc", "a vellum scroll">
+- **Origin:** <era or source it came from — who made it / where / when>
+
 ## What it is
 <Appearance and basic nature — what someone holding it perceives.>
 

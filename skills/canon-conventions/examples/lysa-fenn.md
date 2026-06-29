@@ -11,12 +11,27 @@ status: active
 
 # Lysa Fenn
 
+## Vitals
+- **Full name:** Lysa Fenn
+- **Race / lineage:** human
+- **Pronouns:** she/her
+- **Age:** early 40s
+- **Role / station:** Harbormaster of Saltgate
+- **Affiliation:** [[harbor-cell]] (secret informant); answers openly to the garrison
+
+## Stats (rough sketch)
+- **Equivalent level:** ~3 (a sharp, capable civilian — no real combat training)
+- **Ability scores:** STR 9 · DEX 11 · CON 11 · INT 14 · WIS 15 · CHA 13
+- **Proficiencies:** Insight, Deception, Investigation, water vehicles
+
+## Abilities
+None — Lysa has no magic or special techniques; her edge is information and nerve.
+
 ## Identity / Public role
-Harbormaster of Saltgate, the occupied port town. Lysa logs every hull that enters or leaves,
-sets the berth fees, and holds the only complete record of the harbor patrol's rotation. Brisk,
-fortyish, well-liked by the dockhands and tolerated by the occupiers because she keeps the port
-running. She wears the brass harbormaster's whistle openly and answers to the garrison's
-quartermaster.
+Lysa logs every hull that enters or leaves Saltgate, sets the berth fees, and holds the only
+complete record of the harbor patrol's rotation. Brisk and well-liked by the dockhands, tolerated
+by the occupiers because she keeps the port running. She wears the brass harbormaster's whistle
+openly and answers to the garrison's quartermaster.
 
 ## Personality / mannerisms
 Dry, unhurried, never visibly rattled — the calm of someone who has decided that panic is a

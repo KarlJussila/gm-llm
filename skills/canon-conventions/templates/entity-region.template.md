@@ -13,6 +13,13 @@ status: <active | dormant | hidden | named-only>
 
 # <Canonical Name>
 
+## Vitals
+<!-- Required at-a-glance basics — fill EVERY line with a committed value (no <placeholder>, no "TBD"). -->
+- **Kind / scale:** <what sort and how big — kingdom, province, city-state, frontier wilds, …>
+- **Terrain:** <dominant geography + climate — "alpine forest, long winters">
+- **Seat of power:** <the controlling polity — [[faction-slug]] — or "contested" / "ungoverned">
+- **Population:** <rough density / scale — "sparse homesteads", "tens of thousands in the capital">
+
 ## Geography
 <Terrain, climate, scale, layout — the physical shape of the place.>
 

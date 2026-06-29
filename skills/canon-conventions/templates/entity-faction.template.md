@@ -12,6 +12,14 @@ status: <active | dormant | destroyed | hidden | named-only>
 
 # <Canonical Name>
 
+## Vitals
+<!-- Required at-a-glance basics — fill EVERY line with a committed value (no <placeholder>, no "TBD"). -->
+- **Kind:** <what sort of organization — guild, cult, noble house, mercenary company, crown office, …>
+- **Scale:** <rough size / reach — a cell of a dozen, a city guild, a continental order>
+- **Seat:** <base of operations — [[location-slug]] or [[region-slug]]>
+- **Leadership:** <[[npc-slug]] who leads it, or how it's led — "leaderless cells", "a council", …>
+- **Founded:** <era or rough age — "a generation ago", "ancient", a date if canon has one>
+
 ## Identity / Public face
 <What the faction openly is — its stated purpose and how the world perceives it.>
 

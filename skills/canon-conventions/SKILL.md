@@ -125,10 +125,31 @@ status: active       # active | dormant | dead | destroyed | hidden | named-only
 
 **The frontmatter above is universal; the body differs by type — use the matching template** in
 `templates/` (`entity-npc`, `entity-faction`, `entity-location`, `entity-item`, `entity-region`).
-They each follow the same arc: **surface** (what's openly apparent) → **deeper / hidden layer**
-(the committed truth beneath) → **secrets** (flagged, §5) → **links** (§4). What changes per type is
-the middle — an NPC has personality and an agenda; a faction has goals, structure, and reach; a
-location has features and hooks; a region carries its own **regional history** section.
+They each open with a **`## Vitals`** block, then follow the same arc: **surface** (what's openly
+apparent) → **deeper / hidden layer** (the committed truth beneath) → **secrets** (flagged, §5) →
+**links** (§4). What changes per type is the middle — an NPC has personality and an agenda; a
+faction has goals, structure, and reach; a location has features and hooks; a region carries its
+own **regional history** section.
+
+**Every entity file leads with a required `## Vitals` block — the completeness contract.** It is a
+short, fixed list of at-a-glance identity fields the runner reads first, so the basics are never
+left to be improvised mid-session (an NPC with no surname or race, a location with no region). Each
+type's template lists its required fields; **fill every one with a committed value** — no
+`<placeholder>`, no "TBD". Required sets:
+- **NPC:** Full name · Race / lineage · Pronouns · Age · Role / station · Affiliation
+- **Faction:** Kind · Scale · Seat · Leadership · Founded
+- **Location:** Kind · Region · Setting · Controlled by · Scale
+- **Item:** Kind · Rarity · Form · Origin
+- **Region:** Kind / scale · Terrain · Seat of power · Population
+
+**NPC files carry two more required sections** beyond Vitals: a **`## Stats (rough sketch)`** —
+equivalent character level, rough ability scores, and notable proficiencies (a capability gauge for
+adjudication, *not* a full stat block) — and **`## Abilities`** for spells / signature or
+supernatural powers (write "None" if they have none).
+
+Vitals are the *structured* basics; the prose sections below them add depth (presence, reputation,
+true nature). A completeness lint checks the required fields and NPC sections are present and filled;
+the narrative-checker judges whether the values cohere with the rest of canon.
 
 **World-truth docs are a separate, non-entity shape.** `overview.md`, `cosmology.md`, and
 `history.md` are setting prose, not entities — no slug frontmatter, no state file, not in `INDEX`.
@@ -263,6 +284,8 @@ Format: a table per entity type. Each row maps a slug to its files, status, and 
 ## 7. Quick checklist before you finish writing
 
 - [ ] Every load-bearing fact committed — no "DM decides / TBD / as needed" anywhere.
+- [ ] Entity file? The `## Vitals` block exists with every required field for its type filled
+      (NPCs also carry `## Stats (rough sketch)` and `## Abilities`).
 - [ ] Stateful entity? Both `{slug}.md` and `{slug}.state.md` exist, frontmatter filled.
 - [ ] Every referenced entity is a `[[slug]]` link, first mention per doc.
 - [ ] No dangling links — everything referenced is registered (or deliberately stubbed
