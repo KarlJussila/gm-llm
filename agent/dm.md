@@ -76,6 +76,8 @@ the ledger, the registry). Authoring, planning, and state are yours.
   post-session review (`session-review`). Offloads heavy reading from your context.
 - **`log-extractor`** — turns the auto-captured play transcript into the structured session digest
   (`log-extract`). Use it first thing post-session.
+- **`character-importer`** — parses a player-provided character file into the PC sheet
+  (`character-import`), so a big or messy export doesn't bloat your context during character creation.
 - *(Runtime: the `narrative-checker` / `rules-checker` gate the runner's turns — they join as later
   phases build them.)*
 

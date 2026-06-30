@@ -14,8 +14,9 @@ override the defaults here wherever they conflict.
 ## Who runs this, and format
 
 This skill is **player-facing** — it interviews the player — so it is run by the **dm** (a primary).
-A subagent cannot use it (subagents can't touch the player). Because the dm runs it, the dm authors
-all three PC files here, including the state file (state is the dm's to write).
+A subagent cannot use it (subagents can't touch the player). The dm authors the PC files here: the
+state file and knowledge ledger always, and the sheet — either from scratch or by completing the
+draft the `character-importer` extracted from an imported file (step 2).
 
 **Load `canon-conventions` and follow it for format**, and build from the PC templates:
 `pc-sheet.template` → `characters/{slug}.md`, `pc-state.template` → `characters/{slug}.state.md`,
@@ -40,10 +41,12 @@ Match the player's preference:
    have one, invite them to **point you at any file** for it: a sheet export, PDF text, JSON, an HTML
    dump, a notes doc, whatever they've got. If they'd rather build from scratch, skip the import and
    draw a concept from the world's hooks and archetypes at their chosen control level.
-2. **Pull what you can from their file.** If they gave one, read it and take whatever's useful — the
-   vitals (race/lineage, class, subclass, level, ability scores, pronouns) and any proficiencies,
-   spells, named abilities, feats, and backstory it holds. Don't fuss over the format; get what you
-   can and move on. (No file → you'll gather the same by talking.)
+2. **Pull what you can from their file.** A quick plain-text note you can read yourself. For anything
+   larger or structured — JSON, HTML, a PDF or sheet export — **delegate to the `character-importer`**
+   subagent (give it the source path and the target sheet path `characters/{slug}.md`) so a big file
+   doesn't bloat your context; it extracts what it can into the sheet and reports which vitals the
+   source lacked. Either way you come out with a partial sheet and a list of gaps. (No file → you
+   gather the same by talking.)
 3. **Fill the vital gaps.** Ask the player for any **vital** detail still missing after the import:
    race/lineage, class (and subclass, if they have one), level, ability scores, pronouns. Just the
    vitals — don't make them recite their whole proficiency and spell list; the rest gets documented
@@ -60,11 +63,11 @@ Match the player's preference:
 
 ## Write the three PC files
 
-- **`characters/{slug}.md`** (sheet) — from `pc-sheet.template`: the **`## Vitals`** block
-  (race/lineage, class, subclass if any, level, ability scores, pronouns — every line a committed
-  value), **`## Known capabilities`** (the proficiencies/spells/abilities/feats you gathered — partial
-  is fine, it grows in play), then appearance, personality, backstory, connections (`[[slug]]`),
-  DM-side hooks, links.
+- **`characters/{slug}.md`** (sheet) — from `pc-sheet.template` (or completing the `character-importer`
+  draft): the **`## Vitals`** block (race/lineage, class, subclass if any, level, ability scores,
+  pronouns — every line a committed value), **`## Known capabilities`** (the proficiencies/spells/
+  abilities/feats you gathered — partial is fine, it grows in play), then appearance, personality,
+  backstory, connections (`[[slug]]`), DM-side hooks, links.
 - **`characters/{slug}.state.md`** (initial state) — from `pc-state.template`: starting location,
   any notable condition, key starting items, the opening objective. This is the session-1-start
   snapshot. **Don't track HP, spell slots, or money** — the player owns granular resources; record

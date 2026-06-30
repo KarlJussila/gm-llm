@@ -94,7 +94,7 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 
 ## Architecture
 
-Two primary agents the player starts directly, four subagents they delegate to, and a set of
+Two primary agents the player starts directly, a set of subagents they delegate to, and a set of
 skills that hold the actual procedures (one home each — the single source of truth).
 
 **Primary agents:**
@@ -104,13 +104,14 @@ skills that hold the actual procedures (one home each — the single source of t
 - **`dm-runner`** — runs one live session (narration, NPCs, improvisation, dice), then stops. It
   does **not** take notes, plan, assess, or adjust arcs (the transcript is auto-captured).
 
-**Subagents** (`mode: subagent`, delegated by `dm` via the native `task` tool, never started by
-the player): `world-builder`, `arc-designer`, `session-planner`, and a read-only
-`campaign-analyst`, and `log-extractor` (transcript → digest). Each is a thin wrapper that loads
-its skill, does the task, and returns a Result / Evidence / Changes / Caveats report.
+**Subagents** (`mode: subagent`, delegated via the native `task` tool, never started by the player):
+the `dm`'s production delegates — a read-only `campaign-analyst`, `log-extractor` (transcript →
+digest), and `character-importer` (a character file → the PC sheet) — plus the runtime gate agents
+`narrative-checker` / `rules-checker`. Each is a thin wrapper that loads its skill, does the task,
+and returns a Result / Evidence / Changes / Caveats report.
 
 **Skills** (procedures, reused by both agents and subagents): `campaign-setup`, `campaign-intake`,
-`character-create`, `world-build`, `arc-design`, `session-plan`, `session-run`, `session-flow`,
+`character-create`, `character-import`, `world-build`, `arc-design`, `session-plan`, `session-run`, `session-flow`,
 `social-play`, `discoveries`, `campaign-assess`, `session-review`, `log-extract`, plus the focused
 session-level skills below.
 

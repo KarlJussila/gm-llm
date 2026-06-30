@@ -32,6 +32,7 @@ Prefer **skill-level** files; they're reused across every agent that loads the s
 | `campaign-setup.md` | New-campaign flow: stage ordering, premise/hook presentation, pacing of setup |
 | `campaign-intake.md` | Opening brief: how much to ask, free-form vs. guided, content-boundary handling |
 | `character-create.md` | Character creation: how collaborative, depth of backstory, mechanical help |
+| `character-import.md` | Parsing imported character files: where the player's sheets keep fields, what to grab |
 | `arc-design.md` | Story/arc feel: railroading, stakes, pacing across sessions |
 | `world-build.md` | World/NPC/faction quality: depth, consistency, friction |
 | `dm-runner.md` | Runner conduct not in a skill (e.g. too much out-of-character talk) |
