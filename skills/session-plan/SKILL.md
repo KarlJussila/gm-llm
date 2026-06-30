@@ -96,6 +96,10 @@ encounters; a travel session no investigation). Pull a skill when its content is
 - **Keep 30–40% unplanned.** Leave room for improvisation and player-driven scenes — that openness
   is the *path*, not the *facts*.
 - **Advance at least one active arc** — even small progress counts.
+- **The plan ends at the table.** Plan only what's needed to *run* the session. Don't write a
+  "post-session updates" or "what to file afterward" section: canon is reconciled from what
+  *actually* happened, never from a checklist written in advance, and nothing that updates files
+  reads the plan.
 
 ## File output
 Write the plan to `campaign/sessions/session-{N}-plan.md`, where `{N}` is the next session number.
