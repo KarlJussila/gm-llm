@@ -46,12 +46,17 @@ fit as you work the edits below.
 - The **PC knowledge ledger** `campaign/characters/{pc}.knowledge.md` — your source of truth for
   what the player *has been exposed to* (and therefore what is now locked).
 
-## Step 1 — Create your top-level task list
+## Step 1 — Build your task list (one list, expanded one arc at a time)
 
-Use your `todowrite` tool to create exactly these entries, then work them in order:
+You keep **one** todo list for the whole pass. `todowrite` **replaces the list wholesale** on every
+call — there is no "add one item" or second list — so *every* call must pass the **entire** list:
+the items already `completed`, the work in front of you, and everything still ahead. Dropping the
+done items or the arcs still to come deletes them.
+
+Start with these entries:
 
 1. Identify affected arcs and threads
-2. Reconcile each affected arc *(build a fresh per-arc task list for each — see below)*
+2. Reconcile the affected arcs   *(placeholder — you expand this once you know which arcs)*
 3. Create any new minor arcs play has birthed (via `arc-design`)
 4. Update the threads dashboard
 5. Cross-arc / thread consistency sweep
@@ -62,25 +67,60 @@ From *Plan vs. actual*, *Narrative*, and the assessment's recommendations, list 
 session **advanced, diverged from, or implicated** (at least one — every session moves an arc), and
 every thread it touched or spawned. Note any thread that has grown into a candidate minor arc.
 
-### 2. Reconcile each affected arc — **a fresh task list per arc**
-For **each** affected arc, **create a new `todowrite` task list** with exactly the eleven entries
-below and complete it before moving to the next arc. (Re-listing per arc is deliberate — it's how
-you guarantee every section of every arc gets reconciled instead of half-doing several at once.)
+Then **rewrite the whole list once** (`todowrite`) to turn entry 2 into **one line per affected arc**.
+For arcs `road-debt` and `lost-mentor` it now reads:
 
 ```
-Reconcile arc <slug>:
-  1. Gather what play did to this arc
-  2. Reconcile turning points
-  3. Reconcile the committed answers
-  4. Reconcile key NPCs & factions
-  5. Reconcile premise, core conflict & stakes
-  6. Reconcile the tension curve & position
-  7. Reconcile engagement paths
-  8. Reconcile hooks to other arcs and threads
-  9. Flip spoiler flags for what the PC learned
-  10. Append the Adjustment log entry
-  11. Update the arc's state file
+Identify affected arcs and threads        — completed
+Reconcile arc road-debt                   — pending
+Reconcile arc lost-mentor                 — pending
+Create any new minor arcs                 — pending
+Update the threads dashboard              — pending
+Cross-arc / thread consistency sweep      — pending
+Report                                    — pending
 ```
+
+### 2. Reconcile each affected arc — one at a time, expanded just-in-time
+Work the arcs top to bottom. For the arc you're on, **expand its one line into the eleven steps**,
+work them, then **collapse it back to one line** before starting the next. The list only ever shows
+the *current* arc in detail; finished arcs and arcs still ahead stay a single line. (Reminder: each
+`todowrite` passes the **whole** list — keep the completed items and the other arcs in it.)
+
+For each affected arc, in order:
+
+**a. Expand it.** `todowrite` the whole list, replacing this arc's single `Reconcile arc <slug>` line
+with its eleven steps (all `pending`), and set step 1 to `in_progress`. For `road-debt`:
+
+```
+Identify affected arcs and threads        — completed
+road-debt · 1 gather what play did        — in_progress
+road-debt · 2 turning points              — pending
+road-debt · 3 committed answers           — pending
+road-debt · 4 key NPCs & factions         — pending
+road-debt · 5 premise, conflict & stakes  — pending
+road-debt · 6 tension curve & position    — pending
+road-debt · 7 engagement paths            — pending
+road-debt · 8 hooks to other arcs/threads — pending
+road-debt · 9 flip spoiler flags          — pending
+road-debt · 10 adjustment log entry       — pending
+road-debt · 11 update the state file       — pending
+Reconcile arc lost-mentor                 — pending      ← arcs still ahead stay one line
+Create any new minor arcs                 — pending
+Update the threads dashboard              — pending
+Cross-arc / thread consistency sweep      — pending
+Report                                    — pending
+```
+
+**b. Work the eleven steps** (detailed below), flipping each from `in_progress` to `completed` and the
+next to `in_progress` as you go.
+
+**c. Collapse it.** When all eleven read `completed`, `todowrite` the whole list again, replacing those
+eleven lines with the single line `Reconcile arc road-debt — completed`. The list is short again, the
+next arc still a one-liner. Move to it and repeat from (a).
+
+When every affected arc shows a single `completed` line, this step is done.
+
+The eleven steps, in order:
 
 **1. Gather what play did to this arc.** Read the arc's design + state. From the digest and the
 assessment, collect for *this* arc: which turning points landed; which committed answers play
