@@ -13,6 +13,7 @@ permission:
   glob: allow
   grep: allow
   list: allow
+  bash: allow
   edit: allow
   write: allow
   patch: allow

@@ -21,10 +21,12 @@ formats. Don't ask for a particular format or stall on an awkward one — open t
 character data wherever it sits in the structure, and pull it. If the file is large, skim past
 boilerplate to the character block.
 
-**Use only your own reading ability. Never — under any circumstances — install a package, library, or
-tool, or run code, to crack a difficult format.** If you genuinely can't read a file (a binary or
-proprietary format, an unreadable PDF), don't engineer around it: stop, and say plainly in your report
-that you were unable to parse the file, so the dm gets those details from the player directly.
+**You may use command-line tools that are already installed** to read or convert an awkward file — a
+PDF-to-text or archive-extraction utility, `jq`, and the like — if one is on hand. But **never install
+anything** (no `pip` / `npm` / `apt` / `brew` or any other package manager) and **never write your own
+parsing code or scripts**. If your own reading plus whatever tools are already available still can't
+crack the file, don't engineer around it: stop, and say plainly in your report that you were unable to
+parse it, so the dm gets those details from the player directly.
 
 ## Map it onto the sheet
 Load `canon-conventions` and build from the `pc-sheet` template. Write what you find into:
