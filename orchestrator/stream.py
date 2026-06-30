@@ -22,10 +22,18 @@ import urllib.parse
 import urllib.request
 
 
+def _stdout_write(s: str) -> None:
+    sys.stdout.write(s)
+    sys.stdout.flush()
+
+
 class EventTap:
-    def __init__(self, base: str, directory: str):
+    def __init__(self, base: str, directory: str, write=None):
         self.base = base
         self.directory = directory
+        # Where rendered lines go. Default: stdout (the CLI's --stream). A consumer
+        # like the TUI passes its own writer to route the live log into a pane.
+        self._write_cb = write or _stdout_write
         self._stop = threading.Event()
         self._resp = None
         self._thread: threading.Thread | None = None
@@ -34,7 +42,8 @@ class EventTap:
         self._printed: dict[str, int] = {}     # partID -> chars already printed
         self._seen_tools: set[str] = set()     # tool partIDs already announced
         self._cur: str | None = None           # session we're mid-line on
-        self._color = sys.stdout.isatty()
+        # ANSI only when we own a real terminal; a custom sink gets plain text.
+        self._color = sys.stdout.isatty() and write is None
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -62,10 +71,12 @@ class EventTap:
         we're mid-stream on (closes the open line first)."""
         with self._lock:
             if self._cur is not None:
-                sys.stdout.write("\n")
+                self._emit("\n")
                 self._cur = None
-            sys.stdout.write(text + "\n")
-            sys.stdout.flush()
+            self._emit(text + "\n")
+
+    def _emit(self, s: str) -> None:
+        self._write_cb(s)
 
     # -- internals ----------------------------------------------------------
 
@@ -130,11 +141,10 @@ class EventTap:
             self._printed[pid] = len(full)
             if sid != self._cur:
                 if self._cur is not None:
-                    sys.stdout.write("\n")
-                sys.stdout.write(self._c("1;36", f"\n──── {self._title(sid)} ────\n"))
+                    self._emit("\n")
+                self._emit(self._c("1;36", f"\n──── {self._title(sid)} ────\n"))
                 self._cur = sid
-            sys.stdout.write(self._c("2", chunk) if reasoning else chunk)
-            sys.stdout.flush()
+            self._emit(self._c("2", chunk) if reasoning else chunk)
 
     def _emit_tool(self, part: dict) -> None:
         pid = part.get("id")
@@ -148,10 +158,9 @@ class EventTap:
         arg = self._tool_arg(state.get("input") or {})
         with self._lock:
             if self._cur is not None:
-                sys.stdout.write("\n")
+                self._emit("\n")
                 self._cur = None
-            sys.stdout.write(self._c("33", f"  ⚙ {self._title(part.get('sessionID'))}: {name}{arg}\n"))
-            sys.stdout.flush()
+            self._emit(self._c("33", f"  ⚙ {self._title(part.get('sessionID'))}: {name}{arg}\n"))
 
     @staticmethod
     def _tool_arg(inp: dict) -> str:
