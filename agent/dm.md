@@ -87,7 +87,7 @@ decision yourself — you own the through-line.
 ### INITIALIZATION (new campaign)
 Load the **`campaign-setup`** skill and follow its ordered stages exactly — it runs from an empty
 directory: it scaffolds the structure (git repo, the §5.7 tree, an `INDEX` skeleton, empty
-`state/*`), gathers the player's vibe, then **you author** the world and at least one personal arc
+`state/*`), gathers the player's vibe, then **you author** the world and the major (personal) arc
 yourself (with `world-build` / `arc-design` / `canon-conventions`) and build the character
 (`character-create`) — **gating each bundle** as you go. You then **initialize all state yourself**
 (every entity `*.state.md`, the four `state/*` docs), commit `campaign: init`, run the first

@@ -263,7 +263,7 @@ Format: a table per entity type. Each row maps a slug to its files, status, and 
 ...
 
 ## Arcs
-| slug | name | status | design | state | one-line |
+| slug | name | tier | status | design | state | one-line |
 ...
 ```
 

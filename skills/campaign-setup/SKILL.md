@@ -30,7 +30,7 @@ phases; at init the gate is your own review.)
 - **Spoiler discipline.** Present setting, tone, and surface situation. Never reveal secrets,
   twists, villains' true natures, or planned arcs — those go in files, not conversation.
 - **Don't over-build before the character exists.** Build enough world to present a premise; save
-  the major arcs until the character is made, so they can be personal.
+  the major arc until the character is made, so it can be personal.
 
 ### The gate (run this after authoring each bundle — stages 3, 5, 6)
 After you write a bundle of canon, review it against this checklist and fix anything that fails:
@@ -104,10 +104,11 @@ Note the backstory canon and DM-side hooks it surfaces, for the next stage.
 1. **Fold in backstory canon.** For every new NPC/location/faction the backstory introduced, author
    and register it yourself (`world-build` + `canon-conventions`). **Gate.** Nothing the backstory
    names stays unfiled.
-2. **Design the arc(s).** Load `arc-design` + `canon-conventions` and author at least one major arc
-   woven into the character's backstory hooks (keep *how* spoiler-side); optionally minor arcs.
-   Commit every answer (no "DM decides"). Write the arc design + its `INDEX.md` Arcs row. If the arc
-   needs an entity that doesn't exist yet, author that entity first. **Gate.**
+2. **Design the arc(s).** Load `arc-design` + `canon-conventions` and author **the major arc**
+   (`tier: major`) woven into the character's backstory hooks (keep *how* spoiler-side); optionally a
+   minor arc or two (`tier: minor`, hooked into the major). Commit every answer (no "DM decides").
+   Write each arc design + its `INDEX.md` Arcs row (with `tier`). If an arc needs an entity that
+   doesn't exist yet, author that entity first. **Gate.**
 3. **Write each arc's initial state.** Create `arcs/{slug}.state.md` from the template at its
    starting status (usually `dormant`).
 4. Finalize `campaign/campaign.md`.

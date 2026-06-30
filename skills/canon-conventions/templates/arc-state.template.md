@@ -3,7 +3,7 @@
   Paired with {slug}.md (the living design). A session-boundary snapshot, frozen during play,
   written by the dm's POST apply pass. This is a quick at-a-glance read for the planner/runner —
   it does NOT hold adjustments. Structural/detail revisions happen in the design body (the
-  the post-session arc pass's job); divergence is reconciled INTO that body, not parked here.
+  apply-arcs pass's job); divergence is reconciled INTO that body, not parked here.
 -->
 ---
 slug: <kebab-slug>

@@ -133,9 +133,9 @@ the body holds the substance.
 
 ### 3. Create any new minor arcs play has birthed
 If play produced a subplot that deserves real structure (committed answers + turning points), **do
-not sketch it ad hoc here** — load the **`arc-design`** skill and author it as a proper minor arc,
-hooked into the major arc, registered in `INDEX`. A lighter lead that isn't yet a story stays a
-thread (next step).
+not sketch it ad hoc here** — load the **`arc-design`** skill and author it as a proper minor arc
+(`tier: minor`, `hooks-into:` the major), registered in `INDEX`. A lighter lead that isn't yet a
+story stays a thread (next step).
 
 ### 4. Update the threads dashboard
 Reconcile `campaign/state/threads.md` (format: canon-conventions §4): open threads play created,

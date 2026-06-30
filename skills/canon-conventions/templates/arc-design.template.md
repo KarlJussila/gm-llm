@@ -2,17 +2,22 @@
   ARC DESIGN file — the LIVING narrative design. Path: campaign/arcs/{slug}.md
   Paired with {slug}.state.md (a lightweight progress snapshot — see arc-state.template).
   Registered in INDEX (Arcs).
-  This file is REVISED BETWEEN SESSIONS in the post-session arc pass, which assesses what structural
-  and detail changes each arc needs after play (redirect, accelerate, merge, deepen, recommit) — not
-  just a status bump. It is *not edited during play* (divergence surfaces from the session digest
-  afterward instead) and reconciled then. "Played beats planned": revise the design toward what happened.
+  This file is REVISED BETWEEN SESSIONS by the apply-arcs skill (the post-session arc pass), which
+  assesses what structural and detail changes each arc needs after play (redirect, accelerate, merge,
+  deepen, recommit) — not just a status bump. It is *not edited during play* (divergence surfaces from
+  the session digest afterward instead) and reconciled then. "Played beats planned": revise toward what
+  happened.
   THE RULE: every turning point and the central mystery COMMITS its load-bearing answer here. The
   dm (when planning) pulls these answers. Never "DM decides". Flag spoilers [hidden] (canon-conventions §5).
+  ARC MODEL: the campaign runs one MAJOR arc (tier: major) plus MINOR arcs (tier: minor) that hook
+  into it. A minor arc names the major in `hooks-into:`; the major leaves it `—`.
 -->
 ---
 slug: <kebab-slug>
 name: <Arc Name>
 type: arc
+tier: <major | minor>
+hooks-into: <— for the major arc; [[major-slug]] for a minor arc>
 ---
 
 # <Arc Name>

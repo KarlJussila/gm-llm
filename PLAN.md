@@ -139,15 +139,14 @@ stages are written to make that cheap.
 ## Backlog (deferred — not blocking the slices above)
 
 Slices (i)–(iii) are built and slice (ii) was live-validated; the prompt rehome, the
-`session-review` rewrite, and the `dm.md` POST-flow repoint are done (history in git). Remaining:
+`session-review` rewrite, the `dm.md` POST-flow repoint, and the `arc-design` Model-B review are
+done (history in git). Remaining:
 
 - **PC-side / init refactor.** The PC entity gets no Vitals contract yet (`type: pc` is skipped by
   the lint). The player-facing init flow (character creation, campaign setup) is its own larger
   refactor the player flagged as next after this one — fold a PC vitals/stat contract into it then.
-  This is also where init should start producing **minor arcs** (Model B), not just one major arc.
-- **Review `arc-design` skill.** Align it with Model B (major + minor arcs) and with `apply-arcs` —
-  in particular so `apply-arcs` creating a new minor arc (hooked into the major) is well-supported,
-  and the "post-session arc pass" cross-references point at `apply-arcs`.
+  Init already authors the major arc + optional minor arcs (Model B); the open piece here is the PC
+  contract and the creation flow itself.
 
 ## Done-tests
 

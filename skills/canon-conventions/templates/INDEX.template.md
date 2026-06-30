@@ -39,6 +39,6 @@
 | <slug> | <Name> | <status> | world/items/<slug>.md | <— if not stateful> | <what, in one clause> |
 
 ## Arcs
-| slug | name | status | design | state | one-line |
-|---|---|---|---|---|---|
-| <slug> | <Name> | <status> | arcs/<slug>.md | arcs/<slug>.state.md | <the arc's premise, in one clause> |
+| slug | name | tier | status | design | state | one-line |
+|---|---|---|---|---|---|---|
+| <slug> | <Name> | <major\|minor> | <status> | arcs/<slug>.md | arcs/<slug>.state.md | <the arc's premise, in one clause> |
