@@ -24,17 +24,18 @@ def main() -> None:
 
     cleanup = None
     if args.live:
-        from orchestrator import Backend, CanonPreloader, Game, Gate
+        from orchestrator import Backend, CanonPreloader, Gate, Lifecycle
         backend = Backend(args.dir, port=args.port).start()
-        game = Game(backend, Gate(backend, CanonPreloader(args.dir)), checks_log="/tmp/orchestrator-checks.log")
+        lifecycle = Lifecycle(backend, Gate(backend, CanonPreloader(args.dir)), args.dir,
+                              checks_log="/tmp/orchestrator-checks.log")
         cleanup = backend.stop
         title = "Campaign — orchestrator (live)"
     else:
-        from orchestrator.mock import MockGame
-        game = MockGame()
+        from orchestrator.mock import MockLifecycle
+        lifecycle = MockLifecycle()
         title = "Campaign — orchestrator (MOCK)"
 
-    app = PlayApp(game, cleanup=cleanup, theme=args.theme)
+    app = PlayApp(lifecycle, cleanup=cleanup, theme=args.theme)
     app.title = title
     app.run()
 

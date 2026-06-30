@@ -51,13 +51,14 @@ class Reconciler:
 
     def __init__(self, backend, gate, dm_agent: str = "dm",
                  analyst_agent: str = "campaign-analyst", extractor_agent: str = "log-extractor",
-                 on_reconcile=None, checks_log: str | None = None):
+                 on_reconcile=None, on_stage=None, checks_log: str | None = None):
         self.backend = backend
         self.gate = gate
         self.dm_agent = dm_agent
         self.analyst_agent = analyst_agent
         self.extractor_agent = extractor_agent
         self.on_reconcile = on_reconcile
+        self.on_stage = on_stage          # called with a stage key as each stage starts
         self.checks_log = checks_log
         self.root = Path(backend.directory)
         # One apply thread for the dm (D1-D3 + F), one for the analyst (C + E),
@@ -93,6 +94,14 @@ class Reconciler:
         except OSError:
             pass
 
+    def _announce(self, key: str) -> None:
+        """Tell a watcher (e.g. the TUI ticker) which stage is starting."""
+        if self.on_stage:
+            try:
+                self.on_stage(key)
+            except Exception:
+                pass
+
     # -- the pipeline -------------------------------------------------------
 
     def reconcile_session(self, n: int, commit: bool = False, prep: bool = True,
@@ -103,6 +112,7 @@ class Reconciler:
 
         # B. Digest: transcript -> session-N.md, gated for source-fidelity.
         if not self._done(n, "digest"):
+            self._announce("digest")
             self.backend.prompt(self.extractor_sid, self.extractor_agent,
                                 load("digest-brief").format(n=n))
             rr.digest = self.gate.check_digest(n)
@@ -111,12 +121,14 @@ class Reconciler:
 
         # C. Assessment (analyst): digest -> assessment. No gate — it's analysis, not canon.
         if not self._done(n, "assess"):
+            self._announce("assess")
             self.backend.prompt(self.analyst_sid, self.analyst_agent,
                                 load("assess-brief").format(n=n))
             self._mark(n, "assess")
 
         # E. Feedback (same analyst thread): curate campaign/feedback/*, gated.
         if not self._done(n, "feedback"):
+            self._announce("feedback")
             self.backend.prompt(self.analyst_sid, self.analyst_agent,
                                 load("curate-feedback-brief").format(n=n))
             rr.feedback = self.gate.check_feedback(n)
@@ -125,22 +137,26 @@ class Reconciler:
 
         # D1. New/changed entity canon (dm), guarded by the completeness lint.
         if not self._done(n, "canon"):
+            self._announce("canon")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("apply-canon-brief").format(n=n))
             rr.lint_incomplete = self._lint_correct()
             self._mark(n, "canon")
 
         # D2. Arc pass (same dm thread).
         if not self._done(n, "arcs"):
+            self._announce("arcs")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("apply-arcs-brief").format(n=n))
             self._mark(n, "arcs")
 
         # D3. Ledger + state (same dm thread).
         if not self._done(n, "state"):
+            self._announce("state")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("apply-state-brief").format(n=n))
             self._mark(n, "state")
 
         # Gate the whole apply (D1-D3), one bounded correction on the dm thread.
         if not self._done(n, "propagation"):
+            self._announce("propagation")
             rr.propagation = self.gate.check_propagation(n)
             apply_one_correction(self.backend, self.dm_sid, self.dm_agent, rr.propagation)
             self._mark(n, "propagation")
@@ -152,6 +168,7 @@ class Reconciler:
 
         # F. Prep session N+1 on the SAME dm thread (warm context), gated via the Planner.
         if prep and not self._done(n, "prep"):
+            self._announce("prep")
             planner = Planner(self.backend, self.gate, dm_agent=self.dm_agent,
                               checks_log=self.checks_log, dm_sid=self.dm_sid)
             rr.prep = planner.prep_session(n + 1, commit=commit)

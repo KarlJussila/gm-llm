@@ -7,8 +7,12 @@ so the UI exercises every path. No opencode, no rate limit.
 
 from __future__ import annotations
 
+import time
+
 from .gate import GateResult, Verdict
 from .loop import TurnResult
+
+_WRAP_STAGES = ["digest", "assess", "feedback", "canon", "arcs", "state", "propagation", "prep"]
 
 _OPENING = (
     "The Crossroads Inn is warm and loud — low beams, smoke, a dozen faces turning as the door bangs "
@@ -54,3 +58,27 @@ class MockGame:
         gate = GateResult(narrative, conduct, player_msg, canon_sections=9)
         draft = ("(pre-correction draft) " + narration) if corrected else narration
         return TurnResult(player_msg, draft, narration, gate, corrected)
+
+
+class MockLifecycle:
+    """Stand-in for Lifecycle: a MockGame plus a simulated wrap() so the TUI's
+    between-sessions flow (the ticker + the live stream) can be driven offline."""
+
+    def __init__(self, *args, **kwargs):
+        self.game = MockGame()
+        self._session = 1
+
+    @property
+    def session(self) -> int:
+        return self._session
+
+    def wrap(self, on_stage=None, stream_write=None, commit: bool = True) -> int:
+        for key in _WRAP_STAGES:
+            if on_stage:
+                on_stage(key)
+            if stream_write:
+                stream_write(f"\n──── {key} ────\n  (mock) working {key}…\n")
+            time.sleep(0.6)  # let the ticker breathe so the flow is visible
+        self._session += 1
+        self.game = MockGame()
+        return self._session

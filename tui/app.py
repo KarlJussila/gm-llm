@@ -43,18 +43,25 @@ class PlayApp(App):
         ("ctrl+g", "toggle_screen", "Behind-screen"),
         ("ctrl+t", "toggle_mode", "Action/Meta"),
         ("ctrl+x", "cancel", "Cancel turn"),
+        ("ctrl+w", "wrap", "Wrap session"),
         ("ctrl+q", "quit", "Quit"),
     ]
 
-    def __init__(self, game, cleanup=None, theme: str = "dracula"):
+    def __init__(self, lifecycle, cleanup=None, theme: str = "dracula"):
         super().__init__()
-        self.game = game
+        self.lc = lifecycle
         self.cleanup = cleanup
         self._theme = theme
         self.mode = "action"
         self._turn = 0
-        self._scene: list[str] = []
-        self._screen: list[str] = []
+        self._wrapping = False
+        self._scene = ""
+        self._screen = ""
+
+    @property
+    def game(self):
+        """The session currently in play; the lifecycle swaps it on wrap."""
+        return self.lc.game
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -69,7 +76,7 @@ class PlayApp(App):
     def on_mount(self) -> None:
         self.theme = self._theme if self._theme in self.available_themes else "dracula"
         self._write("screen", "[b]behind the screen[/b] — gate verdicts")
-        self._write("scene", "[$text-muted]ctrl+t action/meta · ctrl+g behind-screen · ctrl+x cancel · /roll 2d6+3 · /meta <q> · /quit[/]")
+        self._write("scene", "[$text-muted]ctrl+t action/meta · ctrl+g behind-screen · ctrl+x cancel · ctrl+w wrap · /roll 2d6+3 · /meta <q> · /quit[/]")
         self._sync_input()
         self.sub_title = "ACTION mode"
         self.run_worker(self._open(), exclusive=True)
@@ -77,9 +84,18 @@ class PlayApp(App):
     # -- panes (selectable Statics) ----------------------------------------
 
     def _write(self, pane: str, markup: str) -> None:
-        lines = self._scene if pane == "scene" else self._screen
-        lines.append(markup)
-        self.query_one(f"#{pane}-body", Static).update("\n".join(lines))
+        self._append(pane, markup + "\n")
+
+    def _append(self, pane: str, text: str) -> None:
+        """Append raw text to a pane's buffer — used for line writes and for the
+        streamed reconcile log, which arrives in arbitrary (non-line) chunks."""
+        if pane == "scene":
+            self._scene += text
+            buf = self._scene
+        else:
+            self._screen += text
+            buf = self._screen
+        self.query_one(f"#{pane}-body", Static).update(buf)
         self.query_one(f"#{pane}", VerticalScroll).scroll_end(animate=False)
 
     # -- input mode ---------------------------------------------------------
@@ -124,6 +140,10 @@ class PlayApp(App):
 
         if text.lower() in ("/quit", "/exit", "/q"):
             self.exit()
+            return
+        # /wrap — end the session and run the post-session pipeline, then open the next.
+        if text.lower() in ("/wrap", "/end"):
+            self.action_wrap()
             return
         # /roll — a local dice helper; doesn't take a turn, just shows the result
         # so you can report it in your next action.
@@ -196,6 +216,51 @@ class PlayApp(App):
     def _cancelled_note(self, msg: str = "— cancelled —") -> None:
         self._write("scene", f"\n[$warning]{msg}[/]")
         self._busy(False)
+
+    # -- wrap: end the session, run the post-session pipeline, open the next -
+
+    _WRAP_LABELS = {
+        "digest": "reading back the session",
+        "assess": "taking stock of what happened",
+        "feedback": "noting your feedback",
+        "canon": "filing what's new in the world",
+        "arcs": "advancing the story",
+        "state": "updating where things stand",
+        "propagation": "double-checking everything lines up",
+        "prep": "prepping the next session",
+    }
+
+    def action_wrap(self) -> None:
+        """Wrap the played session: run the post-session pipeline (reconcile + prep the
+        next), then open session N+1 — without leaving the app. No-op while busy."""
+        if self._wrapping or self.query_one("#cmd", Input).disabled:
+            return
+        self.run_worker(self._do_wrap(), exclusive=True)
+
+    async def _do_wrap(self) -> None:
+        self._wrapping = True
+        self._busy(True)
+        self.sub_title = "⏳ wrapping the session…"
+        self._write("scene", "\n[$warning]— wrapping the session —[/]")
+        # reveal the behind-the-screen pane so the live pipeline stream is visible
+        self.query_one("#screen", VerticalScroll).remove_class("hidden")
+        self._write("screen", "\n[b]— post-session pipeline —[/b]\n")
+        ticker = lambda key: self.call_from_thread(self._tick, key)
+        stream = lambda s: self.call_from_thread(self._append, "screen", escape(s))
+        try:
+            new_n = await asyncio.to_thread(self.lc.wrap, ticker, stream)
+        except Exception as e:  # noqa: BLE001 — surface any pipeline failure to the player
+            self._write("scene", f"\n[$error]— wrap failed: {escape(str(e))} —[/]")
+            self._wrapping = False
+            self._busy(False)
+            return
+        self._write("scene", f"\n[$success]— session {new_n} ready · opening the scene —[/]")
+        self._turn = 0
+        self._wrapping = False
+        await self._open()  # opens the next session's scene and re-enables input
+
+    def _tick(self, key: str) -> None:
+        self._write("scene", f"[$text-muted]  ▸ {self._WRAP_LABELS.get(key, key)}…[/]")
 
     # -- rendering ----------------------------------------------------------
 
