@@ -120,7 +120,7 @@ class MockLifecycle:
     def session(self) -> int:
         return self._session
 
-    def setup_stream(self, stream_write):
+    def setup_stream(self, stream_write, on_tool=None):
         return _NoTap()
 
     def finish_setup(self, on_stage=None, stream_write=None) -> int:

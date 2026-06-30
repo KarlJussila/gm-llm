@@ -33,7 +33,7 @@ def _stdout_write(s: str) -> None:
 
 
 class EventTap:
-    def __init__(self, base: str, directory: str, write=None, markup: bool = False):
+    def __init__(self, base: str, directory: str, write=None, markup: bool = False, on_tool=None):
         self.base = base
         self.directory = directory
         # Where rendered lines go. Default: stdout (the CLI's --stream). A consumer
@@ -42,6 +42,10 @@ class EventTap:
         # Output dialect. A terminal sink gets ANSI; a Textual sink (markup=True) gets
         # console markup with body text escaped, so the pane is coloured the same way.
         self._markup = markup
+        # Optional side-channel: called `on_tool(name, arg)` for each tool call, so a
+        # consumer can surface a terse, spoiler-free activity signal separate from the
+        # full stream (the TUI uses it for the setup-phase progress ticker).
+        self._on_tool = on_tool
         self._stop = threading.Event()
         self._resp = None
         self._thread: threading.Thread | None = None
@@ -220,6 +224,8 @@ class EventTap:
                 self._emit("\n")
                 self._cur = None
             self._emit(self._style("tool", f"  ⚙ {self._title(part.get('sessionID'))}: {name}{arg}\n"))
+        if self._on_tool:
+            self._on_tool(name, arg.strip())
 
     @staticmethod
     def _tool_arg(inp: dict) -> str:

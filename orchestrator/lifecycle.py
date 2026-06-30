@@ -50,10 +50,15 @@ class Lifecycle:
         return EventTap(self.backend.base, self.backend.directory,
                         write=stream_write, markup=True).start()
 
-    def setup_stream(self, stream_write):
+    def setup_stream(self, stream_write, on_tool=None):
         """Stream the setup conversation's authoring behind the screen for its whole
-        duration. The caller starts this when setup opens and stops it at the transition."""
-        return self._tap(stream_write)
+        duration. The caller starts this when setup opens and stops it at the transition.
+        `on_tool(name, arg)` fires per tool call — the TUI turns it into a spoiler-free
+        progress ticker in the main scene."""
+        if not stream_write:
+            return None
+        return EventTap(self.backend.base, self.backend.directory,
+                        write=stream_write, markup=True, on_tool=on_tool).start()
 
     def finish_setup(self, on_stage=None, stream_write=None) -> int:
         """Once setup reports done: plan session 1 (the one code-gated artifact at init),

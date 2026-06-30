@@ -60,6 +60,7 @@ class PlayApp(App):
         self._screen = ""
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
         self._setup_hidden = True    # screen pane's visibility before setup borrowed it
+        self._setup_stage = None     # last spoiler-free setup stage shown in the scene
 
     @property
     def game(self):
@@ -156,6 +157,27 @@ class PlayApp(App):
 
     # -- setup: the new-campaign conversation (phase == "setup") -------------
 
+    # Map a written file to a spoiler-free build stage (first match wins). The dm's
+    # authoring otherwise looks frozen for minutes; this gives the scene a heartbeat
+    # without leaking what's being written.
+    _SETUP_STAGES = (
+        ("characters/", "building your character"),
+        ("arcs/", "shaping the story"),
+        ("world/", "fleshing out the world"),
+        ("documents/", "writing the in-world documents"),
+        ("state/", "setting the opening scene"),
+        ("INDEX", "organizing the campaign"),
+        ("campaign.md", "organizing the campaign"),
+    )
+
+    def _setup_activity(self, name: str, arg: str) -> None:
+        """A tool fired during setup — surface a coarse, spoiler-free stage in the scene
+        when it changes, so the build shows progress instead of hanging silently."""
+        stage = next((label for frag, label in self._SETUP_STAGES if frag in arg), None)
+        if stage and stage != self._setup_stage:
+            self._setup_stage = stage
+            self._write("scene", f"[$text-muted]  ▸ {stage}…[/]")
+
     async def _open_setup(self) -> None:
         """Open a brand-new campaign: a guided conversation in the scene pane, with the
         dm's authoring streamed behind the screen for the whole setup."""
@@ -163,8 +185,12 @@ class PlayApp(App):
         self._setup_hidden = screen.has_class("hidden")
         screen.remove_class("hidden")
         self._write("screen", "\n[b]— building the campaign —[/b]\n")
+        self._setup_stage = None
         stream = lambda s: self.call_from_thread(self._append, "screen", s)
-        self._setup_tap = self.lc.setup_stream(stream)
+        # tool calls drive a spoiler-free progress ticker in the scene (the full,
+        # spoiler-bearing authoring stays behind the screen).
+        activity = lambda name, arg: self.call_from_thread(self._setup_activity, name, arg)
+        self._setup_tap = self.lc.setup_stream(stream, on_tool=activity)
         try:
             st = await asyncio.to_thread(self.lc.setup.start)
         except BackendCancelled:
