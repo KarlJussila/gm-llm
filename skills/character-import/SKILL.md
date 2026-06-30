@@ -49,11 +49,6 @@ You write **only the sheet**, with what the file gave you. Integrating the backs
 distilling DM-side hooks, and authoring the state file and knowledge ledger are the dm's job, done
 with the player — not yours.
 
-The **source file is scratch input**, not canon: mine it for the sheet, then leave it be. Don't give
-it a frontmatter `type:`, register it in `INDEX`, or file it as an in-world document — it's the
-player's raw material, not an entity. (There is no entity type for a character concept or a sheet
-export; the only character entity is the PC sheet itself, `type: pc`.)
-
 ## Report
 Hand back: what you extracted, **which required vitals the source lacked** (so the dm knows exactly
 what to ask the player for), and anything ambiguous, illegible, or worth the player confirming.
