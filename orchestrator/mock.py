@@ -29,6 +29,9 @@ class MockGame:
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
         return self._result(_OPENING, kickoff, clean=True)
 
+    def resume(self) -> str | None:
+        return None  # mock always opens fresh
+
     def turn(self, player_input: str) -> TurnResult:
         self._n += 1
         corrected = self._n % 3 == 0  # every third turn exercises the correction path

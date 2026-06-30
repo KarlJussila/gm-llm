@@ -125,11 +125,18 @@ class PlayApp(App):
     async def _open(self) -> None:
         self._busy(True)
         try:
-            tr = await asyncio.to_thread(self.game.start)
+            # Resume an in-progress session (preserves its transcript) if there is one;
+            # otherwise open a fresh scene. After a wrap, N+1 has no transcript → fresh.
+            scene = await asyncio.to_thread(self.game.resume)
+            resumed = scene is not None
+            if not resumed:
+                scene = (await asyncio.to_thread(self.game.start)).final
         except BackendCancelled:
             self._cancelled_note()
             return
-        self._render_dm(tr)
+        if resumed:
+            self._write("scene", "[$text-muted]— resuming the session in progress —[/]")
+        self._write("scene", f"\n[$accent]DM[/]  {escape(scene)}")
         self._busy(False)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
