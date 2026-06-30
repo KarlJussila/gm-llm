@@ -136,17 +136,74 @@ stages are written to make that cheap.
 - **`check-digest` + `check-feedback`** are the new checker tasks; completeness is a deterministic
   lint *plus* the narrative checker, not either alone.
 
+## Init integration — setup in the orchestrator + TUI
+
+Bring campaign **init** into the same one-screen lifecycle as play/wrap. Today `campaign-setup` runs
+only as a standalone `dm` skill; the orchestrator and TUI have no entry for a brand-new campaign.
+
+**The skill is already re-architected** (done): `campaign-setup` is now a **task-list-first runbook**
+scoped empty-dir → `campaign: init`, loading focused skills — a redesigned **`campaign-intake`** (the
+opening brief: offer free-form *or* guided, gather to the player's depth, gate content boundaries),
+then `world-build` / `character-create` / `arc-design` (major built *around* the PC, ≥1 minor arc).
+Planning session 1 and the hand-off are **not** in it — they're the dm's next steps. That decomposition
+is what removes the need for any "don't do X" brief: the skill simply ends at init.
+
+**Why the wiring is shaped differently.** prep/reconcile are autonomous `dispatch → gate → commit`.
+Init is an irreducibly **interactive guided conversation** (intake, character, hook pick) interleaved
+with authoring — it maps to the conversational `Game` pattern, not the `Reconciler` pattern: the
+**skill drives the conversation**; code owns only the edges.
+
+**Division of labor**
+- *Skill (`campaign-setup`) owns* the whole guided conversation and all canon/state authoring, its
+  per-bundle self-review, and the `campaign: init` commit. Nothing to suppress — its scope already
+  ends there.
+- *Code owns* detecting "no campaign yet" and entering setup; the conversational surface + the
+  behind-the-screen stream; then the **session-1 plan** via the existing
+  `Planner.prep_session(1, commit=True)` (author → code-gated `check-plan` → commit) — the one real
+  gate at init; and the transition into `play(1)`.
+
+**New module `orchestrator/setup.py` (`Setup`)** — a conversational driver mirroring `Game`'s shape
+but ungated:
+- `start() -> SetupTurn` — prompt the `dm` to load `campaign-setup` and open with the intake question.
+- `turn(player_msg) -> SetupTurn` — one exchange, surfaced in the scene pane. `SetupTurn{reply, done}`.
+- **Completion = file/git, not text-parsing:** `done` iff `campaign: init` is committed (canon +
+  `state/*` present) and no `session-1-plan.md` yet. Robust, no sentinel to parse.
+- `finalize() -> int` — once done: `Planner.prep_session(1, commit=True)` (streamed behind the screen),
+  return `1`. EventTap/`on_stage` wiring reused from wrap.
+
+**`Lifecycle` front entry**
+- Add `phase ∈ {"setup","play"}`, set from disk: `setup` iff `_latest_session()` is None.
+- In setup phase `self.game is None`; expose `self.setup` (a `Setup`). When it reports done,
+  `finalize()` runs the session-1 plan, then Lifecycle builds `self.game = Game(session=1)` and flips
+  to `play` — symmetric with how `wrap()` rolls to N+1.
+
+**TUI**
+- `_open()` branches on `lifecycle.phase`: `setup` → start the setup conversation; `play` →
+  resume/start as today.
+- A **SETUP input mode** (bar prompts "answer the DM"); input routes to `setup.turn`. Replies render in
+  the scene pane; authoring/gates stream behind the screen (already coloured). On `done` → a
+  spoiler-free "campaign ready" beat, then the same transition wrap uses to open `play(1)`.
+- `MockSetup` (a scripted setup conversation) so the offline TUI exercises the path, like
+  `MockLifecycle` does for wrap.
+
+**CLI**: `cli.py setup` (human answers at the terminal) is a thin optional front-end; the TUI is the
+primary surface. No scripted-player setup — init is the human's campaign.
+
+The skill re-architecture (`campaign-intake` + the task-list-first `campaign-setup`) is **done**;
+the orchestrator/TUI wiring is **not yet built**. Build order: (a) `orchestrator/setup.py` (`Setup`)
++ the `Lifecycle` front entry, validated headless against the live model; (b) `MockSetup` + TUI setup
+mode + the transition into `play(1)`, validated headless via `run_test` + mock.
+
 ## Backlog (deferred — not blocking the slices above)
 
 Slices (i)–(iii) are built and slice (ii) was live-validated; the prompt rehome, the
-`session-review` rewrite, the `dm.md` POST-flow repoint, and the `arc-design` Model-B review are
-done (history in git). Remaining:
+`session-review` rewrite, the `dm.md` POST-flow repoint, the `arc-design` Model-B review, and the
+`campaign-setup` reorder are done (history in git). Remaining:
 
-- **PC-side / init refactor.** The PC entity gets no Vitals contract yet (`type: pc` is skipped by
-  the lint). The player-facing init flow (character creation, campaign setup) is its own larger
-  refactor the player flagged as next after this one — fold a PC vitals/stat contract into it then.
-  Init already authors the major arc + optional minor arcs (Model B); the open piece here is the PC
-  contract and the creation flow itself.
+- **Init integration (orchestrator + TUI)** — specced above; not yet built.
+- **PC vitals contract.** The PC entity gets no Vitals contract yet (`type: pc` is skipped by the
+  lint). Orthogonal to the init wiring — fold a PC vitals/stat block into `character-create` (and the
+  lint's `REQUIRED_FIELDS`/`REQUIRED_SECTIONS`) independently.
 
 ## Done-tests
 

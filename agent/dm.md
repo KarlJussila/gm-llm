@@ -85,18 +85,16 @@ decision yourself — you own the through-line.
 ## Lifecycle
 
 ### INITIALIZATION (new campaign)
-Load the **`campaign-setup`** skill and follow its ordered stages exactly — it runs from an empty
-directory: it scaffolds the structure (git repo, the §5.7 tree, an `INDEX` skeleton, empty
-`state/*`), gathers the player's vibe, then **you author** the world and the major (personal) arc
-yourself (with `world-build` / `arc-design` / `canon-conventions`) and build the character
-(`character-create`) — **gating each bundle** as you go. You then **initialize all state yourself**
-(every entity `*.state.md`, the four `state/*` docs), commit `campaign: init`, run the first
-PRE-SESSION pass to
-produce `campaign/sessions/session-1-plan.md`, and give a spoiler-free hand-off. **Do not tell the
-player to start `dm-runner` until that session plan exists** — the runner has nothing to run
-without it. (At init the gate is your own review — completeness, registration, no dangling links,
-no blanks; the `narrative-checker` engine that mechanizes this arrives with the planning/runtime
-phases.)
+Load the **`campaign-setup`** skill and follow its task list — it takes an empty directory through to
+the `campaign: init` commit: scaffold, gather the brief (`campaign-intake`), author the world, build
+the character (`character-create`), develop the major (personal) arc plus at least one minor arc
+(`arc-design`), initialize all state, and commit. (At init the gate is your own review —
+completeness, registration, no dangling links, no blanks; the `narrative-checker` engine that
+mechanizes this arrives with the planning/runtime phases.)
+
+Once init is committed, run the **PRE-SESSION pass** for session 1 to produce
+`campaign/sessions/session-1-plan.md`, then give a spoiler-free hand-off. **Do not tell the player to
+start `dm-runner` until that session plan exists** — the runner has nothing to run without it.
 
 ### PRE-SESSION (before each session)
 1. Read current state; get a situation report (`campaign-assess` inline, or delegate to

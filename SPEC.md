@@ -109,7 +109,7 @@ the player): `world-builder`, `arc-designer`, `session-planner`, and a read-only
 `campaign-analyst`, and `log-extractor` (transcript → digest). Each is a thin wrapper that loads
 its skill, does the task, and returns a Result / Evidence / Changes / Caveats report.
 
-**Skills** (procedures, reused by both agents and subagents): `campaign-setup`,
+**Skills** (procedures, reused by both agents and subagents): `campaign-setup`, `campaign-intake`,
 `character-create`, `world-build`, `arc-design`, `session-plan`, `session-run`, `session-flow`,
 `social-play`, `discoveries`, `campaign-assess`, `session-review`, `log-extract`, plus the focused
 session-level skills below.
@@ -130,9 +130,9 @@ and a *running* face, and the content differs between them:
 - **`*-run` skills** — reserved for a distinct *play mode* `dm-runner` enters (e.g. a forthcoming
   `combat-run`), as opposed to the always-resident craft skills above.
 
-The campaign-lifecycle skills (`world-build`, `arc-design`, `campaign-setup`, `campaign-assess`,
-`session-review`, `log-extract`, `character-create`) are neither — they are the `dm`'s
-between-session authoring and management procedures.
+The campaign-lifecycle skills (`world-build`, `arc-design`, `campaign-setup`, `campaign-intake`,
+`campaign-assess`, `session-review`, `log-extract`, `character-create`) are neither — they are the
+`dm`'s between-session authoring and management procedures.
 
 **Boundaries that prevent role bleed:**
 - The two roles are separate primary agents; the player starts whichever phase they're in.

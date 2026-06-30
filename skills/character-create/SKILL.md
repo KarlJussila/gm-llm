@@ -28,7 +28,7 @@ want it — but leave building, balancing, and leveling to the player's preferre
 
 ## Control dial
 
-Match the player's preference (the same dial as `campaign-setup`):
+Match the player's preference:
 - **Player-led** — they hand you a finished character; you place them in the world and tidy the sheet.
 - **Collaborative** (default) — they bring a concept; you propose options and build it together.
 - **DM-led / "surprise me"** — they give a seed (or one of the offered hooks) and let you flesh it
@@ -44,7 +44,8 @@ Match the player's preference (the same dial as `campaign-setup`):
 3. **Placement in the world.** Decide where they're from, why they're here now, and their ties to
    existing locations, factions, and NPCs — as `[[slug]]` links, consistent with established lore.
    Where the backstory needs **new** people or places, note them (see *Backstory canon*) — don't
-   author full world files here; the dm folds those into the world afterward (campaign-setup Stage 6).
+   author full world files here; the dm folds those into the world afterward (its *fold backstory
+   canon* step).
 4. **Backstory.** Build it at the player's chosen depth: origin, formative events, bonds, goals,
    flaws, secrets. Keep it consistent with the world and its tone/content boundaries.
 5. **DM-side hooks.** Distill 1–3 threads from the backstory the arcs can later hook into (a loss,

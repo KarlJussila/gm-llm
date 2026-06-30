@@ -29,7 +29,8 @@ Prefer **skill-level** files; they're reused across every agent that loads the s
 | `social-play.md` | Conversations and NPCs: show-don't-tell, Insight-gating, Charisma checks, NPC agency |
 | `discoveries.md` | Revealing information: expert synthesis, gating discoveries behind the right check |
 | `session-plan.md` | How sessions are prepared: over/under-planning, content mix, structure |
-| `campaign-setup.md` | New-campaign flow: how much to ask, premise/hook presentation, pacing of setup |
+| `campaign-setup.md` | New-campaign flow: stage ordering, premise/hook presentation, pacing of setup |
+| `campaign-intake.md` | Opening brief: how much to ask, free-form vs. guided, content-boundary handling |
 | `character-create.md` | Character creation: how collaborative, depth of backstory, mechanical help |
 | `arc-design.md` | Story/arc feel: railroading, stakes, pacing across sessions |
 | `world-build.md` | World/NPC/faction quality: depth, consistency, friction |
