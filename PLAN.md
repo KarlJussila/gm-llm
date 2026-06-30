@@ -138,31 +138,16 @@ stages are written to make that cheap.
 
 ## Backlog (deferred — not blocking the slices above)
 
-- **Rehome in-code prompts to standalone files.** Every brief the orchestrator sends is currently a
-  Python string constant — `_APPLY_BRIEF` (reconciler), `_AUTHOR_BRIEF` (planner), `_TURN_REMINDER`
-  + the correction prompt (loop), the gate's check briefs, etc. Move each to its own loadable file
-  (e.g. `orchestrator/prompts/*.md`) that the code reads at startup, so prompts can be edited and
-  reviewed as prose without touching code and stay campaign-agnostic in one place. Cross-cuts the
-  whole orchestrator — do it as a single dedicated pass, ideally before/with slice (ii) so the new
-  stage briefs land as files from the start, not more inline constants.
+Slices (i)–(iii) are built and slice (ii) was live-validated; the prompt rehome, the
+`session-review` rewrite, and the `dm.md` POST-flow repoint are done (history in git). Remaining:
+
 - **PC-side / init refactor.** The PC entity gets no Vitals contract yet (`type: pc` is skipped by
   the lint). The player-facing init flow (character creation, campaign setup) is its own larger
   refactor the player flagged as next after this one — fold a PC vitals/stat contract into it then.
   This is also where init should start producing **minor arcs** (Model B), not just one major arc.
-- **Point `dm.md`'s standalone POST flow at the new apply skills.** The orchestrated path dispatches
-  `apply-canon`/`apply-arcs`/`apply-state`/`feedback-curation` directly; the `dm` agent's own
-  between-sessions runbook still inlines the old prose ("rewritten when the apply-pass runbook
-  lands" — it's landed). Have it load the skills instead, so the two paths can't drift.
 - **Review `arc-design` skill.** Align it with Model B (major + minor arcs) and with `apply-arcs` —
   in particular so `apply-arcs` creating a new minor arc (hooked into the major) is well-supported,
   and the "post-session arc pass" cross-references point at `apply-arcs`.
-- **Align `session-review` (stage C) — do with the staged-pipeline build.** It's stale and now
-  timing-inverted: it assumes the dm applies the digest *before* the review, but in the staged
-  pipeline the assessment runs *before* the apply and feeds it. Its continuity/knowledge "audit"
-  steps now duplicate `check-propagation`; its feedback routing belongs to stage E
-  (`feedback-curation`); its input paths are old (`world/items.md`, `narrative/arcs/`). Rewrite it to
-  a pure assessment that produces **per-arc, actionable arc recommendations** (the input `apply-arcs`
-  consumes) and engagement reads — no auditing, no feedback writing.
 
 ## Done-tests
 

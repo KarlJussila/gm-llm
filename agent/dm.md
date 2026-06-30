@@ -120,27 +120,32 @@ phases.)
    "Handing off to the player" for the template.)
 
 ### POST-SESSION (after the player finishes a session with dm-runner)
+The post-session pass is a sequence of focused skills — load each in turn and follow it; each
+carries its own steps and feedback file, so they aren't reproduced here.
 1. **Extract the log.** The runner's play was captured automatically to
-   `campaign/sessions/session-{N}-transcript.md`. Delegate to `log-extractor` to turn it into the
-   structured digest `campaign/sessions/session-{N}.md` — the canonical session log everything
-   else reads.
-2. **Apply the digest to canonical state.** Reconcile from it: knowledge ledger (everything the PC
-   learned, with source flags flipped `[hidden]` → `[revealed: S<n>]` and `Known to:` updated);
-   new/changed world canon (author it into the world files yourself); item changes; and any verbatim
-   documents → `campaign/documents/`. Update all state snapshots. **Do this before the assessment**
-   so the review audits real, updated state rather than flagging everything as pending.
-   *(This POST flow is rewritten in full when the apply-pass runbook lands — see the refactor.)*
-3. **Produce the assessment.** Delegate to `campaign-analyst` (or run `session-review` inline) from
-   the digest. The analyst writes `campaign/assessment/session-{N}-assessment.md` itself — read its
-   report; don't re-write the document. Its continuity/knowledge checks now audit the state you
-   applied in step 2, so any gap it flags is a real one to backfill.
-4. For each affected arc, revise its body yourself (post-session arc pass) — not just a status bump.
-5. **Route player feedback.** The player's end-of-session feedback is in the digest. Distill each
-   item into the matching `campaign/feedback/{target}.md` file (see `campaign/feedback/README.md`).
-   Refine existing guidance and drop what's superseded — keep each file a tight list of current
-   standing guidance, not a transcript. This is how feedback gets baked in without editing the
-   framework.
-6. Flag new threads and unresolved hooks for next time.
+   `campaign/sessions/session-{N}-transcript.md`. Delegate to `log-extractor` (the `log-extract`
+   skill) to turn it into the structured digest `campaign/sessions/session-{N}.md` — the canonical
+   session log everything below reads.
+2. **Assess.** Delegate to `campaign-analyst` (the `session-review` skill) to write
+   `campaign/assessment/session-{N}-assessment.md` from the digest — plan vs. actual, an engagement
+   read, and per-arc adjustment recommendations. Read its report; you act on those recommendations
+   in the arc pass. Assess from the digest, *before* you apply — the assessment is an input to the
+   apply, not an audit of it.
+3. **Curate feedback.** Load **`feedback-curation`** and distill the player's end-of-session
+   feedback (in the digest) into the `campaign/feedback/*` standing-guidance files — refined and
+   deduped, a tight list of current guidance rather than a transcript.
+4. **Apply canon.** Load **`apply-canon`** and author every new or changed entity the digest raises
+   to the completeness contract — registered, no load-bearing blanks — routing any verbatim
+   documents to `campaign/documents/`. Then verify with the `narrative-checker` and backfill anything
+   it flags as incomplete.
+5. **Apply arcs.** Load **`apply-arcs`** and, for each arc the session touched, revise its living
+   body toward what was actually played (a real revision, not a status bump), acting on the
+   assessment's per-arc recommendations; create any new minor arc the play has birthed (via
+   `arc-design`); and update the threads dashboard.
+6. **Apply state.** Load **`apply-state`** and flip the knowledge ledger and reveal flags for what
+   the PC learned (`[hidden]` → `[revealed: S<n>]`, `Known to:` updated), then bring every state
+   snapshot (`*.state.md`, `state/current`, `state/calendar`, `state/clocks`) to where things stand
+   after the session.
 7. Commit: `campaign: post-session N updates`.
 8. **Prepare the next session.** Run the PRE-SESSION pass for session N+1 now — produce
    `campaign/sessions/session-{N+1}-plan.md` and commit `campaign: session N+1 plan`. Only then give
