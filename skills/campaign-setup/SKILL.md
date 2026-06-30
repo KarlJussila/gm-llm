@@ -56,8 +56,8 @@ Review what you wrote against this checklist and fix anything that fails:
    the *campaign* repo (the framework has its own under `.opencode/`).
 2. **Ignore the framework.** Ensure a root `.gitignore` contains `.opencode/`.
 3. **Structure.** Create `campaign/` and its tree:
-   `world/{npcs,factions,locations,items,regions}`, `arcs`, `state`, `characters`, `sessions`,
-   `assessment`, `documents`, `feedback`.
+   `world/{npcs,factions,locations,items,regions,concepts}`, `arcs`, `state`, `characters`,
+   `sessions`, `assessment`, `documents`, `feedback`.
 4. **Conventions docs.** Copy `.opencode/templates/campaign/README.md` → `campaign/README.md` and
    `.opencode/templates/campaign/feedback/README.md` → `campaign/feedback/README.md`.
 5. **Registry.** Create `campaign/INDEX.md` from the `canon-conventions` `INDEX` template — section

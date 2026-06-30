@@ -63,7 +63,8 @@ campaign/
 │   ├── npcs/         {slug}.md + {slug}.state.md
 │   ├── factions/     {slug}.md + {slug}.state.md
 │   ├── locations/    {slug}.md + {slug}.state.md
-│   └── items/        {slug}.md (+ {slug}.state.md if stateful)
+│   ├── items/        {slug}.md (+ {slug}.state.md if stateful)
+│   └── concepts/     {slug}.md (+ {slug}.state.md if it has live state)   # cosmological force, phenomenon, magic system…
 ├── arcs/             {slug}.md + {slug}.state.md
 ├── state/                           # GLOBAL / relational state, owned by no entity
 │   ├── current.md                   # the "you are here" scene pointer (resume baseline)
@@ -118,18 +119,21 @@ a `.state.md` as "true as of the start of session N," never as a running edit.
 ---
 slug: lysa-fenn
 name: Lysa Fenn
-type: npc            # npc | faction | location | item | pc | region
+type: npc            # npc | faction | location | item | pc | region | concept
 status: active       # active | dormant | dead | destroyed | hidden | named-only
 ---
 ```
 
 **The frontmatter above is universal; the body differs by type — use the matching template** in
-`templates/` (`entity-npc`, `entity-faction`, `entity-location`, `entity-item`, `entity-region`).
-They each open with a **`## Vitals`** block, then follow the same arc: **surface** (what's openly
-apparent) → **deeper / hidden layer** (the committed truth beneath) → **secrets** (flagged, §5) →
-**links** (§4). What changes per type is the middle — an NPC has personality and an agenda; a
-faction has goals, structure, and reach; a location has features and hooks; a region carries its
-own **regional history** section.
+`templates/` (`entity-npc`, `entity-faction`, `entity-location`, `entity-item`, `entity-region`,
+`entity-concept`). They each open with a **`## Vitals`** block, then follow the same arc: **surface**
+(what's openly apparent) → **deeper / hidden layer** (the committed truth beneath) → **secrets**
+(flagged, §5) → **links** (§4). What changes per type is the middle — an NPC has personality and an
+agenda; a faction has goals, structure, and reach; a location has features and hooks; a region carries
+its own **regional history** section. A **concept** (a cosmological force, cataclysm, magic system, or
+phenomenon) is the exception: only `Kind` is required and the body is **free-form** — organize it
+however the concept needs. Most concepts are static lore; one gets a `.state.md` only if it has live,
+changing state.
 
 **Every entity file leads with a required `## Vitals` block — the completeness contract.** It is a
 short, fixed list of at-a-glance identity fields the runner reads first, so the basics are never
@@ -141,6 +145,7 @@ type's template lists its required fields; **fill every one with a committed val
 - **Location:** Kind · Region · Setting · Controlled by · Scale
 - **Item:** Kind · Rarity · Form · Origin
 - **Region:** Kind / scale · Terrain · Seat of power · Population
+- **Concept:** Kind  *(the only required field — the rest of the file is free-form)*
 - **PC:** Race / lineage · Class · Level · Ability scores · Pronouns  *(plus Subclass when the
   character has one — recorded, but not gated, since it's class/level-conditional)*
 

@@ -33,6 +33,9 @@ REQUIRED_FIELDS: dict[str, list[str]] = {
     "location": ["Kind", "Region", "Setting", "Controlled by", "Scale"],
     "item": ["Kind", "Rarity", "Form", "Origin"],
     "region": ["Kind / scale", "Terrain", "Seat of power", "Population"],
+    # A worldbuilding concept (cosmological force, cataclysm, magic system, phenomenon).
+    # Just `Kind` — the body is free-form, so there are no required sections.
+    "concept": ["Kind"],
     # The PC's mechanical identity. Subclass is deliberately absent — it's conditional
     # (class/level-dependent), recorded when it applies but not gated. The fuller
     # proficiency/spell/feat picture lives in `## Known capabilities`, which accretes
@@ -176,7 +179,7 @@ def lint_file(path: Path | str) -> FileReport:
 
 
 # Entity directories under campaign/world that can hold linted files.
-_ENTITY_DIRS = ("npcs", "factions", "locations", "items", "regions")
+_ENTITY_DIRS = ("npcs", "factions", "locations", "items", "regions", "concepts")
 
 
 def lint_dir(root: Path | str) -> list[FileReport]:

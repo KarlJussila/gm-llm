@@ -2,8 +2,8 @@
   The registry / slug resolver. Path: campaign/INDEX.md
   Three jobs: dedup guard, slug->file resolver, inventory (canon-conventions §6).
   Every named entity gets a row — including named-only stubs with no file yet.
-  Registered: NPCs, factions, locations, regions, items, arcs. NOT registered: the world-truth
-  singletons (overview/cosmology/history) and state/* docs (fixed paths), nor clocks/threads.
+  Registered: NPCs, factions, locations, regions, items, concepts, arcs. NOT registered: the
+  world-truth singletons (overview/cosmology/history) and state/* docs (fixed paths), nor clocks/threads.
   One table per type. Keep one-line entries to a single clause.
 -->
 # INDEX — Campaign Registry
@@ -37,6 +37,11 @@
 | slug | name | status | info | state | one-line |
 |---|---|---|---|---|---|
 | <slug> | <Name> | <status> | world/items/<slug>.md | <— if not stateful> | <what, in one clause> |
+
+## Concepts
+| slug | name | status | info | state | one-line |
+|---|---|---|---|---|---|
+| <slug> | <Name> | <status> | world/concepts/<slug>.md | <— unless it has live state> | <what, in one clause> |
 
 ## Arcs
 | slug | name | tier | status | design | state | one-line |

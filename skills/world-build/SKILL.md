@@ -1,6 +1,6 @@
 ---
 name: world-build
-description: The craft of authoring D&D world content — cosmology, regions, NPCs, factions, locations, and significant items — as layered, living, internally consistent canon. Covers WHAT makes good world content and HOW to design it; the file format/layout/linking is owned by the canon-conventions skill, which you load alongside this. Loaded by the dm to author world content at campaign init and whenever canon changes.
+description: The craft of authoring D&D world content — cosmology, regions, NPCs, factions, locations, significant items, and concepts — as layered, living, internally consistent canon. Covers WHAT makes good world content and HOW to design it; the file format/layout/linking is owned by the canon-conventions skill, which you load alongside this. Loaded by the dm to author world content at campaign init and whenever canon changes.
 ---
 
 # world-build
@@ -39,6 +39,10 @@ location holds — decide them at authoring time. Never write "DM decides."
 - **Significant items** (`world/items/`) — campaign-weight objects and artifacts (not mundane
   gear — that lives on the character sheet). Verbatim text of any written item goes in
   `documents/`, referenced from the item file.
+- **Concepts** (`world/concepts/`) — load-bearing worldbuilding ideas that aren't people, places,
+  orgs, or objects: a cosmological force, a cataclysm, a magic system, a planar phenomenon. Give one
+  its own file (rather than burying it in `cosmology`/`history` prose) once other canon needs to
+  `[[link]]` it. Free-form — only `Kind` is required; organize the body however the concept needs.
 
 ## Design in two layers
 
