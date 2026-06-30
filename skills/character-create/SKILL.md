@@ -36,26 +36,35 @@ Match the player's preference:
 
 ## Steps
 
-1. **Concept.** Get the character idea — as much or as little as they offer. If little, propose a
-   few options drawn from the world's hooks and archetypes.
-2. **Mechanical details.** Capture race, class, background, level, ability scores, and notable
-   features/equipment *as the player provides them*. Offer to suggest a fit if they want help.
-   Don't invent rules or balance encounters — just record.
-3. **Placement in the world.** Decide where they're from, why they're here now, and their ties to
-   existing locations, factions, and NPCs — as `[[slug]]` links, consistent with established lore.
-   Where the backstory needs **new** people or places, note them (see *Backstory canon*) — don't
-   author full world files here; the dm folds those into the world afterward (its *fold backstory
-   canon* step).
-4. **Backstory.** Build it at the player's chosen depth: origin, formative events, bonds, goals,
-   flaws, secrets. Keep it consistent with the world and its tone/content boundaries.
+1. **Bring your own, or build together?** Most players arrive with a character. Ask — and if they
+   have one, invite them to **point you at any file** for it: a sheet export, PDF text, JSON, an HTML
+   dump, a notes doc, whatever they've got. If they'd rather build from scratch, skip the import and
+   draw a concept from the world's hooks and archetypes at their chosen control level.
+2. **Pull what you can from their file.** If they gave one, read it and take whatever's useful — the
+   vitals (race/lineage, class, subclass, level, ability scores, pronouns) and any proficiencies,
+   spells, named abilities, feats, and backstory it holds. Don't fuss over the format; get what you
+   can and move on. (No file → you'll gather the same by talking.)
+3. **Fill the vital gaps.** Ask the player for any **vital** detail still missing after the import:
+   race/lineage, class (and subclass, if they have one), level, ability scores, pronouns. Just the
+   vitals — don't make them recite their whole proficiency and spell list; the rest gets documented
+   as it surfaces in play.
+4. **Backstory — use, ask, or build.** If the file carried a backstory that already fits the world,
+   use it. Otherwise ask for a rough idea of who they were before now, or build one with them — and
+   either way **integrate it into the setting**, tying it to existing locations, factions, and NPCs
+   (`[[slug]]` links), consistent with the world's tone and content boundaries. Where the backstory
+   needs **new** people or places, note them (see *Hand back to setup*) — don't author full world
+   files here; the dm folds those in afterward (its *fold backstory canon* step).
 5. **DM-side hooks.** Distill 1–3 threads from the backstory the arcs can later hook into (a loss,
    a hunted past, a rival, a debt). Keep *how* they'll be used spoiler-side — record the seams, not
    the plan.
 
 ## Write the three PC files
 
-- **`characters/{slug}.md`** (sheet) — from `pc-sheet.template`: stats as provided, appearance,
-  personality, backstory, connections (`[[slug]]`), DM-side hooks, mechanical notes, links.
+- **`characters/{slug}.md`** (sheet) — from `pc-sheet.template`: the **`## Vitals`** block
+  (race/lineage, class, subclass if any, level, ability scores, pronouns — every line a committed
+  value), **`## Known capabilities`** (the proficiencies/spells/abilities/feats you gathered — partial
+  is fine, it grows in play), then appearance, personality, backstory, connections (`[[slug]]`),
+  DM-side hooks, links.
 - **`characters/{slug}.state.md`** (initial state) — from `pc-state.template`: starting location,
   any notable condition, key starting items, the opening objective. This is the session-1-start
   snapshot. **Don't track HP, spell slots, or money** — the player owns granular resources; record

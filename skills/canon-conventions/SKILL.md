@@ -141,11 +141,19 @@ type's template lists its required fields; **fill every one with a committed val
 - **Location:** Kind · Region · Setting · Controlled by · Scale
 - **Item:** Kind · Rarity · Form · Origin
 - **Region:** Kind / scale · Terrain · Seat of power · Population
+- **PC:** Race / lineage · Class · Level · Ability scores · Pronouns  *(plus Subclass when the
+  character has one — recorded, but not gated, since it's class/level-conditional)*
 
 **NPC files carry two more required sections** beyond Vitals: a **`## Stats (rough sketch)`** —
 equivalent character level, rough ability scores, and notable proficiencies (a capability gauge for
 adjudication, *not* a full stat block) — and **`## Abilities`** for spells / signature or
 supernatural powers (write "None" if they have none).
+
+**PC files carry a `## Known capabilities`** section — proficiencies, spells known, named abilities,
+and feats — seeded from whatever the player provides at creation and **grown through play** (record
+each new one the first time it shows at the table). It is *not* gated by the lint: it accretes, and
+no one types their whole list up front. It records what the character *can do*, never live resources
+(HP, slots, coin — those are the player's).
 
 Vitals are the *structured* basics; the prose sections below them add depth (presence, reputation,
 true nature). A completeness lint checks the required fields and NPC sections are present and filled;

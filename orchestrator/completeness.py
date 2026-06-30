@@ -33,6 +33,11 @@ REQUIRED_FIELDS: dict[str, list[str]] = {
     "location": ["Kind", "Region", "Setting", "Controlled by", "Scale"],
     "item": ["Kind", "Rarity", "Form", "Origin"],
     "region": ["Kind / scale", "Terrain", "Seat of power", "Population"],
+    # The PC's mechanical identity. Subclass is deliberately absent — it's conditional
+    # (class/level-dependent), recorded when it applies but not gated. The fuller
+    # proficiency/spell/feat picture lives in `## Known capabilities`, which accretes
+    # through play and is not linted.
+    "pc": ["Race / lineage", "Class", "Level", "Ability scores", "Pronouns"],
 }
 
 # Required body sections per type — must exist AND carry real content (not just a
@@ -175,16 +180,26 @@ _ENTITY_DIRS = ("npcs", "factions", "locations", "items", "regions")
 
 
 def lint_dir(root: Path | str) -> list[FileReport]:
-    """Lint every entity info file under campaign/world (skipping `.state.md`)."""
+    """Lint every entity info file under campaign/world and the PC sheet under
+    campaign/characters (skipping `.state.md` / `.knowledge.md` companions)."""
     root = Path(root)
-    world = root / "campaign" / "world"
+    campaign = root / "campaign"
     reports: list[FileReport] = []
     for sub in _ENTITY_DIRS:
-        d = world / sub
+        d = campaign / "world" / sub
         if not d.is_dir():
             continue
         for f in sorted(d.glob("*.md")):
             if f.name.endswith(".state.md"):
+                continue
+            r = lint_file(f)
+            if not r.skipped:
+                reports.append(r)
+    # The PC sheet lives in characters/ (its .state.md / .knowledge.md companions skip).
+    chars = campaign / "characters"
+    if chars.is_dir():
+        for f in sorted(chars.glob("*.md")):
+            if f.name.endswith((".state.md", ".knowledge.md")):
                 continue
             r = lint_file(f)
             if not r.skipped:

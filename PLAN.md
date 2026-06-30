@@ -198,13 +198,16 @@ wanted. No scripted-player setup — init is the human's campaign.
 ## Backlog (deferred — not blocking the slices above)
 
 Slices (i)–(iii) are built and slice (ii) was live-validated; the prompt rehome, the
-`session-review` rewrite, the `dm.md` POST-flow repoint, the `arc-design` Model-B review, and the
-`campaign-setup` reorder are done (history in git). Remaining:
+`session-review` rewrite, the `dm.md` POST-flow repoint, the `arc-design` Model-B review, the
+`campaign-setup` reorder + orchestrator/TUI init wiring, and the **PC vitals contract** are done
+(history in git). Remaining:
 
-- **Init integration (orchestrator + TUI)** — specced above; not yet built.
-- **PC vitals contract.** The PC entity gets no Vitals contract yet (`type: pc` is skipped by the
-  lint). Orthogonal to the init wiring — fold a PC vitals/stat block into `character-create` (and the
-  lint's `REQUIRED_FIELDS`/`REQUIRED_SECTIONS`) independently.
+- **Document PC capabilities through play.** The PC sheet's `## Known capabilities` section is seeded
+  at creation and *meant* to grow as proficiencies/spells/abilities/feats first show at the table —
+  but nothing in the runtime/post-session flow yet actively appends them. Wire the runner (or the
+  post-session canon pass) to record a newly-demonstrated capability the first time it appears, so the
+  sheet stays current without the player re-typing their list. (The contract + template intent exist;
+  the active logging does not.)
 
 ## Done-tests
 
