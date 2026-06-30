@@ -148,6 +148,17 @@ stages are written to make that cheap.
 - **PC-side / init refactor.** The PC entity gets no Vitals contract yet (`type: pc` is skipped by
   the lint). The player-facing init flow (character creation, campaign setup) is its own larger
   refactor the player flagged as next after this one — fold a PC vitals/stat contract into it then.
+  This is also where init should start producing **minor arcs** (Model B), not just one major arc.
+- **Review `arc-design` skill.** Align it with Model B (major + minor arcs) and with `apply-arcs` —
+  in particular so `apply-arcs` creating a new minor arc (hooked into the major) is well-supported,
+  and the "post-session arc pass" cross-references point at `apply-arcs`.
+- **Align `session-review` (stage C) — do with the staged-pipeline build.** It's stale and now
+  timing-inverted: it assumes the dm applies the digest *before* the review, but in the staged
+  pipeline the assessment runs *before* the apply and feeds it. Its continuity/knowledge "audit"
+  steps now duplicate `check-propagation`; its feedback routing belongs to stage E
+  (`feedback-curation`); its input paths are old (`world/items.md`, `narrative/arcs/`). Rewrite it to
+  a pure assessment that produces **per-arc, actionable arc recommendations** (the input `apply-arcs`
+  consumes) and engagement reads — no auditing, no feedback writing.
 
 ## Done-tests
 
