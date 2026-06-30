@@ -48,6 +48,11 @@ class Setup:
         self.dm_sid = backend.create_session("dm setup")
 
     def start(self) -> SetupTurn:
+        # A `campaign: init` already in this directory means a complete campaign is
+        # present (init is the final setup step) — e.g. an earlier run that built it
+        # but didn't reach planning. Don't reopen the conversation; resume to planning.
+        if self._init_committed():
+            return SetupTurn("This directory already has a campaign — planning the first session.", True)
         reply = self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-kickoff"))
         return SetupTurn(reply, self._init_committed())
 
