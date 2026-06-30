@@ -39,8 +39,8 @@ fit as you work the edits below.
 ## Input
 - The **session digest** `campaign/sessions/session-{N}.md` — especially *Plan vs. actual*,
   *Narrative*, *Threads*, *Secrets & awareness*, *Knowledge gained*.
-- The **assessment** `campaign/assessment/session-{N}-assessment.md` — its arc recommendations and
-  engagement reads. (Already written; you consume it, you don't redo it.)
+- The **assessment** `campaign/assessment/session-{N}-assessment.md` — read it for its arc
+  recommendations and engagement reads.
 - The **arcs** `campaign/arcs/{slug}.md` + `{slug}.state.md`, `campaign/INDEX.md` (Arcs), and the
   **threads** dashboard `campaign/state/threads.md`.
 - The **PC knowledge ledger** `campaign/characters/{pc}.knowledge.md` — your source of truth for
@@ -101,8 +101,8 @@ played. For each new load-bearing question play raised, commit an answer now. Fo
 hasn't touched, improve them if it strengthens the arc. Never blank, never "DM decides."
 
 **4. Reconcile key NPCs & factions.** Update the arc's line for each whose role, want, or held-answer
-shifted in play, and add any the arc now leans on as `[[slug]]` links. (Authoring their *own* files
-is `apply-canon`'s job; here you fix the arc's reference and the answer the arc says they hold.)
+shifted in play — the arc's reference to them and the answer it says they hold — and add any the arc
+now leans on as `[[slug]]` links.
 
 **5. Reconcile premise, core conflict & stakes.** Revise toward the story play is actually telling.
 If a stake resolved or a new one emerged, write it in. Don't preserve a framing out of inertia — if
@@ -122,9 +122,7 @@ note, so a minor arc building on the major stays wired to it. Flag any new cross
 created.
 
 **9. Flip spoiler flags for what the PC learned.** For every `[hidden]` fact *in this arc* the PC
-learned this session, flip it to `[revealed: S{N}]` and update `Known to`. (Reveals in non-arc files
-and the PC ledger are `apply-state`'s job; here you flip the arc's own flags so they stay
-consistent.)
+learned this session, flip it to `[revealed: S{N}]` and update `Known to`.
 
 **10. Append the Adjustment log entry.** Add one line: **S{N}:** what changed in this arc's
 structure/details and the play that prompted it — the provenance of the body's evolution.
@@ -155,7 +153,6 @@ Brief: **Result** (per arc: what changed), **new arcs/threads** created or promo
 audits this pass separately.
 
 ## Boundaries
-- You edit **arc design bodies + arc state + the threads dashboard**, and create new arcs via
-  `arc-design`. You do **not** author non-arc entity files (`apply-canon`), nor touch the PC ledger,
-  entity `.state.md`, or `state/current|calendar|clocks` (`apply-state`).
-- You never run the checker or git — the orchestrator gates and commits.
+- Your scope is **arc design bodies, arc state, and the threads dashboard** (and authoring a new arc
+  via `arc-design`). Leave entity files, the PC knowledge ledger, and the global `state/*` snapshots
+  alone — they're reconciled separately.
