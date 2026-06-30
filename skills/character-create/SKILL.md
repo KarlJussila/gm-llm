@@ -37,29 +37,43 @@ Match the player's preference:
 
 ## Steps
 
-1. **Bring your own, or build together?** Most players arrive with a character. Ask — and if they
-   have one, invite them to **point you at any file** for it: a sheet export, PDF text, JSON, an HTML
-   dump, a notes doc, whatever they've got. If they'd rather build from scratch, skip the import and
-   draw a concept from the world's hooks and archetypes at their chosen control level.
-2. **Pull what you can from their file.** A quick plain-text note you can read yourself. For anything
-   larger or structured — JSON, HTML, a PDF or sheet export — **delegate to the `character-importer`**
-   subagent (give it the source path and the target sheet path `characters/{slug}.md`) so a big file
-   doesn't bloat your context; it extracts what it can into the sheet and reports which vitals the
-   source lacked. Either way you come out with a partial sheet and a list of gaps. (No file → you
-   gather the same by talking.)
+1. **Bring your own, or build together?** Most players arrive with a character. Ask whether they have
+   one — and if so, invite them to **point you at any file** for it: a sheet export, PDF text, JSON, an
+   HTML dump, a notes doc, whatever they've got. If they'd rather build from scratch, draw a concept
+   from the world's hooks and archetypes at their chosen control level. **If the player has already
+   answered this** — you just offered the hooks, or they've named a file or a concept — continue
+   straight from their reply; don't re-ask the same question from a standing start.
+2. **Hand the file to `character-importer`.** For any real character file they point you at — a
+   JSON/HTML/PDF/sheet export *or* a multi-section notes doc — **delegate to the `character-importer`**
+   subagent (give it the source path and the target sheet path `characters/{slug}.md`), even though you
+   could open it yourself. The importer parses the whole structure properly — a glance at a D&D Beyond
+   export misses the nested stats, class, and subclass — and keeps a big file out of your context; it
+   writes what it can into the sheet and reports which vitals the source lacked. (A one-line "level 5
+   elf wizard" needs no importer. No file → gather the vitals by talking.)
 3. **Fill the vital gaps.** Ask the player for any **vital** detail still missing after the import:
    race/lineage, class (and subclass, if they have one), level, ability scores, pronouns. Just the
    vitals — don't make them recite their whole proficiency and spell list; the rest gets documented
    as it surfaces in play.
-4. **Backstory — use, ask, or build.** If the file carried a backstory that already fits the world,
-   use it. Otherwise ask for a rough idea of who they were before now, or build one with them — and
-   either way **integrate it into the setting**, tying it to existing locations, factions, and NPCs
-   (`[[slug]]` links), consistent with the world's tone and content boundaries. Where the backstory
-   needs **new** people or places, note them (see *Hand back to setup*) — don't author full world
-   files here; the dm folds those in afterward (its *fold backstory canon* step).
+4. **Backstory & place in the world — with the player, not behind their back.** If the file carried a
+   backstory that already fits the world, use it; otherwise ask for a rough idea of who they were, or
+   build one together. Then **propose** how they fit the setting — where they're from, why they're here
+   now, ties to existing locations, factions, and NPCs (`[[slug]]` links) — and run it past them.
+   Anything you infer, modify, or fill in (a hometown, a faction tie, a reason they came to the
+   frontier) is a **proposal to confirm**, not a fact to commit silently. Ask the questions that matter
+   to them and adjust to their answers. Where the backstory needs **new** people or places, note them
+   (see *Hand back to setup*) — don't author full world files here; the dm folds those in afterward
+   (its *fold backstory canon* step).
 5. **DM-side hooks.** Distill 1–3 threads from the backstory the arcs can later hook into (a loss,
    a hunted past, a rival, a debt). Keep *how* they'll be used spoiler-side — record the seams, not
    the plan.
+
+## Confirm before you commit
+Don't write the files — or hand back to setup so the world and arcs get built around this character —
+until the player has **seen and okayed** the finished character: their vitals, their place in the
+world, the ties you've drawn, and anything you filled in for them. Match the weight to how much you
+added: a quick "here's where I've slotted you in — good?" if they handed you a complete sheet, a fuller
+walk-through if you built a lot together. The character is theirs to sign off on; don't run ahead and
+plan the campaign around a version they haven't seen.
 
 ## Write the three PC files
 

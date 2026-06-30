@@ -84,15 +84,18 @@ write it into canon in the next steps.
    boundaries here**). Build the surface; **hold the arcs** — the major arc waits for the character.
 4. **Gate** what you wrote.
 
-### 4. Present the premise & offer hooks  *(spoiler-free)*
-Give the player a newcomer's-eye overview (setting, tone, surface situation). Offer **2–4 character
-hooks** — each a role plus a tie into the situation. Invite them to take one, adapt it, or bring
-their own.
+### 4. Open character creation — present the world & hooks  *(spoiler-free)*
+Give the player a newcomer's-eye overview (setting, tone, surface situation), then offer **2–4
+character hooks** — each a role plus a tie into the situation — and invite them to take one, adapt it,
+or bring their own. This **is** the opening of character creation: load `character-create` and carry
+the player's response straight into it. Don't present the hooks, stop, and re-ask the same question
+from a standing start.
 
-### 5. Create the character
-Load **`character-create`** and follow it. It writes `characters/{slug}.md` (sheet),
-`characters/{slug}.state.md` (initial state), `characters/{slug}.knowledge.md` (ledger), and
-registers the PC in `INDEX.md`. **Gate** the result. Note the backstory canon and DM-side hooks it
+### 5. Build the character
+Follow `character-create` through to a finished, **player-confirmed** character: it delegates any file
+they bring to `character-importer`, fills the missing vitals, and builds + confirms their backstory and
+place in the world *with* them, then writes `characters/{slug}.md` (sheet) + `.state.md` +
+`.knowledge.md` and the `INDEX` row. **Gate** the result. Note the backstory canon and DM-side hooks it
 surfaces, for the next tasks.
 
 ### 6. Fold backstory canon into the world

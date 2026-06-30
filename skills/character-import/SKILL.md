@@ -15,18 +15,23 @@ the campaign's PC sheet. You **extract**: take what the file genuinely contains 
 sheet's structure. You do **not** invent — if the source doesn't state a stat, class, or feature,
 leave it out; a gap the dm fills with the player beats a fabricated value.
 
-## Read whatever they gave you
-Any model that runs this engine can read JSON, HTML, Markdown, plain text, and most exported sheet
-formats. Don't ask for a particular format or stall on an awkward one — open the file, find the
-character data wherever it sits in the structure, and pull it. If the file is large, skim past
-boilerplate to the character block.
+## Read it thoroughly — don't skim
+Open the file and work through its **structure**, carefully. Exported sheets (D&D Beyond and the like)
+**nest** the real values — ability scores as a list of entries keyed by an id, class and subclass
+inside a `classes` array, proficiencies and feats in their own collections — so the value you want is
+rarely the first one you see, and a careless read drops it or grabs the wrong one (an INT recorded as
+13 when it's really 18). Navigate the actual structure; don't eyeball the top of the file and guess.
+**Before you report a required vital as missing, search the whole file for it** — it is almost always
+there, under a key you didn't expect.
 
-**You may use command-line tools that are already installed** to read or convert an awkward file — a
-PDF-to-text or archive-extraction utility, `jq`, and the like — if one is on hand. But **never install
-anything** (no `pip` / `npm` / `apt` / `brew` or any other package manager) and **never write your own
-parsing code or scripts**. If your own reading plus whatever tools are already available still can't
-crack the file, don't engineer around it: stop, and say plainly in your report that you were unable to
-parse it, so the dm gets those details from the player directly.
+For a structured format — JSON above all — **parse it with a tool** rather than by eye: `jq` over the
+file pulls the nested class, subclass, and stat values precisely, where reading top-to-bottom misses
+them. You have bash for exactly this.
+
+**Use only tools already on hand, though** — never install anything (no `pip` / `npm` / `apt` / `brew`
+or any package manager) and never write your own parsing code or scripts. If careful reading plus the
+available tools still can't crack the file, don't engineer around it: stop, and say plainly in your
+report that you were unable to parse it, so the dm gets those details from the player directly.
 
 ## Map it onto the sheet
 Load `canon-conventions` and build from the `pc-sheet` template. Write what you find into:
