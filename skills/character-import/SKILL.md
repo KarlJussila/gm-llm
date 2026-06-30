@@ -24,14 +24,14 @@ rarely the first one you see, and a careless read drops it or grabs the wrong on
 **Before you report a required vital as missing, search the whole file for it** — it is almost always
 there, under a key you didn't expect.
 
-For a structured format — JSON above all — **parse it with a tool** rather than by eye: `jq` over the
-file pulls the nested class, subclass, and stat values precisely, where reading top-to-bottom misses
-them. You have bash for exactly this.
+For a structured format — JSON above all — **parse it with a tool** rather than reading it by eye: a
+command-line parser pulls the nested class, subclass, and stat values precisely, where reading
+top-to-bottom misses them. You have bash — use whatever parsing tools the system already provides.
 
-**Use only tools already on hand, though** — never install anything (no `pip` / `npm` / `apt` / `brew`
-or any package manager) and never write your own parsing code or scripts. If careful reading plus the
-available tools still can't crack the file, don't engineer around it: stop, and say plainly in your
-report that you were unable to parse it, so the dm gets those details from the player directly.
+**But only what's already there** — never install anything (no `pip` / `npm` / `apt` / `brew` or any
+package manager) and never write your own parsing code or scripts. If careful reading plus the tools
+on hand still can't crack the file, don't engineer around it: stop, and say plainly in your report
+that you were unable to parse it, so the dm gets those details from the player directly.
 
 ## Map it onto the sheet
 Load `canon-conventions` and build from the `pc-sheet` template. Write what you find into:
@@ -48,6 +48,11 @@ Leave a field blank (or omit an optional line) wherever the source is silent.
 You write **only the sheet**, with what the file gave you. Integrating the backstory into the world,
 distilling DM-side hooks, and authoring the state file and knowledge ledger are the dm's job, done
 with the player — not yours.
+
+The **source file is scratch input**, not canon: mine it for the sheet, then leave it be. Don't give
+it a frontmatter `type:`, register it in `INDEX`, or file it as an in-world document — it's the
+player's raw material, not an entity. (There is no entity type for a character concept or a sheet
+export; the only character entity is the PC sheet itself, `type: pc`.)
 
 ## Report
 Hand back: what you extracted, **which required vitals the source lacked** (so the dm knows exactly

@@ -85,11 +85,12 @@ write it into canon in the next steps.
 4. **Gate** what you wrote.
 
 ### 4. Open character creation — present the world & hooks  *(spoiler-free)*
-Give the player a newcomer's-eye overview (setting, tone, surface situation), then offer **2–4
-character hooks** — each a role plus a tie into the situation — and invite them to take one, adapt it,
-or bring their own. This **is** the opening of character creation: load `character-create` and carry
-the player's response straight into it. Don't present the hooks, stop, and re-ask the same question
-from a standing start.
+Give the player a newcomer's-eye overview (setting, tone, surface situation) and offer **2–4 character
+hooks** — each a role plus a tie into the situation. Then, **in the same turn, load `character-create`
+and run its opening**: it presents how they'd like to make their character (take or adapt a hook, bring
+their own, or build together) and hands off to the player. The world, the hooks, and that choice are
+**one beat** — present them together, then wait. Don't present the hooks, stop, and only engage the
+skill once the player has replied.
 
 ### 5. Build the character
 Follow `character-create` through to a finished, **player-confirmed** character: it delegates any file

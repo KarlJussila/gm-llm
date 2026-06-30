@@ -37,12 +37,13 @@ Match the player's preference:
 
 ## Steps
 
-1. **Bring your own, or build together?** Most players arrive with a character. Ask whether they have
-   one — and if so, invite them to **point you at any file** for it: a sheet export, PDF text, JSON, an
-   HTML dump, a notes doc, whatever they've got. If they'd rather build from scratch, draw a concept
-   from the world's hooks and archetypes at their chosen control level. **If the player has already
-   answered this** — you just offered the hooks, or they've named a file or a concept — continue
-   straight from their reply; don't re-ask the same question from a standing start.
+1. **Open — how do you want to make your character?** This is the skill's opening beat: present the
+   choice and hand off to the player. They can **take or adapt one of the hooks** on offer, **bring
+   their own** (point you at any file — a sheet export, PDF, JSON, HTML dump, notes doc, whatever
+   they've got), or **build one together** from scratch at their chosen control level. At setup this
+   lands right after the world's hooks — present it **together with them, in the same turn**, then wait
+   for the player's answer. (Joining mid-campaign there are no hooks — just present the
+   bring-your-own / build choice.) Continue from whatever they say; don't re-ask from a standing start.
 2. **Hand the file to `character-importer`.** For any real character file they point you at — a
    JSON/HTML/PDF/sheet export *or* a multi-section notes doc — **delegate to the `character-importer`**
    subagent (give it the source path and the target sheet path `characters/{slug}.md`), even though you
