@@ -21,6 +21,11 @@ formats. Don't ask for a particular format or stall on an awkward one — open t
 character data wherever it sits in the structure, and pull it. If the file is large, skim past
 boilerplate to the character block.
 
+**Use only your own reading ability. Never — under any circumstances — install a package, library, or
+tool, or run code, to crack a difficult format.** If you genuinely can't read a file (a binary or
+proprietary format, an unreadable PDF), don't engineer around it: stop, and say plainly in your report
+that you were unable to parse the file, so the dm gets those details from the player directly.
+
 ## Map it onto the sheet
 Load `canon-conventions` and build from the `pc-sheet` template. Write what you find into:
 - **`## Vitals`** — Race / lineage, Class, Subclass *(only if the file has one)*, Level, Ability
