@@ -253,6 +253,8 @@ def cmd_tui(args):
     cmd = [py, "-m", "tui"]
     if args.live:
         cmd.append("--live")
+    if args.setup:
+        cmd.append("--setup")
     if args.theme:
         cmd += ["--theme", args.theme]
     sys.exit(subprocess.call(cmd, cwd=str(OPENCODE)))
@@ -328,6 +330,7 @@ def main():
 
     p = sub.add_parser("tui", help="launch the Textual app (mock by default)")
     p.add_argument("--live", action="store_true")
+    p.add_argument("--setup", action="store_true", help="mock only: start in the new-campaign setup phase")
     p.add_argument("--theme", default=None)
     p.set_defaults(func=cmd_tui)
 

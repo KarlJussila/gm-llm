@@ -186,13 +186,14 @@ but ungated:
 - `MockSetup` (a scripted setup conversation) so the offline TUI exercises the path, like
   `MockLifecycle` does for wrap.
 
-**CLI**: `cli.py setup` (human answers at the terminal) is a thin optional front-end; the TUI is the
-primary surface. No scripted-player setup — init is the human's campaign.
-
-The skill re-architecture (`campaign-intake` + the task-list-first `campaign-setup`) is **done**;
-the orchestrator/TUI wiring is **not yet built**. Build order: (a) `orchestrator/setup.py` (`Setup`)
-+ the `Lifecycle` front entry, validated headless against the live model; (b) `MockSetup` + TUI setup
-mode + the transition into `play(1)`, validated headless via `run_test` + mock.
+**Status — built (2026-06-30).** `orchestrator/setup.py` (`Setup` + `SetupTurn`), the `Lifecycle`
+front entry (`phase`, `setup`, `finish_setup`, `setup_stream`), the TUI setup mode (`_open_setup` /
+`_do_setup` / `_finish_setup`, input routing, play-only-action guards), `MockSetup` + `MockLifecycle`
+`start_in_setup`, and `tui --setup` (mock demo). Validated headless: empty dir → setup phase,
+scripted conversation → `finish_setup` → play(1) opens, screen pane restored; play/wrap unaffected.
+**Not yet exercised against the live model** (owes a real new-campaign run). `cli.py setup` (a
+terminal front-end) was left unbuilt — the TUI is the surface; add it only if a headless init is
+wanted. No scripted-player setup — init is the human's campaign.
 
 ## Backlog (deferred — not blocking the slices above)
 

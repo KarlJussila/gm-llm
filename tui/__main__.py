@@ -16,6 +16,8 @@ from tui.app import PlayApp  # noqa: E402
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--live", action="store_true", help="use a real opencode backend (default: mock)")
+    ap.add_argument("--setup", action="store_true",
+                    help="mock only: start in the new-campaign setup phase (live detects this from disk)")
     ap.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]))
     ap.add_argument("--port", type=int, default=4181)
     ap.add_argument("--theme", default="dracula",
@@ -32,7 +34,7 @@ def main() -> None:
         title = "Campaign — orchestrator (live)"
     else:
         from orchestrator.mock import MockLifecycle
-        lifecycle = MockLifecycle()
+        lifecycle = MockLifecycle(start_in_setup=args.setup)
         title = "Campaign — orchestrator (MOCK)"
 
     app = PlayApp(lifecycle, cleanup=cleanup, theme=args.theme)

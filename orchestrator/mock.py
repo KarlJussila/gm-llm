@@ -11,8 +11,20 @@ import time
 
 from .gate import GateResult, Verdict
 from .loop import TurnResult
+from .setup import SetupTurn
 
 _WRAP_STAGES = ["digest", "assess", "feedback", "canon", "arcs", "state", "propagation", "prep"]
+
+_SETUP_SCRIPT = [
+    "Welcome — let's build a campaign. What kind would you like to play? You can describe what "
+    "you're after to any level of detail, or we can do a guided setup where I ask a few questions. "
+    "Whatever you prefer.",
+    "A rain-soaked harbour city run by rival guilds — love it. What tone are you after: bleak and "
+    "hard-boiled, or something pulpier with room to breathe?",
+    "Perfect. Tell me about who you'll play — a concept, a class, or just a vibe.",
+    "Great character. I've got what I need — building the world, your arcs, and the opening around "
+    "you now. One moment.",
+]
 
 _OPENING = (
     "The Crossroads Inn is warm and loud — low beams, smoke, a dozen faces turning as the door bangs "
@@ -63,16 +75,64 @@ class MockGame:
         return TurnResult(player_msg, draft, narration, gate, corrected)
 
 
-class MockLifecycle:
-    """Stand-in for Lifecycle: a MockGame plus a simulated wrap() so the TUI's
-    between-sessions flow (the ticker + the live stream) can be driven offline."""
+class MockSetup:
+    """Stand-in for Setup: a scripted new-campaign conversation that reports done after
+    a few exchanges, so the TUI setup path runs offline."""
 
     def __init__(self, *args, **kwargs):
-        self.game = MockGame()
+        self.dm_sid = "mock-setup"
+        self._n = 0
+
+    def start(self) -> SetupTurn:
+        return SetupTurn(_SETUP_SCRIPT[0], False)
+
+    def turn(self, player_input: str) -> SetupTurn:
+        self._n += 1
+        i = min(self._n, len(_SETUP_SCRIPT) - 1)
+        done = self._n >= len(_SETUP_SCRIPT) - 1
+        return SetupTurn(_SETUP_SCRIPT[i], done)
+
+    def finalize(self) -> int:
+        return 1
+
+
+class _NoTap:
+    def stop(self) -> None:
+        pass
+
+
+class MockLifecycle:
+    """Stand-in for Lifecycle: a MockGame plus a simulated wrap() (and an optional
+    setup phase) so the TUI's full flow can be driven offline."""
+
+    def __init__(self, start_in_setup: bool = False, *args, **kwargs):
         self._session = 1
+        if start_in_setup:
+            self.phase = "setup"
+            self.game = None
+            self.setup = MockSetup()
+        else:
+            self.phase = "play"
+            self.game = MockGame()
+            self.setup = None
 
     @property
     def session(self) -> int:
+        return self._session
+
+    def setup_stream(self, stream_write):
+        return _NoTap()
+
+    def finish_setup(self, on_stage=None, stream_write=None) -> int:
+        if on_stage:
+            on_stage("prep")
+        if stream_write:
+            stream_write("[bold cyan]\n──── planning session 1 ────\n[/]")
+            stream_write("  (mock) writing the session-1 plan…\n")
+        time.sleep(0.6)
+        self.phase = "play"
+        self.game = MockGame()
+        self.setup = None
         return self._session
 
     def wrap(self, on_stage=None, stream_write=None, commit: bool = True) -> int:

@@ -12,6 +12,7 @@ from .lifecycle import Lifecycle
 from .loop import Game, TurnResult
 from .planner import Planner, PlannerError, PrepResult
 from .reconciler import Reconciler, ReconcileResult
+from .setup import Setup, SetupTurn
 
 __all__ = [
     "Backend", "BackendError", "CanonPreloader",
@@ -19,4 +20,5 @@ __all__ = [
     "Game", "TurnResult", "Lifecycle",
     "Planner", "PlannerError", "PrepResult",
     "Reconciler", "ReconcileResult",
+    "Setup", "SetupTurn",
 ]

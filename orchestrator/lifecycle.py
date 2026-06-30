@@ -1,17 +1,23 @@
 """
-Campaign lifecycle — play a session, wrap it (reconcile + prep the next), play the
-next, all from one front-end. Backend-agnostic: the caller (the TUI) supplies
-callbacks for the between-sessions progress ticker and the live model stream.
+Campaign lifecycle — set up a new campaign, play a session, wrap it (reconcile + prep
+the next), play the next, all from one front-end. Backend-agnostic: the caller (the TUI)
+supplies callbacks for the between-phases progress ticker and the live model stream.
 
-`Game` (loop.py) owns live play; `Reconciler` owns the post-session pipeline. This
-ties them into one moving object the UI can drive: `wrap()` reconciles the just-played
-session and rolls `self.game` forward to the next, so the screen never leaves the app.
+`Setup` (setup.py) owns init, `Game` (loop.py) owns live play, `Reconciler` owns the
+post-session pipeline. This ties them into one moving object the UI can drive:
+  - an empty directory opens in the **setup** phase; `finish_setup()` plans session 1 and
+    rolls into play(1);
+  - `wrap()` reconciles the just-played session and rolls `self.game` to the next.
+So the screen never leaves the app across the whole campaign lifecycle.
 """
 
 from __future__ import annotations
 
-from .loop import Game
+from pathlib import Path
+
+from .loop import Game, _latest_session
 from .reconciler import Reconciler
+from .setup import Setup
 from .stream import EventTap
 
 
@@ -21,11 +27,49 @@ class Lifecycle:
         self.gate = gate
         self.directory = directory
         self.checks_log = checks_log
-        self.game = Game(backend, gate, checks_log=checks_log)
+        # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
+        # that needs setup; otherwise jump straight into play.
+        if _latest_session(Path(directory) / "campaign" / "sessions") is None:
+            self.phase = "setup"
+            self.game = None
+            self.setup = Setup(backend, gate, directory, checks_log=checks_log)
+        else:
+            self.phase = "play"
+            self.game = Game(backend, gate, checks_log=checks_log)
+            self.setup = None
 
     @property
     def session(self) -> int:
-        return self.game.session
+        return self.game.session if self.game else 0
+
+    def _tap(self, stream_write):
+        """An EventTap routing the live model stream to the behind-the-screen pane —
+        markup dialect for the Textual sink. None when no sink is wired."""
+        if not stream_write:
+            return None
+        return EventTap(self.backend.base, self.backend.directory,
+                        write=stream_write, markup=True).start()
+
+    def setup_stream(self, stream_write):
+        """Stream the setup conversation's authoring behind the screen for its whole
+        duration. The caller starts this when setup opens and stops it at the transition."""
+        return self._tap(stream_write)
+
+    def finish_setup(self, on_stage=None, stream_write=None) -> int:
+        """Once setup reports done: plan session 1 (the one code-gated artifact at init),
+        then roll into play(1). Returns the new session number (1)."""
+        if on_stage:
+            on_stage("prep")
+        tap = self._tap(stream_write)
+        try:
+            n = self.setup.finalize()
+        finally:
+            if tap:
+                tap.stop()
+        self.game = Game(self.backend, self.gate, checks_log=self.checks_log, session=n)
+        self.phase = "play"
+        self.setup = None
+        return n
 
     def wrap(self, on_stage=None, stream_write=None, commit: bool = True) -> int:
         """Reconcile the just-played session (digest → … → prep N+1), then roll the
@@ -35,10 +79,7 @@ class Lifecycle:
         `stream_write(text)` receives the live model output via an EventTap (drives the
         behind-the-screen pane). Both are called from worker/daemon threads."""
         n = self.game.session
-        # markup=True: the stream sink is the Textual pane, which renders console
-        # markup — EventTap colours headings/tools/reasoning and escapes body text.
-        tap = (EventTap(self.backend.base, self.backend.directory, write=stream_write, markup=True).start()
-               if stream_write else None)
+        tap = self._tap(stream_write)
         try:
             Reconciler(self.backend, self.gate, on_stage=on_stage,
                        checks_log=self.checks_log).reconcile_session(n, commit=commit)

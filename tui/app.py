@@ -58,6 +58,8 @@ class PlayApp(App):
         self._wrapping = False
         self._scene = ""
         self._screen = ""
+        self._setup_tap = None       # EventTap streaming setup authoring behind the screen
+        self._setup_hidden = True    # screen pane's visibility before setup borrowed it
 
     @property
     def game(self):
@@ -109,7 +111,10 @@ class PlayApp(App):
 
     def _sync_input(self) -> None:
         inp = self.query_one("#cmd", Input)
-        if self.mode == "action":
+        if self.lc.phase == "setup":
+            inp.border_title = "SETUP — talk to the DM"
+            inp.placeholder = "Answer the DM…"
+        elif self.mode == "action":
             inp.border_title = "ACTION — gated"
             inp.placeholder = "What does your character do?"
         else:
@@ -124,13 +129,16 @@ class PlayApp(App):
             self.sub_title = "⏳ the table is thinking…"
         else:
             self._sync_input()
-            self.sub_title = f"{self.mode.upper()} mode"
+            self.sub_title = "SETUP" if self.lc.phase == "setup" else f"{self.mode.upper()} mode"
             inp.focus()
 
     # -- game interaction (off the UI thread) -------------------------------
 
     async def _open(self) -> None:
         self._busy(True)
+        if self.lc.phase == "setup":
+            await self._open_setup()
+            return
         try:
             # Resume an in-progress session (preserves its transcript) if there is one;
             # otherwise open a fresh scene. After a wrap, N+1 has no transcript → fresh.
@@ -146,6 +154,63 @@ class PlayApp(App):
         self._write("scene", f"\n[$accent]DM[/]  {inline(scene)}")
         self._busy(False)
 
+    # -- setup: the new-campaign conversation (phase == "setup") -------------
+
+    async def _open_setup(self) -> None:
+        """Open a brand-new campaign: a guided conversation in the scene pane, with the
+        dm's authoring streamed behind the screen for the whole setup."""
+        screen = self.query_one("#screen", VerticalScroll)
+        self._setup_hidden = screen.has_class("hidden")
+        screen.remove_class("hidden")
+        self._write("screen", "\n[b]— building the campaign —[/b]\n")
+        stream = lambda s: self.call_from_thread(self._append, "screen", s)
+        self._setup_tap = self.lc.setup_stream(stream)
+        try:
+            st = await asyncio.to_thread(self.lc.setup.start)
+        except BackendCancelled:
+            self._cancelled_note()
+            return
+        self._write("scene", f"\n[$accent]DM[/]  {inline(st.reply)}")
+        if st.done:
+            await self._finish_setup()
+        else:
+            self._busy(False)
+
+    async def _do_setup(self, text: str) -> None:
+        self._busy(True)
+        try:
+            st = await asyncio.to_thread(self.lc.setup.turn, text)
+        except BackendCancelled:
+            self._cancelled_note()
+            return
+        self._write("scene", f"\n[$accent]DM[/]  {inline(st.reply)}")
+        if st.done:
+            await self._finish_setup()
+        else:
+            self._busy(False)
+
+    async def _finish_setup(self) -> None:
+        """Setup reported done: plan session 1 (behind the screen), then open play(1)."""
+        if self._setup_tap:
+            self._setup_tap.stop()
+            self._setup_tap = None
+        self.sub_title = "⏳ planning session 1…"
+        self._write("scene", "\n[$warning]— campaign built · planning session 1 —[/]")
+        self._write("screen", "\n[b]— planning session 1 —[/b]\n")
+        ticker = lambda key: self.call_from_thread(self._tick, key)
+        stream = lambda s: self.call_from_thread(self._append, "screen", s)
+        try:
+            n = await asyncio.to_thread(self.lc.finish_setup, ticker, stream)
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._write("scene", f"\n[$error]— setup failed: {escape(str(e))} —[/]")
+            self._busy(False)
+            return
+        if self._setup_hidden:
+            self.query_one("#screen", VerticalScroll).add_class("hidden")
+        self._write("scene", f"\n[$success]— campaign ready · opening session {n} —[/]")
+        self._turn = 0
+        await self._open()  # phase is now "play" → opens session 1
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
         event.input.value = ""
@@ -154,6 +219,13 @@ class PlayApp(App):
 
         if text.lower() in ("/quit", "/exit", "/q"):
             self.exit()
+            return
+        # During setup the bar is a plain answer to the DM — no play commands apply.
+        if self.lc.phase == "setup":
+            if self.query_one("#cmd", Input).disabled:
+                return
+            self._write("scene", f"\n[$success]You[/]  {inline(text)}")
+            self.run_worker(self._do_setup(text), exclusive=True)
             return
         # /wrap — end the session and run the post-session pipeline, then open the next.
         if text.lower() in ("/wrap", "/end"):
@@ -208,6 +280,8 @@ class PlayApp(App):
         out the model call. Aborts the in-flight call so the UI frees up instead of
         locking; the running worker then unwinds with a 'cancelled' note. No-op when
         nothing is running (the input is live)."""
+        if self.lc.phase != "play":  # cancel/revert is a play-turn affordance
+            return
         if not self.query_one("#cmd", Input).disabled:
             return
         self.run_worker(self._do_cancel(), exclusive=False)
@@ -247,6 +321,8 @@ class PlayApp(App):
     def action_wrap(self) -> None:
         """Wrap the played session: run the post-session pipeline (reconcile + prep the
         next), then open session N+1 — without leaving the app. No-op while busy."""
+        if self.lc.phase != "play":  # nothing to wrap during setup
+            return
         if self._wrapping or self.query_one("#cmd", Input).disabled:
             return
         self.run_worker(self._do_wrap(), exclusive=True)
