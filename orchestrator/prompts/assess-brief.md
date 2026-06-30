@@ -1,0 +1,1 @@
+Assess session {n}. Load the `session-review` skill and follow it: read the digest `campaign/sessions/session-{n}.md` and write the assessment to `campaign/assessment/session-{n}-assessment.md`, with concrete per-arc recommendations for the arc pass. Report when it is written.

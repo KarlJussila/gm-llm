@@ -48,14 +48,16 @@ class Planner:
     """Drives the dm to prepare a session plan, gated in code."""
 
     def __init__(self, backend, gate, dm_agent: str = "dm",
-                 on_prep=None, checks_log: str | None = None):
+                 on_prep=None, checks_log: str | None = None, dm_sid: str | None = None):
         self.backend = backend
         self.gate = gate
         self.dm_agent = dm_agent
         self.on_prep = on_prep
         self.checks_log = checks_log
         self.root = Path(backend.directory)
-        self.dm_sid = backend.create_session("dm prep")
+        # Reuse a caller's dm session when given (so the reconcile's apply thread carries
+        # its warm context straight into prepping the next session); else open our own.
+        self.dm_sid = dm_sid or backend.create_session("dm prep")
 
     def _plan_path(self, n: int) -> Path:
         return self.root / "campaign" / "sessions" / f"session-{n}-plan.md"

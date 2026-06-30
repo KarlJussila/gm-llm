@@ -1,0 +1,1 @@
+Extract session {n}'s play into the structured digest. Load the `log-extract` skill and follow it: read the transcript `campaign/sessions/session-{n}-transcript.md` in chunks and write the digest losslessly to `campaign/sessions/session-{n}.md`. Report when the digest is written.

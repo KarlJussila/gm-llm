@@ -1,89 +1,64 @@
 ---
 name: session-review
-description: Perform post-session analysis after a D&D session. Use after each session to evaluate what happened vs. what was planned, assess player engagement, identify narrative implications, and produce insights for arc adjustment and future planning.
+description: Assess a played session from its digest — plan vs. actual, player engagement, per-arc impact with concrete adjustment recommendations, and notes for the next plan. Produces the assessment document the arc pass and next-session planning build on. Loaded by the analyst between sessions.
 ---
 
-# Session Review Skill
+# session-review — assess the session for the arc pass and next plan
 
-## Purpose
-
-Reflect on what happened during a session and produce actionable insights for the campaign. This skill runs **between** sessions, as a fresh analytical pass — comparing planned events against actual outcomes, evaluating player engagement, and generating recommendations for future planning.
-
-**Who runs this:** the `dm` agent (or, usually, a delegated `campaign-analyst`), *not* the session runner. The play transcript is captured automatically and `log-extractor` turns it into the digest; this review reads that digest and turns it into strategy, which keeps the analytical pass uncoupled from a long play context and keeps the runner's role clean. When delegated, the `campaign-analyst` **writes the assessment document itself** — it does not hand the writing back to the dm.
-
-**Timing:** the `dm` applies the digest to canonical state *before* this review runs, so the continuity and knowledge checks below are a genuine audit of the applied state — anything still missing is a real gap to backfill, not just a pending to-do.
+Between sessions, this turns the digest into strategy: what the session did to the campaign, and what
+each arc and the next plan should do about it. Analytical and forward-looking — you assess and
+recommend; the passes that follow act on it.
 
 ## Input
+- The **digest** `campaign/sessions/session-{N}.md` — what was played (your main source; the raw
+  `session-{N}-transcript.md` is there if you need to check exact wording or tone).
+- The **plan** `campaign/sessions/session-{N}-plan.md` — what was intended, to compare against.
+- The **active arcs** `campaign/arcs/*.md` (+ `.state.md`) and the **threads**
+  `campaign/state/threads.md`.
+- The **PC knowledge ledger** `campaign/characters/{pc}.knowledge.md` — what the player now knows.
 
-This skill reads:
+## Step 1 — Create your task list
 
-- **Session plan** — `campaign/sessions/session-{N}-plan.md`
-- **Session digest** — `campaign/sessions/session-{N}.md` (the structured extraction of the
-  session; the raw `session-{N}-transcript.md` is also there if you need to check a detail)
-- **Character states** — `campaign/characters/*.md` (incl. the PC knowledge ledger
-  `characters/{name}-knowledge.md`)
-- **Significant items** — `campaign/world/items.md`
-- **Documents recorded this session** — `campaign/documents/`
-- **Active arcs** — `campaign/narrative/arcs/*.md`
+Use your `todowrite` tool to create exactly these entries, then work them in order:
 
-## Review Structure
+1. Plan vs. actual & engagement
+2. Per-arc impact & recommendations
+3. Threads & next-session notes
+4. Write the assessment
 
-Write the review following this structure:
+### 1. Plan vs. actual & engagement
+What was planned, what actually happened, and the key deviations — which beats landed, which were
+skipped, what emerged unplanned. Then the engagement read: what the player leaned into, skipped, or
+lit up at; where energy dipped; what held their attention. Be honest and specific — this is what the
+next plan steers by.
 
-1. **Session summary** — What actually happened. A brief narrative of the session from start to finish.
+### 2. Per-arc impact & recommendations
+For **each arc the session touched**, write a short, concrete recommendation the arc pass can act on
+directly:
+- **What play did to it** — turning points landed, answers engaged or contradicted, the path the
+  player took, where it now sits on its tension curve.
+- **What it needs** — the adjustment, named with the working vocabulary as a lens: redirect,
+  accelerate / decelerate, deepen, recommit a strained answer, merge / split, or resolve. Be
+  concrete — "the player sided with the antagonist; the betrayal turning point needs recommitting
+  toward an uneasy alliance," not "needs work."
 
-2. **Plan vs. reality** — What was planned, what actually happened, and key deviations. Note which planned encounters occurred, which were skipped, and what emerged spontaneously.
+Also flag any **thread that has grown into a candidate minor arc** (enough committed answers +
+turning points to deserve real structure), so planning can promote it.
 
-3. **Player engagement analysis** — What did the player(s) lean into? What did they skip? What excited them? Where did energy dip? What moments held their attention?
+### 3. Threads & next-session notes
+What threads advanced, emerged, or resolved; what's left hanging. Then what the next session's plan
+should address — threads to pick up, player interests to revisit, pressure that should pay off.
 
-4. **Narrative implications** — What threads were advanced? What new threads emerged? What was left unresolved?
-
-5. **World state changes** — What changed in the world during this session? Locations visited, NPCs affected, items acquired, alliances shifted.
-
-6. **Character changes** — What happened to PCs and NPCs? Level-ups, injuries, relationships changed, new motivations.
-
-7. **Arc impact** — How did this session affect active narrative arcs? Which arcs advanced, stalled, or branched?
-
-8. **Unresolved threads** — What needs attention in future sessions? Open questions, hanging plotlines, unresolved conflicts.
-
-9. **Recommended arc adjustments** — Which arcs need adjustment based on this session? Suggest re-prioritization, timeline shifts, or new directions.
-
-10. **Notes for next session** — What should the next session plan address? Specific threads to pick up, player interests to revisit, world events to resolve.
-
-11. **Player feedback routing** — Read the log's "Player feedback" section. For each item, note the guidance you distilled and which `campaign/feedback/{target}.md` file you wrote it to (see `campaign/feedback/README.md`). This bakes the feedback in for next time without editing the framework.
+### 4. Write the assessment
+Write it all to `campaign/assessment/session-{N}-assessment.md`, organized under those headings.
+Keep it tight and actionable — a planning tool, forward-looking, not a recap of every beat.
 
 ## Verify against the transcript
+Write from the digest — that's what it's for, and it keeps your context lean. Then spot-check the raw
+transcript (`campaign/sessions/session-{N}-transcript.md`) for the moments where exact dialogue,
+tone, or player intent carries nuance the digest may have flattened — an engagement read, a stated
+reason, a verbatim line — and correct or add as needed. Don't reload the whole transcript up front.
 
-Write the assessment from the digest and the other campaign documents — that's what the digest is
-for, and it keeps your context lean. Then, **once the assessment is written**, cross-reference the
-raw play transcript (`campaign/sessions/session-{N}-transcript.md`) for the moments where exact
-dialogue, tone, or player intent carries nuance the digest may have flattened — engagement reads
-(what landed vs. fell flat), a player's stated reasoning, a verbatim line, a beat you're unsure the
-digest captured faithfully — and issue any necessary corrections or additions. Spot-check the
-moments that matter; don't reload the whole transcript up front.
-
-## Review Principles
-
-- **Continuity check (audit).** The digest records every notable change; the dm has already applied
-  them, so verify each is reflected in its home: knowledge gained → the ledger
-  (+`[hidden]`/`Known to:` flags), documents → `documents/`, improvised canon → `world/*.md`, item
-  changes → `items.md` or the character sheet. Flag any genuine gap the apply-pass missed so the dm
-  backfills it while the session is fresh — you analyze and flag; you don't edit canonical state.
-- **Knowledge check (audit):** verify everything the PC learned this session is in the knowledge
-  ledger, and that the matching source facts were flipped (`[hidden]` → `[revealed: S<n>]`,
-  `Known to:` updated, including any NPCs who learned something). Flag anything the apply-pass
-  missed.
-- Be honest about what worked and what didn't
-- Focus on player engagement — what made them excited vs. disengaged?
-- Track narrative momentum — are arcs advancing or stalling?
-- Identify surprise moments — things that worked better than planned
-- Flag any continuity issues that need addressing
-- Note any world-building details established that need to be remembered
-
-## File Output
-
-Write the review to: `campaign/assessment/session-{N}-assessment.md`
-
-## Tone
-
-Reflective, analytical, forward-looking. This is a planning tool, not a critique. Focus on what to carry forward, not what went wrong.
+## Boundaries
+- Your output is **the assessment document**. You recommend changes; you don't make them — leave
+  canon, state, and the arcs as they are.

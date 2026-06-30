@@ -205,20 +205,29 @@ def cmd_reconcile(args):
         tap = EventTap(backend.base, backend.directory).start() if args.stream else None
         gate = Gate(backend, CanonPreloader(args.dir))
         reconciler = Reconciler(backend, gate, checks_log=CHECKS_LOG)
-        print(c("2", f"[harness] reconciling session {args.session} — the dm applies, then the gate runs…"), flush=True)
-        rr = reconciler.reconcile_session(args.session, commit=args.commit)
-        nv = "PASS" if rr.gate.narrative.passed else "VIOLATIONS"
-        print(c("33", f"\n┄┄ check-propagation: {nv} · {'CORRECTED' if rr.corrected else 'clean'} · "
-                      f"{'committed' if rr.committed else 'uncommitted'} ┄┄"), flush=True)
-        if not args.stream and not rr.gate.narrative.passed:
-            print(c("2", rr.gate.narrative.report.strip()), flush=True)
-        _empty_note(rr.gate.narrative)
-        print(c("1;36", f"\n━━━━━ session {rr.n} reconciled ━━━━━"), flush=True)
+        print(c("2", f"[harness] reconciling session {args.session} — staged apply, gated stage by stage…"), flush=True)
+        rr = reconciler.reconcile_session(args.session, commit=args.commit,
+                                          prep=not args.no_prep, fresh=args.fresh)
 
-        if args.prep:
-            n2 = args.session + 1
-            print(c("2", f"\n[harness] prepping session {n2}…"), flush=True)
-            pr = Planner(backend, gate, checks_log=CHECKS_LOG).prep_session(n2, commit=args.commit)
+        def gate_line(label, g):
+            if g is None:  # stage was skipped this run (resumed past it)
+                return
+            nv = "PASS" if g.narrative.passed else "VIOLATIONS"
+            print(c("33", f"┄┄ {label}: {nv} ┄┄"), flush=True)
+            if not args.stream and not g.narrative.passed:
+                print(c("2", g.narrative.report.strip()), flush=True)
+            _empty_note(g.narrative)
+
+        print("", flush=True)
+        gate_line("check-digest", rr.digest)
+        gate_line("check-feedback", rr.feedback)
+        if rr.lint_incomplete:
+            print(c("33", f"┄┄ completeness lint: {rr.lint_incomplete} file(s) flagged · correction dispatched ┄┄"), flush=True)
+        gate_line("check-propagation", rr.propagation)
+        print(c("1;36", f"\n━━━━━ session {rr.n} reconciled{' · committed' if rr.committed else ''} ━━━━━"), flush=True)
+
+        if rr.prep is not None:
+            pr = rr.prep
             nv = "PASS" if pr.gate.narrative.passed else "VIOLATIONS"
             print(c("33", f"┄┄ check-plan (session {pr.n}): {nv} · {'CORRECTED' if pr.corrected else 'clean'} · "
                           f"{'committed' if pr.committed else 'uncommitted'} ┄┄"), flush=True)
@@ -313,7 +322,8 @@ def main():
     p = sub.add_parser("reconcile", parents=[common], help="orchestrate POST-session reconcile")
     p.add_argument("--session", type=int, required=True)
     p.add_argument("--commit", action="store_true")
-    p.add_argument("--prep", action="store_true", help="after reconcile, prep session N+1")
+    p.add_argument("--no-prep", action="store_true", help="skip prepping session N+1")
+    p.add_argument("--fresh", action="store_true", help="clear stage markers and re-run from scratch")
     p.set_defaults(func=cmd_reconcile)
 
     p = sub.add_parser("tui", help="launch the Textual app (mock by default)")

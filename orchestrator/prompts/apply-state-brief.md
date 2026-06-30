@@ -1,0 +1,1 @@
+Update state after session {n}. Load the `apply-state` skill and follow it: flip the knowledge ledger and reveal flags for what the PC learned, and bring every state snapshot up to the session boundary. Report when done.

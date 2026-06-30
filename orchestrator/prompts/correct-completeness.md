@@ -1,0 +1,1 @@
+The entity files just filed don't all meet the completeness contract — the required fields or sections listed below are missing or left as a placeholder. Fill each with a committed value (no `<placeholder>`, no "TBD"), change nothing else, and report when done.

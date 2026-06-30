@@ -1,0 +1,1 @@
+File session {n}'s new and changed canon. Load the `apply-canon` skill and follow it: from the digest `campaign/sessions/session-{n}.md`, author and register every new or changed entity to the completeness contract, and route verbatim documents. Report when done.

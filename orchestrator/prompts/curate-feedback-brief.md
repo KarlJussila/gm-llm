@@ -1,0 +1,1 @@
+Curate session {n}'s player feedback. Load the `feedback-curation` skill and follow it: distill the player's feedback from the digest `campaign/sessions/session-{n}.md` into the `campaign/feedback/` files. Report when done.

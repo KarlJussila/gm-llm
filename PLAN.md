@@ -149,6 +149,10 @@ stages are written to make that cheap.
   the lint). The player-facing init flow (character creation, campaign setup) is its own larger
   refactor the player flagged as next after this one — fold a PC vitals/stat contract into it then.
   This is also where init should start producing **minor arcs** (Model B), not just one major arc.
+- **Point `dm.md`'s standalone POST flow at the new apply skills.** The orchestrated path dispatches
+  `apply-canon`/`apply-arcs`/`apply-state`/`feedback-curation` directly; the `dm` agent's own
+  between-sessions runbook still inlines the old prose ("rewritten when the apply-pass runbook
+  lands" — it's landed). Have it load the skills instead, so the two paths can't drift.
 - **Review `arc-design` skill.** Align it with Model B (major + minor arcs) and with `apply-arcs` —
   in particular so `apply-arcs` creating a new minor arc (hooked into the major) is well-supported,
   and the "post-session arc pass" cross-references point at `apply-arcs`.
