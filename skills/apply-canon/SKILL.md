@@ -22,7 +22,7 @@ contract**: the required `## Vitals` block for its type, filled with committed v
 
 ## Input
 - The **session digest** `campaign/sessions/session-{N}.md` — especially *World canon*, *Items*,
-  *Documents*, and *Secrets & awareness*.
+  *Documents*, *Secrets & awareness*, and *PC capabilities*.
 - The **registry** `campaign/INDEX.md` — to reuse existing slugs and resolve `named-only` entries
   rather than duplicate.
 
@@ -32,9 +32,10 @@ Use your `todowrite` tool to create exactly these entries, then work them in ord
 
 1. List the entities to file
 2. Author each entity *(one task per entity — see below)*
-3. Route verbatim documents
-4. Self-check completeness
-5. Report
+3. Update the PC sheet
+4. Route verbatim documents
+5. Self-check completeness
+6. Report
 
 ### 1. List the entities to file
 From the digest's *World canon* and *Items*, list every new or changed NPC, location, faction,
@@ -53,23 +54,32 @@ task per entity** and work them one at a time.
   row if status or the one-line changed.
 - In both, link every referenced entity as a `[[slug]]` and flag any secret `[hidden]` + `Known to:`.
 
-### 3. Route verbatim documents
+### 3. Update the PC sheet
+From the digest's *PC capabilities*, append to the PC sheet's `## Known capabilities` every
+proficiency, spell, named/class ability, or feat the PC demonstrated or gained that isn't already
+listed — cross-check the current sheet so nothing duplicates. If *PC capabilities* records a level-up,
+update the `## Vitals` block (level, and any subclass or ability-score change it notes), keeping it
+complete. The **sheet only** — the PC's `.state.md` and knowledge ledger are reconciled by the state
+pass, not here.
+
+### 4. Route verbatim documents
 For any verbatim handout in the digest's *Documents* (a letter, inscription, quoted passage), write
 the exact text to `campaign/documents/` and reference it from the entity it belongs to — don't
 inline it.
 
-### 4. Self-check completeness
+### 5. Self-check completeness
 - Every new or changed entity from the digest is filed — nothing load-bearing left `named-only` or
   unfiled.
 - Every entity file meets the completeness contract (Vitals filled; an NPC's Stats + Abilities
   present).
+- Any capability the digest shows the PC gaining is on the sheet; the PC's Vitals reflect a level-up.
 - Every `INDEX` row points at a real file and vice-versa; no dangling `[[slug]]` links.
 
-### 5. Report
-Brief: **Result** (entities filed / updated), **Documents** routed, **Caveats** (anything the digest
-left ambiguous).
+### 6. Report
+Brief: **Result** (entities filed / updated, PC sheet changes), **Documents** routed, **Caveats**
+(anything the digest left ambiguous).
 
 ## Boundaries
-- Your scope is **entity info files, their `INDEX` rows, and `documents/`**. Leave arc bodies and
-  every `.state.md` / global `state/*` snapshot to their own reconciliation — your job here is the
-  entity canon.
+- Your scope is **entity info files (the PC sheet included), their `INDEX` rows, and `documents/`**.
+  Leave arc bodies and every `.state.md` / global `state/*` snapshot — including the PC's `.state.md`
+  and knowledge ledger — to their own reconciliation; your job here is the entity canon.

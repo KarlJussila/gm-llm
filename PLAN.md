@@ -197,17 +197,15 @@ wanted. No scripted-player setup — init is the human's campaign.
 
 ## Backlog (deferred — not blocking the slices above)
 
-Slices (i)–(iii) are built and slice (ii) was live-validated; the prompt rehome, the
-`session-review` rewrite, the `dm.md` POST-flow repoint, the `arc-design` Model-B review, the
-`campaign-setup` reorder + orchestrator/TUI init wiring, and the **PC vitals contract** are done
-(history in git). Remaining:
+The whole rework is built (history in git): slices (i)–(iii) [slice (ii) live-validated], the prompt
+rehome, the `session-review` rewrite, the `dm.md` POST-flow repoint, the `arc-design` Model-B review,
+the `campaign-setup` reorder + orchestrator/TUI init wiring, the **PC vitals contract** + import-first
+`character-create` (delegating to the `character-importer` subagent), and **documenting PC capabilities
+through play** (`log-extract` taxonomy item *PC capabilities* → `apply-canon` appends to the sheet's
+`## Known capabilities` and applies level-ups).
 
-- **Document PC capabilities through play.** The PC sheet's `## Known capabilities` section is seeded
-  at creation and *meant* to grow as proficiencies/spells/abilities/feats first show at the table —
-  but nothing in the runtime/post-session flow yet actively appends them. Wire the runner (or the
-  post-session canon pass) to record a newly-demonstrated capability the first time it appears, so the
-  sheet stays current without the player re-typing their list. (The contract + template intent exist;
-  the active logging does not.)
+No open backlog items. Outstanding only: **a live shakedown** — a real new-campaign run (setup + a
+character import) and a post-session pass that exercises the PC-capabilities wiring, against the model.
 
 ## Done-tests
 

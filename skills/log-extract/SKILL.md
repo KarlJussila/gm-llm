@@ -42,12 +42,15 @@ contains it, it goes in the digest:
    location / state); notable gear changes.
 6. **Documents** — the **verbatim** text of any written material shown to the player (letter,
    journal, inscription, sign, contract, book passage). Copy it exactly; this can't be reconstructed.
-7. **Character state** — level, conditions, resources, relationships/dispositions, and any
-   consequential decisions the PC made.
-8. **Threads** — threads opened, advanced, or resolved; cliffhangers; what's left unresolved.
-9. **Engagement** — what the player leaned into, skipped, or was excited by (for the assessment).
-10. **Plan vs. actual** — where the session diverged from the plan.
-11. **Player feedback** — if the session ended with player feedback, copy it **verbatim**.
+7. **Character state** — conditions, resources, relationships/dispositions, and any consequential
+   decisions the PC made. (Feeds the state pass; a level-up itself goes in *PC capabilities* below.)
+8. **PC capabilities** — any proficiency, spell, named/class ability, or feat the PC *used or gained
+   this session that the sheet doesn't already list* (a level-up's additions included). Note what it
+   is; this grows the character sheet's known-capabilities, distinct from the transient state above.
+9. **Threads** — threads opened, advanced, or resolved; cliffhangers; what's left unresolved.
+10. **Engagement** — what the player leaned into, skipped, or was excited by (for the assessment).
+11. **Plan vs. actual** — where the session diverged from the plan.
+12. **Player feedback** — if the session ended with player feedback, copy it **verbatim**.
 
 ## Principles
 
