@@ -27,6 +27,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Header, Input, Static
 
 from orchestrator.backend import BackendCancelled
+from orchestrator.textmarkup import inline
 
 
 class PlayApp(App):
@@ -89,6 +90,11 @@ class PlayApp(App):
     def _append(self, pane: str, text: str) -> None:
         """Append raw text to a pane's buffer — used for line writes and for the
         streamed reconcile log, which arrives in arbitrary (non-line) chunks."""
+        container = self.query_one(f"#{pane}", VerticalScroll)
+        # Auto-follow only when the view is already pinned to the bottom. If the
+        # reader scrolled up to read back, leave them there instead of yanking them
+        # down on the next write (the streamed wrap log writes constantly).
+        follow = container.scroll_offset.y >= container.max_scroll_y - 2
         if pane == "scene":
             self._scene += text
             buf = self._scene
@@ -96,7 +102,8 @@ class PlayApp(App):
             self._screen += text
             buf = self._screen
         self.query_one(f"#{pane}-body", Static).update(buf)
-        self.query_one(f"#{pane}", VerticalScroll).scroll_end(animate=False)
+        if follow:
+            container.scroll_end(animate=False)
 
     # -- input mode ---------------------------------------------------------
 
@@ -136,7 +143,7 @@ class PlayApp(App):
             return
         if resumed:
             self._write("scene", "[$text-muted]— resuming the session in progress —[/]")
-        self._write("scene", f"\n[$accent]DM[/]  {escape(scene)}")
+        self._write("scene", f"\n[$accent]DM[/]  {inline(scene)}")
         self._busy(False)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -191,7 +198,7 @@ class PlayApp(App):
         except BackendCancelled:
             await self._cancel_cleanup(question)
             return
-        self._write("scene", f"[$text-muted]DM (out-of-game)  {escape(answer)}[/]")
+        self._write("scene", f"[$text-muted]DM (out-of-game)  {inline(answer)}[/]")
         self._busy(False)
 
     # -- cancel (ctrl+x) ----------------------------------------------------
@@ -249,11 +256,17 @@ class PlayApp(App):
         self._busy(True)
         self.sub_title = "⏳ wrapping the session…"
         self._write("scene", "\n[$warning]— wrapping the session —[/]")
-        # reveal the behind-the-screen pane so the live pipeline stream is visible
-        self.query_one("#screen", VerticalScroll).remove_class("hidden")
+        # Reveal the behind-the-screen pane so the live pipeline stream is visible,
+        # remembering whether it was hidden so we can restore that afterward (it stays
+        # closed by default — the wrap just borrows it).
+        screen = self.query_one("#screen", VerticalScroll)
+        was_hidden = screen.has_class("hidden")
+        screen.remove_class("hidden")
         self._write("screen", "\n[b]— post-session pipeline —[/b]\n")
         ticker = lambda key: self.call_from_thread(self._tick, key)
-        stream = lambda s: self.call_from_thread(self._append, "screen", escape(s))
+        # EventTap emits console markup (markup=True) with body text already escaped,
+        # so the chunks append as-is — no escape() here or it'd show the tags literally.
+        stream = lambda s: self.call_from_thread(self._append, "screen", s)
         try:
             new_n = await asyncio.to_thread(self.lc.wrap, ticker, stream)
         except Exception as e:  # noqa: BLE001 — surface any pipeline failure to the player
@@ -262,6 +275,8 @@ class PlayApp(App):
             self._busy(False)
             return
         self._write("scene", f"\n[$success]— session {new_n} ready · opening the scene —[/]")
+        if was_hidden:
+            screen.add_class("hidden")  # restore the default closed state
         self._turn = 0
         self._wrapping = False
         await self._open()  # opens the next session's scene and re-enables input
@@ -272,7 +287,7 @@ class PlayApp(App):
     # -- rendering ----------------------------------------------------------
 
     def _render_dm(self, tr) -> None:
-        self._write("scene", f"\n[$accent]DM[/]  {escape(tr.final)}")
+        self._write("scene", f"\n[$accent]DM[/]  {inline(tr.final)}")
 
     def _render_gate(self, tr) -> None:
         self._turn += 1
@@ -282,9 +297,9 @@ class PlayApp(App):
         status = "[$warning]CORRECTED[/]" if tr.corrected else "[$success]clean[/]"
         self._write("screen", f"\n[b]turn {self._turn}[/b]  canon {nv} · conduct {cv} · {status} · {g.canon_sections} canon")
         if not g.narrative.passed:
-            self._write("screen", f"[$error]canon[/]\n{escape(g.narrative.report.strip())}")
+            self._write("screen", f"[$error]canon[/]\n{inline(g.narrative.report.strip())}")
         if not g.conduct.passed:
-            self._write("screen", f"[$error]conduct[/]\n{escape(g.conduct.report.strip())}")
+            self._write("screen", f"[$error]conduct[/]\n{inline(g.conduct.report.strip())}")
 
     # -- actions ------------------------------------------------------------
 

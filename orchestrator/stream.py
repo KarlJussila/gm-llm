@@ -16,10 +16,15 @@ observes the event bus, never drives the run.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import threading
 import urllib.parse
 import urllib.request
+
+from rich.markup import escape as _escape
+
+from .textmarkup import inline as _inline
 
 
 def _stdout_write(s: str) -> None:
@@ -28,12 +33,15 @@ def _stdout_write(s: str) -> None:
 
 
 class EventTap:
-    def __init__(self, base: str, directory: str, write=None):
+    def __init__(self, base: str, directory: str, write=None, markup: bool = False):
         self.base = base
         self.directory = directory
         # Where rendered lines go. Default: stdout (the CLI's --stream). A consumer
         # like the TUI passes its own writer to route the live log into a pane.
         self._write_cb = write or _stdout_write
+        # Output dialect. A terminal sink gets ANSI; a Textual sink (markup=True) gets
+        # console markup with body text escaped, so the pane is coloured the same way.
+        self._markup = markup
         self._stop = threading.Event()
         self._resp = None
         self._thread: threading.Thread | None = None
@@ -42,6 +50,8 @@ class EventTap:
         self._printed: dict[str, int] = {}     # partID -> chars already printed
         self._seen_tools: set[str] = set()     # tool partIDs already announced
         self._cur: str | None = None           # session we're mid-line on
+        self._body = ""                        # markup mode: buffered partial line
+        self._body_kind = "plain"              # kind of the buffered body text
         # ANSI only when we own a real terminal; a custom sink gets plain text.
         self._color = sys.stdout.isatty() and write is None
 
@@ -54,6 +64,8 @@ class EventTap:
 
     def stop(self) -> None:
         self._stop.set()
+        with self._lock:
+            self._flush_body()  # emit any trailing partial line
         try:
             if self._resp:
                 self._resp.close()
@@ -70,6 +82,7 @@ class EventTap:
         """Print a full status line from the main thread without tearing a delta
         we're mid-stream on (closes the open line first)."""
         with self._lock:
+            self._flush_body()
             if self._cur is not None:
                 self._emit("\n")
                 self._cur = None
@@ -80,8 +93,52 @@ class EventTap:
 
     # -- internals ----------------------------------------------------------
 
-    def _c(self, code: str, s: str) -> str:
-        return f"\033[{code}m{s}\033[0m" if self._color else s
+    _ANSI = {"heading": "1;36", "tool": "33", "reasoning": "2"}
+    _TAGS = {"heading": "bold cyan", "tool": "yellow", "reasoning": "dim"}
+
+    def _style(self, kind: str, s: str) -> str:
+        """Render a chunk in the active dialect. `kind` is one of heading/tool/
+        reasoning/plain. Markup mode escapes the body and wraps it in console tags;
+        terminal mode wraps it in ANSI; otherwise it passes through plain."""
+        if self._markup:
+            s = _escape(s)
+            tag = self._TAGS.get(kind)
+            return f"[{tag}]{s}[/]" if tag else s
+        if self._color:
+            code = self._ANSI.get(kind)
+            return f"\033[{code}m{s}\033[0m" if code else s
+        return s
+
+    # -- body text (markup mode buffers whole lines so Markdown renders) ----
+
+    def _emit_body(self, kind: str, chunk: str) -> None:
+        """Emit a delta of assistant/reasoning text. Terminal/plain mode streams the
+        chunk as-is; markup mode buffers until a newline so `**bold**` and headings
+        — which can be split across stream chunks — render per complete line."""
+        if not self._markup:
+            self._emit(self._style(kind, chunk))
+            return
+        if kind != self._body_kind:
+            self._flush_body()
+            self._body_kind = kind
+        self._body += chunk
+        while "\n" in self._body:
+            line, self._body = self._body.split("\n", 1)
+            self._emit(self._render_line(kind, line) + "\n")
+
+    def _flush_body(self) -> None:
+        """Emit any buffered partial line (on a section/tool break, or at stop)."""
+        if self._body:
+            self._emit(self._render_line(self._body_kind, self._body))
+            self._body = ""
+
+    def _render_line(self, kind: str, line: str) -> str:
+        # Reasoning stays dim and literal; assistant prose gets Markdown bold, and a
+        # leading `#`-heading becomes a bold line.
+        if kind == "reasoning":
+            return self._style("reasoning", line)
+        m = re.match(r"\s*#{1,6}\s+(.*)", line)
+        return f"[bold]{_inline(m.group(1))}[/bold]" if m else _inline(line)
 
     def _url(self, path: str) -> str:
         return f"{self.base}{path}?directory={urllib.parse.quote(self.directory)}"
@@ -140,11 +197,12 @@ class EventTap:
             chunk = full[prev:]
             self._printed[pid] = len(full)
             if sid != self._cur:
+                self._flush_body()
                 if self._cur is not None:
                     self._emit("\n")
-                self._emit(self._c("1;36", f"\n──── {self._title(sid)} ────\n"))
+                self._emit(self._style("heading", f"\n──── {self._title(sid)} ────\n"))
                 self._cur = sid
-            self._emit(self._c("2", chunk) if reasoning else chunk)
+            self._emit_body("reasoning" if reasoning else "plain", chunk)
 
     def _emit_tool(self, part: dict) -> None:
         pid = part.get("id")
@@ -157,10 +215,11 @@ class EventTap:
         name = part.get("tool") or "tool"
         arg = self._tool_arg(state.get("input") or {})
         with self._lock:
+            self._flush_body()
             if self._cur is not None:
                 self._emit("\n")
                 self._cur = None
-            self._emit(self._c("33", f"  ⚙ {self._title(part.get('sessionID'))}: {name}{arg}\n"))
+            self._emit(self._style("tool", f"  ⚙ {self._title(part.get('sessionID'))}: {name}{arg}\n"))
 
     @staticmethod
     def _tool_arg(inp: dict) -> str:

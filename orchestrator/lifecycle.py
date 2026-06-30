@@ -35,7 +35,9 @@ class Lifecycle:
         `stream_write(text)` receives the live model output via an EventTap (drives the
         behind-the-screen pane). Both are called from worker/daemon threads."""
         n = self.game.session
-        tap = (EventTap(self.backend.base, self.backend.directory, write=stream_write).start()
+        # markup=True: the stream sink is the Textual pane, which renders console
+        # markup — EventTap colours headings/tools/reasoning and escapes body text.
+        tap = (EventTap(self.backend.base, self.backend.directory, write=stream_write, markup=True).start()
                if stream_write else None)
         try:
             Reconciler(self.backend, self.gate, on_stage=on_stage,

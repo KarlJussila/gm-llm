@@ -80,7 +80,11 @@ class MockLifecycle:
             if on_stage:
                 on_stage(key)
             if stream_write:
-                stream_write(f"\n──── {key} ────\n  (mock) working {key}…\n")
+                # Mirror the live EventTap's markup dialect so the offline demo shows
+                # the same coloured headings / tool lines the real stream produces.
+                stream_write(f"[bold cyan]\n──── {key} ────\n[/]")
+                stream_write(f"  (mock) working {key}…\n")
+                stream_write(f"[yellow]  ⚙ {key}: write  world/notes/{key}.md[/]\n")
             time.sleep(0.6)  # let the ticker breathe so the flow is visible
         self._session += 1
         self.game = MockGame()
