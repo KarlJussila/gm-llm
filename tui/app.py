@@ -192,7 +192,9 @@ class PlayApp(App):
     async def _finish_setup(self) -> None:
         """Setup reported done: plan session 1 (behind the screen), then open play(1)."""
         if self._setup_tap:
-            self._setup_tap.stop()
+            # stop() flushes the tap's buffered line through the write callback
+            # (call_from_thread) — so it must run off the app thread, not here.
+            await asyncio.to_thread(self._setup_tap.stop)
             self._setup_tap = None
         self.sub_title = "⏳ planning session 1…"
         self._write("scene", "\n[$warning]— campaign built · planning session 1 —[/]")
