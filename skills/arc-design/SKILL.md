@@ -10,6 +10,14 @@ description: The craft of designing a new narrative arc for a D&D campaign — p
 Read `campaign/feedback/arc-design.md` if it exists — accumulated, player-specific guidance distilled
 from past sessions. Treat it as binding; let it override the defaults here wherever they conflict.
 
+## Build your task list
+
+Use your `todowrite` tool to create exactly these entries, then work them in order:
+
+1. Gather context (see *Before you write*)
+2. Design the arc: premise, stakes, key NPCs/factions, turning points, engagement paths
+3. Author the arc file + `.state.md`; register in `INDEX.md` with `tier` and `hooks-into` (if minor)
+
 ## What you're designing
 
 The campaign has **one major arc and several minor arcs that hook into it**. You're designing one:

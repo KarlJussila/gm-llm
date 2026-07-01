@@ -1,0 +1,3 @@
+A new campaign is being created. Load `campaign-setup` for the authoring standards and principles that apply throughout init. Then load `campaign-intake` and follow its task list to gather the campaign brief from the player. When intake is complete, load `world-build` and `canon-conventions` and follow their task lists to build the world skeleton and write `campaign/campaign.md`.
+
+This stage is an interactive conversation — keep working with the player until intake and the world skeleton are genuinely done and you've given them a spoiler-free overview of the world they'll be playing in. Only then, as your final act, call the `task_complete` tool to move on to creating their character. Do not call it while you still intend to ask the player anything.

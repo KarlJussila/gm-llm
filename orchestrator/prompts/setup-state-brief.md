@@ -1,0 +1,1 @@
+Load `state-init` and follow its task list to initialize all state as of session 1. Report when done.

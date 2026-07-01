@@ -60,7 +60,7 @@ class PlayApp(App):
         self._screen = ""
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
         self._setup_hidden = True    # screen pane's visibility before setup borrowed it
-        self._setup_stage = None     # last spoiler-free setup stage shown in the scene
+        self._setup_stages_seen = set()  # spoiler-free setup stages already shown (each shows once)
 
     @property
     def game(self):
@@ -172,10 +172,12 @@ class PlayApp(App):
 
     def _setup_activity(self, name: str, arg: str) -> None:
         """A tool fired during setup — surface a coarse, spoiler-free stage in the scene
-        when it changes, so the build shows progress instead of hanging silently."""
+        the first time we see it, so the build shows progress instead of hanging silently.
+        Each stage shows at most once: the dm touches files across categories in no fixed
+        order, so without this the ticker flip-flops between the same few labels."""
         stage = next((label for frag, label in self._SETUP_STAGES if frag in arg), None)
-        if stage and stage != self._setup_stage:
-            self._setup_stage = stage
+        if stage and stage not in self._setup_stages_seen:
+            self._setup_stages_seen.add(stage)
             self._write("scene", f"[$text-muted]  ▸ {stage}…[/]")
 
     async def _open_setup(self) -> None:
@@ -185,7 +187,7 @@ class PlayApp(App):
         self._setup_hidden = screen.has_class("hidden")
         screen.remove_class("hidden")
         self._write("screen", "\n[b]— building the campaign —[/b]\n")
-        self._setup_stage = None
+        self._setup_stages_seen.clear()
         stream = lambda s: self.call_from_thread(self._append, "screen", s)
         # tool calls drive a spoiler-free progress ticker in the scene (the full,
         # spoiler-bearing authoring stays behind the screen).
@@ -289,6 +291,12 @@ class PlayApp(App):
             return
         self._render_dm(tr)
         self._render_gate(tr)
+        if tr.session_complete:
+            # The runner signalled the session's end — roll straight into the wrap
+            # (capture handoff notes, reconcile, open N+1), the same path as ctrl+w.
+            self._write("scene", "\n[$warning]— the session has reached its end —[/]")
+            await self._do_wrap()
+            return
         self._busy(False)
 
     async def _do_meta(self, question: str) -> None:
@@ -336,6 +344,7 @@ class PlayApp(App):
     # -- wrap: end the session, run the post-session pipeline, open the next -
 
     _WRAP_LABELS = {
+        "handoff": "jotting down the runner's notes",
         "digest": "reading back the session",
         "assess": "taking stock of what happened",
         "feedback": "noting your feedback",

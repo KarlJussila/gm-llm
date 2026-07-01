@@ -115,7 +115,10 @@ numbered "here's what happens" list is the failure mode, even softened with "rou
 The whole hand-off is **one or two sentences**, containing only what the character already knows:
 
 > Session 2 is planned and ready. You'll pick up right where you left off — [one spoiler-free line
-> of the character's current situation]. Start `dm-runner` when you want to play.
+> of the character's current situation].
+
+The session opens on its own once it's ready — don't tell the player to start `dm-runner` or launch
+anything.
 
 The test: would reading this sentence tell the player something their character doesn't already
 know? If yes, it's a spoiler — cut it.

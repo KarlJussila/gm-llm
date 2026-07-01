@@ -1,30 +1,46 @@
 """
 Init — the orchestrated new-campaign flow.
 
-Init is the one phase that isn't an autonomous dispatch: `campaign-setup` is a guided
-conversation with the player (intake, character, hooks) interleaved with authoring. So
-`Setup` mirrors `Game`'s conversational shape rather than `Reconciler`'s staged pipeline
-— the dm runs `campaign-setup` in one thread, and the orchestrator just provides the
-surface and owns the edges.
+Setup drives the dm through campaign init as a staged pipeline:
+  1. scaffold_campaign()  — pure Python, no LLM
+  2. INTAKE_WORLD         — dm does intake + world build (interactive with player)
+  3. CHAR                 — dm does character creation (interactive with player)
+  4. ARC_MAJOR, ARC_MINOR, STATE — single-turn dispatches, no player
+  5. GATE                 — init-gate checker in a fresh session
+  6. COMMIT               — git commit in code
 
   s = Setup(backend, gate, directory)
-  s.start()                 # the dm loads campaign-setup, opens with the intake question
-  s.turn(player_input)      # one conversational exchange -> SetupTurn{reply, done}
-  s.finalize()              # once done: plan session 1 (code-gated) -> returns 1
+  s.start()                 # scaffold, open first brief, return dm's first message
+  s.turn(player_input)      # relay player turn; advance stage on completion signals
+  s.finalize()              # once done: plan session 1 (code-gated + committed)
 
-Completion is read from git/disk — `campaign: init` committed — never by parsing the
-dm's prose. The session-1 plan is the one gateable artifact at init, so the orchestrator
-owns it via the existing `Planner` (reusing the warm setup thread).
+Stage markers in .opencode/.orchestrator/setup-{stage}.done track progress and enable resume.
+The interactive stages (INTAKE_WORLD, CHAR) advance when the dm calls the `task_complete` tool —
+its own explicit "I'm done" signal — not by inferring completion from a canon file appearing
+mid-conversation (which fired the transition before the dm had finished talking to the player).
+The non-interactive stages stop when their dispatch returns, like the reconciler. Overall
+completion is still read from git/disk — never by parsing the dm's prose.
 """
 
 from __future__ import annotations
 
 import subprocess
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
+from .phase import apply_one_correction, commit_campaign
 from .planner import Planner
 from .prompts import load
+from .scaffold import scaffold_campaign
+
+_STAGE_BRIEFS = {
+    "INTAKE_WORLD": "setup-intake-world-brief",
+    "CHAR":         "setup-char-brief",
+    "ARC_MAJOR":    "setup-arc-major-brief",
+    "ARC_MINOR":    "setup-arc-minor-brief",
+    "STATE":        "setup-state-brief",
+}
 
 
 @dataclass
@@ -34,7 +50,7 @@ class SetupTurn:
 
 
 class Setup:
-    """Drives the dm through `campaign-setup` as a player-facing conversation."""
+    """Drives the dm through campaign init as a staged, orchestrator-controlled pipeline."""
 
     def __init__(self, backend, gate, directory: str, dm_agent: str = "dm",
                  on_prep=None, checks_log: str | None = None):
@@ -45,31 +61,104 @@ class Setup:
         self.on_prep = on_prep
         self.checks_log = checks_log
         self.root = Path(directory)
-        self.dm_sid = backend.create_session("dm setup")
+        self._stage: str | None = None
+        self.dm_sid: str | None = None
 
     def start(self) -> SetupTurn:
-        # A `campaign: init` already in this directory means a complete campaign is
-        # present (init is the final setup step) — e.g. an earlier run that built it
-        # but didn't reach planning. Don't reopen the conversation; resume to planning.
         if self._init_committed():
             return SetupTurn("This directory already has a campaign — planning the first session.", True)
-        reply = self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-kickoff"))
-        return SetupTurn(reply, self._init_committed())
+
+        scaffold_campaign(self.root)
+        self.dm_sid = self.backend.create_session("dm setup")
+        self._stage = self._resume_stage()
+
+        # Non-interactive resume: run the pipeline immediately, no player turns needed
+        if self._stage not in ("INTAKE_WORLD", "CHAR"):
+            self._run_pipeline()
+            return SetupTurn("Campaign init complete.", True)
+
+        # whole=True: the dm's player-facing setup message can span several text parts (it
+        # works as it talks — e.g. the world overview followed by a short closer), and
+        # _last_text would surface only the final fragment, dropping the overview. Joining
+        # all text parts surfaces the whole message; reasoning/tool parts are excluded, so
+        # the behind-the-screen thinking never leaks in.
+        reply = self.backend.prompt(self.dm_sid, self.dm_agent,
+                                    load(_STAGE_BRIEFS[self._stage]), whole=True)
+        return SetupTurn(reply, False)
 
     def turn(self, player_input: str) -> SetupTurn:
-        reply = self.backend.prompt(self.dm_sid, self.dm_agent, player_input)
-        return SetupTurn(reply, self._init_committed())
+        reply = self.backend.prompt_full(self.dm_sid, self.dm_agent, player_input, whole=True)
+        text, done = reply.text, "task_complete" in reply.tools
+
+        if self._stage == "INTAKE_WORLD" and done:
+            self._mark_done("INTAKE_WORLD")
+            self._stage = "CHAR"
+            # Open character creation and APPEND it to the world wrap-up, so the player
+            # sees both this turn — never overwrite the dm's own closing beat.
+            char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
+                                            load("setup-char-brief"), whole=True)
+            return SetupTurn(f"{text}\n\n{char_open}", False)
+        if self._stage == "CHAR" and done:
+            self._mark_done("CHAR")
+            self._run_pipeline()
+            return SetupTurn(text, True)
+
+        return SetupTurn(text, self._init_committed())
 
     def finalize(self) -> int:
-        """Once init is committed, plan session 1 — the dm authors in the warm setup
-        thread, code gates `check-plan` and commits — then return the new session (1)."""
+        """Once init is committed, plan session 1 via Planner, reusing the warm dm thread."""
         Planner(self.backend, self.gate, dm_agent=self.dm_agent, dm_sid=self.dm_sid,
                 on_prep=self.on_prep, checks_log=self.checks_log).prep_session(1, commit=True)
         return 1
 
+    # --- non-interactive pipeline ---
+
+    def _run_pipeline(self) -> None:
+        """Arc design, state init, gate, and commit — no player turns."""
+        for stage, brief_key in [
+            ("ARC_MAJOR", "setup-arc-major-brief"),
+            ("ARC_MINOR", "setup-arc-minor-brief"),
+            ("STATE",     "setup-state-brief"),
+        ]:
+            if not self._setup_done(stage):
+                self.backend.prompt(self.dm_sid, self.dm_agent, load(brief_key))
+                self._mark_done(stage)
+
+        if not self._setup_done("GATE"):
+            result = self.gate.check_init()
+            apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
+            self._mark_done("GATE")
+
+        commit_campaign(self.root, "campaign: init")
+        self._mark_done("COMMIT")
+
+    # --- stage tracking ---
+
+    def _resume_stage(self) -> str:
+        """First stage without a completion marker. Markers are the single source of
+        truth (matches the reconciler) — the interactive stages mark done when the dm
+        signals `task_complete`, so there's no canon-file guessing here anymore."""
+        for stage in ("INTAKE_WORLD", "CHAR", "ARC_MAJOR", "ARC_MINOR", "STATE", "GATE"):
+            if not self._setup_done(stage):
+                return stage
+        return "COMMIT"
+
+    def _setup_done(self, stage: str) -> bool:
+        return self._marker(stage).is_file()
+
+    def _mark_done(self, stage: str) -> None:
+        self._marker(stage).write_text(datetime.now(timezone.utc).isoformat() + "\n")
+
+    def _marker(self, stage: str) -> Path:
+        d = self.root / ".opencode" / ".orchestrator"
+        d.mkdir(parents=True, exist_ok=True)
+        return d / f"setup-{stage}.done"
+
+    # --- completion ---
+
     def _init_committed(self) -> bool:
-        """Done iff `campaign: init` is in the campaign repo's history (or session 1 is
-        already planned). A robust file/git signal — we never prose-parse the dm."""
+        """Done iff `campaign: init` is in the campaign repo's history (or session 1
+        is already planned). A robust file/git signal — we never prose-parse the dm."""
         if (self.root / "campaign" / "sessions" / "session-1-plan.md").is_file():
             return True
         try:

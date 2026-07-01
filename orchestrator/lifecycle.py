@@ -86,6 +86,11 @@ class Lifecycle:
         n = self.game.session
         tap = self._tap(stream_write)
         try:
+            # First, while the runner session is still warm, capture its handoff notes —
+            # the between-session pipeline folds them in alongside the transcript.
+            if on_stage:
+                on_stage("handoff")
+            self.game.handoff()
             Reconciler(self.backend, self.gate, on_stage=on_stage,
                        checks_log=self.checks_log).reconcile_session(n, commit=commit)
         finally:

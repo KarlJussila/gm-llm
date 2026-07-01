@@ -10,10 +10,9 @@ description: Open a new campaign by gathering the player's brief — offer free-
 Read `campaign/feedback/campaign-intake.md` if it exists — accumulated, player-specific guidance from
 past setups. Treat it as binding; let it override the defaults here.
 
-## How this goes
+## Build your task list
 
-This is `campaign-setup`'s **"gather the brief"** step — you're already on its campaign-wide todo
-list, so **don't open a new `todowrite` list here**; just work these four moves in order:
+Use your `todowrite` tool to create exactly these entries, then work them in order:
 
 1. Offer the choice — free-form or guided
 2. Gather the brief along the branch they chose

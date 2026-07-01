@@ -36,6 +36,7 @@ exactly:**
 - **`check-digest`** — POST: verify the session digest faithfully captures the transcript.
 - **`check-propagation`** — POST: verify a session's updates fully propagated into canon and state.
 - **`check-feedback`** — POST: verify the player's feedback was curated into `campaign/feedback/`.
+- **`check-init`** — INIT: verify all canon authored during setup is complete, registered, and consistent.
 
 Each role skill starts by having you build a `todowrite` task list of its exact steps; work them in
 order and report findings.

@@ -1,6 +1,6 @@
 ---
 name: character-create
-description: Collaboratively create a player character with the player — concept, mechanical details, placement in the world, backstory — then write the PC's three files (sheet, state, knowledge ledger) and register the PC. Use during campaign setup, or later when a new PC joins. Player-facing, so it is run by the dm (a primary), never a subagent. Surfaces DM-side hooks for arcs and any backstory canon the world must absorb.
+description: Collaboratively create a player character with the player — concept, mechanical details, placement in the world, backstory — then write the PC's three files (sheet, state, knowledge ledger) and register the PC. Use during campaign setup, or later when a new PC joins. Player-facing, so it is run by the dm (a primary), never a subagent. Records DM-side story hooks in the sheet and folds in any backstory canon the world must absorb.
 ---
 
 # character-create
@@ -37,13 +37,15 @@ Match the player's preference:
 
 ## Steps
 
-1. **Open — how do you want to make your character?** This is the skill's opening beat: present the
-   choice and hand off to the player. They can **take or adapt one of the hooks** on offer, **bring
-   their own** (point you at any file — a sheet export, PDF, JSON, HTML dump, notes doc, whatever
-   they've got), or **build one together** from scratch at their chosen control level. At setup this
-   lands right after the world's hooks — present it **together with them, in the same turn**, then wait
-   for the player's answer. (Joining mid-campaign there are no hooks — just present the
-   bring-your-own / build choice.) Continue from whatever they say; don't re-ask from a standing start.
+Use your `todowrite` tool to create entries for steps 1–5 plus Confirm, Write the three PC files, Fold backstory canon, and **Finish — call `task_complete`**, then work them in order. That last entry is not optional: the process always ends with the `task_complete` tool call.
+
+1. **Open — hooks and how do you want to make your character?** This is the skill's opening beat.
+   At campaign setup the DM has just given the player a world overview — build directly on it: devise
+   **2–4 character hooks** (each a role plus a tie into the situation, spoiler-free), present them,
+   and in the **same message** offer the character-creation choice: they can **take or adapt one of
+   these hooks**, **bring their own** (point you at any file — a sheet export, PDF, JSON, HTML dump,
+   notes doc, whatever they've got), or **build one together** from scratch at their chosen control
+   level. Hand off to the player and wait. Continue from whatever they say; don't re-ask from a standing start.
 2. **Hand the file to `character-importer`.** For any real character file they point you at — a
    JSON/HTML/PDF/sheet export *or* a multi-section notes doc — **delegate to the `character-importer`**
    subagent (give it the source path and the target sheet path `characters/{slug}.md`), even though you
@@ -64,17 +66,19 @@ Match the player's preference:
    to them and adjust to their answers. Where the backstory needs **new** people or places, note them
    (see *Hand back to setup*) — don't author full world files here; the dm folds those in afterward
    (its *fold backstory canon* step).
-5. **DM-side hooks.** Distill 1–3 threads from the backstory the arcs can later hook into (a loss,
-   a hunted past, a rival, a debt). Keep *how* they'll be used spoiler-side — record the seams, not
-   the plan.
+5. **DM-side hooks.** Distill 1–3 threads from the backstory the story can later hook into (a loss,
+   a hunted past, a rival, a debt) and record them in the sheet's DM-side hooks. Keep *how* they'll
+   be used spoiler-side — record the seams, not the plan.
 
 ## Confirm before you commit
-Don't write the files — or hand back to setup so the world and arcs get built around this character —
-until the player has **seen and okayed** the finished character: their vitals, their place in the
-world, the ties you've drawn, and anything you filled in for them. Match the weight to how much you
-added: a quick "here's where I've slotted you in — good?" if they handed you a complete sheet, a fuller
-walk-through if you built a lot together. The character is theirs to sign off on; don't run ahead and
-plan the campaign around a version they haven't seen.
+Don't write the files or finish until the player has **seen and okayed** the finished character:
+their vitals, their place in the world, the ties you've drawn, and anything you filled in for them.
+Match the weight to how much you added: a quick "here's where I've slotted you in — good?" if they
+handed you a complete sheet, a fuller walk-through if you built a lot together. The character is
+theirs to sign off on; don't run ahead of what they've seen.
+
+When you talk to the player — here and anywhere — use plain names, not canon notation: write "Erasmus
+Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the files, not on their screen.
 
 ## Write the three PC files
 
@@ -100,12 +104,18 @@ plan the campaign around a version they haven't seen.
 
 Then **register the PC** in `INDEX.md` (PC section).
 
-## Hand back to setup
+## Fold backstory canon
 
-Surface to the dm, for the world and arcs to absorb:
-- **Backstory canon** — every new NPC/location/faction the backstory introduced, so the dm authors
-  and registers it (nothing the backstory names stays unfiled).
-- **DM-side hooks** — the 1–3 threads, so the dm can make an arc personal to this PC.
+For every new NPC/location/faction the backstory introduced, author and register it yourself
+(`world-build` + `canon-conventions`). **Gate.** Nothing the backstory names stays unfiled.
+
+## Finish — call `task_complete`
+
+The last step, every time. Once the PC is confirmed by the player, the three files are written and
+registered, and any backstory canon is folded in, **call the `task_complete` tool**. That signals
+the character is done and hands control back — the rest of setup proceeds on its own. Do **not** build
+or plan anything beyond the character yourself, and do **not** tell the player to start or launch
+anything; the table opens when it's ready.
 
 ## Tone
 Collaborative and curious. The character is the player's; your job is to make them fit the world and

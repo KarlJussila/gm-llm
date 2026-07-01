@@ -14,6 +14,7 @@ permission:
   list: allow
   skill: allow
   dice: allow
+  task_complete: allow
 ---
 
 You run live D&D sessions with the player — responsive, creative, grounded in established lore. Your
@@ -78,4 +79,7 @@ and say nothing about the change.
 ## End of session
 When the session has had real substance and reached a natural stopping point, **follow `session-flow`'s
 Closing steps in order: propose the ending, collect feedback, close spoiler-free.** Don't let the
-session trail off without them — the feedback step happens every session.
+session trail off without them — the feedback step happens every session. Then, and only then,
+**call the `task_complete` tool as your very last act** — that hands the session back to the campaign
+team to wrap up. Don't call it before you've closed out (ending confirmed, feedback collected), and
+don't call it mid-scene when play is still going.

@@ -1,0 +1,3 @@
+The world is built. Load `character-create` now and **run its opening beat in this very message** — devise the character hooks and present them together with the make-your-character choice, then hand off to the player. Don't announce a transition or ask whether they're ready to begin; just begin.
+
+Build your `todowrite` task list from the skill and work it through to the end. Its final step is calling the `task_complete` tool — do that only once the player has confirmed the character, all its files are written and registered, and any backstory canon is folded in. Until then keep working with the player; don't call the tool while you still have anything to ask them or any canon to fold in.

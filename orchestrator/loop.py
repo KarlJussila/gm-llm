@@ -44,6 +44,7 @@ class TurnResult:
     final: str          # what reaches the player (== draft unless corrected)
     gate: "GateResult"  # noqa: F821 — annotation only (lazy via __future__)
     corrected: bool
+    session_complete: bool = False  # the runner signalled the session's end via task_complete
 
 
 class Game:
@@ -118,6 +119,31 @@ class Game:
         self._correcting = False
         return self.backend.prompt(self.runner_sid, self.runner_agent, question)
 
+    def handoff(self) -> Path | None:
+        """At session end, ask the still-live runner (its context warm from the whole
+        session) for its handoff notes — story-trajectory changes, new/changed entities,
+        threads touched — and write them to `campaign/sessions/session-{N}-notes.md`, which
+        the between-session pipeline folds in alongside the transcript.
+
+        Ungated (internal notes, not player-facing narration; never hits the transcript).
+        The runner has no write permission, so the orchestrator writes the file from the
+        returned text. Idempotent: no-ops if the notes already exist, so a re-run/resume of
+        the wrap doesn't re-dispatch. Best-effort — a failure never blocks the wrap."""
+        if not self.session:
+            return None
+        notes_path = self.campaign / "sessions" / f"session-{self.session}-notes.md"
+        if notes_path.is_file():
+            return notes_path
+        self._correcting = False
+        notes = self.backend.prompt(self.runner_sid, self.runner_agent, load("handoff-brief"))
+        try:
+            notes_path.parent.mkdir(parents=True, exist_ok=True)
+            notes_path.write_text(
+                f"# Session {self.session} — runner handoff notes\n\n{notes.strip()}\n")
+        except OSError:
+            return None
+        return notes_path
+
     def abort(self) -> bool:
         """Cancel the model call in flight for the current turn (the UI's cancel
         key, e.g. after a mistype). The blocked `start`/`turn`/`meta` raises
@@ -141,7 +167,12 @@ class Game:
 
     def _gated_turn(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
         self._correcting = False
-        draft = self.backend.prompt(self.runner_sid, self.runner_agent, message)
+        reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, message)
+        draft = reply.text
+        # The runner ends a session by calling `task_complete` as its final act (after its
+        # closing beats). We read that off the draft's tool calls — never the opening, which
+        # is a scene-set, not an ending.
+        session_complete = (not opening) and ("task_complete" in reply.tools)
         result = self.gate.check(draft, player_msg)
         final, corrected = draft, False
         if result.violations:
@@ -153,7 +184,7 @@ class Game:
             final = self.backend.prompt(self.runner_sid, self.runner_agent, result.correction_brief())
             self._correcting = False
             corrected = True
-        tr = TurnResult(player_msg, draft, final, result, corrected)
+        tr = TurnResult(player_msg, draft, final, result, corrected, session_complete)
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
         self._log(tr)
         if self.on_turn:

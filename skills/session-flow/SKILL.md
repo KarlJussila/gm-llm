@@ -54,7 +54,7 @@ the first one means it's too early to land, not time to wrap.
 
 The session doesn't just stop — you bring it to a close. When pacing tells you it has had **real
 substance and reached a natural stopping point** (or the player has again diverged substantially), run
-these three steps **in order, every session** — don't let play trail off without them:
+these steps **in order, every session** — don't let play trail off without them:
 
 1. **Propose the ending yourself.** Land on a satisfying beat or a cliffhanger — don't wait to be
    asked, and don't end early just because an exit surfaced. A single-scene session almost never
@@ -64,3 +64,6 @@ these three steps **in order, every session** — don't let play trail off witho
    happens at the end of every session.**
 3. **Close spoiler-free.** Confirm the ending beat, thank them, and stop. No summary, no preview of
    what's coming.
+4. **Signal the end.** As your very last act — after closing out — **call the `task_complete` tool**.
+   That hands the session back to the campaign team to wrap up (their between-session work reads your
+   handoff notes and reconciles canon). Only call it once steps 1–3 are done; never mid-scene.

@@ -11,6 +11,14 @@ Before creating world content, read `campaign/feedback/world-build.md` if it exi
 accumulated, player-specific guidance distilled from past sessions. Treat it as binding and let it
 override the defaults here wherever they conflict.
 
+## Build your task list
+
+Use your `todowrite` tool to create exactly these entries, then work them in order:
+
+1. Synthesize the brief into the world's premise and central situation
+2. Author the world entities (regions, factions, NPCs, items, world-truth singletons); load `canon-conventions` for file format; register each in `INDEX.md`
+3. Write `campaign/campaign.md` (setting, tone, themes, stakes; record content boundaries)
+
 ## Format is not your concern here — load canon-conventions
 
 **Load the `canon-conventions` skill and follow it for all format**: the file layout under

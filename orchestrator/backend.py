@@ -27,8 +27,18 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+
+
+@dataclass(frozen=True)
+class Reply:
+    """A prompt's result: the agent's text plus the set of tool names it called this
+    response. `tools` lets a caller detect an explicit signal the model raised via a
+    tool (e.g. `task_complete`) without prose-parsing — see `prompt_full`."""
+    text: str
+    tools: frozenset[str] = field(default_factory=frozenset)
 
 
 class BackendError(RuntimeError):
@@ -163,6 +173,32 @@ class Backend:
         `VERDICT:` line in separate parts: `_last_text` would keep only the verdict)."""
         return "\n".join(t.strip() for t in cls._text_parts(resp)).strip()
 
+    def _recent_tool_names(self, session_id: str) -> frozenset[str]:
+        """The names of every tool the agent called in the most recent turn — scanning
+        every assistant message after the last user message in the session history.
+
+        Must read history rather than the POST response: opencode splits a turn that calls
+        a tool and then keeps producing output into multiple assistant messages, and the
+        POST returns only the last, so a `task_complete` call the model follows with more
+        text would be missed. Prompts are serialized (one in-flight), so the trailing
+        assistant messages are exactly this turn's. Best-effort — any error yields empty."""
+        try:
+            msgs = self._raw_get(f"/session/{session_id}/message", timeout=30)
+        except (urllib.error.URLError, OSError, ValueError):
+            return frozenset()
+        if not isinstance(msgs, list):
+            return frozenset()
+        last_user = -1
+        for i, m in enumerate(msgs):
+            if isinstance(m, dict) and m.get("info", {}).get("role") == "user":
+                last_user = i
+        names = set()
+        for m in msgs[last_user + 1:]:
+            for p in (m.get("parts", []) if isinstance(m, dict) else []):
+                if p.get("type") == "tool" and p.get("tool"):
+                    names.add(p["tool"])
+        return frozenset(names)
+
     def _dump_parts(self, session_id: str, agent: str, resp: dict, out: str) -> None:
         """ORCH_DEBUG: append the reply's full part structure, so we can see whether
         a checker's findings landed in an earlier part than its verdict (which
@@ -247,15 +283,31 @@ class Backend:
             return False
 
     def prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
-        """Prompt `agent` on `session_id`; return its text. Retries on
-        failure/empty/timeout with backoff, paced to ease rate limits.
+        """Prompt `agent` on `session_id`; return its text."""
+        return self._run_prompt(session_id, agent, text, whole=whole)
 
-        `whole=True` joins every text part (use for checkers, whose findings and
-        verdict can land in separate parts); the default returns the last part (the
-        runner's narration, which is a single clean block).
+    def prompt_full(self, session_id: str, agent: str, text: str, whole: bool = False) -> Reply:
+        """Prompt `agent`; return a `Reply` (text + the tool names it called this turn).
 
-        Cancellable: `abort()` from another thread raises BackendCancelled here
-        rather than retrying or returning a partial reply."""
+        Tool names come from the session history, NOT the POST response: when the model
+        calls a tool and then keeps going (more reasoning, another tool, a closing line),
+        opencode splits the turn into several assistant messages and the POST returns only
+        the LAST one — so a `task_complete` call followed by any further output would be
+        invisible in the response alone. We scan every assistant message since the last
+        user message instead."""
+        out = self._run_prompt(session_id, agent, text, whole=whole)
+        return Reply(out, self._recent_tool_names(session_id))
+
+    def _run_prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
+        """Prompt `agent` on `session_id`; return its text. Retries on failure/empty/
+        timeout with backoff, paced to ease rate limits.
+
+        `whole=True` joins every text part (use for checkers, whose findings and verdict
+        can land in separate parts); the default returns the last part (the runner's
+        narration, a single clean block).
+
+        Cancellable: `abort()` from another thread raises BackendCancelled here rather
+        than retrying or returning a partial reply."""
         body = {"agent": agent, "parts": [{"type": "text", "text": text}]}
         self._cancel.clear()
         self._inflight_sid = session_id

@@ -54,6 +54,7 @@ class EventTap:
         self._printed: dict[str, int] = {}     # partID -> chars already printed
         self._seen_tools: set[str] = set()     # tool partIDs already announced
         self._cur: str | None = None           # session we're mid-line on
+        self._cur_pid: str | None = None       # message part we're mid-stream on
         self._body = ""                        # markup mode: buffered partial line
         self._body_kind = "plain"              # kind of the buffered body text
         # ANSI only when we own a real terminal; a custom sink gets plain text.
@@ -206,6 +207,14 @@ class EventTap:
                     self._emit("\n")
                 self._emit(self._style("heading", f"\n──── {self._title(sid)} ────\n"))
                 self._cur = sid
+                self._cur_pid = None
+            elif pid != self._cur_pid and self._cur_pid is not None:
+                # A new message part in the same session (e.g. a text part after a reasoning
+                # part, or an assistant reply resuming after a tool call). Close the previous
+                # part's line so adjacent runs don't mash together ("…PC.Good…").
+                self._flush_body()
+                self._emit("\n")
+            self._cur_pid = pid
             self._emit_body("reasoning" if reasoning else "plain", chunk)
 
     def _emit_tool(self, part: dict) -> None:

@@ -124,6 +124,19 @@ class FeedbackGateResult:
                 + "\n\n— Feedback —\n" + self.narrative.report.strip())
 
 
+@dataclass
+class InitGateResult:
+    narrative: Verdict
+
+    @property
+    def violations(self) -> bool:
+        return not self.narrative.passed
+
+    def correction_brief(self) -> str:
+        """The message handed back to the dm to fix init canon issues."""
+        return load("correct-init") + "\n\n— Init —\n" + self.narrative.report.strip()
+
+
 _VERDICT_RE = re.compile(r"VERDICT:\s*(PASS|VIOLATIONS)", re.I)
 
 
@@ -233,4 +246,11 @@ class Gate:
         return FeedbackGateResult(
             narrative=self._run("check-feedback", "narrative-checker", _feedback_brief(n)),
             session=n,
+        )
+
+    def check_init(self) -> InitGateResult:
+        """The INIT gate: verify all canon written during setup against the seven-point
+        checklist. No preload — the checker reads campaign/ on demand."""
+        return InitGateResult(
+            narrative=self._run("check-init", "narrative-checker", load("setup-gate-brief")),
         )
