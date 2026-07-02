@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import completeness
+from .logs import append, banner, section
 from .phase import apply_one_correction, commit_campaign
 from .planner import Planner, PrepResult  # noqa: F401 — PrepResult used in annotations
 from .prompts import load
@@ -51,7 +52,7 @@ class Reconciler:
 
     def __init__(self, backend, gate, dm_agent: str = "dm",
                  analyst_agent: str = "campaign-analyst", extractor_agent: str = "log-extractor",
-                 on_reconcile=None, on_stage=None, checks_log: str | None = None):
+                 on_reconcile=None, on_stage=None, logs=None):
         self.backend = backend
         self.gate = gate
         self.dm_agent = dm_agent
@@ -59,7 +60,7 @@ class Reconciler:
         self.extractor_agent = extractor_agent
         self.on_reconcile = on_reconcile
         self.on_stage = on_stage          # called with a stage key as each stage starts
-        self.checks_log = checks_log
+        self.logs = logs
         self.root = Path(backend.directory)
         # One apply thread for the dm (D1-D3 + F), one for the analyst (C + E),
         # one for the extractor (B). Checker sessions are spawned per-call by the Gate.
@@ -170,7 +171,7 @@ class Reconciler:
         if prep and not self._done(n, "prep"):
             self._announce("prep")
             planner = Planner(self.backend, self.gate, dm_agent=self.dm_agent,
-                              checks_log=self.checks_log, dm_sid=self.dm_sid)
+                              logs=self.logs, dm_sid=self.dm_sid)
             rr.prep = planner.prep_session(n + 1, commit=commit)
             self._mark(n, "prep")
 
@@ -196,38 +197,26 @@ class Reconciler:
         return len(bad)
 
     def _log(self, rr: ReconcileResult) -> None:
-        if not self.checks_log:
-            return
-        try:
-            with open(self.checks_log, "a") as f:
-                f.write(_format_block(rr))
-        except OSError:
-            pass
-
-
-def _sec(label: str, body: str) -> str:
-    return f"\n  -- {label} {'-' * max(0, 68 - len(label))}\n\n{(body or '').strip()}\n"
+        if self.logs:
+            append(self.logs.checks, _format_block(rr))
 
 
 def _format_block(rr: ReconcileResult) -> str:
-    bar = "#" * 74
-    parts = ["", bar,
-             f"  RECONCILE session {rr.n}  ·  "
-             f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
-             f"{'committed' if rr.committed else 'uncommitted'}",
-             bar]
+    parts = [banner(f"RECONCILE session {rr.n}  ·  "
+                    f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
+                    f"{'committed' if rr.committed else 'uncommitted'}")]
     if rr.digest:
-        parts.append(_sec(f"CHECK-DIGEST · {rr.digest.narrative.label}", rr.digest.narrative.report))
+        parts.append(section(f"CHECK-DIGEST · {rr.digest.narrative.label}", rr.digest.narrative.report))
     if rr.feedback:
-        parts.append(_sec(f"CHECK-FEEDBACK · {rr.feedback.narrative.label}", rr.feedback.narrative.report))
+        parts.append(section(f"CHECK-FEEDBACK · {rr.feedback.narrative.label}", rr.feedback.narrative.report))
     if rr.lint_incomplete:
-        parts.append(_sec("COMPLETENESS LINT",
-                          f"{rr.lint_incomplete} entity file(s) incomplete after D1; one correction dispatched."))
+        parts.append(section("COMPLETENESS LINT",
+                             f"{rr.lint_incomplete} entity file(s) incomplete after D1; one correction dispatched."))
     if rr.propagation:
-        parts.append(_sec(f"CHECK-PROPAGATION · {rr.propagation.narrative.label}",
-                          rr.propagation.narrative.report))
+        parts.append(section(f"CHECK-PROPAGATION · {rr.propagation.narrative.label}",
+                             rr.propagation.narrative.report))
     if rr.prep:
-        parts.append(_sec(f"CHECK-PLAN (session {rr.prep.n}) · {rr.prep.gate.narrative.label}",
-                          rr.prep.gate.narrative.report))
+        parts.append(section(f"CHECK-PLAN (session {rr.prep.n}) · {rr.prep.gate.narrative.label}",
+                             rr.prep.gate.narrative.report))
     parts.append("")
     return "\n\n".join(parts)

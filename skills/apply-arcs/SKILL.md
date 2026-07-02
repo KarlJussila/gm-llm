@@ -189,8 +189,8 @@ one-line), and no arc was left stale or self-contradictory. Verify at least one 
 
 ### 6. Report
 Brief: **Result** (per arc: what changed), **new arcs/threads** created or promoted, **Caveats**
-(anything the digest/assessment left ambiguous). No verdict line — the gate (`check-propagation`)
-audits this pass separately.
+(anything the digest/assessment left ambiguous). The gate (`check-propagation`) audits this
+pass separately.
 
 ## Boundaries
 - Your scope is **arc design bodies, arc state, and the threads dashboard** (and authoring a new arc

@@ -30,7 +30,7 @@ ROOT = DEV.parents[1]               # project root (campaign dir's parent of .op
 OPENCODE = DEV.parent               # the .opencode dir
 sys.path.insert(0, str(OPENCODE))   # put .opencode on the path
 from orchestrator import (  # noqa: E402
-    Backend, BackendError, CanonPreloader, Gate, Game, Planner, Reconciler,
+    Backend, BackendError, CanonPreloader, Gate, Game, Logs, Planner, Reconciler,
 )
 from orchestrator.stream import EventTap  # noqa: E402
 
@@ -51,11 +51,14 @@ def _backend(args, default_timeout: int = 360):
     def on_retry(agent, attempt, wait, reason):
         print(c("33", f"[harness] {agent} call failed: {reason} — retry {attempt} in {wait}s"), flush=True)
     print(f"[harness] starting opencode serve on :{args.port} (dir={args.dir}, call-timeout={timeout}s)", flush=True)
-    b = Backend(args.dir, port=args.port, min_call_gap=args.min_gap, turn_timeout=timeout)
+    b = Backend(args.dir, port=args.port, min_call_gap=args.min_gap, turn_timeout=timeout, logs=LOGS)
     b.on_retry = on_retry
     return b
 
-CHECKS_LOG = "/tmp/orchestrator-checks.log"
+# Every log the orchestrator writes lives under one object (see orchestrator/logs.py):
+# the serve/raw/checks/detail files, wired once and threaded to Backend, Gate, and the
+# lifecycle. ORCH_DEBUG=1 turns on the raw per-reply dump.
+LOGS = Logs.under("/tmp", debug=bool(os.environ.get("ORCH_DEBUG")))
 
 
 # ──────────────────────────────── play ─────────────────────────────────────
@@ -72,7 +75,7 @@ def _empty_note(*verdicts):
     for v in verdicts:
         if getattr(v, "empty_violation", False):
             print(c("1;31", f"┄┄ note: {v.agent} stamped VIOLATIONS with no findings — "
-                            f"treated as PASS (checker output was just the verdict line) ┄┄"), flush=True)
+                            f"treated as PASS (report_findings gave a verdict but no report) ┄┄"), flush=True)
 
 
 def _show_gate(tr):
@@ -119,7 +122,7 @@ def cmd_play(args):
         tap = EventTap(backend.base, backend.directory).start() if args.stream else None
         if tap:
             print(c("2", "[harness] streaming live model output (--stream)…"), flush=True)
-        game = Game(backend, Gate(backend, CanonPreloader(args.dir)), checks_log=CHECKS_LOG)
+        game = Game(backend, Gate(backend, CanonPreloader(args.dir), logs=LOGS), logs=LOGS)
         player_sid = backend.create_session("play-player")
         print(f"[harness] runner={game.runner_sid} player={player_sid} session={game.session}", flush=True)
 
@@ -173,8 +176,8 @@ def cmd_prep(args):
     try:
         backend.start()
         tap = EventTap(backend.base, backend.directory).start() if args.stream else None
-        gate = Gate(backend, CanonPreloader(args.dir))
-        planner = Planner(backend, gate, checks_log=CHECKS_LOG)
+        gate = Gate(backend, CanonPreloader(args.dir), logs=LOGS)
+        planner = Planner(backend, gate, logs=LOGS)
         print(c("2", f"[harness] prepping session {args.session} — the dm authors, then the gate runs…"), flush=True)
         pr = planner.prep_session(args.session, commit=args.commit)
         nv = "PASS" if pr.gate.narrative.passed else "VIOLATIONS"
@@ -203,8 +206,8 @@ def cmd_reconcile(args):
     try:
         backend.start()
         tap = EventTap(backend.base, backend.directory).start() if args.stream else None
-        gate = Gate(backend, CanonPreloader(args.dir))
-        reconciler = Reconciler(backend, gate, checks_log=CHECKS_LOG)
+        gate = Gate(backend, CanonPreloader(args.dir), logs=LOGS)
+        reconciler = Reconciler(backend, gate, logs=LOGS)
         print(c("2", f"[harness] reconciling session {args.session} — staged apply, gated stage by stage…"), flush=True)
         rr = reconciler.reconcile_session(args.session, commit=args.commit,
                                           prep=not args.no_prep, fresh=args.fresh)

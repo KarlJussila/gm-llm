@@ -19,7 +19,6 @@ talk to this, never to opencode directly.
 from __future__ import annotations
 
 import json
-import os
 import signal
 import subprocess
 import threading
@@ -31,14 +30,20 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .logs import Logs, append
+
 
 @dataclass(frozen=True)
 class Reply:
-    """A prompt's result: the agent's text plus the set of tool names it called this
-    response. `tools` lets a caller detect an explicit signal the model raised via a
-    tool (e.g. `task_complete`) without prose-parsing — see `prompt_full`."""
+    """A prompt's result: the agent's text, the set of tool names it called this
+    response, and their input args. `tools` lets a caller detect an explicit signal
+    the model raised via a tool (e.g. `task_complete`) without prose-parsing — see
+    `prompt_full`. `tool_inputs` maps each tool name to its input dict (last call
+    wins if called twice), so a caller can read structured fields — e.g. the
+    `report_findings` tool's `verdict` and `report` fields."""
     text: str
     tools: frozenset[str] = field(default_factory=frozenset)
+    tool_inputs: dict[str, dict] = field(default_factory=dict)
 
 
 class BackendError(RuntimeError):
@@ -60,7 +65,7 @@ class Backend:
         turn_timeout: int = 360,
         retries: int = 6,
         min_call_gap: float = 1.0,
-        serve_log: str = "/tmp/orchestrator-serve.log",
+        logs: Logs | None = None,
     ):
         self.directory = str(Path(directory).resolve())
         self.port = port
@@ -68,7 +73,7 @@ class Backend:
         self.turn_timeout = turn_timeout
         self.retries = retries
         self.min_call_gap = min_call_gap
-        self.serve_log = serve_log
+        self.logs = logs or Logs.under()
         self._proc: subprocess.Popen | None = None
         self._owns_server = False
         self._last_call = 0.0
@@ -78,16 +83,12 @@ class Backend:
         self._cancel = threading.Event()
         self._inflight_sid: str | None = None
         self.on_retry = None  # optional callback(agent, attempt, wait, reason)
-        # Raw-response logging: set ORCH_DEBUG=1 to dump every model reply's full
-        # part structure (so we can see findings split across parts, etc.).
-        self.debug_log = os.environ.get("ORCH_DEBUG_LOG", "/tmp/orchestrator-raw.log")
-        self._debug = bool(os.environ.get("ORCH_DEBUG"))
 
     # -- server lifecycle ---------------------------------------------------
 
     def start(self, ready_timeout: int = 60) -> "Backend":
         """Boot our own `opencode serve` and wait until it answers."""
-        log = open(self.serve_log, "w")
+        log = open(self.logs.serve, "w")
         self._proc = subprocess.Popen(
             ["opencode", "serve", "--port", str(self.port)],
             cwd=self.directory, stdout=log, stderr=subprocess.STDOUT,
@@ -169,8 +170,8 @@ class Backend:
     @classmethod
     def _all_text(cls, resp: dict) -> str:
         """Every text part joined — for replies whose content spans parts (e.g. a
-        checker that runs a `todowrite` list, then writes its findings and its
-        `VERDICT:` line in separate parts: `_last_text` would keep only the verdict)."""
+        checker that runs a `todowrite` list, then submits its `report_findings`
+        tool call: `_last_text` would keep only the last text part)."""
         return "\n".join(t.strip() for t in cls._text_parts(resp)).strip()
 
     def _recent_tool_names(self, session_id: str) -> frozenset[str]:
@@ -182,41 +183,47 @@ class Backend:
         POST returns only the last, so a `task_complete` call the model follows with more
         text would be missed. Prompts are serialized (one in-flight), so the trailing
         assistant messages are exactly this turn's. Best-effort — any error yields empty."""
+        return frozenset(name for name, _ in self._recent_tool_calls(session_id))
+
+    def _recent_tool_calls(self, session_id: str) -> list[tuple[str, dict]]:
+        """Every (tool_name, input_args) the agent called in the most recent turn —
+        scanning every assistant message after the last user message. Pairs with
+        `_recent_tool_names` (which derives just the names) and feeds `Reply.tool_inputs`
+        via `prompt_full`. Best-effort — any error yields empty."""
         try:
             msgs = self._raw_get(f"/session/{session_id}/message", timeout=30)
         except (urllib.error.URLError, OSError, ValueError):
-            return frozenset()
+            return []
         if not isinstance(msgs, list):
-            return frozenset()
+            return []
         last_user = -1
         for i, m in enumerate(msgs):
             if isinstance(m, dict) and m.get("info", {}).get("role") == "user":
                 last_user = i
-        names = set()
+        calls = []
         for m in msgs[last_user + 1:]:
             for p in (m.get("parts", []) if isinstance(m, dict) else []):
                 if p.get("type") == "tool" and p.get("tool"):
-                    names.add(p["tool"])
-        return frozenset(names)
+                    state = p.get("state") or {}
+                    calls.append((p["tool"], state.get("input") or {}))
+        return calls
 
     def _dump_parts(self, session_id: str, agent: str, resp: dict, out: str) -> None:
-        """ORCH_DEBUG: append the reply's full part structure, so we can see whether
-        a checker's findings landed in an earlier part than its verdict (which
-        `_last_text` would drop) vs. the model genuinely emitting only the verdict."""
-        try:
-            parts = resp.get("parts", []) if isinstance(resp, dict) else []
-            types = [p.get("type") for p in parts]
-            texts = [p.get("text", "") for p in parts if p.get("type") == "text" and p.get("text")]
-            with open(self.debug_log, "a") as f:
-                f.write(f"\n{'=' * 72}\n{datetime.now(timezone.utc).isoformat(timespec='seconds')}  "
-                        f"agent={agent}  session={session_id}\n")
-                f.write(f"part types ({len(parts)}): {types}\n")
-                f.write(f"text parts: {len(texts)}\n")
-                for i, t in enumerate(texts):
-                    f.write(f"--- text part {i} ---\n{t}\n")
-                f.write(f"--- _last_text returned (what parse_verdict sees) ---\n{out}\n")
-        except OSError:
-            pass
+        """Debug (logs.debug): append the reply's full part structure to the raw
+        log, so we can see whether a checker's findings landed in an earlier part
+        than its verdict (which `_last_text` would drop) vs. the model genuinely
+        emitting only the verdict."""
+        parts = resp.get("parts", []) if isinstance(resp, dict) else []
+        types = [p.get("type") for p in parts]
+        texts = [p.get("text", "") for p in parts if p.get("type") == "text" and p.get("text")]
+        block = (f"\n{'=' * 72}\n{datetime.now(timezone.utc).isoformat(timespec='seconds')}  "
+                 f"agent={agent}  session={session_id}\n"
+                 f"part types ({len(parts)}): {types}\n"
+                 f"text parts: {len(texts)}\n")
+        for i, t in enumerate(texts):
+            block += f"--- text part {i} ---\n{t}\n"
+        block += f"--- _last_text returned (the checker's text output) ---\n{out}\n"
+        append(self.logs.raw, block)
 
     # -- public API ---------------------------------------------------------
 
@@ -287,16 +294,23 @@ class Backend:
         return self._run_prompt(session_id, agent, text, whole=whole)
 
     def prompt_full(self, session_id: str, agent: str, text: str, whole: bool = False) -> Reply:
-        """Prompt `agent`; return a `Reply` (text + the tool names it called this turn).
+        """Prompt `agent`; return a `Reply` (text + tool names + tool inputs).
 
-        Tool names come from the session history, NOT the POST response: when the model
-        calls a tool and then keeps going (more reasoning, another tool, a closing line),
-        opencode splits the turn into several assistant messages and the POST returns only
-        the LAST one — so a `task_complete` call followed by any further output would be
-        invisible in the response alone. We scan every assistant message since the last
-        user message instead."""
+        Tool names and inputs come from the session history, NOT the POST response: when
+        the model calls a tool and then keeps going (more reasoning, another tool, a
+        closing line), opencode splits the turn into several assistant messages and the
+        POST returns only the LAST one — so a `task_complete` call followed by any
+        further output would be invisible in the response alone. We scan every assistant
+        message since the last user message instead. `tool_inputs` maps each tool name to
+        its input dict (last call wins), so a caller can read structured fields like the
+        `report_findings` tool's `verdict` and `report`."""
         out = self._run_prompt(session_id, agent, text, whole=whole)
-        return Reply(out, self._recent_tool_names(session_id))
+        calls = self._recent_tool_calls(session_id)
+        names = frozenset(name for name, _ in calls)
+        inputs: dict[str, dict] = {}
+        for name, inp in calls:
+            inputs[name] = inp  # last call wins (fine for signal tools called once)
+        return Reply(out, names, inputs)
 
     def _run_prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
         """Prompt `agent` on `session_id`; return its text. Retries on failure/empty/
@@ -319,7 +333,7 @@ class Backend:
                     if self._cancel.is_set():
                         raise BackendCancelled(f"{agent} call cancelled")
                     out = self._all_text(resp) if whole else self._last_text(resp)
-                    if self._debug:
+                    if self.logs.debug:
                         self._dump_parts(session_id, agent, resp, out)
                     if out:
                         return out

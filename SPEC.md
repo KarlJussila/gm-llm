@@ -106,9 +106,12 @@ skills that hold the actual procedures (one home each — the single source of t
 
 **Subagents** (`mode: subagent`, delegated via the native `task` tool, never started by the player):
 the `dm`'s production delegates — a read-only `campaign-analyst`, `log-extractor` (transcript →
-digest), and `character-importer` (a character file → the PC sheet) — plus the runtime gate agents
-`narrative-checker` / `rules-checker`. Each is a thin wrapper that loads its skill, does the task,
-and returns a Result / Evidence / Changes / Caveats report.
+digest), and `character-importer` (a character file → the PC sheet) — plus the runtime gate agent
+`narrative-checker`. It is a thin wrapper that loads one of its role skills (`check-turn` +
+`check-conduct` at runtime, `check-plan`/`check-digest`/`check-propagation`/`check-feedback`/
+`check-init` between sessions), does the task, and returns a Result / Evidence / Changes / Caveats
+report. At runtime the canon and conduct checks run in one warm session — conduct benefits from
+the canon/ledger context the canon check just loaded.
 
 **Skills** (procedures, reused by both agents and subagents): `campaign-setup`, `campaign-intake`,
 `character-create`, `character-import`, `world-build`, `arc-design`, `session-plan`, `session-run`, `session-flow`,

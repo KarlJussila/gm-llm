@@ -39,12 +39,14 @@ class MockGame:
         self._n = 0
 
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
+        time.sleep(1.5)  # let the heartbeat tick so the UI is testable offline
         return self._result(_OPENING, kickoff, clean=True)
 
     def resume(self) -> str | None:
         return None  # mock always opens fresh
 
     def turn(self, player_input: str) -> TurnResult:
+        time.sleep(1.5)  # let the heartbeat tick so the UI is testable offline
         self._n += 1
         corrected = self._n % 3 == 0  # every third turn exercises the correction path
         narration = (
@@ -54,6 +56,7 @@ class MockGame:
         return self._result(narration, player_input, clean=not corrected, corrected=corrected)
 
     def meta(self, question: str) -> str:
+        time.sleep(1.5)  # let the heartbeat tick so the UI is testable offline
         return "(out-of-game) We can wrap at the next natural beat — no rush."
 
     def abort(self) -> bool:
@@ -65,11 +68,11 @@ class MockGame:
     def _result(self, narration, player_msg, clean=True, corrected=False) -> TurnResult:
         narrative = Verdict(
             "narrative-checker", clean,
-            "VERDICT: PASS" if clean else
+            "" if clean else
             "1. Magren's hair is grey-streaked, not black — fix the description "
-            "(source: world/npcs/magren-soley.md).\nVERDICT: VIOLATIONS",
+            "(source: world/npcs/magren-soley.md).",
         )
-        conduct = Verdict("rules-checker", True, "VERDICT: PASS")
+        conduct = Verdict("check-conduct", True, "")
         gate = GateResult(narrative, conduct, player_msg, canon_sections=9)
         draft = ("(pre-correction draft) " + narration) if corrected else narration
         return TurnResult(player_msg, draft, narration, gate, corrected)
@@ -121,6 +124,11 @@ class MockLifecycle:
         return self._session
 
     def setup_stream(self, stream_write, on_tool=None):
+        return _NoTap()
+
+    def play_stream(self, stream_write):
+        if not stream_write:
+            return None
         return _NoTap()
 
     def finish_setup(self, on_stage=None, stream_write=None) -> int:

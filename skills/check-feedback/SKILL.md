@@ -23,8 +23,7 @@ done as you go:
 2. Check coverage — every player ask landed
 3. Check fidelity & routing
 4. Check it's curated & campaign-agnostic
-5. Write findings
-6. Emit the verdict line
+5. Submit your report
 
 ## What each entry entails
 
@@ -57,31 +56,20 @@ done as you go:
   plot from this campaign. It governs *how the system behaves* in general. Flag any entry that bakes
   in campaign specifics (it belongs in canon, not in guidance).
 
-### 5. Write findings
-Write the findings — and **only** the findings:
-- **clean** — write **nothing** here. An empty findings section is correct and expected when the
-  curation is faithful.
+### 5. Submit your report
+Call your `report_findings` tool as your final act. It takes two fields:
+- **report** — your findings (see below). When the curation is clean, this is an empty string (or `No violations.`).
+- **verdict** — `PASS` if the curation is clean; `VIOLATIONS` if there are gaps.
+
+**What goes in the report field:**
+- **clean** — an empty string (or `No violations.`). An empty report is correct and expected when
+  the curation is faithful.
 - **gaps** — a numbered list; for each: the issue (**dropped** ask / **invented** or distorted entry
   / **misrouted** / **not distilled** / **campaign-specific**), the **source evidence** or the
   offending file+entry, and the **fix**.
 
 Keep it terse and specific — the caller fixes the feedback files directly from this.
 
-### 6. Emit the verdict line
-The **last thing you write — always, including when the curation is clean — is the verdict line.**
-After the findings (or after nothing, if there were none), end your output with **exactly one of
-these as the final line**:
-
-```
-VERDICT: PASS
-VERDICT: VIOLATIONS
-```
-
-Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
-it. **This line is mandatory on every report.** A report that trails off in prose — "feedback
-captured", "all routed" — with no `VERDICT:` line is read by the machine as **failed**, even when
-you meant PASS. Write `VERDICT: PASS` if and only if your gap list above is empty; the verdict and
-its gap list are one unit — never `VERDICT: VIOLATIONS` without the numbered gap list above it.
 
 ## Boundaries
 - You report; you never edit a feedback file.

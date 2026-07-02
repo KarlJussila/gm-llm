@@ -34,6 +34,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .logs import append, banner, section
 from .prompts import load
 
 
@@ -49,7 +50,7 @@ class TurnResult:
 
 class Game:
     def __init__(self, backend, gate, runner_agent: str = "dm-runner",
-                 on_turn=None, checks_log: str | None = None,
+                 on_turn=None, logs=None,
                  campaign_dir: str | None = None, session: int | None = None,
                  transcript: bool = True):
         self.backend = backend
@@ -60,7 +61,7 @@ class Game:
         # set if that prompt is cancelled, so revert_last_turn knows to roll back past
         # the correction brief to the player's own message. Reset at the next op.
         self._correcting = False
-        self.checks_log = checks_log
+        self.logs = logs
         self.runner_sid = backend.create_session("dm-runner game")
         # The session being played = the highest plan on disk, unless told otherwise.
         self.campaign = Path(campaign_dir) if campaign_dir else Path(backend.directory) / "campaign"
@@ -264,13 +265,8 @@ class Game:
             return None
 
     def _log(self, tr: TurnResult) -> None:
-        if not self.checks_log:
-            return
-        try:
-            with open(self.checks_log, "a") as f:
-                f.write(_format_block(tr))
-        except OSError:
-            pass
+        if self.logs:
+            append(self.logs.checks, _format_block(tr))
 
 
 def _last_dm_beat(transcript: str) -> str:
@@ -297,24 +293,17 @@ def _latest_session(sessions_dir: Path) -> int | None:
     return n or None
 
 
-def _sec(label: str, body: str) -> str:
-    return f"\n  ── {label} {'─' * max(0, 68 - len(label))}\n\n{(body or '').strip()}\n"
-
-
 def _format_block(tr: TurnResult) -> str:
-    bar = "█" * 74
     g = tr.gate
     blocks = [
-        "", bar,
-        f"  TURN  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
-        f"{'CORRECTED' if tr.corrected else 'clean'}  ·  canon {g.canon_sections} sections",
-        bar,
-        _sec("PLAYER", tr.player_input),
-        _sec(f"CANON · {g.narrative.label}", g.narrative.report),
-        _sec(f"CONDUCT · {g.conduct.label}", g.conduct.report),
+        banner(f"TURN  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
+               f"{'CORRECTED' if tr.corrected else 'clean'}  ·  canon {g.canon_sections} sections"),
+        section("PLAYER", tr.player_input),
+        section(f"CANON · {g.narrative.label}", g.narrative.report),
+        section(f"CONDUCT · {g.conduct.label}", g.conduct.report),
     ]
     if tr.corrected:
-        blocks.append(_sec("DRAFT (pre-correction)", tr.draft))
-    blocks.append(_sec("FINAL NARRATION", tr.final))
+        blocks.append(section("DRAFT (pre-correction)", tr.draft))
+    blocks.append(section("FINAL NARRATION", tr.final))
     blocks.append("")
     return "\n\n".join(blocks)

@@ -2,30 +2,35 @@
 The gate — run the independent checks on drafted content, in code.
 
 This is what the runner (and the dm, at planning) used to invoke as a tool; now the
-orchestrator owns it, so it runs by construction (never skipped) and the result is
-parsed deterministically rather than sniffed from prose. Each checker ends with a
-machine-readable `VERDICT: PASS | VIOLATIONS` on its last line.
+orchestrator owns it, so it runs by construction (never skipped). Each checker
+submits its verdict via the `report_findings` tool (structured `report` + `verdict`
+fields); the gate reads the tool call from the session history — no text parsing.
 
-Three shapes share one spawn-and-parse engine:
-  - `check(narration, player_msg)` — the RUNTIME gate: narrative-checker (canon,
-    with the pre-loaded canon block) + rules-checker (conduct, canon-free, only the
-    player's words + the draft). The orchestrator supplies the player's message
-    directly — it owns the loop, so nothing has to fetch it from a transcript.
-  - `check_plan(plan)` — the PRE gate: narrative-checker only (a plan has no
-    conduct to police and no player message), with the pre-loaded canon block.
-  - `check_propagation(n)` — the POST gate: narrative-checker only, verifying that
-    session N's updates landed in canon and state. No preload — the checker reads
-    N's digest against the updated files itself; there's no single draft to match
-    names against.
+Three shapes share one spawn-and-check engine:
+  - `check(narration, player_msg)` — the RUNTIME gate. One narrative-checker
+    session does both jobs, warm: first `check-turn` (canon coherence, with the
+    pre-loaded canon block), then `check-conduct` (table-craft conduct) on the
+    **same session** — so the canon/ledger context the canon check just loaded
+    is available when judging conduct (e.g. a PC knowledge leak). The orchestrator
+    supplies the player's message directly — it owns the loop, so nothing has to
+    fetch it from a transcript.
+  - `check_plan(plan)` — the PRE gate: narrative-checker, `check-plan` only (a plan
+    has no conduct to police and no player message), with the pre-loaded canon block.
+  - `check_propagation(n)` — the POST gate: narrative-checker, `check-propagation`
+    only, verifying that session N's updates landed in canon and state. No preload —
+    the checker reads N's digest against the updated files itself; there's no single
+    draft to match names against.
 
-Each checker runs as a fresh session per call.
+The runtime gate reuses one session for both checks (warm context, one fewer
+spawn); every other gate runs as a fresh session per call.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
+from .logs import append, banner
 from .prompts import load
 
 
@@ -137,32 +142,6 @@ class InitGateResult:
         return load("correct-init") + "\n\n— Init —\n" + self.narrative.report.strip()
 
 
-_VERDICT_RE = re.compile(r"VERDICT:\s*(PASS|VIOLATIONS)", re.I)
-
-
-def parse_verdict(agent: str, text: str) -> Verdict:
-    """Read the machine-readable verdict, which the checkers emit on their LAST
-    line (a modest model concludes after working its steps). We scan bottom-up and
-    take the last match, so a stray earlier mention (a quoted example, a step note)
-    can't pre-empt the real verdict. Absent/garbled → fail safe to VIOLATIONS so the
-    report still reaches the caller rather than slipping by.
-
-    Guard: a `VIOLATIONS` verdict with **no findings body** (just the verdict line,
-    nothing above it) is not actionable — there's nothing for the caller to fix — so
-    we treat it as a pass. Modest models sometimes stamp the verdict without listing
-    anything; without this, that fires a content-free correction."""
-    lines = text.splitlines()
-    for i in range(len(lines) - 1, -1, -1):
-        m = _VERDICT_RE.search(lines[i])
-        if m:
-            passed = m.group(1).upper() == "PASS"
-            empty = not passed and not "\n".join(lines[:i] + lines[i + 1:]).strip()
-            if empty:
-                passed = True  # VIOLATIONS with an empty body → nothing to act on
-            return Verdict(agent, passed, text, empty_violation=empty)
-    return Verdict(agent, passed=False, report=text)
-
-
 def _narrative_brief(player_msg: str, canon: str, narration: str) -> str:
     return load("check-turn-brief").format(player_msg=player_msg, canon=canon, narration=narration)
 
@@ -187,27 +166,113 @@ def _feedback_brief(n: int) -> str:
     return load("check-feedback-brief").format(n=n)
 
 
+def _log_check(path, label: str, verdict: "Verdict", reply, tool_input) -> None:
+    """Append the full per-check detail to `path` — the model's text, every tool
+    it called, the report_findings input (if any), and the parsed verdict — so
+    you can see exactly what the model said and how the gate interpreted it. This
+    is the low-level per-check log (`logs.detail`), distinct from the per-turn
+    summary loop/planner/reconciler write to `logs.checks`. No path → logging off.
+    Best-effort: a logging failure never blocks the gate."""
+    if not path:
+        return
+    try:
+        lines = [
+            banner(f"CHECK  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
+                   f"label={label}  ·  verdict={'PASS' if verdict.passed else 'VIOLATIONS'}"
+                   f"{' (empty-violation downgraded)' if verdict.empty_violation else ''}"),
+        ]
+        # Show every tool the model called this turn — if report_findings is
+        # missing but todowrite is present, the model followed the skill's
+        # task-list step but didn't (or couldn't) call the report tool. If
+        # tools is empty entirely, the model called nothing at all.
+        if reply.tools:
+            lines.append(f"  ── TOOLS CALLED: {', '.join(sorted(reply.tools))} ──")
+        else:
+            lines.append("  ── TOOLS CALLED: (none — model called no tools) ──")
+        lines.append("")
+        if tool_input:
+            lines.append(f"  ── report_findings INPUT ──")
+            lines.append(f"  verdict: {tool_input.get('verdict', '(missing)')}")
+            report = tool_input.get("report", "")
+            if report:
+                lines.append(f"  report ({len(report)} chars):")
+                for line in report.splitlines():
+                    lines.append(f"    {line}")
+            else:
+                lines.append("  report: (empty)")
+            lines.append("")
+        else:
+            lines.append("  ── report_findings NOT CALLED — fail-safe to VIOLATIONS ──")
+            lines.append("")
+        lines.append("  ── MODEL TEXT OUTPUT ──")
+        for line in reply.text.splitlines():
+            lines.append(f"    {line}")
+        lines.append("")
+        append(path, "\n".join(lines) + "\n")
+    except OSError:
+        pass
+
+
 class Gate:
-    def __init__(self, backend, preloader):
+    def __init__(self, backend, preloader, logs=None):
         self.backend = backend
         self.preloader = preloader
+        self.logs = logs  # None → no per-check detail logging
 
-    def _run(self, title: str, agent: str, brief: str) -> Verdict:
-        """Spawn a fresh checker session, prompt it, parse its VERDICT line.
-        Serial and paced by the backend — keeps us off the rate limit that
-        parallel fan-out kept tripping. `whole=True`: a checker runs a todowrite
-        list then reports, so its findings and verdict can span text parts — we
-        need all of them, not just the last."""
+    def _check(self, sid: str, brief: str, label: str) -> Verdict:
+        """Prompt the checker and extract the verdict from its `report_findings`
+        tool call.
+
+        The skills instruct the checker to call `report_findings` with `report`
+        (findings text) and `verdict` ("PASS" / "VIOLATIONS") fields as its final
+        act — that's the only verdict signal. If the model didn't call the tool
+        (or called it without a usable verdict field), fail-safe to VIOLATIONS
+        with the model's text as the report body, so the checker's output still
+        reaches the caller rather than slipping by silently.
+
+        `whole=True`: a checker runs a todowrite list then reports, so its findings
+        and tool call can land in separate text parts — we need all of them."""
+        reply = self.backend.prompt_full(sid, "narrative-checker", brief, whole=True)
+        tool_input = reply.tool_inputs.get("report_findings")
+        if tool_input:
+            verdict_str = str(tool_input.get("verdict", "")).upper().strip()
+            report = str(tool_input.get("report", "")).strip()
+            if verdict_str in ("PASS", "VIOLATIONS"):
+                passed = verdict_str == "PASS"
+                # Empty-body guard: VIOLATIONS with no findings → not actionable → pass.
+                empty = not passed and not report
+                if empty:
+                    passed = True
+                verdict = Verdict(label, passed, report or reply.text, empty_violation=empty)
+                _log_check(self.logs.detail if self.logs else None, label, verdict, reply, tool_input)
+                return verdict
+        # No usable tool call → fail-safe to VIOLATIONS (the model didn't follow
+        # the skill; surface its text so the caller can see what went wrong).
+        verdict = Verdict(label, passed=False, report=reply.text)
+        _log_check(self.logs.detail if self.logs else None, label, verdict, reply, tool_input)
+        return verdict
+
+    def _run(self, title: str, brief: str, label: str) -> Verdict:
+        """Spawn a fresh checker session and run one check on it."""
         sid = self.backend.create_session(title)
-        return parse_verdict(agent, self.backend.prompt(sid, agent, brief, whole=True))
+        return self._check(sid, brief, label)
 
     def check(self, narration: str, player_msg: str) -> GateResult:
+        """The RUNTIME gate. One narrative-checker session, two checks, warm:
+        first `check-turn` (canon coherence), then `check-conduct` (table-craft
+        conduct) on the same session — so the conduct check benefits from the
+        canon/ledger context the canon check just loaded. The two verdicts stay
+        separate (the correction brief and the UI both distinguish canon vs.
+        conduct); the model context is shared."""
         canon = self.preloader.build(narration)
+        sid = self.backend.create_session("check-turn")
+        narrative = self._check(sid, _narrative_brief(player_msg, canon, narration),
+                                "narrative-checker")
+        conduct = self._check(sid, _conduct_brief(player_msg, narration),
+                              "check-conduct")
         return GateResult(
-            narrative=self._run("check-turn", "narrative-checker",
-                                _narrative_brief(player_msg, canon, narration)),
-            conduct=self._run("rules-check", "rules-checker",
-                              _conduct_brief(player_msg, narration)),
+            narrative=narrative,
+            conduct=conduct,
             player_msg=player_msg,
             canon_sections=canon.count("\n### "),
         )
@@ -217,7 +282,7 @@ class Gate:
         drives the canon preload exactly as a draft turn does (names match by name)."""
         canon = self.preloader.build(plan)
         return PlanGateResult(
-            narrative=self._run("check-plan", "narrative-checker", _plan_brief(plan, canon)),
+            narrative=self._run("check-plan", _plan_brief(plan, canon), "narrative-checker"),
             canon_sections=canon.count("\n### "),
         )
 
@@ -226,7 +291,7 @@ class Gate:
         everywhere. No preload — propagation is a whole-repo audit (the digest vs.
         the updated files), not a single draft, so the checker reads on demand."""
         return PropagationGateResult(
-            narrative=self._run("check-propagation", "narrative-checker", _propagation_brief(n)),
+            narrative=self._run("check-propagation", _propagation_brief(n), "narrative-checker"),
             session=n,
         )
 
@@ -235,7 +300,7 @@ class Gate:
         source-fidelity (did the extraction keep faith with what was played), which
         the checker reads on demand, not a canon comparison."""
         return DigestGateResult(
-            narrative=self._run("check-digest", "narrative-checker", _digest_brief(n)),
+            narrative=self._run("check-digest", _digest_brief(n), "narrative-checker"),
             session=n,
         )
 
@@ -244,7 +309,7 @@ class Gate:
         preload — the checker reads the digest's feedback section and the feedback
         files on demand."""
         return FeedbackGateResult(
-            narrative=self._run("check-feedback", "narrative-checker", _feedback_brief(n)),
+            narrative=self._run("check-feedback", _feedback_brief(n), "narrative-checker"),
             session=n,
         )
 
@@ -252,5 +317,5 @@ class Gate:
         """The INIT gate: verify all canon written during setup against the seven-point
         checklist. No preload — the checker reads campaign/ on demand."""
         return InitGateResult(
-            narrative=self._run("check-init", "narrative-checker", load("setup-gate-brief")),
+            narrative=self._run("check-init", load("setup-gate-brief"), "narrative-checker"),
         )

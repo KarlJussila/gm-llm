@@ -30,8 +30,7 @@ done as you go:
 3. Cross-check canon
 4. Triage new canon
 5. Check the ledger (spoilers)
-6. Write findings
-7. Emit the verdict line
+6. Submit your report
 
 ## What each entry entails
 
@@ -91,38 +90,22 @@ with the transcript superseding the frozen snapshot for anything play has moved 
   has no in-scene way to know — and name the `### <path>` the flag lives in. Spoiler discipline is
   **yours**.
 
-### 6. Write findings
-Write the findings — and **only** the findings:
-- **no violations** — write **nothing** here. No summary, no per-entity "this one checks out"
-  walkthrough, no "the draft looks consistent" essay; an empty findings section is correct and
+### 6. Submit your report
+Call your `report_findings` tool as your final act. It takes two fields:
+- **report** — your findings (see below). On a clean pass, this is an empty string (or `No violations.`).
+- **verdict** — `PASS` if you found nothing to flag; `VIOLATIONS` if you did.
+
+**What goes in the report field:**
+- **no violations** — an empty string (or `No violations.`). No summary, no per-entity "this one
+  checks out" walkthrough, no "the draft looks consistent" essay; an empty report is correct and
   expected on a pass.
 - **violations** — a numbered list, for each: what's wrong; the **correct fact** (for
   contradictions); the **source file(s)** to consult; and the **fix instruction** (block / defer /
   ground / cut the spoiler).
 
-Keep it terse and specific — it's acted on directly, under time pressure, and should be nothing but
-what must be fixed. No prose padding.
-
-### 7. Emit the verdict line
-The **last thing you write — always, including on a clean pass — is the verdict line.** After the
-findings (or after nothing, if there were none), end your output with **exactly one of these as the
-final line**:
-
-```
-VERDICT: PASS
-VERDICT: VIOLATIONS
-```
-
-Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
-it. **This line is mandatory on every report.** A report that trails off in prose — "no rewrite
-required", "looks consistent" — with no `VERDICT:` line is read by the machine as **failed**, even
-when you meant PASS. Write `VERDICT: PASS` if and only if your findings list above is empty; the
-verdict and its list are one unit — never `VERDICT: VIOLATIONS` without the numbered findings above
-it.
+Keep it terse and specific.
 
 ## Boundaries
-- You report violations and nothing else — you **write no file**. Never rewrite the turn; never edit
-  any campaign file. New canon established in play is captured from the transcript after the session.
 - You enforce **consistency, not obedience to the plan**: an off-plan-but-consistent turn passes.
 - **Played beats planned:** the transcript outranks the frozen snapshot; arc divergence is allowed,
   not blocked.

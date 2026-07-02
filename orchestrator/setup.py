@@ -53,13 +53,13 @@ class Setup:
     """Drives the dm through campaign init as a staged, orchestrator-controlled pipeline."""
 
     def __init__(self, backend, gate, directory: str, dm_agent: str = "dm",
-                 on_prep=None, checks_log: str | None = None):
+                 on_prep=None, logs=None):
         self.backend = backend
         self.gate = gate
         self.directory = directory
         self.dm_agent = dm_agent
         self.on_prep = on_prep
-        self.checks_log = checks_log
+        self.logs = logs
         self.root = Path(directory)
         self._stage: str | None = None
         self.dm_sid: str | None = None
@@ -108,7 +108,7 @@ class Setup:
     def finalize(self) -> int:
         """Once init is committed, plan session 1 via Planner, reusing the warm dm thread."""
         Planner(self.backend, self.gate, dm_agent=self.dm_agent, dm_sid=self.dm_sid,
-                on_prep=self.on_prep, checks_log=self.checks_log).prep_session(1, commit=True)
+                on_prep=self.on_prep, logs=self.logs).prep_session(1, commit=True)
         return 1
 
     # --- non-interactive pipeline ---

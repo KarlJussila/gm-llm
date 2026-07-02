@@ -23,8 +23,7 @@ done as you go:
 3. Check ledger propagation
 4. Check state propagation
 5. Check registry integrity
-6. Write findings
-7. Emit the verdict line
+6. Submit your report
 
 ## What each entry entails
 
@@ -58,31 +57,20 @@ done as you go:
   every `INDEX.md` row points at a file that exists on disk (and vice-versa — no orphan files).
   Flag dangling links and registry/disk mismatches.
 
-### 6. Write findings
-Write the findings — and **only** the findings:
-- **everything propagated** — write **nothing** here. No summary, no per-entry "this one landed"
-  walkthrough; an empty findings section is correct and expected when nothing is missing.
+### 6. Submit your report
+Call your `report_findings` tool as your final act. It takes two fields:
+- **report** — your findings (see below). When nothing is missing, this is an empty string (or `No violations.`).
+- **verdict** — `PASS` if nothing is missing; `VIOLATIONS` if there are gaps.
+
+**What goes in the report field:**
+- **everything propagated** — an empty string (or `No violations.`). No summary, no per-entry
+  "this one landed" walkthrough; an empty report is correct and expected when nothing is missing.
 - **gaps** — a numbered list, for each: what's missing, the **source** (which digest entry it came
   from), the **target file** that should have it, and the **fix** (file the entity, flip the flag,
   update the snapshot, revise the arc body, fix the link).
 
 Keep it terse and specific — the caller backfills directly from this.
 
-### 7. Emit the verdict line
-The **last thing you write — always, including when nothing is missing — is the verdict line.** After
-the findings (or after nothing, if there were none), end your output with **exactly one of these as
-the final line**:
-
-```
-VERDICT: PASS
-VERDICT: VIOLATIONS
-```
-
-Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
-it. **This line is mandatory on every report.** A report that trails off in prose — "all propagated",
-"nothing missing" — with no `VERDICT:` line is read by the machine as **failed**, even when you meant
-PASS. Write `VERDICT: PASS` if and only if your gap list above is empty; the verdict and its gap list
-are one unit — never `VERDICT: VIOLATIONS` without the numbered gap list above it.
 
 ## Boundaries
 - You report; you never edit any campaign file.

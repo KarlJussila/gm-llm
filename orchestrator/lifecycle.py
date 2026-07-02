@@ -22,20 +22,20 @@ from .stream import EventTap
 
 
 class Lifecycle:
-    def __init__(self, backend, gate, directory: str, checks_log: str | None = None):
+    def __init__(self, backend, gate, directory: str, logs=None):
         self.backend = backend
         self.gate = gate
         self.directory = directory
-        self.checks_log = checks_log
+        self.logs = logs
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
         # that needs setup; otherwise jump straight into play.
         if _latest_session(Path(directory) / "campaign" / "sessions") is None:
             self.phase = "setup"
             self.game = None
-            self.setup = Setup(backend, gate, directory, checks_log=checks_log)
+            self.setup = Setup(backend, gate, directory, logs=logs)
         else:
             self.phase = "play"
-            self.game = Game(backend, gate, checks_log=checks_log)
+            self.game = Game(backend, gate, logs=logs)
             self.setup = None
 
     @property
@@ -60,6 +60,16 @@ class Lifecycle:
         return EventTap(self.backend.base, self.backend.directory,
                         write=stream_write, markup=True, on_tool=on_tool).start()
 
+    def play_stream(self, stream_write):
+        """Stream live model output during a play turn or meta call. The caller
+        starts this before the blocking call (so the stream is live for the
+        whole turn — runner draft, checker tool calls, correction if any) and
+        stops it when the call returns. Routes into the behind-the-screen pane;
+        the pane stays closed by default — the stream accumulates so opening it
+        mid-turn reveals what's happened so far. Returns the EventTap (or None
+        if no sink is wired)."""
+        return self._tap(stream_write)
+
     def finish_setup(self, on_stage=None, stream_write=None) -> int:
         """Once setup reports done: plan session 1 (the one code-gated artifact at init),
         then roll into play(1). Returns the new session number (1)."""
@@ -71,7 +81,7 @@ class Lifecycle:
         finally:
             if tap:
                 tap.stop()
-        self.game = Game(self.backend, self.gate, checks_log=self.checks_log, session=n)
+        self.game = Game(self.backend, self.gate, logs=self.logs, session=n)
         self.phase = "play"
         self.setup = None
         return n
@@ -92,9 +102,9 @@ class Lifecycle:
                 on_stage("handoff")
             self.game.handoff()
             Reconciler(self.backend, self.gate, on_stage=on_stage,
-                       checks_log=self.checks_log).reconcile_session(n, commit=commit)
+                       logs=self.logs).reconcile_session(n, commit=commit)
         finally:
             if tap:
                 tap.stop()
-        self.game = Game(self.backend, self.gate, checks_log=self.checks_log, session=n + 1)
+        self.game = Game(self.backend, self.gate, logs=self.logs, session=n + 1)
         return n + 1

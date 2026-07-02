@@ -23,8 +23,7 @@ done as you go:
 5. No duplicates
 6. Two-layer + flags
 7. Consistent
-8. Write findings
-9. Emit the verdict line
+8. Submit your report
 
 ## What each check entails
 
@@ -58,25 +57,18 @@ Flag any entity that is surface-only with no committed hidden layer.
 Read `campaign/campaign.md` and `campaign/world/overview.md`. Flag anything in the entity or arc
 files that contradicts the setting, tone, or established facts in those documents.
 
-### 8. Write findings
-Write the findings — and **only** the findings:
-- **everything passes** — write **nothing** here. No per-entry "this one is fine" walkthrough; an
-  empty findings section is correct and expected when nothing fails.
+### 8. Submit your report
+Call your `report_findings` tool as your final act. It takes two fields:
+- **report** — your findings (see below). When everything passes, this is an empty string (or `No violations.`).
+- **verdict** — `PASS` if everything passes; `VIOLATIONS` if there are gaps.
+
+**What goes in the report field:**
+- **everything passes** — an empty string (or `No violations.`). No per-entry "this one is fine"
+  walkthrough; an empty report is correct and expected when nothing fails.
 - **gaps** — a numbered list: for each, what's wrong, which file, and the fix.
 
 Keep it terse and specific — the caller acts directly from this.
 
-### 9. Emit the verdict line
-The **last thing you write — always — is the verdict line.** End your output with **exactly one of
-these as the final line**:
-
-```
-VERDICT: PASS
-VERDICT: VIOLATIONS
-```
-
-No markdown, no punctuation, nothing after it, nothing below it. `VERDICT: PASS` if and only if your
-gap list above is empty; never `VERDICT: VIOLATIONS` without the numbered gap list above it.
 
 ## Boundaries
 - You report; you never edit any campaign file.

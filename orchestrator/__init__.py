@@ -9,6 +9,7 @@ from .backend import Backend, BackendError
 from .canon import CanonPreloader
 from .gate import Gate, GateResult, InitGateResult, PlanGateResult, PropagationGateResult, Verdict
 from .lifecycle import Lifecycle
+from .logs import Logs
 from .loop import Game, TurnResult
 from .planner import Planner, PlannerError, PrepResult
 from .reconciler import Reconciler, ReconcileResult
@@ -17,7 +18,7 @@ from .setup import Setup, SetupTurn
 __all__ = [
     "Backend", "BackendError", "CanonPreloader",
     "Gate", "GateResult", "InitGateResult", "PlanGateResult", "PropagationGateResult", "Verdict",
-    "Game", "TurnResult", "Lifecycle",
+    "Game", "TurnResult", "Lifecycle", "Logs",
     "Planner", "PlannerError", "PrepResult",
     "Reconciler", "ReconcileResult",
     "Setup", "SetupTurn",

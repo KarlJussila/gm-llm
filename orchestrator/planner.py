@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .logs import append, banner, section
 from .phase import apply_one_correction, commit_campaign
 from .prompts import load
 
@@ -48,12 +49,12 @@ class Planner:
     """Drives the dm to prepare a session plan, gated in code."""
 
     def __init__(self, backend, gate, dm_agent: str = "dm",
-                 on_prep=None, checks_log: str | None = None, dm_sid: str | None = None):
+                 on_prep=None, logs=None, dm_sid: str | None = None):
         self.backend = backend
         self.gate = gate
         self.dm_agent = dm_agent
         self.on_prep = on_prep
-        self.checks_log = checks_log
+        self.logs = logs
         self.root = Path(backend.directory)
         # Reuse a caller's dm session when given (so the reconcile's apply thread carries
         # its warm context straight into prepping the next session); else open our own.
@@ -95,28 +96,16 @@ class Planner:
         return pr
 
     def _log(self, pr: PrepResult) -> None:
-        if not self.checks_log:
-            return
-        try:
-            with open(self.checks_log, "a") as f:
-                f.write(_format_block(pr))
-        except OSError:
-            pass
-
-
-def _sec(label: str, body: str) -> str:
-    return f"\n  -- {label} {'-' * max(0, 68 - len(label))}\n\n{(body or '').strip()}\n"
+        if self.logs:
+            append(self.logs.checks, _format_block(pr))
 
 
 def _format_block(pr: PrepResult) -> str:
-    bar = "#" * 74
     g = pr.gate
     return "\n\n".join([
-        "", bar,
-        f"  PREP session {pr.n}  ·  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
-        f"{'CORRECTED' if pr.corrected else 'clean'}  ·  "
-        f"{'committed' if pr.committed else 'uncommitted'}  ·  canon {g.canon_sections} sections",
-        bar,
-        _sec(f"CHECK-PLAN · {g.narrative.label}", g.narrative.report),
+        banner(f"PREP session {pr.n}  ·  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
+               f"{'CORRECTED' if pr.corrected else 'clean'}  ·  "
+               f"{'committed' if pr.committed else 'uncommitted'}  ·  canon {g.canon_sections} sections"),
+        section(f"CHECK-PLAN · {g.narrative.label}", g.narrative.report),
         "",
     ])

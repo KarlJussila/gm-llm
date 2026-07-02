@@ -25,8 +25,7 @@ done as you go:
 4. Check the ledger
 5. Check for overlap
 6. Check for blanks
-7. Write findings
-8. Emit the verdict line
+7. Submit your report
 
 ## What each entry entails
 
@@ -72,31 +71,20 @@ done as you go:
   creates", a blank identity/reveal. Flag every one — the plan must commit the fact or leave only
   the *player's path* open.
 
-### 7. Write findings
-Write the findings — and **only** the findings:
-- **no violations** — write **nothing** here. No summary, no per-beat "this one's grounded"
-  walkthrough; an empty findings section is correct and expected on a pass.
+### 7. Submit your report
+Call your `report_findings` tool as your final act. It takes two fields:
+- **report** — your findings (see below). On a clean pass, this is an empty string (or `No violations.`).
+- **verdict** — `PASS` if you found nothing to flag; `VIOLATIONS` if you did.
+
+**What goes in the report field:**
+- **no violations** — an empty string (or `No violations.`). No summary, no per-beat "this one's
+  grounded" walkthrough; an empty report is correct and expected on a pass.
 - **violations** — a numbered list, for each: what's wrong; the **correct fact / arc answer** where
   relevant; the **source file(s)** to consult; and the **fix instruction** (ground it, pull the arc
   answer, re-flag, merge/differentiate, fill the blank).
 
 Keep it terse and specific — the dm revises the plan directly from this. No prose padding.
 
-### 8. Emit the verdict line
-The **last thing you write — always, including on a clean pass — is the verdict line.** After the
-findings (or after nothing, if there were none), end your output with **exactly one of these as the
-final line**:
-
-```
-VERDICT: PASS
-VERDICT: VIOLATIONS
-```
-
-Those two words only — no markdown, no punctuation, no text after it on the line, and nothing below
-it. **This line is mandatory on every report.** A report that trails off in prose — "the plan looks
-solid", "no changes needed" — with no `VERDICT:` line is read by the machine as **failed**, even when
-you meant PASS. Write `VERDICT: PASS` if and only if your findings list above is empty; the verdict
-and its list are one unit — never `VERDICT: VIOLATIONS` without the numbered findings above it.
 
 ## Boundaries
 - You report; you never edit the plan or any campaign file.

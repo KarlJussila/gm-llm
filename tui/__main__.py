@@ -5,6 +5,7 @@ rate limit. `--live` boots a real opencode backend and plays for real.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -26,10 +27,13 @@ def main() -> None:
 
     cleanup = None
     if args.live:
-        from orchestrator import Backend, CanonPreloader, Gate, Lifecycle
-        backend = Backend(args.dir, port=args.port).start()
-        lifecycle = Lifecycle(backend, Gate(backend, CanonPreloader(args.dir)), args.dir,
-                              checks_log="/tmp/orchestrator-checks.log")
+        from orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
+        # One object owns every log path (serve/raw/checks/detail); ORCH_DEBUG=1
+        # turns on the raw per-reply dump. See orchestrator/logs.py.
+        logs = Logs.under("/tmp", debug=bool(os.environ.get("ORCH_DEBUG")))
+        backend = Backend(args.dir, port=args.port, logs=logs).start()
+        gate = Gate(backend, CanonPreloader(args.dir), logs=logs)
+        lifecycle = Lifecycle(backend, gate, args.dir, logs=logs)
         cleanup = backend.stop
         title = "Campaign — orchestrator (live)"
     else:
