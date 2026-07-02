@@ -61,8 +61,8 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 - Produce actionable insights for arc adjustment and future planning
 - Update character states, world state, and faction positions
 - Note-taking is automatic: the play transcript is captured by a plugin during the session, then
-  the `dm` delegates to `log-extractor` to produce a structured digest (`session-{N}.md`) and
-  applies it to canonical state — knowledge, world, items, documents — post-session
+  the orchestrator runs `log-extractor` to produce a structured digest (`session-{N}.md`) and the
+  `dm` applies it to canonical state — knowledge, world, items, documents — post-session
 
 ### Player Feedback Loop
 - Collect player feedback at session end (runner asks; recorded verbatim in the session log)
@@ -94,20 +94,19 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 
 ## Architecture
 
-Two primary agents the player starts directly, a set of subagents they delegate to, and a set of
+Two primary agents the player starts directly, a set of subagents the orchestrator runs, and a set of
 skills that hold the actual procedures (one home each — the single source of truth).
 
 **Primary agents:**
 - **`dm`** — the between-sessions brain. Initializes the campaign, assesses state, plans the next
-  session, reviews finished ones, and adjusts arcs and world state. Delegates production work to
-  subagents and commits to git. It does **not** run live sessions.
+  session, reviews finished ones, and adjusts arcs and world state. Authors every campaign file
+  itself and commits to git. It does **not** run live sessions.
 - **`dm-runner`** — runs one live session (narration, NPCs, improvisation, dice), then stops. It
   does **not** take notes, plan, assess, or adjust arcs (the transcript is auto-captured).
 
-**Subagents** (`mode: subagent`, delegated via the native `task` tool, never started by the player):
-the `dm`'s production delegates — a read-only `campaign-analyst`, `log-extractor` (transcript →
-digest), and `character-importer` (a character file → the PC sheet) — plus the runtime gate agent
-`narrative-checker`. It is a thin wrapper that loads one of its role skills (`check-turn` +
+**Subagents** (`mode: subagent`, spawned by the orchestrator as their own sessions, never started by
+the player): a read-only `campaign-analyst` and `log-extractor` (transcript → digest), plus the
+runtime gate agent `narrative-checker`. It is a thin wrapper that loads one of its role skills (`check-turn` +
 `check-conduct` at runtime, `check-plan`/`check-digest`/`check-propagation`/`check-feedback`/
 `check-init` between sessions), does the task, and returns a Result / Evidence / Changes / Caveats
 report. At runtime the canon and conduct checks run in one warm session — conduct benefits from
@@ -158,8 +157,8 @@ The campaign-lifecycle skills (`world-build`, `arc-design`, `campaign-setup`, `c
 - **Automatic transcript capture:** the orchestrator writes
   `campaign/sessions/session-{N}-transcript.md` from each turn's final messages (player + corrected
   DM narration). Note-taking never depends on the model.
-- **Delegation:** the native `task` tool targeting `mode: subagent` agents — no subprocess
-  spawning (`opencode run`).
+- **Subagent invocation:** the orchestrator spawns each subagent as its own `opencode serve`
+  session over the HTTP API — no `task`-tool delegation, no `opencode run` subprocess.
 - **Markdown files:** all state is stored in human-readable markdown (no database).
 - **Git:** campaign state changes are committed to the **campaign repository** to hand off between
   the `dm` and `dm-runner` phases (see Repository Layout).

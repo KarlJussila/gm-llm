@@ -15,8 +15,8 @@ override the defaults here wherever they conflict.
 
 This skill is **player-facing** — it interviews the player — so it is run by the **dm** (a primary).
 A subagent cannot use it (subagents can't touch the player). The dm authors the PC files here: the
-state file and knowledge ledger always, and the sheet — either from scratch or by completing the
-draft the `character-importer` extracted from an imported file (step 2).
+state file and knowledge ledger always, and the sheet — either from scratch or from a character file
+the player hands you to import (step 2).
 
 **Load `canon-conventions` and follow it for format**, and build from the PC templates:
 `pc-sheet.template` → `characters/{slug}.md`, `pc-state.template` → `characters/{slug}.state.md`,
@@ -46,13 +46,12 @@ Use your `todowrite` tool to create entries for steps 1–5 plus Confirm, Write 
    these hooks**, **bring their own** (point you at any file — a sheet export, PDF, JSON, HTML dump,
    notes doc, whatever they've got), or **build one together** from scratch at their chosen control
    level. Hand off to the player and wait. Continue from whatever they say; don't re-ask from a standing start.
-2. **Hand the file to `character-importer`.** For any real character file they point you at — a
-   JSON/HTML/PDF/sheet export *or* a multi-section notes doc — **delegate to the `character-importer`**
-   subagent (give it the source path and the target sheet path `characters/{slug}.md`), even though you
-   could open it yourself. The importer parses the whole structure properly — a glance at a D&D Beyond
-   export misses the nested stats, class, and subclass — and keeps a big file out of your context; it
-   writes what it can into the sheet and reports which vitals the source lacked. (A one-line "level 5
-   elf wizard" needs no importer. No file → gather the vitals by talking.)
+2. **Import the file.** For any real character file they point you at — a JSON/HTML/PDF/sheet export
+   *or* a multi-section notes doc — **load the `character-import` skill and follow it** to parse the
+   whole structure into the sheet (`characters/{slug}.md`). Parse it properly, not at a glance — a
+   D&D Beyond export buries the stats, class, and subclass in nested structure; extract every detail
+   the file states, never invent, and note which vitals it lacked so you know what to ask. (A one-line
+   "level 5 elf wizard" needs no import. No file → gather the vitals by talking.)
 3. **Fill the vital gaps.** Ask the player for any **vital** detail still missing after the import:
    race/lineage, class (and subclass, if they have one), level, ability scores, pronouns. Just the
    vitals — don't make them recite their whole proficiency and spell list; the rest gets documented
@@ -82,7 +81,7 @@ Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the f
 
 ## Write the three PC files
 
-- **`characters/{slug}.md`** (sheet) — from `pc-sheet.template` (or completing the `character-importer`
+- **`characters/{slug}.md`** (sheet) — from `pc-sheet.template` (or completing the imported
   draft): the **`## Vitals`** block (race/lineage, class, subclass if any, level, ability scores,
   pronouns — every line a committed value), **`## Known capabilities`** (the proficiencies/spells/
   abilities/feats you gathered — partial is fine, it grows in play), then appearance, personality,

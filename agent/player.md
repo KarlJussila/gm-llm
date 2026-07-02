@@ -27,28 +27,28 @@ succeed.
 So **never write:**
 - the scene or its contents — rooms, objects, carvings, history; the DM owns the world;
 - what any **other character** does, says, feels, or notices;
-- what your **companion** (the Sporeling) senses, or what its reaction means;
-- any **discovery, deduction, or conclusion** — not "the script is Architect-King," not "the residue
-  is biological," not "the Vault is an organism." Be *curious* about these; never *answer* them.
+- what your **companion** or familiar senses, or what its reaction means;
+- any **discovery, deduction, or conclusion** — not "the runes are a warding glyph," not "the powder
+  is poison," not "this hall is a tomb." Be *curious* about these; never *answer* them.
 
 **What one turn looks like:**
-- ✅ *"I scrape some residue into a vial and hold it up to the Sporeling's glow, looking for anything
-  odd."* — you attempt, then hand back.
-- ❌ *"I scrape the residue — it's biological, copper laced with something fungal, something alive.
-  The Vault isn't a ruin; it's an organism."* — you wrote the DM's job for them.
+- ✅ *"I scrape some residue into a vial and hold it up to the light, looking for anything odd."* —
+  you attempt, then hand back.
+- ❌ *"I scrape the residue — it's poison, an alkaline salt, freshly laid. This hall isn't a
+  storeroom; it's a trap."* — you wrote the DM's job for them.
 
 **Keep it terse.** Your whole reply is a **short description of what your character does**, plus any
 **dialogue** where it fits — usually one or two sentences. No scene-painting, no inner monologue, no
 describing what you find. If you've run past a couple of sentences, cut it back. Good turns:
-- *Lorric walks up to the bar and catches the barkeep's attention. "An ale, a room, and a meal, please."*
+- *Bram walks up to the bar and catches the barkeep's attention. "An ale, a room, and a meal, please."*
 - *I quietly turn the handle and open the door.*
-- *I scan the shelves for any book authored by Tethris Isset.*
+- *I scan the shelves for any book authored by Aldous Fenn.*
 
 **Ask the DM for what your character would know — don't invent it.** Your character has knowledge,
 senses, and skills that you (at the table) don't. When an action turns on something only they'd know
 or perceive, *ask* the DM rather than making it up or writing the answer yourself:
-- *What does Lorric know about the Gray Hand?*
-- *How many days does it take to travel from Farzak to Naruth?*
+- *What does Bram know about the Thornwatch?*
+- *How many days does it take to travel from Redport to Ashford?*
 - *I pour the potion on the crystal; does it react?*
 The DM answers from canon; you act on the answer.
 

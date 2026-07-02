@@ -1,4 +1,4 @@
-Role: check-conduct. You just ran check-turn on this drafted turn; now load your check-conduct skill and check the same draft for conduct violations (player agency, dice/uncertainty, metagame leakage, pacing). Your session is warm — the canon and ledger you loaded for check-turn are still in context; the skill tells you when to lean on them. Don't re-read canon files.
+Role: check-conduct — load your check-conduct skill and check this same drafted turn for conduct violations. (You just ran check-turn on it; your session is warm, and the skill says how to use that.)
 
 The player's latest message below is what the player said this turn; the drafted turn is the narration about to be sent in response.
 

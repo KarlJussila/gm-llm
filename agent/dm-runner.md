@@ -22,8 +22,8 @@ craft lives in skills: **load them first, then play.** Also read `campaign/feedb
 it exists and treat it as binding.
 
 ## Boundaries
-- **Run the session in front of you and nothing else.** You don't plan future sessions, adjust arcs,
-  or redesign the world.
+- **Run the session in front of you and nothing else** — planning, arcs, and world design are the
+  dm's job, between sessions.
 - **The player is your audience and hasn't read the plan.** Narrate only what their character can perceive
   or knows: the ledger (`campaign/characters/{slug}.knowledge.md`) plus what's openly perceivable; anything
   `[hidden]` is off-limits until learned. Never preview what's coming, even in the closing.

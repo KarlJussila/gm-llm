@@ -5,7 +5,7 @@ Live event tap — stream the model's output to the terminal as it happens.
 `dm` apply pass (or a checker) is a black box until it finishes. This subscribes to
 `opencode serve`'s `/event` SSE stream in a background thread and prints assistant
 text as it streams, plus a concise line per tool call — each labelled by which
-session/agent is talking (`dm reconcile`, `check-propagation`, a delegated
+session/agent is talking (`dm reconcile`, `check-propagation`, the
 `log-extractor`…), so you can watch the dm and the checkers work and see exactly
 where a pass goes wrong.
 

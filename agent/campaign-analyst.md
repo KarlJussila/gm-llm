@@ -1,6 +1,6 @@
 ---
 description: >-
-  Read-only subagent. Produces analysis for the dm agent: a pre-session
+  Read-only subagent the orchestrator runs for analysis: a pre-session
   situation report (campaign-assess) or a post-session review/assessment
   (session-review). Reads campaign files and reports; never modifies state.
 mode: subagent
@@ -31,8 +31,8 @@ Pick the skill that matches the brief:
   `campaign/assessment/session-{N}-assessment.md` — that is your deliverable; don't hand the
   writing back to the dm.
 
-Note on timing: the `dm` applies the digest to canonical state **before** delegating the review to
-you, so your continuity/knowledge checks are a genuine audit — if the ledger or a world file is
+Note on timing: the digest is applied to canonical state **before** your review runs, so your
+continuity/knowledge checks are a genuine audit — if the ledger or a world file is
 still missing something the digest recorded, that's a real gap to flag, not just a pending to-do.
 
 Note on sources: write your report from the digest and the other campaign documents. Once it's

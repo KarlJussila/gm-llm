@@ -1,6 +1,6 @@
 ---
 name: character-import
-description: Parse a player-provided character file (any format — exported sheet, JSON, HTML, PDF text, notes) into the PC sheet's structured format. Extract every detail the file actually contains, never invent, and report which required vitals it lacked. Loaded by the character-importer subagent, which the dm delegates to during character creation.
+description: Parse a player-provided character file (any format — exported sheet, JSON, HTML, PDF text, notes) into the PC sheet's structured format. Extract every detail the file actually contains, never invent, and report which required vitals it lacked. Loaded by the dm during character creation to parse an imported character file.
 ---
 
 # character-import

@@ -1,6 +1,6 @@
 ---
 name: check-plan
-description: The narrative-checker's PRE role — verify a draft session plan against canon, the arc(s) it advances, the registry, and the PC knowledge ledger, and return a list of violations (or PASS). Used by the dm before a session plan is finalized. Reports findings; writes nothing.
+description: The narrative-checker's PRE role — verify a draft session plan against canon, the arc(s) it advances, the registry, and the PC knowledge ledger, and submit a verdict (PASS or a list of violations). Run by the gate before a session plan is finalized. Reports findings; writes nothing.
 ---
 
 # check-plan — narrative check of a draft session plan

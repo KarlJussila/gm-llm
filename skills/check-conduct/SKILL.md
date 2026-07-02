@@ -5,9 +5,9 @@ description: The narrative-checker's RUNTIME conduct role — check a runner's d
 
 # check-conduct — conduct check of a drafted runtime turn
 
-You are the narrative-checker in its **conduct role**. You just ran `check-turn` on this drafted turn; now check its **table-craft conduct** — how the runner handled player agency, dice, metagame, and pacing.
+You are the narrative-checker in its **conduct role**. You just ran `check-turn` on this drafted turn; now check its **table-craft conduct** — player agency, dice, metagame, and pacing.
 
-**Your session is warm** — the canon block, the transcript, and the PC knowledge ledger you loaded for `check-turn` are still in your context. You don't need to reload them. The conduct checks below are the focus; canon consistency was `check-turn`'s job and is done. Where the warm context helps (e.g. judging whether the runner narrated the PC knowing something they shouldn't — a metagame leak that's also a ledger violation), use it; otherwise stay on the conduct rails.
+**Your session is warm:** the canon, transcript, and PC knowledge ledger from `check-turn` are still in context — don't reload them. Canon consistency was `check-turn`'s job; here the conduct checks are the focus. Lean on the warm context only where it sharpens a conduct call — e.g. a metagame leak that's also a ledger violation (the runner narrating the PC acting on a `[hidden]` fact) — otherwise stay on the conduct rails.
 
 Before checking, read `campaign/feedback/session-run.md` if it exists — accumulated player guidance
 on table conduct. Treat it as binding; it overrides the defaults below where they conflict.
