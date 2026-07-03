@@ -25,11 +25,11 @@ the end.
 identical; only the prerequisites are installed differently.
 
 **Prerequisites**
-- The [opencode](https://opencode.ai) CLI, authenticated to a model provider (`opencode auth`).
+- The [opencode](https://opencode.ai) CLI, authenticated to a model provider (`opencode auth login`).
 - A JS runtime — **bun** or **node** — for opencode and the plugin dependency.
-- **Python 3.10+**, plus [pipx](https://pipx.pypa.io) (or plain `pip`).
+- **Python 3.10+**. [pipx](https://pipx.pypa.io) is a convenient way to install the command, but plain `pip` works too.
 
-**Install the command**
+**Install the command** (on Windows, prefer the [one-line installer](#windows-native--one-line-install) below)
 ```
 git clone https://github.com/KarlJussila/gm-llm.git
 cd gm-llm
@@ -41,8 +41,8 @@ pipx install .                # installs the `gm-llm` command (or: pip install .
 gm-llm init ../my-campaign    # scaffold .opencode/ and install its plugin deps (a sibling dir)
 cd ../my-campaign
 
-opencode auth                 # authenticate opencode to your model provider (once)
-gm-llm doctor                 # verify opencode / runtime / port / provider
+opencode auth login           # authenticate opencode to your model provider (once)
+gm-llm doctor                 # verify opencode / runtime / port / project
 gm-llm play                   # launch the TUI — setup runs on first play
 ```
 
@@ -54,10 +54,18 @@ orchestrator power-commands (`status` / `prep` / `reconcile` / `lint`) for devel
 
 ### Updating
 
-A project's `.opencode/` is a snapshot taken at `init` time, so updating happens in two steps:
+Two things update independently — the `gm-llm` **tool**, and each project's copy of the
+**framework assets** (a project's `.opencode/` is a snapshot taken at `init` time).
+
+**Update the tool:**
+- **Windows one-liner install** — just re-run the installer; it pulls the latest and reinstalls
+  into its venv.
+- **Manual pipx/pip install** — `cd path/to/gm-llm && git pull && pipx install . --force`
+  (or `pip install . --force-reinstall`).
+
+**Then refresh each project's assets** to match the updated tool:
 ```
-cd path/to/gm-llm && git pull && pipx install . --force   # update the tool (or: pipx upgrade)
-gm-llm update path/to/my-campaign                          # refresh that project's framework assets
+gm-llm update path/to/my-campaign
 ```
 `gm-llm update` overwrites the framework files (agents, skills, plugin, templates) and refreshes the
 plugin deps, while leaving your `campaign/` data, `.orchestrator` markers, and `node_modules`
@@ -70,14 +78,18 @@ The simplest path. Open **PowerShell** and paste:
 irm https://raw.githubusercontent.com/KarlJussila/gm-llm/main/install.ps1 | iex
 ```
 That installs git, Python, Node, opencode, and the `gm-llm` command (all per-user, no admin —
-winget may show a UAC prompt), then scaffolds a `my-campaign` folder in your home directory.
-It's idempotent, so it's safe to re-run. When it finishes it prints the only two commands left:
+winget may show a UAC prompt). `gm-llm` itself goes in a dedicated venv the installer puts on your
+PATH, so there's no pipx to manage. It's idempotent — re-running it also updates the tool. When it
+finishes it prints the commands left to start playing:
 ```
 opencode auth login          # log in to a model provider (one time, interactive)
-cd ~\my-campaign; gm-llm play
+mkdir ~\my-campaign          # a folder for your campaign
+cd ~\my-campaign
+gm-llm init                  # scaffold this folder + install its plugin deps
+gm-llm play                  # launch the game (setup runs on first play)
 ```
-For the game UI, use **Windows Terminal** (the installer adds it) — the legacy `cmd.exe`
-console renders the Textual interface poorly.
+Open a **new terminal** for those so `gm-llm` is on your PATH, and use **Windows Terminal** (the
+installer adds it) — the legacy `cmd.exe` console renders the Textual interface poorly.
 
 <details><summary>Manual prerequisite steps (if you'd rather not run the script)</summary>
 
@@ -89,6 +101,8 @@ npm install -g --allow-scripts=opencode-ai opencode-ai   # the opencode CLI
 python -m pip install --user pipx
 python -m pipx ensurepath                                 # then restart the terminal
 ```
+If winget can't find or install Python (common on older Windows 10), install Python 3.12 from
+[python.org](https://www.python.org/downloads/) with **"Add python.exe to PATH"** checked.
 </details>
 
 An empty directory opens in the **setup** phase: the DM interviews you (free-form or
@@ -130,25 +144,43 @@ Defaults do the right thing: `prep` targets the next session and `reconcile` the
 played one (inferred from disk and printed before running), and both **commit by
 default** — `--no-commit` for a dry run.
 
-Logs land under `/tmp`: `orchestrator-checks.log` (per-turn/per-stage summaries),
+Logs land in a `gm-llm/` folder under the OS temp dir (`$TMPDIR` / `%TEMP%`, so it works the
+same on every OS): `orchestrator-checks.log` (per-turn/per-stage summaries),
 `orchestrator-check-detail.log` (every checker call in full), `orchestrator-serve.log`
 (the opencode server), `orchestrator-raw.log` (`ORCH_DEBUG=1` reply dumps).
 
 ## Architecture
 
-### Two repositories
+### Layout: the framework, and a campaign
 
-- **Framework repo — this directory.** Agents, skills, orchestrator, plugins, TUI.
-  Campaign-agnostic and portable.
-- **Campaign repo — the project root.** The generated `campaign/` directory and its play
-  history. Setup creates it (from `templates/campaign/`); the orchestrator commits to it
-  at each phase boundary (`campaign: init` / `campaign: session N plan` /
-  `campaign: post-session N updates`). It gitignores `.opencode/`.
+**The framework repo (this directory)** is the installable tool plus its engine:
 
-All campaign state is human-readable markdown — see `templates/campaign/README.md` for
-the layout and `skills/canon-conventions/` for the authoring contract (entity info/state
-file pairs, `[[slug]]` links, the `INDEX.md` registry, `[hidden]`/`Known to:` awareness
-flags, and the required `## Vitals` completeness block per entity).
+```
+gm_llm/                the pip-installable command (cli, init/scaffold, doctor, --version)
+  assets/opencode/     the opencode assets it ships and copies into a project:
+                         agent/  skills/  plugin/  templates/  package.json
+orchestrator/          the Python orchestrator (over `opencode serve`)
+tui/                   the Textual app
+dev/                   the developer CLI + test harness
+install.ps1            the native-Windows one-line installer
+```
+
+**A campaign project** is what `gm-llm init` creates — a separate git repo:
+
+```
+my-campaign/
+  .opencode/           the opencode assets (copied from the tool) + node_modules — gitignored
+  campaign/            the generated, human-readable campaign data and play history
+```
+
+The orchestrator commits to the campaign repo at each phase boundary (`campaign: init` /
+`campaign: session N plan` / `campaign: post-session N updates`). The `campaign/` data is
+created on first play (setup) from `gm_llm/assets/opencode/templates/campaign/`.
+
+All campaign state is human-readable markdown — see `templates/campaign/README.md` for the
+layout and the `canon-conventions` skill for the authoring contract (entity info/state file
+pairs, `[[slug]]` links, the `INDEX.md` registry, `[hidden]`/`Known to:` awareness flags, and
+the required `## Vitals` completeness block per entity).
 
 ### Agents (`agent/`)
 
@@ -198,9 +230,11 @@ Backend-agnostic Python over `opencode serve`'s HTTP API. Stdlib-only.
 | `planner.py` | PRE: dm authors the plan → `check-plan` → ≤1 correction → commit |
 | `reconciler.py` | POST: the staged pipeline (below) with per-stage resume markers |
 | `setup.py` | INIT: the staged new-campaign flow (interactive stages signal completion via `task_complete`) |
+| `scaffold.py` | `scaffold_campaign` — lays down a project's `campaign/` from the templates (pure Python) |
 | `lifecycle.py` | Ties setup → play → wrap → play into one object the TUI drives |
 | `phase.py` | The two shared invariants: `apply_one_correction`, code-owned `commit_campaign` |
 | `completeness.py` | Deterministic entity lint (required `## Vitals` fields per type) |
+| `status.py` | `campaign_status` — the disk-only campaign snapshot (the `status` command + TUI modal) |
 | `prompts.py` + `prompts/*.md` | Every brief the orchestrator sends a model, as reviewable prose files |
 | `stream.py` | `EventTap` — live SSE stream for the behind-the-screen pane |
 | `logs.py`, `textmarkup.py`, `mock.py` | Logging, safe markup rendering, offline mocks |
