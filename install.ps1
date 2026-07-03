@@ -5,9 +5,9 @@
 
       irm https://raw.githubusercontent.com/KarlJussila/gm-llm/main/install.ps1 | iex
 
-  It installs everything gm-llm needs and leaves a ready-to-play campaign folder.
-  The ONE thing it can't do for you is log opencode in to a model provider — that's
-  interactive — so it prints the exact command to run at the end.
+  It installs the `gm-llm` command and everything it needs. The last steps — logging
+  opencode in to a model provider and creating a campaign folder — are interactive, so
+  it prints the exact commands to run at the end.
 
   Idempotent: safe to re-run. Anything already installed is skipped.
   No admin needed for the per-user installs; winget may pop a UAC prompt for git/python/node.
@@ -31,7 +31,6 @@ try { Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Forc
 
 $RepoUrl     = 'https://github.com/KarlJussila/gm-llm.git'
 $RepoDir     = Join-Path $HOME 'gm-llm'          # the tool's source checkout
-$CampaignDir = Join-Path $HOME 'my-campaign'     # the playable project it scaffolds
 
 function Say  ($m) { Write-Host "`n==> $m" -ForegroundColor Cyan }
 function Ok   ($m) { Write-Host "    $([char]0x2713) $m" -ForegroundColor Green }
@@ -179,21 +178,18 @@ if (-not (($userPath -split ';') -contains $VenvScripts)) {
   Ok "added gm-llm to your PATH"
 }
 Sync-Path
-
-# --- 4. scaffold a playable campaign folder (also installs the .opencode plugin deps) ---
 Ok "gm-llm ready"
-Say "Creating your campaign folder"
-& $gmllm init $CampaignDir | Out-Host
-Ok "campaign scaffolded at $CampaignDir"
 
-# --- done: the one manual, interactive step remains ---
+# --- done: the remaining steps are interactive, so the player runs them ---
 Write-Host "`n============================================================" -ForegroundColor Green
-Write-Host " gm-llm is installed. Two commands left to start playing:" -ForegroundColor Green
+Write-Host " gm-llm is installed. To start playing:" -ForegroundColor Green
 Write-Host "============================================================`n" -ForegroundColor Green
 Write-Host "  1. Log opencode in to a model provider (one time):" -ForegroundColor White
 Write-Host "       opencode auth login`n" -ForegroundColor Yellow
-Write-Host "  2. Start your campaign:" -ForegroundColor White
-Write-Host "       cd $CampaignDir" -ForegroundColor Yellow
+Write-Host "  2. Make a campaign folder, set it up, and play:" -ForegroundColor White
+Write-Host "       mkdir $HOME\my-campaign" -ForegroundColor Yellow
+Write-Host "       cd $HOME\my-campaign" -ForegroundColor Yellow
+Write-Host "       gm-llm init" -ForegroundColor Yellow
 Write-Host "       gm-llm play`n" -ForegroundColor Yellow
-Write-Host "  (If either command isn't found, open a NEW terminal window first —" -ForegroundColor DarkGray
-Write-Host "   for the best display use Windows Terminal, not the old cmd.exe.)`n" -ForegroundColor DarkGray
+Write-Host "  (Open a NEW terminal first so gm-llm is on your PATH — and for the best" -ForegroundColor DarkGray
+Write-Host "   display use Windows Terminal, not the old cmd.exe.)`n" -ForegroundColor DarkGray
