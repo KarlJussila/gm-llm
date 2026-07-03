@@ -108,11 +108,13 @@ if (-not $script:PyExe) {
        "in Settings > Apps > Advanced app settings > App execution aliases (python.exe / python3.exe), " +
        "open a NEW terminal, and re-run this installer.")
 }
-function Py { & $script:PyExe @script:PyArgs @args }
+# NB: don't name this `Py` — PowerShell resolves commands case-insensitively and prefers
+# functions over executables, so a function `Py` would shadow the `py` launcher and recurse.
+function Invoke-Py { & $script:PyExe @script:PyArgs @args }
 
 Say "Installing pipx"
-Py -m pip install --user --upgrade pipx 2>&1 | Out-Host
-Py -m pipx ensurepath 2>&1 | Out-Host
+Invoke-Py -m pip install --user --upgrade pipx 2>&1 | Out-Host
+Invoke-Py -m pipx ensurepath 2>&1 | Out-Host
 Sync-Path
 
 Say "Fetching gm-llm"
@@ -125,7 +127,7 @@ if (Test-Path (Join-Path $RepoDir '.git')) {
 }
 
 Say "Installing the gm-llm command"
-Py -m pipx install $RepoDir --force 2>&1 | Out-Host
+Invoke-Py -m pipx install $RepoDir --force 2>&1 | Out-Host
 Sync-Path
 
 # Resolve the gm-llm executable. PATH may not reflect pipx's bin dir in THIS session even
@@ -134,7 +136,7 @@ Sync-Path
 $gmllm = (Get-Command gm-llm -ErrorAction SilentlyContinue).Source
 if (-not $gmllm) {
   $cands = @()
-  $binDir = (Py -m pipx environment --value PIPX_BIN_DIR 2>$null)
+  $binDir = (Invoke-Py -m pipx environment --value PIPX_BIN_DIR 2>$null)
   if ($binDir) { $cands += (Join-Path $binDir.Trim() 'gm-llm.exe') }
   $cands += (Join-Path $HOME '.local\bin\gm-llm.exe')
   foreach ($cand in $cands) {
