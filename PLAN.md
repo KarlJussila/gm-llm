@@ -31,18 +31,12 @@ Standardize the **product/tool** name on `gm-llm`. Leave **domain nouns** alone 
 - **Decision (settled): keep the internal import package `orchestrator/`** — ship as dist
   `gm-llm`, no import churn. "orchestrator" is an accurate internal name.
 
-## 1. The decision that gates packaging: drop-in vs. installable
+## 1. Packaging model — **Option B, chosen and built**
 
-Today the Python code (`orchestrator/`, `tui/`, `dev/`) lives **inside** `.opencode/`, the same
-dir opencode reads agents/skills from — so the app is a "drop `.opencode/` into a project" bundle.
-
-- **Option A — keep drop-in, add a bootstrap.** Copy `.opencode/`, run a bootstrap that makes a
-  venv / installs deps / runs `doctor`. Minimal refactor.
-- **Option B — installable tool + scaffolded assets.** `pipx install gm-llm` gives real commands;
-  `gm-llm init` scaffolds the bundled `.opencode/` agent+skill assets into the target project.
-  Cleanest UX; bigger refactor (bundle assets as package data + a scaffold copier).
-
-**Recommendation: B.** *Awaiting confirmation before the Phase 2 refactor.*
+`gm-llm` is an installable tool (`pipx install .`) whose `init` scaffolds the bundled opencode
+assets into a target project's `.opencode/`. The Python code (`gm_llm/`, `orchestrator/`, `tui/`)
+is packaged; the opencode assets live under `gm_llm/assets/opencode/` and are copied by `init`.
+The source repo is no longer itself a drop-in `.opencode/` — dogfood via `gm-llm init` + `gm-llm play`.
 
 ## 2. Phase 1 — native Windows portability  **[in progress]**
 
@@ -58,13 +52,23 @@ dir opencode reads agents/skills from — so the app is a "drop `.opencode/` int
 - **Terminal:** require **Windows Terminal / PowerShell** (Textual + rich auto-enable VT there;
   legacy `cmd.exe` renders poorly). Document, don't code.
 
-## 3. Phase 2 — packaging for easy setup (all platforms)  **[blocked on the A/B decision]**
+## 3. Phase 2 — packaging for easy setup  **[built]**
 
-- **`pyproject.toml`**: `name = "gm-llm"`, pinned `rich`/`textual`, console entry points.
-- **`gm-llm doctor`**: checks `opencode` on PATH, Node/Bun runtime, a configured provider
-  (agents pin `opencode/mimo-v2.5-free`), and port `4181` free — prints exactly what's missing.
-  The single biggest setup lever on any OS.
-- **README quickstart + prereqs.**
+- **`pyproject.toml`** — dist `gm-llm`, pinned `rich`/`textual`, console entry point
+  `gm-llm = gm_llm.cli:main`, package-data for `orchestrator/prompts/*.md` and the bundled assets. **[done]**
+- **`gm_llm` package** — `play` (launch TUI; bare `gm-llm` too), `init` (scaffold), `doctor`
+  (opencode / JS runtime / plugin installer / port / project-init checks). **[done]**
+- **README quickstart** rewritten to the install→init→doctor→play flow. **[done]**
+- **CLI surface (decided):** `gm-llm` carries `play`/`init`/`doctor`; the orchestrator
+  power-commands stay in `dev/cli.py` for now — this is where future player features
+  (talk to the DM to fix canon, roll a campaign back) will grow.
+
+### Still to do in Phase 2 — **model configuration** *(deferred, by agreement)*
+
+Default stays `mimo`. Add a way to pick another model. Sketch: `gm-llm init --model <id>` writes
+the chosen id into the scaffolded agents' frontmatter (default `opencode/mimo-v2.5-free`), and
+`doctor` prints the configured model. Later: a project config re-key without re-init. *(No design
+blocker — just not built yet.)*
 
 ## 4. Phase 3 — validate on native Windows
 
@@ -72,14 +76,12 @@ Windows Terminal + PowerShell → `doctor`, server boot/**clean** stop, TUI rend
 **setup → play → wrap** loop. Probe the risks: `opencode.cmd` resolution, process-tree kill,
 paths with spaces, ANSI.
 
-## Open decisions (need your call)
+## Decisions — all settled
 
-1. ~~Package rename `orchestrator` → `gm_llm`?~~ **Settled: keep `orchestrator`.**
-2. **Option A (drop-in + bootstrap) vs. B (installable + `gm-llm init`)?** *(rec: B)*
-3. **CLI surface:** keep subcommands (`status/play/prep/reconcile/tui/lint`) under `gm-llm`,
-   single entry point? Any renames?
-4. **Provider/model:** keep `mimo-v2.5-free` as the default, or make it configurable (and have
-   `doctor` validate it)?
+1. ~~Package rename?~~ **Keep `orchestrator`.**
+2. ~~Packaging model?~~ **Option B (installable + `gm-llm init`).** Built.
+3. ~~CLI surface?~~ **`gm-llm` = play/init/doctor; power-commands stay in `dev/cli.py`.**
+4. ~~Model config?~~ **Default `mimo`; configurable model deferred to its own increment (above).**
 
 ## Biggest external unknown
 
