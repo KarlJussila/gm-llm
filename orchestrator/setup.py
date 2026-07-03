@@ -34,6 +34,15 @@ from .planner import Planner
 from .prompts import load
 from .scaffold import scaffold_campaign
 
+# Safety-hatch nudge: sent if the DM completes worldbuilding without putting the overview
+# in task_complete's `player_message` (the only channel that reaches the player).
+_NUDGE_OVERVIEW = (
+    "You finished worldbuilding but didn't include the world overview, so the player has "
+    "not seen one — the `player_message` argument of `task_complete` is the only way to show "
+    "it to them. Call `task_complete` again now with a spoiler-free overview (premise, tone, "
+    "surface situation — never hidden truths) in `player_message`."
+)
+
 _STAGE_BRIEFS = {
     "INTAKE_WORLD": "setup-intake-world-brief",
     "CHAR":         "setup-char-brief",
@@ -117,16 +126,19 @@ class Setup:
             self._mark_done("INTAKE_WORLD")
             self._stage = "CHAR"
             self._announce("CHAR")
-            # The spoiler-free world overview rides in the task_complete call's
-            # `player_message` arg — structured like the checkers' report_findings, so it's
-            # reliably present and always the closing beat. Fall back to the message text if
-            # the model put it there instead.
-            close = (reply.tool_inputs.get("task_complete", {}).get("player_message") or text).strip()
+            # The spoiler-free overview rides in task_complete's `player_message` arg
+            # (structured, read from history — the message text isn't reliably surfaced past
+            # a tool-split turn). If the DM completed without it, nudge once rather than
+            # guessing from prose.
+            reply = self.backend.ensure_tool(self.dm_sid, self.dm_agent, reply,
+                                             tool="task_complete", args=("player_message",),
+                                             nudge=_NUDGE_OVERVIEW, whole=True)
+            overview = (reply.tool_inputs.get("task_complete", {}).get("player_message") or "").strip()
             # Open character creation and APPEND it, so the player sees the overview and the
             # character opening together — never overwrite the dm's closing beat.
             char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
                                             load("setup-char-brief"), whole=True)
-            return SetupTurn(f"{close}\n\n{char_open}" if close else char_open, False)
+            return SetupTurn(f"{overview}\n\n{char_open}" if overview else char_open, False)
         if self._stage == "CHAR" and done:
             self._mark_done("CHAR")
             self._run_pipeline()

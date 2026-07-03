@@ -335,6 +335,31 @@ class Backend:
             inputs[name] = inp  # last call wins (fine for signal tools called once)
         return Reply(out, names, inputs)
 
+    def ensure_tool(self, session_id: str, agent: str, reply: Reply, *, tool: str,
+                    nudge: str, args: tuple[str, ...] = (), tries: int = 1,
+                    whole: bool = False) -> Reply:
+        """Safety hatch for tool-call-delimited tasks (task_complete, report_findings):
+        make sure `reply` carries a call to `tool` with every arg in `args` non-empty. If
+        it doesn't, send `nudge` as a follow-up prompt and re-read, up to `tries` times;
+        return the final Reply.
+
+        The caller still handles a miss that survives every nudge (the true fallback) —
+        this just makes that fallback the last resort instead of the first one, so a model
+        that ended a turn without its terminal tool call gets told to make it rather than
+        being silently second-guessed. A no-op (no extra model call) in the common case
+        where the tool was already called correctly."""
+        def satisfied(r: Reply) -> bool:
+            if tool not in r.tools:
+                return False
+            inp = r.tool_inputs.get(tool) or {}
+            return all(str(inp.get(a, "")).strip() for a in args)
+
+        for _ in range(tries):
+            if satisfied(reply):
+                break
+            reply = self.prompt_full(session_id, agent, nudge, whole=whole)
+        return reply
+
     def _run_prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
         """Prompt `agent` on `session_id`; return its text. Retries on failure/empty/
         timeout with backoff, paced to ease rate limits.

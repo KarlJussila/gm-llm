@@ -94,6 +94,15 @@ class StageGateResult:
         return f"{head}\n\n— {self.label} —\n" + self.narrative.report.strip()
 
 
+# Safety-hatch nudge: sent if a checker ends its turn without submitting report_findings,
+# so a forgotten tool call is retried once before the fail-safe-to-VIOLATIONS kicks in.
+_NUDGE_REPORT_FINDINGS = (
+    "You ended your turn without submitting your verdict. Call the `report_findings` tool "
+    "now as your only action — put your findings in `report` (an empty string if there are "
+    "none) and your `verdict` (exactly 'PASS' or 'VIOLATIONS'). Output nothing else."
+)
+
+
 def _narrative_brief(player_msg: str, canon: str, narration: str) -> str:
     return load("check-turn-brief").format(player_msg=player_msg, canon=canon, narration=narration)
 
@@ -177,14 +186,17 @@ class Gate:
 
         The skills instruct the checker to call `report_findings` with `report`
         (findings text) and `verdict` ("PASS" / "VIOLATIONS") fields as its final
-        act — that's the only verdict signal. If the model didn't call the tool
-        (or called it without a usable verdict field), fail-safe to VIOLATIONS
-        with the model's text as the report body, so the checker's output still
-        reaches the caller rather than slipping by silently.
+        act — that's the only verdict signal. If it ends the turn without the call,
+        `ensure_tool` nudges it once to make it; only if that still fails do we
+        fail-safe to VIOLATIONS with the model's text as the report body, so the
+        checker's output still reaches the caller rather than slipping by silently.
 
         `whole=True`: a checker runs a todowrite list then reports, so its findings
         and tool call can land in separate text parts — we need all of them."""
         reply = self.backend.prompt_full(sid, "narrative-checker", brief, whole=True)
+        reply = self.backend.ensure_tool(sid, "narrative-checker", reply,
+                                         tool="report_findings", args=("verdict",),
+                                         nudge=_NUDGE_REPORT_FINDINGS, whole=True)
         tool_input = reply.tool_inputs.get("report_findings")
         if tool_input:
             verdict_str = str(tool_input.get("verdict", "")).upper().strip()
