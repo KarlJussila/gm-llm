@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gm-llm"
+version = "0.1.0"
+description = "An LLM game master for solo, long-form D&D campaigns — over opencode."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "rich>=13",
+    "textual>=0.60",
+]
+
+[project.scripts]
+gm-llm = "gm_llm.cli:main"
+
+[tool.setuptools]
+# The installable tool (gm_llm) plus the engine (orchestrator) and UI (tui). dev/ is
+# developer tooling and is not shipped.
+packages = ["gm_llm", "orchestrator", "tui"]
+
+[tool.setuptools.package-data]
+# Runtime data loaded by path, so it must ship in the wheel: the checker/turn prompts,
+# and (once relocated under the package) the opencode assets that `gm-llm init` copies.
+orchestrator = ["prompts/*.md"]
+gm_llm = ["assets/opencode/**/*"]
