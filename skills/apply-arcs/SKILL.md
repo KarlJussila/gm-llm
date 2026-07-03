@@ -54,7 +54,9 @@ learned that touches this arc (→ now locked); where it sits on its curve; whic
 player took; hooks fired to/from other arcs or threads. That's your edit list for the steps below.
 
 **If the session didn't touch the arc at all** — no beat, answer, NPC, or hook of it engaged, and
-nothing the PC learned bears on it — **change nothing and report "untouched".** Done.
+nothing the PC learned bears on it — **change nothing and report "untouched".** Done. (Exception: on
+the **major** arc, still reconsider level pacing — step 10 — even when the narrative was untouched;
+advancement is paced on the calendar, not on this arc's beats.)
 
 ## The reconcile steps — work them in order
 
@@ -96,7 +98,14 @@ learned this session, flip it to `[revealed: S{N}]` and update `Known to`.
 **9. Append the Adjustment log entry.** Add one line: **S{N}:** what changed in this arc's
 structure/details and the play that prompted it — the provenance of the body's evolution.
 
-**10. Update the arc's state file.** Rewrite `arcs/{slug}.state.md`: Status, Turning points hit
+**10. Reconcile level pacing (the major arc only).** The major arc's *Level pacing* section is the
+campaign's advancement schedule. Reconsider it **every pass, even if the arc was otherwise untouched**:
+mark any level-up delivered this session (the digest / updated sheet shows it), then re-project the
+schedule ahead — **drop, add, or move** milestones so the cadence still fits the PC's current level and
+where the arc now sits (every 2–5 sessions, tighter at low levels / looser at high). Never let the
+schedule stall or bunch two level-ups to catch up. A minor arc has no pacing section — skip this step.
+
+**11. Update the arc's state file.** Rewrite `arcs/{slug}.state.md`: Status, Turning points hit
 (+ session), Position on the tension curve, `as-of: S{N}`. The state is the quick at-a-glance read;
 the body holds the substance.
 

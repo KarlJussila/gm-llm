@@ -26,6 +26,23 @@ session has had real substance. If an exit condition could surface early — the
 trigger — flag that the runner should treat it as a signal there's room to keep going, not a cue to
 wrap.
 
+## Advancement — session-end level-ups
+
+Milestone leveling is planned, not improvised, and it's checked **every session** (the level-up rides
+out on the session's close, so it's a pacing concern):
+
+- Read the **major arc's *Level pacing*** schedule and the **PC's current level** (`characters/{slug}.md`
+  Vitals). Is a level-up due at the **end of the session you're planning**?
+- **If yes**, schedule it: state the level the PC reaches, and — when a fitting beat is near — the beat
+  it rides on (a turning point, a hard-won victory, a chapter's close). If no beat is near, schedule it
+  at the close anyway: the cadence holds regardless of beats (arc-design's rule). The runner awards it
+  at the session's close (its `session-close` steps).
+- **If no**, say so plainly ("no level-up this session") so the runner doesn't invent one.
+
+Write it as an explicit **Session-end advancement** line in this section of the plan — that's what the
+runner reads at the close. A due level-up is a floor on pacing; don't skip it because the session
+lacked a big beat, and don't move it earlier than the session's end.
+
 ## Principles
 
 - **Cross-reference against canon.** The stopping points and cliffhanger must follow from the

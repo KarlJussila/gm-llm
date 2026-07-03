@@ -1,13 +1,14 @@
 ---
 name: session-flow
-description: The shape of a live D&D session from open to close — silent pre-session prep and opening the scene, pacing the whole session toward a substantial ending, and closing it (propose the ending, collect player feedback, wrap spoiler-free). Loaded by dm-runner at the start of every session; its Opening steps run at the start and its Closing steps at the end.
+description: The shape of a live D&D session — silent pre-session prep and opening the scene, and pacing the whole session toward a substantial ending that the runner (never the player) decides to land. Loaded by dm-runner at the start of every session; its Opening steps run at the start and its Pacing craft throughout. When pacing says it's time to end, it hands off to the session-close skill for the closing procedure.
 ---
 
-# session-flow — open, pace, and close a session
+# session-flow — open and pace a session
 
-Load this at the **start of every session**. It owns the session's arc: the **Opening** steps run
-before the first beat, the **Pacing** craft runs throughout, and the **Closing** steps run at the end
-— including collecting feedback, which happens every session and is easy to forget.
+Load this at the **start of every session**. It owns the session's arc up to the ending: the
+**Opening** steps run before the first beat, and the **Pacing** craft runs throughout — including the
+judgment of *when the session should end*. The ending itself is a separate procedure: when pacing says
+it's time, **load `session-close`** and run it (the ending, the feedback step, the wrap).
 
 Before applying it, read `campaign/feedback/session-flow.md` if it exists — accumulated, player-specific
 guidance. Treat it as binding and let it override the defaults here wherever they conflict.
@@ -33,37 +34,40 @@ player. Your only player-facing output at the start is the in-fiction opening.
    says the session is already in progress — a resume — don't open a new scene; pick up from the last
    beat shown.)
 
-## Pacing — run a shaped session and end it
+## Pacing — run a shaped session, then end it yourself
 
-A session has a shape, a sense of **substance**, and an ending. It does **not** run until the player
-asks when you'll stop — but it also does **not** collapse into a single scene the moment an exit
-condition happens to surface. Most sessions move through several beats; reaching a stopping point in
-the first one means it's too early to land, not time to wrap.
+A session has a shape, a sense of **substance**, and an ending — and **ending it is your call, never
+the player's.** You own the close completely: you decide when the session lands, on your own
+initiative. Never wait for the player to ask to stop, and never lean on them to signal they're done —
+that's not their job, it's yours. There are two ways to get this wrong, and you avoid **both**:
 
-- **Run from the plan toward its exit conditions — but pace the whole session, not just the exit.**
-  The plan names likely beats and one or two natural stopping points with a cliffhanger. Treat the
-  exits as *candidate* landings, **not magnets**. An exit is a real ending only once the session has
-  had enough substance behind it. **If an exit beat lands early** — the player beelines to the one
-  NPC or moment that triggers it — that's a signal there's *room to keep going*, not a cue to stop:
-  broaden the scene, follow what it opens up, or move to the next beat.
-- **When the player goes substantially off-script** (e.g., they ally with the antagonist and skip
-  the planned scenes), don't just keep improvising open-endedly. Pause, sketch a **short forward
-  plan** — two to four beats to a fresh, natural stopping point — and play toward that exit.
+- **Ending too early** — collapsing into a single scene the moment an exit surfaces. Most sessions
+  move through several beats; reaching a stopping point in the first one means it's too soon to land.
+- **Never ending** — running on and on, following every new thread, waiting for the player to call
+  it. A session that won't end is as much a failure as one that ends after a single scene, and it's
+  the more common one. Once the session has real substance, **the next good beat is one you take.**
 
-## Closing the session
+- **Run from the plan toward its exit conditions, and land when a good one arrives.** The plan names
+  likely beats and one or two natural stopping points with a cliffhanger. Once the session has had
+  substance behind it, treat those exits as **beats to land on**, not just candidates: when play
+  reaches a satisfying stop — an exit, a cliffhanger, a resolved thread, a moment of rest — **close on
+  it** rather than pressing past it in search of a better one. The one guard: if an exit surfaces in
+  the very first scene, that's too early — broaden and keep going. After that, a good beat is a cue to
+  wrap.
+- **Heavily improvised territory is itself a reason to close.** When play has gone substantially
+  off-script — the player skipped the planned scenes, or you're several beats deep into inventing
+  situation and canon on the fly with no prepared ground under you — **steer to a close, even if the
+  beat isn't the ideal one.** A clean stop on a decent beat beats drifting further into unprepared
+  territory, where canon thins out and contradictions creep in. Sketch a beat or two to the nearest
+  natural landing and end there; the between-session team reconciles what you improvised, and the next
+  plan picks the thread back up.
 
-The session doesn't just stop — you bring it to a close. When pacing tells you it has had **real
-substance and reached a natural stopping point** (or the player has again diverged substantially), run
-these steps **in order, every session** — don't let play trail off without them:
+## Closing the session — hand off to `session-close`
 
-1. **Propose the ending yourself.** Land on a satisfying beat or a cliffhanger — don't wait to be
-   asked, and don't end early just because an exit surfaced. A single-scene session almost never
-   qualifies yet.
-2. **Collect feedback.** Step out of character; ask the player a couple of short, open questions about
-   the session. Listen — don't argue or fix it live. **This step is not optional and not silent — it
-   happens at the end of every session.**
-3. **Close spoiler-free.** Confirm the ending beat, thank them, and stop. No summary, no preview of
-   what's coming.
-4. **Signal the end.** As your very last act — after closing out — **call the `task_complete` tool**.
-   That hands the session back to the campaign team to wrap up (their between-session work reads your
-   handoff notes and reconciles canon). Only call it once steps 1–3 are done; never mid-scene.
+The session doesn't just stop — you bring it to a close, and **you decide when** (never the player).
+The moment pacing above says it should land — it's had **real substance and reached a natural stopping
+point**, or the player has diverged substantially, or you've drifted into heavily improvised territory
+— **load the `session-close` skill and run its steps in order.** That skill owns the closing procedure:
+call the ending, award any planned level-up, collect feedback, close spoiler-free, and signal the end
+with `task_complete`. Closing is your call, made on your own initiative — don't let play trail off
+without it, and don't wait for the player to prompt you.

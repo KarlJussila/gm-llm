@@ -119,7 +119,7 @@ Skills hold the procedures; agents stay thin. Groups:
 - **Planning:** `session-plan`, pulling `encounter-plan` / `investigation-plan` /
   `npc-plan` / `pacing-plan` as the session needs them.
 - **Live play (dm-runner):** `session-run` (always-on core craft), `session-flow`
-  (open/pace/close), `social-play`, `discoveries`.
+  (open/pace), `session-close` (the end-of-session procedure), `social-play`, `discoveries`.
 - **Post-session:** `log-extract`, `session-review`, `apply-canon`, `apply-arcs`
   (one arc per dispatch), `apply-state`, `feedback-curation`.
 - **Checks (narrative-checker roles):** `check-turn`, `check-conduct`, `check-plan`,

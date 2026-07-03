@@ -16,7 +16,8 @@ Use your `todowrite` tool to create exactly these entries, then work them in ord
 
 1. Gather context (see *Before you write*)
 2. Design the arc: premise, stakes, key NPCs/factions, turning points, engagement paths
-3. Author the arc file + `.state.md`; register in `INDEX.md` with `tier` and `hooks-into` (if minor)
+3. Lay out level pacing (major arc only — see *Level pacing*)
+4. Author the arc file + `.state.md`; register in `INDEX.md` with `tier` and `hooks-into` (if minor)
 
 ## What you're designing
 
@@ -59,6 +60,23 @@ Build the arc from the template's sections. What makes each good:
   long bores; spiking too often burns out.
 - **Engagement paths** — direct / indirect / avoidance / alternative. The open part: how the player
   might come at it, including how it escalates on its own if ignored.
+
+## Level pacing — the major arc's advancement schedule
+
+The **major arc** owns the campaign's advancement schedule; a minor arc leaves it to the major. Lay
+out where the PC levels up along the arc's spine, so leveling is *planned* rather than forgotten (as
+it is, no one hands out level-ups because no one owns them — this is where that ownership lives):
+
+- **Milestone leveling, at a session's end.** A level-up lands when a session closes, never mid-scene.
+- **Cadence: every 2–5 sessions, scaled by level.** Fast at low levels (~every 2), slower as the PC
+  climbs (~every 4–5 by the teens). Pick the cadence for the PC's *current* level.
+- **Prefer a beat, but keep the cadence regardless.** Land a level-up just after a major turning point
+  when one is near — earned advancement feels best. But the cadence is a **floor that holds even when
+  no beat is close**: never stall leveling for want of a story beat, and never bunch two together to
+  catch up. Pace is maintained on the calendar and *decorated* by beats, not gated by them.
+- **Commit each milestone** in the arc's *Level pacing* section: the target level and the session it's
+  due, plus the beat it rides on when there is one. The dm pulls this when planning each session, and
+  reconsiders it every apply-arcs pass.
 
 ## Craft principles
 

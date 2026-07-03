@@ -20,8 +20,10 @@ defaults here wherever they conflict.
 This is the core. Three companion skills carry the rest of the craft; load them alongside this one as
 the session calls for them (when in doubt, load):
 
-- **`session-flow`** — always. Opening the session, pacing it, and closing it (propose the ending,
-  collect feedback, wrap). Its Opening steps run at the start; its Closing steps at the end.
+- **`session-flow`** — always. Opening the session and pacing it toward an ending *you* (not the
+  player) decide to land. Its Opening steps run at the start; its Pacing craft throughout. When pacing
+  says it's time to end, load **`session-close`** — the closing procedure (call the ending, award any
+  planned level-up, collect feedback, wrap spoiler-free, then `task_complete`).
 - **`social-play`** — when the scene is people: a conversation, negotiation, interrogation, or any
   beat an NPC drives.
 - **`discoveries`** — when the PC investigates, recalls expertise, reads a scene, or pieces clues

@@ -129,7 +129,7 @@ markers make a failed pass resume where it died.
 - **Setup:** `campaign-setup` (cross-cutting standards), `campaign-intake`, `world-build`,
   `character-create`, `character-import`, `arc-design`, `state-init`.
 - **Planning:** `session-plan`, plus the focused `*-plan` skills below.
-- **Live play:** `session-run`, `session-flow`, `social-play`, `discoveries`.
+- **Live play:** `session-run`, `session-flow`, `session-close`, `social-play`, `discoveries`.
 - **Post-session:** `log-extract`, `session-review`, `apply-canon`, `apply-arcs` (one arc per
   dispatch), `apply-state`, `feedback-curation`.
 - **Checks:** the seven `check-*` role skills of the narrative-checker.
@@ -144,9 +144,10 @@ and a *running* face, and the content differs between them:
   deliberate and sectioned, so these are loaded as needed.
 - **Runner craft skills** — the live craft `dm-runner` loads each session. `session-run` is the
   always-on core (agency, rolls, spoilers, applied every turn); it loads companions as the scene
-  calls for them — `session-flow` (open / pace / close, including end-of-session feedback),
-  `social-play` (conversations and playing NPCs), and `discoveries` (revealing information). The
-  runner's algorithm opens by loading these, then plays.
+  calls for them — `session-flow` (open / pace, and the judgment of when to end), `session-close`
+  (the end-of-session procedure — ending, level-up, feedback, wrap — loaded when pacing says it's
+  time), `social-play` (conversations and playing NPCs), and `discoveries` (revealing information).
+  The runner's algorithm opens by loading the core, then plays.
 - **`*-run` skills** — reserved for a distinct *play mode* `dm-runner` enters (e.g. a forthcoming
   `combat-run`), as opposed to the always-resident craft skills above.
 

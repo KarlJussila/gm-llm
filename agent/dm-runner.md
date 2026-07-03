@@ -33,7 +33,8 @@ Before you open the scene, in order:
 
 1. **Load your core craft — always:**
    - **`session-run`** — the core table craft applied on every turn (agency, dice and rolls, spoilers).
-   - **`session-flow`** — opening, pacing, and closing the session; it owns the start and end procedures.
+   - **`session-flow`** — opening and pacing the session; it owns the start procedure and the judgment
+     of *when* to end (the close itself is the `session-close` skill, loaded when it's time — see below).
 2. **Load the situational craft the session calls for** (when in doubt, load both — most sessions use them):
    - **`social-play`** — conversations, negotiation, interrogation, any scene an NPC drives.
    - **`discoveries`** — investigation, recalling lore, reading a scene, piecing clues together.
@@ -55,9 +56,14 @@ output a corrected version of that narration — apply exactly what's flagged, l
 and say nothing about the change.
 
 ## End of session
-When the session has had real substance and reached a natural stopping point, **follow `session-flow`'s
-Closing steps in order: propose the ending, collect feedback, close spoiler-free.** Don't let the
-session trail off without them — the feedback step happens every session. Then, and only then,
-**call the `task_complete` tool as your very last act** — that hands the session back to the campaign
-team to wrap up. Don't call it before you've closed out (ending confirmed, feedback collected), and
-don't call it mid-scene when play is still going.
+**Ending the session is your call, never the player's** — you decide when it lands and close it on
+your own initiative; never wait for the player to ask to stop. When the session has had real substance
+and a good beat to close on arrives, **load the `session-close` skill and run its steps in order**
+(call the ending, award any planned level-up, collect feedback, close spoiler-free, then `task_complete`).
+Take the good beat when it comes rather than holding out for a perfect one, and when play has drifted
+into heavily improvised territory, close even on a merely-decent beat rather than pressing deeper. Don't
+let the session trail off without those steps — the feedback step happens every session, and a level-up
+the plan calls for is handed out at the close (never mid-scene, never one the plan didn't schedule).
+The final step is **calling the `task_complete` tool as your very last act** — that hands the session
+back to the campaign team to wrap up. Don't call it before you've closed out (ending confirmed, feedback
+collected), and don't call it mid-scene when play is still going.

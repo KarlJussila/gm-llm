@@ -77,7 +77,9 @@ encounters; a travel session no investigation). Pull a skill when its content is
    choice and what hangs on it; **don't** plan which option they pick.
 7. **Contingencies** — for the likely beats, if/then pairs (*if the player does X, then Y*). Cover
    the two or three most probable deviations. Safety rails, not alternate campaigns.
-8. **Pacing & Exits** → **`pacing-plan`**. Expected scope, natural stopping points, cliffhanger.
+8. **Pacing & Exits** → **`pacing-plan`**. Expected scope, natural stopping points, cliffhanger, and
+   the **session-end advancement check** (is a level-up due when this session closes? — pulled from the
+   major arc's *Level pacing* against the PC's current level).
 9. **Author & register new entities** — for every entity the plan introduces (resolution step 3
    above), write a **full info file** via the matching `canon-conventions` template (not a stub),
    register it in `INDEX.md`, and **check it against existing entities for name/role overlap** — if
@@ -90,6 +92,8 @@ encounters; a travel session no investigation). Pull a skill when its content is
       `characters/{slug}.knowledge.md`; no beat assumes the PC knows what it doesn't.
     - **Overlap:** every new entity dedup-checked (step 9).
     - **No blanks:** no "DM decides / TBD / as needed" anywhere.
+    - **Advancement decided:** the plan states whether a level-up lands at this session's end (per the
+      major arc's *Level pacing* and the PC's current level) — an explicit yes-to-level-N or no.
 
 ## Cross-cutting principles
 - **Plan situations, not plots.** Problems and opportunities, not solutions.

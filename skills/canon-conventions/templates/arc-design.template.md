@@ -48,6 +48,17 @@ the reveal, the identity, the consequence. Flag the spoiler content [hidden] + K
 <Pacing: build-up → rising action → climax → falling action → resolution. Note where each turning
 point sits on the curve.>
 
+## Level pacing
+<!-- MAJOR arc only — the campaign's advancement schedule, laid out along this arc's spine. A minor
+     arc leaves this "— (the major arc owns the advancement schedule)".
+     Milestone leveling: the PC gains a level at a SESSION'S END, every 2–5 sessions — tighter at low
+     levels (~2), looser at high (~4–5). Prefer to land a level-up just after a major turning point,
+     but the CADENCE HOLDS even when no beat is near: never stall pacing for want of a beat, never
+     bunch two to catch up. Each entry commits the target level and the session it's due; name the
+     beat it rides on when there is one. Reconsidered every apply-arcs pass (delivered / re-projected
+     / dropped / added / moved). -->
+- **L<x> → L<x+1>** — due ~S<n>; <the turning point it lands on, or "cadence (no beat near)">
+
 ## Engagement paths
 <!-- This is the legitimately-OPEN part: the player's path. Facts are fixed above; paths are not. -->
 - **Direct** — <they take the hook head-on>

@@ -62,8 +62,16 @@ Flag any of:
   ledger, the `[hidden]`/`[revealed]` flags) is exactly what lets you catch this.
 
 ### 5. Check pacing
-- Flag a turn that proposes to **wrap or end** when little has happened (e.g. winding down after a
-  single scene), or otherwise mismanages the session's arc.
+Pacing fails in **both** directions — flag either:
+- **Wrapping too early** — a turn that proposes to end when little has happened (e.g. winding down
+  after a single scene).
+- **Refusing to close** — a turn that, at a clearly close-worthy moment (a satisfying beat or
+  cliffhanger has landed with real substance behind it, or play has drifted deep into improvised
+  off-plan territory), instead opens new threads or defers the ending, or waits for the player to ask
+  to stop. Ending is the runner's call, not the player's; a session that keeps running past a good
+  landing is a pacing failure. (Judge from the warm transcript context — flag only when the turn has
+  the substance behind it to close and visibly declines to; don't demand an ending mid-build.)
+- Or a turn that otherwise mismanages the session's arc.
 
 ## Report
 Per finding: which rule, the offending text, and the **fix instruction**.
