@@ -21,11 +21,13 @@ $ErrorActionPreference = 'Continue'
 
 # Bypass the machine's script-execution policy for THIS process (no admin, nothing persisted)
 # so this run can call Node's unsigned `npm.ps1` shim.
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force -ErrorAction SilentlyContinue
+# (try/catch, not -ErrorAction: the "overridden by a more specific scope" notice is a special
+# security error that -ErrorAction SilentlyContinue doesn't swallow. It's harmless anyway.)
+try { Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force -ErrorAction Stop } catch {}
 # Also relax the *persistent* CurrentUser policy to RemoteSigned (still no admin) so the
 # npm-installed shims the player later runs by hand — notably `opencode auth login` — aren't
 # blocked as unsigned. RemoteSigned allows local scripts, still blocks unsigned web downloads.
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force -ErrorAction SilentlyContinue
+try { Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force -ErrorAction Stop } catch {}
 
 $RepoUrl     = 'https://github.com/KarlJussila/gm-llm.git'
 $RepoDir     = Join-Path $HOME 'gm-llm'          # the tool's source checkout
@@ -71,9 +73,10 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 
 # --- 1. base tools ---
-Ensure-WingetPackage 'git'    'Git.Git'            'Git'
-Ensure-WingetPackage 'python' 'Python.Python.3.12' 'Python 3.12'
-Ensure-WingetPackage 'node'   'OpenJS.NodeJS'      'Node.js'
+# NB: Python is handled separately in section 3 (probe-by-running, not by name) — the Store
+# alias stub answers a name check and would trick Ensure-WingetPackage into skipping the install.
+Ensure-WingetPackage 'git'  'Git.Git'       'Git'
+Ensure-WingetPackage 'node' 'OpenJS.NodeJS' 'Node.js'
 # Nicer terminal for the TUI (cmd.exe renders it poorly). Optional — don't fail if it won't install.
 if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
   Say "Installing Windows Terminal (best for the game UI)"
@@ -93,39 +96,50 @@ Sync-Path
 if (Get-Command opencode -ErrorAction SilentlyContinue) { Ok "opencode installed" }
 else { Warn "opencode not on PATH yet — a new terminal will pick it up" }
 
-# --- 3. pipx + the gm-llm command ---
-# Resolve a REAL Python, dodging the Microsoft Store "App execution alias": with the alias on,
-# bare `python` is a stub that just prints "Python was not found" — so we prefer the `py`
-# launcher and verify each candidate actually runs code before trusting it.
-$script:PyExe = $null; $script:PyArgs = @()
-# Candidates by name first (py launcher, then python/python3)...
-$pyCands = @()
-$pyCands += ,@('py','-3')
-$pyCands += ,@('python')
-$pyCands += ,@('python3')
-# ...then real interpreters by path, since the Store alias can shadow `python` on PATH while
-# winget's actual Python sits under Programs\Python or Program Files.
-foreach ($glob in @("$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
-                    "$env:ProgramFiles\Python3*\python.exe",
-                    "${env:ProgramFiles(x86)}\Python3*\python.exe")) {
-  foreach ($f in (Get-ChildItem -Path $glob -ErrorAction SilentlyContinue)) {
-    $pyCands += ,@($f.FullName)
-  }
-}
-foreach ($cand in $pyCands) {
-  $exe = $cand[0]; $a = @(); if ($cand.Count -gt 1) { $a = @($cand[1]) }
-  try {
-    $out = & $exe @a -c "print('pyok')" 2>$null
-    if ($LASTEXITCODE -eq 0 -and (($out -join '') -match 'pyok')) {
-      $script:PyExe = $exe; $script:PyArgs = $a; break
+# --- 3. Python + pipx + the gm-llm command ---
+# Find a Python that actually RUNS (never a name check — the Microsoft Store alias installs a
+# `python.exe` stub that answers Get-Command but only prints "Python was not found"). Prefer the
+# `py` launcher, then names, then real interpreters by path (the Store alias can shadow `python`
+# on PATH while winget's actual Python sits under Programs\Python or Program Files).
+function Find-Python {
+  $script:PyExe = $null; $script:PyArgs = @()
+  $cands = @()
+  $cands += ,@('py','-3')
+  $cands += ,@('python')
+  $cands += ,@('python3')
+  foreach ($glob in @("$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
+                      "$env:ProgramFiles\Python3*\python.exe",
+                      "${env:ProgramFiles(x86)}\Python3*\python.exe")) {
+    foreach ($f in (Get-ChildItem -Path $glob -ErrorAction SilentlyContinue)) {
+      $cands += ,@($f.FullName)
     }
-  } catch {}
+  }
+  foreach ($cand in $cands) {
+    $exe = $cand[0]; $a = @(); if ($cand.Count -gt 1) { $a = @($cand[1]) }
+    try {
+      $out = & $exe @a -c "print('pyok')" 2>$null
+      if ($LASTEXITCODE -eq 0 -and (($out -join '') -match 'pyok')) {
+        $script:PyExe = $exe; $script:PyArgs = $a; return $true
+      }
+    } catch {}
+  }
+  return $false
 }
-if (-not $script:PyExe) {
-  Die ("No working Python found — the Microsoft Store alias is likely shadowing it. Turn it off " +
-       "in Settings > Apps > Advanced app settings > App execution aliases (python.exe / python3.exe), " +
-       "open a NEW terminal, and re-run this installer.")
+
+# If nothing runs, install Python ourselves (unconditionally — the name check that would skip
+# it is exactly what the Store stub fools), then look again.
+if (-not (Find-Python)) {
+  Say "Installing Python 3.12 (winget)"
+  winget install --id Python.Python.3.12 -e --source winget `
+    --accept-source-agreements --accept-package-agreements | Out-Host
+  Sync-Path
 }
+if (-not (Find-Python)) {
+  Die ("No working Python found even after installing it — the Microsoft Store alias may be " +
+       "shadowing it. Turn it off in Settings > Apps > Advanced app settings > App execution " +
+       "aliases (python.exe / python3.exe), open a NEW terminal, and re-run this installer.")
+}
+Ok ("using Python: " + $script:PyExe + " " + ($script:PyArgs -join ' '))
 # NB: don't name this `Py` — PowerShell resolves commands case-insensitively and prefers
 # functions over executables, so a function `Py` would shadow the `py` launcher and recurse.
 function Invoke-Py { & $script:PyExe @script:PyArgs @args }
