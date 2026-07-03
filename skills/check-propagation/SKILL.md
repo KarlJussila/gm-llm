@@ -1,31 +1,19 @@
 ---
 name: check-propagation
-description: The narrative-checker's POST role — after a session's updates have been applied, verify that everything from the session digest propagated correctly into canon and state (ledger flips, new-canon files + registry rows, state snapshots, arc bodies, documents), and return a list of gaps (or PASS). Reports findings; writes nothing.
+description: The narrative-checker's POST role — after a session's updates have been applied, verify that everything from the session digest propagated correctly into canon and state (ledger flips, new-canon files + registry rows, state snapshots, arc bodies, documents).
 ---
 
 # check-propagation — verify the apply pass propagated everything
 
-You are the narrative-checker in its **POST role**. You're given a session number, after that
-session's updates have been applied to canon and state. Your job: confirm that **everything the
-session established actually landed** — nothing dropped. Return a **list of gaps** (or `PASS`). The
-core risk you guard against: a named, load-bearing thing established in play must not silently
+POST role. You're given a session number, after that session's updates have been applied to canon
+and state. Confirm that **everything the session established actually landed** — nothing dropped.
+The core risk you guard against: a named, load-bearing thing established in play must not silently
 vanish before it's filed.
 
-**You report; you do not act.** Never edit any campaign file — the caller fixes the gaps you find.
+You audit **propagation**, not design: you're not re-judging the authoring choices, only whether
+every established fact made it from the record (the digest) into canon and state.
 
-## Step 1 — Create your task list
-
-Use your `todowrite` tool to create exactly these entries, then work them in order, marking each
-done as you go:
-
-1. Pull context
-2. Check new canon filed
-3. Check ledger propagation
-4. Check state propagation
-5. Check registry integrity
-6. Submit your report
-
-## What each entry entails
+## The checks
 
 ### 1. Pull context
 - Read the digest `campaign/sessions/session-{N}.md` — the structured extraction of what was played.
@@ -57,22 +45,7 @@ done as you go:
   every `INDEX.md` row points at a file that exists on disk (and vice-versa — no orphan files).
   Flag dangling links and registry/disk mismatches.
 
-### 6. Submit your report
-Call your `report_findings` tool as your final act. It takes two fields:
-- **report** — your findings (see below). When nothing is missing, this is an empty string (or `No violations.`).
-- **verdict** — `PASS` if nothing is missing; `VIOLATIONS` if there are gaps.
-
-**What goes in the report field:**
-- **everything propagated** — an empty string (or `No violations.`). No summary, no per-entry
-  "this one landed" walkthrough; an empty report is correct and expected when nothing is missing.
-- **gaps** — a numbered list, for each: what's missing, the **source** (which digest entry it came
-  from), the **target file** that should have it, and the **fix** (file the entity, flip the flag,
-  update the snapshot, revise the arc body, fix the link).
-
-Keep it terse and specific — the caller backfills directly from this.
-
-
-## Boundaries
-- You report; you never edit any campaign file.
-- You audit **propagation**, not design: you're not re-judging the authoring choices, only
-  whether every established fact made it from the record (the digest) into canon and state.
+## Report
+Per finding: what's missing, the **source** (which digest entry it came from), the **target file**
+that should have it, and the **fix** (file the entity, flip the flag, update the snapshot, revise
+the arc body, fix the link).

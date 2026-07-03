@@ -74,11 +74,26 @@ type: faction
 - **Founded:** two years ago
 """
 
-PC_FILE = """\
+PC_BARE = """\
 ---
 type: pc
 ---
 # Hero
+"""
+
+PC_FULL = """\
+---
+type: pc
+---
+# Hero
+## Vitals
+- **Race / lineage:** half-elf
+- **Class:** wizard
+- **Level:** 3
+- **Ability scores:** STR 8 · DEX 14 · CON 12 · INT 17 · WIS 13 · CHA 10
+- **Pronouns:** he/him
+## Known capabilities
+- Arcana, Investigation
 """
 
 
@@ -103,7 +118,10 @@ check(NPC_NO_VITALS, etype="npc",
       label="no Vitals -> all fields + both NPC sections missing")
 check(FACTION_FULL, etype="faction", missing=[], ok=True,
       label="complete faction passes (no required sections)")
-check(PC_FILE, etype="pc", missing=[], ok=True, label="pc type is skipped")
+check(PC_BARE, etype="pc",
+      missing=["Race / lineage", "Class", "Level", "Ability scores", "Pronouns"], ok=False,
+      label="pc sheet is linted — bare sheet flags all vitals")
+check(PC_FULL, etype="pc", missing=[], ok=True, label="complete pc sheet passes")
 
 # the shipped worked example must satisfy its own contract
 ex = lint_file(OPENCODE / "skills/canon-conventions/examples/lysa-fenn.md")

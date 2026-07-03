@@ -41,12 +41,7 @@ class CanonPreloader:
             return []
 
     def latest_session_number(self) -> int | None:
-        n = 0
-        for rel in self._list("sessions", re.compile(r"^session-\d+-plan\.md$")):
-            m = re.search(r"session-(\d+)-plan\.md$", rel)
-            if m:
-                n = max(n, int(m.group(1)))
-        return n or None
+        return latest_session(self.campaign / "sessions")
 
     # -- INDEX parsing + name matching -------------------------------------
 
@@ -145,6 +140,20 @@ class CanonPreloader:
         if not blocks:
             return ""
         return load("runner-header") + "\n\n" + "\n\n".join(blocks) + "\n\n--- end prepared context ---\n\n"
+
+
+def latest_session(sessions_dir: Path) -> int | None:
+    """The current session: the highest `session-{N}-plan.md` on disk (None if none).
+    The one implementation — Game and Lifecycle use it too."""
+    n = 0
+    try:
+        for f in Path(sessions_dir).iterdir():
+            m = re.match(r"session-(\d+)-plan\.md$", f.name)
+            if m:
+                n = max(n, int(m.group(1)))
+    except OSError:
+        return None
+    return n or None
 
 
 def _tail(text: str, n: int) -> str:

@@ -302,6 +302,11 @@ class PlayApp(App):
         # spoiler-bearing authoring stays behind the screen).
         activity = lambda name, arg: self.call_from_thread(self._setup_activity, name, arg)
         self._setup_tap = self.lc.setup_stream(stream, on_tool=activity)
+        # Setup announces its stages over the same on_stage protocol as the wrap
+        # pipeline; the tool-path ticker above stays as the fine-grained activity
+        # feed *within* a long interactive stage.
+        self.lc.setup.on_stage = lambda key: self.call_from_thread(
+            self._announce_stage, "setup", key)
         try:
             st = await asyncio.to_thread(self.lc.setup.start)
         except BackendCancelled:
@@ -336,7 +341,7 @@ class PlayApp(App):
         self._set_busy_label("planning session 1")
         self._write("scene", "\n[$warning]— campaign built · planning session 1 —[/]")
         self._write("screen", "\n[b]— planning session 1 —[/b]\n")
-        ticker = lambda key: self.call_from_thread(self._tick, key)
+        ticker = lambda key: self.call_from_thread(self._announce_stage, "setup", key)
         stream = lambda s: self.call_from_thread(self._append, "screen", s)
         try:
             n = await asyncio.to_thread(self.lc.finish_setup, ticker, stream)
@@ -405,6 +410,7 @@ class PlayApp(App):
             if tap:
                 await asyncio.to_thread(tap.stop)
         self._render_dm(tr)
+        self._render_turn_status(tr)
         self._render_gate(tr)
         if tr.session_complete:
             # The runner signalled the session's end — roll straight into the wrap
@@ -464,18 +470,6 @@ class PlayApp(App):
 
     # -- wrap: end the session, run the post-session pipeline, open the next -
 
-    _WRAP_LABELS = {
-        "handoff": "jotting down the runner's notes",
-        "digest": "reading back the session",
-        "assess": "taking stock of what happened",
-        "feedback": "noting your feedback",
-        "canon": "filing what's new in the world",
-        "arcs": "advancing the story",
-        "state": "updating where things stand",
-        "propagation": "double-checking everything lines up",
-        "prep": "prepping the next session",
-    }
-
     def action_wrap(self) -> None:
         """Wrap the played session: run the post-session pipeline (reconcile + prep the
         next), then open session N+1 — without leaving the app. No-op while busy."""
@@ -496,7 +490,7 @@ class PlayApp(App):
         was_hidden = screen.has_class("hidden")
         screen.remove_class("hidden")
         self._write("screen", "\n[b]— post-session pipeline —[/b]\n")
-        ticker = lambda key: self.call_from_thread(self._tick, key)
+        ticker = lambda key: self.call_from_thread(self._announce_stage, "wrap", key)
         # EventTap emits console markup (markup=True) with body text already escaped,
         # so the chunks append as-is — no escape() here or it'd show the tags literally.
         stream = lambda s: self.call_from_thread(self._append, "screen", s)
@@ -514,13 +508,54 @@ class PlayApp(App):
         self._wrapping = False
         await self._open()  # opens the next session's scene and re-enables input
 
-    def _tick(self, key: str) -> None:
-        self._write("scene", f"[$text-muted]  ▸ {self._WRAP_LABELS.get(key, key)}…[/]")
+    # -- stage ticker (one renderer for every phase's on_stage announcements) -
+
+    # Spoiler-free labels for the stage keys each phase announces (Setup's and the
+    # Reconciler's on_stage protocol). One table, one renderer — a richer progress
+    # UI later plugs in here without touching the orchestrator.
+    PHASE_LABELS = {
+        "setup": {
+            "intake": "gathering your brief · building the world",
+            "char": "creating your character",
+            "arc-major": "shaping the story",
+            "arc-minor": "adding a subplot",
+            "state": "setting the opening scene",
+            "gate": "double-checking the campaign",
+            "commit": "saving the campaign",
+            "prep": "planning session 1",
+        },
+        "wrap": {
+            "handoff": "jotting down the runner's notes",
+            "digest": "reading back the session",
+            "assess": "taking stock of what happened",
+            "feedback": "noting your feedback",
+            "canon": "filing what's new in the world",
+            "arcs": "advancing the story",
+            "state": "updating where things stand",
+            "propagation": "double-checking everything lines up",
+            "prep": "prepping the next session",
+        },
+    }
+
+    def _announce_stage(self, phase: str, key: str) -> None:
+        label = self.PHASE_LABELS.get(phase, {}).get(key, key)
+        self._write("scene", f"[$text-muted]  ▸ {label}…[/]")
 
     # -- rendering ----------------------------------------------------------
 
     def _render_dm(self, tr) -> None:
         self._write("scene", f"\n[$accent]DM[/]  {inline(tr.final)}")
+
+    def _render_turn_status(self, tr) -> None:
+        """One muted line per gated turn in the scene pane, so the player sees the
+        loop working without opening the behind-the-screen pane."""
+        g = tr.gate
+        if tr.corrected:
+            fixed = [n for n, v in (("canon", g.narrative), ("conduct", g.conduct)) if not v.passed]
+            self._write("scene",
+                        f"[$text-muted]  ✎ corrected ({' + '.join(fixed) or 'gate'}) — ctrl+g for details[/]")
+        else:
+            self._write("scene", "[$text-muted]  ✓ checked[/]")
 
     def _render_gate(self, tr) -> None:
         self._turn += 1

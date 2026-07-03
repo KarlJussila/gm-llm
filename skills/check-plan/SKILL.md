@@ -1,33 +1,19 @@
 ---
 name: check-plan
-description: The narrative-checker's PRE role — verify a draft session plan against canon, the arc(s) it advances, the registry, and the PC knowledge ledger, and submit a verdict (PASS or a list of violations). Run by the gate before a session plan is finalized. Reports findings; writes nothing.
+description: The narrative-checker's PRE role — verify a draft session plan against canon, the arc(s) it advances, the registry, and the PC knowledge ledger. Run by the gate before a session plan is finalized.
 ---
 
 # check-plan — narrative check of a draft session plan
 
-You are the narrative-checker in its **PRE role**. The `dm` has handed you a **draft session plan**
-(its path is in your brief) before it's finalized. You verify it against canon, the arc(s) it
-advances, the registry, and the PC's knowledge — then return a **list of violations** (or `PASS`).
-The dm fixes the plan from your list.
-
-**You report; you do not act.** Never edit the plan or any campaign file. Your whole output is
-findings. This is the same fabrication/contradiction check the runtime gate runs, moved one stage
+PRE role. The `dm` has handed you a **draft session plan** before it's finalized. Verify it against
+canon, the arc(s) it advances, the registry, and the PC's knowledge; the dm fixes the plan from
+your list. This is the same fabrication/contradiction check the runtime gate runs, moved one stage
 earlier — catch an invented or arc-contradicting identity at planning, before it ever reaches play.
 
-## Step 1 — Create your task list
+A plan that advances the arc differently than you'd choose is fine — only contradictions,
+fabrications, unearned knowledge, overlaps, and blanks are violations.
 
-Use your `todowrite` tool to create exactly these entries, then work them in order, marking each
-done as you go:
-
-1. Pull context
-2. Resolve references
-3. Honor the arc
-4. Check the ledger
-5. Check for overlap
-6. Check for blanks
-7. Submit your report
-
-## What each entry entails
+## The checks
 
 ### 1. Pull context — and know what's already loaded
 - Read the **draft plan** from your brief. It's there **inline** (the full plan text) or as a
@@ -71,23 +57,7 @@ done as you go:
   creates", a blank identity/reveal. Flag every one — the plan must commit the fact or leave only
   the *player's path* open.
 
-### 7. Submit your report
-Call your `report_findings` tool as your final act. It takes two fields:
-- **report** — your findings (see below). On a clean pass, this is an empty string (or `No violations.`).
-- **verdict** — `PASS` if you found nothing to flag; `VIOLATIONS` if you did.
-
-**What goes in the report field:**
-- **no violations** — an empty string (or `No violations.`). No summary, no per-beat "this one's
-  grounded" walkthrough; an empty report is correct and expected on a pass.
-- **violations** — a numbered list, for each: what's wrong; the **correct fact / arc answer** where
-  relevant; the **source file(s)** to consult; and the **fix instruction** (ground it, pull the arc
-  answer, re-flag, merge/differentiate, fill the blank).
-
-Keep it terse and specific — the dm revises the plan directly from this. No prose padding.
-
-
-## Boundaries
-- You report; you never edit the plan or any campaign file.
-- You check **consistency and completeness**, not style. A plan that advances the arc differently
-  than you'd choose is fine — only contradictions, fabrications, unearned knowledge, overlaps, and
-  blanks are violations.
+## Report
+Per finding: what's wrong; the **correct fact / arc answer** where relevant; the **source file(s)**;
+and the **fix instruction** (ground it, pull the arc answer, re-flag, merge/differentiate, fill the
+blank).

@@ -42,6 +42,18 @@ _STAGE_BRIEFS = {
     "STATE":        "setup-state-brief",
 }
 
+# Stage → the key announced to a watcher (the TUI's ticker) — the same on_stage
+# protocol the Reconciler speaks, so one UI renderer covers the whole lifecycle.
+_STAGE_KEYS = {
+    "INTAKE_WORLD": "intake",
+    "CHAR":         "char",
+    "ARC_MAJOR":    "arc-major",
+    "ARC_MINOR":    "arc-minor",
+    "STATE":        "state",
+    "GATE":         "gate",
+    "COMMIT":       "commit",
+}
+
 
 @dataclass
 class SetupTurn:
@@ -53,16 +65,26 @@ class Setup:
     """Drives the dm through campaign init as a staged, orchestrator-controlled pipeline."""
 
     def __init__(self, backend, gate, directory: str, dm_agent: str = "dm",
-                 on_prep=None, logs=None):
+                 on_prep=None, on_stage=None, logs=None):
         self.backend = backend
         self.gate = gate
         self.directory = directory
         self.dm_agent = dm_agent
         self.on_prep = on_prep
+        self.on_stage = on_stage  # called with a stage key as each stage starts (TUI ticker)
         self.logs = logs
         self.root = Path(directory)
         self._stage: str | None = None
         self.dm_sid: str | None = None
+
+    def _announce(self, stage: str) -> None:
+        """Tell a watcher (e.g. the TUI ticker) which stage is starting — the same
+        protocol as Reconciler.on_stage."""
+        if self.on_stage:
+            try:
+                self.on_stage(_STAGE_KEYS.get(stage, stage.lower()))
+            except Exception:
+                pass
 
     def start(self) -> SetupTurn:
         if self._init_committed():
@@ -82,6 +104,7 @@ class Setup:
         # _last_text would surface only the final fragment, dropping the overview. Joining
         # all text parts surfaces the whole message; reasoning/tool parts are excluded, so
         # the behind-the-screen thinking never leaks in.
+        self._announce(self._stage)
         reply = self.backend.prompt(self.dm_sid, self.dm_agent,
                                     load(_STAGE_BRIEFS[self._stage]), whole=True)
         return SetupTurn(reply, False)
@@ -93,6 +116,7 @@ class Setup:
         if self._stage == "INTAKE_WORLD" and done:
             self._mark_done("INTAKE_WORLD")
             self._stage = "CHAR"
+            self._announce("CHAR")
             # Open character creation and APPEND it to the world wrap-up, so the player
             # sees both this turn — never overwrite the dm's own closing beat.
             char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
@@ -121,14 +145,17 @@ class Setup:
             ("STATE",     "setup-state-brief"),
         ]:
             if not self._setup_done(stage):
+                self._announce(stage)
                 self.backend.prompt(self.dm_sid, self.dm_agent, load(brief_key))
                 self._mark_done(stage)
 
         if not self._setup_done("GATE"):
+            self._announce("GATE")
             result = self.gate.check_init()
             apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
             self._mark_done("GATE")
 
+        self._announce("COMMIT")
         commit_campaign(self.root, "campaign: init")
         self._mark_done("COMMIT")
 

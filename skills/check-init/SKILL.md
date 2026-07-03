@@ -1,31 +1,16 @@
 ---
 name: check-init
-description: The narrative-checker's INIT role — after all campaign init authoring is complete, verify the full campaign/ directory against the seven-point completeness and consistency checklist, and return a list of gaps (or PASS). Reports findings; writes nothing.
+description: The narrative-checker's INIT role — after all campaign init authoring is complete, verify the full campaign/ directory against the seven-point completeness and consistency checklist.
 ---
 
 # check-init — verify campaign init
 
-You are the narrative-checker in its **INIT role**. Campaign init is complete — world, character,
-arcs, and state have been authored. Your job: confirm that **everything is complete, registered, and
-consistent** before the init commit. Return a **list of gaps** (or `PASS`).
+INIT role. Campaign init is complete — world, character, arcs, and state have been authored.
+Confirm that **everything is complete, registered, and consistent** before the init commit.
 
-**You report; you do not act.** Never edit any campaign file — the caller fixes the gaps you find.
+You audit **completeness and consistency**, not design choices.
 
-## Step 1 — Create your task list
-
-Use your `todowrite` tool to create exactly these entries, then work them in order, marking each
-done as you go:
-
-1. No blanks
-2. Registered
-3. No dangling links
-4. No lingering named-only
-5. No duplicates
-6. Two-layer + flags
-7. Consistent
-8. Submit your report
-
-## What each check entails
+## The checks
 
 ### 1. No blanks
 Scan all files in `campaign/world/`, `campaign/characters/`, `campaign/arcs/`, and
@@ -57,19 +42,5 @@ Flag any entity that is surface-only with no committed hidden layer.
 Read `campaign/campaign.md` and `campaign/world/overview.md`. Flag anything in the entity or arc
 files that contradicts the setting, tone, or established facts in those documents.
 
-### 8. Submit your report
-Call your `report_findings` tool as your final act. It takes two fields:
-- **report** — your findings (see below). When everything passes, this is an empty string (or `No violations.`).
-- **verdict** — `PASS` if everything passes; `VIOLATIONS` if there are gaps.
-
-**What goes in the report field:**
-- **everything passes** — an empty string (or `No violations.`). No per-entry "this one is fine"
-  walkthrough; an empty report is correct and expected when nothing fails.
-- **gaps** — a numbered list: for each, what's wrong, which file, and the fix.
-
-Keep it terse and specific — the caller acts directly from this.
-
-
-## Boundaries
-- You report; you never edit any campaign file.
-- You audit **completeness and consistency**, not design choices.
+## Report
+Per finding: what's wrong, which file, and the fix.

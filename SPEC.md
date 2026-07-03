@@ -60,13 +60,14 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 - Identify what worked and what didn't
 - Produce actionable insights for arc adjustment and future planning
 - Update character states, world state, and faction positions
-- Note-taking is automatic: the play transcript is captured by a plugin during the session, then
-  the orchestrator runs `log-extractor` to produce a structured digest (`session-{N}.md`) and the
-  `dm` applies it to canonical state — knowledge, world, items, documents — post-session
+- Note-taking is automatic: the orchestrator writes the play transcript itself as the session
+  runs, then runs `log-extractor` to produce a structured digest (`session-{N}.md`) and dispatches
+  the `dm` to apply it to canonical state — knowledge, world, items, documents — post-session
 
 ### Player Feedback Loop
 - Collect player feedback at session end (runner asks; recorded verbatim in the session log)
-- Distill feedback into per-skill / per-agent guidance files under `campaign/feedback/`
+- Distill feedback into per-skill / per-agent guidance files under `campaign/feedback/` (the
+  analyst curates; a checker verifies fidelity and routing)
 - Each skill and primary agent loads its own feedback file as binding guidance, so the system
   adapts to the player over time without editing the framework (`.opencode/`)
 
@@ -98,24 +99,40 @@ Two primary agents the player starts directly, a set of subagents the orchestrat
 skills that hold the actual procedures (one home each — the single source of truth).
 
 **Primary agents:**
-- **`dm`** — the between-sessions brain. Initializes the campaign, assesses state, plans the next
-  session, reviews finished ones, and adjusts arcs and world state. Authors every campaign file
-  itself and commits to git. It does **not** run live sessions.
+- **`dm`** — the between-sessions brain. Authors every campaign file itself: world, arcs, the
+  character files, session plans, and the post-session apply. It does **not** run live sessions,
+  and it works one orchestrator-dispatched brief at a time (setup stages, apply stages, prep).
 - **`dm-runner`** — runs one live session (narration, NPCs, improvisation, dice), then stops. It
   does **not** take notes, plan, assess, or adjust arcs (the transcript is auto-captured).
 
 **Subagents** (`mode: subagent`, spawned by the orchestrator as their own sessions, never started by
-the player): a read-only `campaign-analyst` and `log-extractor` (transcript → digest), plus the
-runtime gate agent `narrative-checker`. It is a thin wrapper that loads one of its role skills (`check-turn` +
-`check-conduct` at runtime, `check-plan`/`check-digest`/`check-propagation`/`check-feedback`/
-`check-init` between sessions), does the task, and returns a Result / Evidence / Changes / Caveats
-report. At runtime the canon and conduct checks run in one warm session — conduct benefits from
-the canon/ledger context the canon check just loaded.
+the player): `campaign-analyst` (the post-session assessment + player-feedback curation — it writes
+only its own deliverables, never canonical state), `log-extractor` (transcript → digest), plus the
+verification agent `narrative-checker`. The checker is a thin wrapper that loads one of its role
+skills (`check-turn` + `check-conduct` at runtime, `check-plan`/`check-digest`/`check-propagation`/
+`check-feedback`/`check-init` between sessions), works the role's checks, and submits its verdict
+via the `report_findings` tool (the shared protocol lives once in the agent prompt). At runtime the
+canon and conduct checks run in one warm session — conduct benefits from the canon/ledger context
+the canon check just loaded.
 
-**Skills** (procedures, reused by both agents and subagents): `campaign-setup`, `campaign-intake`,
-`character-create`, `character-import`, `world-build`, `arc-design`, `session-plan`, `session-run`, `session-flow`,
-`social-play`, `discoveries`, `campaign-assess`, `session-review`, `log-extract`, plus the focused
-session-level skills below.
+**Orchestration.** The orchestrator (`orchestrator/`, plain Python over `opencode serve`'s HTTP
+API) owns every sequence: the gated per-turn loop, the staged setup, PRE-session planning, and the
+staged post-session reconcile (digest → assessment → feedback → canon → one dispatch per arc →
+state → propagation check → commit → prep). Every stage is one focused brief, checked by the
+matching `check-*` role or a deterministic lint, with **at most one bounded correction** and a
+**code-owned git commit** — the model never decides whether or in what order steps happen. Stage
+markers make a failed pass resume where it died.
+
+**Skills** (procedures, reused by both agents and subagents):
+- **Authoring contract:** `canon-conventions` (+ templates) — file shapes, slugs, `[[links]]`,
+  the registry, awareness flags, the required `## Vitals` completeness block.
+- **Setup:** `campaign-setup` (cross-cutting standards), `campaign-intake`, `world-build`,
+  `character-create`, `character-import`, `arc-design`, `state-init`.
+- **Planning:** `session-plan`, plus the focused `*-plan` skills below.
+- **Live play:** `session-run`, `session-flow`, `social-play`, `discoveries`.
+- **Post-session:** `log-extract`, `session-review`, `apply-canon`, `apply-arcs` (one arc per
+  dispatch), `apply-state`, `feedback-curation`.
+- **Checks:** the seven `check-*` role skills of the narrative-checker.
 
 **Session-level skills come in a few groups, by a flat naming convention** (opencode discovers skills
 from `.opencode/skills/<name>/SKILL.md`, so the type lives in the name, not in subdirectories).
@@ -133,23 +150,24 @@ and a *running* face, and the content differs between them:
 - **`*-run` skills** — reserved for a distinct *play mode* `dm-runner` enters (e.g. a forthcoming
   `combat-run`), as opposed to the always-resident craft skills above.
 
-The campaign-lifecycle skills (`world-build`, `arc-design`, `campaign-setup`, `campaign-intake`,
-`campaign-assess`, `session-review`, `log-extract`, `character-create`) are neither — they are the
-`dm`'s between-session authoring and management procedures.
+The setup and post-session skills are neither — they are the between-session procedures the
+orchestrator dispatches to the `dm` (authoring), the `campaign-analyst` (analysis + curation), and
+the `log-extractor` (extraction).
 
 **Boundaries that prevent role bleed:**
 - The two roles are separate primary agents; the player starts whichever phase they're in.
 - `dm` is explicitly barred from running sessions; `dm-runner` is explicitly barred from
   planning, assessing, and arc work.
-- Post-session work belongs to `dm`: the runner just plays (the transcript is auto-captured), and
-  `dm` extracts the log and reviews it fresh between sessions.
+- Post-session work belongs to the between-session pipeline: the runner just plays (the transcript
+  is auto-captured, its handoff notes are filed by code), and the pipeline extracts, assesses, and
+  applies fresh between sessions.
 - **Spoiler discipline:** the human is the player and has not read the planning files. Both
   primary agents keep spoiler-bearing content (upcoming beats, twists, NPC secrets) in files and
   out of conversation, narrating only what the character can perceive.
 
 ## External Integrations
 
-- **Dice rolling:** the `dice` tool (opencode plugin at `.opencode/plugins/dice-roller.ts`) for
+- **Dice rolling:** the `dice` tool (opencode plugin at `.opencode/plugin/dice-roller.ts`) for
   random resolution during play.
 - **Per-turn craft reminder:** the orchestrator (`orchestrator/loop.py`) prepends the runner's
   per-turn DM *craft* loop (agency, ask-for-a-roll, narrate-the-response) to each player message, so
@@ -161,7 +179,9 @@ The campaign-lifecycle skills (`world-build`, `arc-design`, `campaign-setup`, `c
   session over the HTTP API — no `task`-tool delegation, no `opencode run` subprocess.
 - **Markdown files:** all state is stored in human-readable markdown (no database).
 - **Git:** campaign state changes are committed to the **campaign repository** to hand off between
-  the `dm` and `dm-runner` phases (see Repository Layout).
+  the `dm` and `dm-runner` phases (see Repository Layout). Commits are **code-owned** — the
+  orchestrator commits at phase boundaries (`campaign: init` / `session N plan` /
+  `post-session N updates`); the model never runs git in an orchestrated pass.
 
 ## Repository Layout
 

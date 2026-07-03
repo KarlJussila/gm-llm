@@ -7,7 +7,7 @@ on `Game`; nothing here depends on the interface.
 
 from .backend import Backend, BackendError
 from .canon import CanonPreloader
-from .gate import Gate, GateResult, InitGateResult, PlanGateResult, PropagationGateResult, Verdict
+from .gate import Gate, GateResult, StageGateResult, Verdict
 from .lifecycle import Lifecycle
 from .logs import Logs
 from .loop import Game, TurnResult
@@ -17,7 +17,7 @@ from .setup import Setup, SetupTurn
 
 __all__ = [
     "Backend", "BackendError", "CanonPreloader",
-    "Gate", "GateResult", "InitGateResult", "PlanGateResult", "PropagationGateResult", "Verdict",
+    "Gate", "GateResult", "StageGateResult", "Verdict",
     "Game", "TurnResult", "Lifecycle", "Logs",
     "Planner", "PlannerError", "PrepResult",
     "Reconciler", "ReconcileResult",

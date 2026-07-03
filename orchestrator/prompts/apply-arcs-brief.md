@@ -1,1 +1,0 @@
-Run session {n}'s arc pass. Load the `apply-arcs` skill and follow it: reconcile each arc the session touched toward what was played, create any new minor arc (via `arc-design`), and update the threads dashboard. Report when done.

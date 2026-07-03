@@ -36,7 +36,7 @@ from .prompts import load
 class PrepResult:
     n: int
     plan: str                  # the final plan text on disk
-    gate: "PlanGateResult"     # noqa: F821 — annotation only (lazy via __future__)
+    gate: "StageGateResult"    # noqa: F821 — annotation only (lazy via __future__)
     corrected: bool
     committed: bool
 

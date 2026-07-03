@@ -80,19 +80,32 @@ class MockGame:
 
 class MockSetup:
     """Stand-in for Setup: a scripted new-campaign conversation that reports done after
-    a few exchanges, so the TUI setup path runs offline."""
+    a few exchanges, so the TUI setup path runs offline. Speaks the same on_stage
+    protocol as the real Setup so the ticker is exercised too."""
 
     def __init__(self, *args, **kwargs):
         self.dm_sid = "mock-setup"
         self._n = 0
+        self.on_stage = None  # the TUI assigns this, same as on the real Setup
+
+    def _announce(self, key: str) -> None:
+        if self.on_stage:
+            self.on_stage(key)
 
     def start(self) -> SetupTurn:
+        self._announce("intake")
         return SetupTurn(_SETUP_SCRIPT[0], False)
 
     def turn(self, player_input: str) -> SetupTurn:
         self._n += 1
         i = min(self._n, len(_SETUP_SCRIPT) - 1)
         done = self._n >= len(_SETUP_SCRIPT) - 1
+        if self._n == 2:
+            self._announce("char")
+        if done:
+            for key in ("arc-major", "arc-minor", "state", "gate", "commit"):
+                self._announce(key)
+                time.sleep(0.4)  # let the ticker breathe, like the mock wrap
         return SetupTurn(_SETUP_SCRIPT[i], done)
 
     def finalize(self) -> int:

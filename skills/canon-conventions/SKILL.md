@@ -137,17 +137,11 @@ changing state.
 
 **Every entity file leads with a required `## Vitals` block — the completeness contract.** It is a
 short, fixed list of at-a-glance identity fields the runner reads first, so the basics are never
-left to be improvised mid-session (an NPC with no surname or race, a location with no region). Each
-type's template lists its required fields; **fill every one with a committed value** — no
-`<placeholder>`, no "TBD". Required sets:
-- **NPC:** Full name · Race / lineage · Pronouns · Age · Role / station · Affiliation
-- **Faction:** Kind · Scale · Seat · Leadership · Founded
-- **Location:** Kind · Region · Setting · Controlled by · Scale
-- **Item:** Kind · Rarity · Form · Origin
-- **Region:** Kind / scale · Terrain · Seat of power · Population
-- **Concept:** Kind  *(the only required field — the rest of the file is free-form)*
-- **PC:** Race / lineage · Class · Level · Ability scores · Pronouns  *(plus Subclass when the
-  character has one — recorded, but not gated, since it's class/level-conditional)*
+left to be improvised mid-session (an NPC with no surname or race, a location with no region).
+**The type's template is the authoritative field list** — copy its `## Vitals` lines and **fill
+every one with a committed value** (no `<placeholder>`, no "TBD"); a deterministic lint enforces
+exactly those fields. A **concept** requires only `Kind` (the rest is free-form); a **PC** also
+records Subclass when it applies — recorded, but not gated, since it's class/level-conditional.
 
 **NPC files carry two more required sections** beyond Vitals: a **`## Stats (rough sketch)`** —
 equivalent character level, rough ability scores, and notable proficiencies (a capability gauge for
@@ -245,39 +239,16 @@ locations, items, **regions**, and arcs. **Not** registered: the world-truth sin
 (`overview/cosmology/history`) and the `state/*` docs (fixed paths), nor clocks/threads (they live
 in their dashboards, §4).
 
-Format: a table per entity type. Each row maps a slug to its files, status, and a one-line "who/what."
+Format: a table per entity type (PC, NPCs, Factions, Locations, Regions, Items, Arcs — the Arcs
+table adds `tier` and `design` columns). Each row maps a slug to its files, status, and a one-line
+"who/what." **`templates/INDEX.template.md` is the authoritative shape**; the gist:
 
 ```markdown
-# INDEX — Campaign Registry
-
-## PC
-| slug | name | status | info | state | one-line |
-|---|---|---|---|---|---|
-| bram-tully | Bram Tully | active | characters/bram-tully.md | characters/bram-tully.state.md | dockhand turned reluctant agent of the cell |
-
 ## NPCs
 | slug | name | status | info | state | one-line |
 |---|---|---|---|---|---|
 | lysa-fenn | Lysa Fenn | active | world/npcs/lysa-fenn.md | world/npcs/lysa-fenn.state.md | harbormaster; secret rebel informant |
 | the-cartographer | The Cartographer | named-only | — | — | mapmaker the PC was sent to find; file pending |
-
-## Factions
-| slug | name | status | info | state | one-line |
-...
-
-## Locations
-...
-
-## Regions
-| slug | name | status | info | state | one-line |
-...
-
-## Items
-...
-
-## Arcs
-| slug | name | tier | status | design | state | one-line |
-...
 ```
 
 - **Slugs are kebab-case, derived from the canonical name** (`Lysa Fenn` → `lysa-fenn`). Stable:

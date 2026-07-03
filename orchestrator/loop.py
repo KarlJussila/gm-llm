@@ -34,6 +34,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .canon import latest_session
 from .logs import append, banner, section
 from .prompts import load
 
@@ -65,7 +66,7 @@ class Game:
         self.runner_sid = backend.create_session("dm-runner game")
         # The session being played = the highest plan on disk, unless told otherwise.
         self.campaign = Path(campaign_dir) if campaign_dir else Path(backend.directory) / "campaign"
-        self.session = session if session is not None else _latest_session(self.campaign / "sessions")
+        self.session = session if session is not None else latest_session(self.campaign / "sessions")
         self.transcript_path = (
             self.campaign / "sessions" / f"session-{self.session}-transcript.md"
             if (transcript and self.session) else None
@@ -278,19 +279,6 @@ def _last_dm_beat(transcript: str) -> str:
         if parts[i] == "DM":
             last = parts[i + 1].strip()
     return last
-
-
-def _latest_session(sessions_dir: Path) -> int | None:
-    """The session being played: the highest `session-{N}-plan.md` on disk."""
-    n = 0
-    try:
-        for f in Path(sessions_dir).iterdir():
-            m = re.match(r"session-(\d+)-plan\.md$", f.name)
-            if m:
-                n = max(n, int(m.group(1)))
-    except OSError:
-        return None
-    return n or None
 
 
 def _format_block(tr: TurnResult) -> str:

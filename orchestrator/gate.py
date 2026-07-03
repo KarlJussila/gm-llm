@@ -6,20 +6,20 @@ orchestrator owns it, so it runs by construction (never skipped). Each checker
 submits its verdict via the `report_findings` tool (structured `report` + `verdict`
 fields); the gate reads the tool call from the session history — no text parsing.
 
-Three shapes share one spawn-and-check engine:
-  - `check(narration, player_msg)` — the RUNTIME gate. One narrative-checker
-    session does both jobs, warm: first `check-turn` (canon coherence, with the
-    pre-loaded canon block), then `check-conduct` (table-craft conduct) on the
-    **same session** — so the canon/ledger context the canon check just loaded
-    is available when judging conduct (e.g. a PC knowledge leak). The orchestrator
-    supplies the player's message directly — it owns the loop, so nothing has to
-    fetch it from a transcript.
-  - `check_plan(plan)` — the PRE gate: narrative-checker, `check-plan` only (a plan
-    has no conduct to police and no player message), with the pre-loaded canon block.
-  - `check_propagation(n)` — the POST gate: narrative-checker, `check-propagation`
-    only, verifying that session N's updates landed in canon and state. No preload —
-    the checker reads N's digest against the updated files itself; there's no single
-    draft to match names against.
+Two result shapes share one spawn-and-check engine:
+  - `check(narration, player_msg)` — the RUNTIME gate (`GateResult`, two verdicts).
+    One narrative-checker session does both jobs, warm: first `check-turn` (canon
+    coherence, with the pre-loaded canon block), then `check-conduct` (table-craft
+    conduct) on the **same session** — so the canon/ledger context the canon check
+    just loaded is available when judging conduct (e.g. a PC knowledge leak). The
+    orchestrator supplies the player's message directly — it owns the loop, so
+    nothing has to fetch it from a transcript.
+  - Every stage gate returns a `StageGateResult` (one verdict + its correction
+    prompt): `check_plan(plan)` — PRE, with the pre-loaded canon block;
+    `check_digest(n)` / `check_feedback(n)` / `check_propagation(n)` — POST; and
+    `check_init()` — INIT. The POST/INIT checks take no preload — each is a
+    whole-repo audit the checker reads from disk itself, not a single draft to
+    match names against.
 
 The runtime gate reuses one session for both checks (warm context, one fewer
 spawn); every other gate runs as a fresh session per call.
@@ -71,75 +71,27 @@ class GateResult:
 
 
 @dataclass
-class PlanGateResult:
+class StageGateResult:
+    """One verdict + its correction brief — every non-runtime gate (plan, propagation,
+    digest, feedback, init) is this shape. What varies is only which `correct-*` prompt
+    the correction opens with and the report section's label; a session number formats
+    into the prompt when the stage has one."""
     narrative: Verdict
-    canon_sections: int
+    prompt: str              # correction prompt name: prompts/correct-{prompt}.md
+    label: str               # section header in the correction brief ("Canon", "Digest", …)
+    session: int | None = None
+    canon_sections: int = 0  # only the plan gate preloads canon; 0 elsewhere
 
     @property
     def violations(self) -> bool:
         return not self.narrative.passed
 
     def correction_brief(self) -> str:
-        """The message handed back to the dm to revise the plan file it just wrote."""
-        return load("correct-plan") + "\n\n— Canon —\n" + self.narrative.report.strip()
-
-
-@dataclass
-class PropagationGateResult:
-    narrative: Verdict
-    session: int
-
-    @property
-    def violations(self) -> bool:
-        return not self.narrative.passed
-
-    def correction_brief(self) -> str:
-        """The message handed back to the dm to backfill the gaps from its apply pass."""
-        return (load("correct-propagation").format(session=self.session)
-                + "\n\n— Propagation —\n" + self.narrative.report.strip())
-
-
-@dataclass
-class DigestGateResult:
-    narrative: Verdict
-    session: int
-
-    @property
-    def violations(self) -> bool:
-        return not self.narrative.passed
-
-    def correction_brief(self) -> str:
-        """The message handed back to the digest's author (log-extractor) to fix it."""
-        return (load("correct-digest").format(session=self.session)
-                + "\n\n— Digest —\n" + self.narrative.report.strip())
-
-
-@dataclass
-class FeedbackGateResult:
-    narrative: Verdict
-    session: int
-
-    @property
-    def violations(self) -> bool:
-        return not self.narrative.passed
-
-    def correction_brief(self) -> str:
-        """The message handed back to the feedback curator (analyst) to fix the files."""
-        return (load("correct-feedback").format(session=self.session)
-                + "\n\n— Feedback —\n" + self.narrative.report.strip())
-
-
-@dataclass
-class InitGateResult:
-    narrative: Verdict
-
-    @property
-    def violations(self) -> bool:
-        return not self.narrative.passed
-
-    def correction_brief(self) -> str:
-        """The message handed back to the dm to fix init canon issues."""
-        return load("correct-init") + "\n\n— Init —\n" + self.narrative.report.strip()
+        """The message handed back to the stage's author to fix what the check found."""
+        head = load(f"correct-{self.prompt}")
+        if self.session is not None:
+            head = head.format(session=self.session)
+        return f"{head}\n\n— {self.label} —\n" + self.narrative.report.strip()
 
 
 def _narrative_brief(player_msg: str, canon: str, narration: str) -> str:
@@ -277,45 +229,47 @@ class Gate:
             canon_sections=canon.count("\n### "),
         )
 
-    def check_plan(self, plan: str) -> PlanGateResult:
+    def check_plan(self, plan: str) -> StageGateResult:
         """The PRE gate: narrative-only check of a draft session plan. The plan text
         drives the canon preload exactly as a draft turn does (names match by name)."""
         canon = self.preloader.build(plan)
-        return PlanGateResult(
+        return StageGateResult(
             narrative=self._run("check-plan", _plan_brief(plan, canon), "narrative-checker"),
+            prompt="plan", label="Canon",
             canon_sections=canon.count("\n### "),
         )
 
-    def check_propagation(self, n: int) -> PropagationGateResult:
+    def check_propagation(self, n: int) -> StageGateResult:
         """The POST gate: narrative-only check that session N's apply pass landed
         everywhere. No preload — propagation is a whole-repo audit (the digest vs.
         the updated files), not a single draft, so the checker reads on demand."""
-        return PropagationGateResult(
+        return StageGateResult(
             narrative=self._run("check-propagation", _propagation_brief(n), "narrative-checker"),
-            session=n,
+            prompt="propagation", label="Propagation", session=n,
         )
 
-    def check_digest(self, n: int) -> DigestGateResult:
+    def check_digest(self, n: int) -> StageGateResult:
         """The first POST gate: the digest vs. the transcript. No preload —
         source-fidelity (did the extraction keep faith with what was played), which
         the checker reads on demand, not a canon comparison."""
-        return DigestGateResult(
+        return StageGateResult(
             narrative=self._run("check-digest", _digest_brief(n), "narrative-checker"),
-            session=n,
+            prompt="digest", label="Digest", session=n,
         )
 
-    def check_feedback(self, n: int) -> FeedbackGateResult:
+    def check_feedback(self, n: int) -> StageGateResult:
         """A POST gate: the curated feedback files vs. the player's actual words. No
         preload — the checker reads the digest's feedback section and the feedback
         files on demand."""
-        return FeedbackGateResult(
+        return StageGateResult(
             narrative=self._run("check-feedback", _feedback_brief(n), "narrative-checker"),
-            session=n,
+            prompt="feedback", label="Feedback", session=n,
         )
 
-    def check_init(self) -> InitGateResult:
+    def check_init(self) -> StageGateResult:
         """The INIT gate: verify all canon written during setup against the seven-point
         checklist. No preload — the checker reads campaign/ on demand."""
-        return InitGateResult(
+        return StageGateResult(
             narrative=self._run("check-init", load("setup-gate-brief"), "narrative-checker"),
+            prompt="init", label="Init",
         )

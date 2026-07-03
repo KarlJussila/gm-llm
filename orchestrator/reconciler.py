@@ -11,7 +11,8 @@ most ONE bounded correction per gate — the same spine as a runtime turn, one s
     C  analyst: digest -> assessment               (no gate)
     E  analyst: feedback -> campaign/feedback/*     gate: check_feedback
     D1 dm: new/changed entity canon                 completeness lint
-    D2 dm: arc pass
+    D2 dm: arc pass — one dispatch per arc (code-enumerated), then a close
+       dispatch (new minor arcs + threads dashboard + sweep)
     D3 dm: ledger + state
        gate: check_propagation (the whole apply)
     commit "post-session N updates"
@@ -39,9 +40,9 @@ from .prompts import load
 @dataclass
 class ReconcileResult:
     n: int
-    digest: "DigestGateResult | None" = None        # noqa: F821 — annotation only
-    feedback: "FeedbackGateResult | None" = None     # noqa: F821
-    propagation: "PropagationGateResult | None" = None  # noqa: F821
+    digest: "StageGateResult | None" = None       # noqa: F821 — annotation only
+    feedback: "StageGateResult | None" = None     # noqa: F821
+    propagation: "StageGateResult | None" = None  # noqa: F821
     lint_incomplete: int = 0      # entity files the D1 lint flagged (one correction dispatched)
     prep: "PrepResult | None" = None
     committed: bool = False
@@ -143,10 +144,23 @@ class Reconciler:
             rr.lint_incomplete = self._lint_correct()
             self._mark(n, "canon")
 
-        # D2. Arc pass (same dm thread).
+        # D2. Arc pass (same dm thread): the orchestrator enumerates the arcs — code,
+        # never the model — and dispatches each as its own focused brief; an untouched
+        # arc is a cheap "no changes" turn. A final close dispatch creates any new
+        # minor arc play birthed and reconciles the threads dashboard. The `arcs`
+        # marker still means "whole pass done" (so a session reconciled before this
+        # split never re-runs it); per-arc markers resume a mid-pass failure at the
+        # arc it died on.
         if not self._done(n, "arcs"):
             self._announce("arcs")
-            self.backend.prompt(self.dm_sid, self.dm_agent, load("apply-arcs-brief").format(n=n))
+            for slug in self._arc_slugs():
+                if self._done(n, f"arcs-{slug}"):
+                    continue
+                self.backend.prompt(self.dm_sid, self.dm_agent,
+                                    load("apply-arc-brief").format(n=n, slug=slug))
+                self._mark(n, f"arcs-{slug}")
+            self.backend.prompt(self.dm_sid, self.dm_agent,
+                                load("apply-arcs-close-brief").format(n=n))
             self._mark(n, "arcs")
 
         # D3. Ledger + state (same dm thread).
@@ -179,6 +193,15 @@ class Reconciler:
         if self.on_reconcile:
             self.on_reconcile(rr)
         return rr
+
+    def _arc_slugs(self) -> list[str]:
+        """Every arc on disk — the per-arc dispatch list, enumerated in code."""
+        d = self.root / "campaign" / "arcs"
+        try:
+            return sorted(f.name[:-3] for f in d.iterdir()
+                          if f.name.endswith(".md") and not f.name.endswith(".state.md"))
+        except OSError:
+            return []
 
     def _lint_correct(self) -> int:
         """Run the completeness lint after D1; if anything is incomplete, dispatch ONE

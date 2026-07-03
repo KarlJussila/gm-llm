@@ -30,26 +30,27 @@ slots, coin); the player tracks those.
 
 | Path | Holds | Written by |
 | --- | --- | --- |
-| `INDEX.md` | Registry: every entity → its files, status, one-line. Slug resolver + dedup guard. | `world-builder` (init), `world-keeper`, `dm` |
+| `INDEX.md` | Registry: every entity → its files, status, one-line. Slug resolver + dedup guard. | `dm` (init + apply passes) |
 | `campaign.md` | Overview: premise, tone, themes, content boundaries | `dm` |
-| `world/overview.md` · `cosmology.md` · `history.md` | World-truth singletons: premise + hidden layer; how reality works; backstory | `world-builder`, `world-keeper` |
-| `world/{npcs,factions,locations,items,regions}/{slug}.md` | Entity **info** (canon) | `world-builder`, `world-keeper` |
+| `world/overview.md` · `cosmology.md` · `history.md` | World-truth singletons: premise + hidden layer; how reality works; backstory | `dm` |
+| `world/{npcs,factions,locations,items,regions,concepts}/{slug}.md` | Entity **info** (canon) | `dm` |
 | `world/**/{slug}.state.md` | Entity **state** (current snapshot) | `dm` (apply pass) |
-| `arcs/{slug}.md` | Arc **design** — premise, turning points, committed answers (a living doc) | `arc-builder`, `arc-keeper` |
-| `arcs/{slug}.state.md` | Arc **progress** snapshot — status, beats hit | `dm` (apply pass) |
+| `arcs/{slug}.md` | Arc **design** — premise, turning points, committed answers (a living doc) | `dm` (init + arc pass) |
+| `arcs/{slug}.state.md` | Arc **progress** snapshot — status, beats hit | `dm` (arc pass) |
 | `state/current.md` | The "you are here" scene pointer — the runner's resume baseline | `dm` (apply pass) |
 | `state/calendar.md` | In-game date + event timeline | `dm` (apply pass) |
-| `state/threads.md` | Active leads/threads (a thread spans entities) | `dm` (apply pass) |
+| `state/threads.md` | Active leads/threads (a thread spans entities) | `dm` (arc pass) |
 | `state/clocks.md` | Time-pressure dashboard — every clock in one place | `dm` (apply pass) |
 | `characters/{slug}.md` | PC sheet — stats, personality, backstory, hooks | `dm` |
 | `characters/{slug}.state.md` | PC state — location, notable condition, key items, objective | `dm` (apply pass) |
 | `characters/{slug}.knowledge.md` | What the PC **Knows / Believes / Open questions** | `dm` (apply pass) |
 | `sessions/session-{N}-plan.md` | The plan for an upcoming session | `dm` |
 | `sessions/session-{N}-transcript.md` | Play transcript (final messages), written each turn | orchestrator |
+| `sessions/session-{N}-notes.md` | The runner's end-of-session handoff notes | orchestrator (runner authors, code files) |
 | `sessions/session-{N}.md` | Structured session digest, extracted from the transcript | `log-extractor` |
 | `assessment/session-{N}-assessment.md` | Post-session analysis & arc recommendations | `campaign-analyst` |
-| `documents/{slug}.md` | **Verbatim** text of in-world written materials | `dm` (post-session) |
-| `feedback/{target}.md` | Distilled player guidance, loaded by the named skill/agent | `dm` |
+| `documents/{slug}.md` | **Verbatim** text of in-world written materials | `dm` (apply pass) |
+| `feedback/{target}.md` | Distilled player guidance, loaded by the named skill/agent | `campaign-analyst` (curation pass) |
 
 **Not registered in `INDEX.md`:** the world-truth singletons (`overview`/`cosmology`/`history`) and
 the `state/*` docs sit at fixed paths; clocks and threads live in their dashboards.
@@ -59,15 +60,18 @@ the `state/*` docs sit at fixed paths; clocks and threads live in their dashboar
 Note-taking is **automatic** — the runner just plays. During the session the orchestrator writes the
 final player + DM messages of each turn to `sessions/session-{N}-transcript.md` (the corrected
 narration, not drafts). The runtime checkers only verify and report — they record nothing. After the
-session the `dm`:
+session the **orchestrator** runs the staged post-session pipeline, one focused dispatch per stage,
+each checked before the next:
 
-1. delegates to `log-extractor`, which reads the transcript and writes the structured digest
-   `sessions/session-{N}.md` — a lossless extraction of every notable change (including new canon
-   improvised in play and where the session diverged from the plan), then
-2. **applies** the digest to canonical state: the knowledge ledger (flipping
-   `[hidden]` → `[revealed: S<n>]`), entity info for new/changed canon, all `*.state.md` snapshots,
-   the `state/*` docs, the registry, and verbatim `documents/` — then runs the assessment and
-   reconciles each arc.
+1. the still-warm runner authors handoff notes (code files them to `session-{N}-notes.md`);
+2. `log-extractor` writes the structured digest `sessions/session-{N}.md` — a lossless extraction of
+   every notable change (checked against the transcript);
+3. `campaign-analyst` writes the assessment, then curates the player's feedback into `feedback/*`;
+4. the `dm` **applies** the digest to canonical state: entity info for new/changed canon (with a
+   completeness lint), one reconcile pass per arc plus the threads dashboard, then the knowledge
+   ledger (flipping `[hidden]` → `[revealed: S<n>]`), every `*.state.md` snapshot, the `state/*`
+   docs, the registry, and verbatim `documents/` — audited whole by the propagation check;
+5. the orchestrator commits and the `dm` plans session N+1.
 
 Because the transcript is what gets extracted, the rule during play is **narrate it, don't just
 decide it** — names, read-aloud text, and what the character learns must actually appear in the
@@ -99,9 +103,10 @@ is in the `canon-conventions` skill.
 
 ## Player feedback loop
 
-The runner collects player feedback at session end (recorded in the digest). The `dm` distills it
-into `feedback/{target}.md` files, which the matching skill or agent loads as binding guidance —
-baking feedback into behavior without editing the framework. See `feedback/README.md` for routing.
+The runner collects player feedback at session end (recorded verbatim in the digest). The
+`campaign-analyst` distills it into `feedback/{target}.md` files — checked for fidelity by the
+feedback gate — which the matching skill or agent loads as binding guidance, baking feedback into
+behavior without editing the framework. See `feedback/README.md` for routing.
 
 ## Document file format (`documents/{slug}.md`)
 

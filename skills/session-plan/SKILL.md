@@ -53,7 +53,8 @@ Skip a sub-skill's section if the session doesn't call for it (a quiet social se
 encounters; a travel session no investigation). Pull a skill when its content is in play.
 
 ## Input — read before planning
-- **Situation report** — the latest `campaign-assess` output (world state, threads, tone).
+- **Assessment** — the latest `campaign/assessment/session-{N}-assessment.md` (the analyst's
+  post-session read; its *Threads & next-session notes* section is your situation report).
 - **Active arcs** — `campaign/arcs/{slug}.md` + `.state.md`: where each stands and its committed answers.
 - **Current state** — `campaign/state/current.md`, `calendar.md`, `threads.md`, `clocks.md`.
 - **Entities in play** — their info/state files (via `INDEX.md`).

@@ -15,7 +15,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .loop import Game, _latest_session
+from .canon import latest_session
+from .loop import Game
 from .reconciler import Reconciler
 from .setup import Setup
 from .stream import EventTap
@@ -29,7 +30,7 @@ class Lifecycle:
         self.logs = logs
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
         # that needs setup; otherwise jump straight into play.
-        if _latest_session(Path(directory) / "campaign" / "sessions") is None:
+        if latest_session(Path(directory) / "campaign" / "sessions") is None:
             self.phase = "setup"
             self.game = None
             self.setup = Setup(backend, gate, directory, logs=logs)

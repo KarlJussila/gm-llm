@@ -39,7 +39,7 @@ dispatches beat one ten-part marathon whose quality decays before the end.
 - `tui/app.py` — Textual app: scene pane, behind-the-screen pane, action/meta input,
   cancel/revert.
 - `stream.py` — `EventTap`: live `/event` SSE view (`--stream`).
-- `dev/cli.py` — one dispatcher: `play` / `prep` / `reconcile` / `tui` / `ping` / `bench`.
+- `dev/cli.py` — one dispatcher: `status` / `play` / `prep` / `reconcile` / `tui` / `lint` / `ping`.
 
 ## The problem this rework fixes
 
@@ -195,17 +195,54 @@ scripted conversation → `finish_setup` → play(1) opens, screen pane restored
 terminal front-end) was left unbuilt — the TUI is the surface; add it only if a headless init is
 wanted. No scripted-player setup — init is the human's campaign.
 
+## Consolidation rework — built (2026-07-02)
+
+A whole-codebase review pass (simplify architecture, cut prompt debt, orchestrator-owned
+sequencing, UI clarity), all landed:
+
+- **`campaign-assess` retired** — dead since the analyst promotion, and stale (pre-rework layout);
+  `session-plan` now reads the analyst's assessment as its situation report.
+- **Checker protocol hoisted** — the shared boilerplate (todowrite discipline, `report_findings`
+  contract, report-only rule) lives once in `agent/narrative-checker.md`; the seven `check-*`
+  skills carry only their role's checks (597 → 407 lines).
+- **Per-turn loop single-homed** — `dm-runner.md` points at the injected `<turn-reminder>`;
+  the canonical text is only `orchestrator/prompts/turn-reminder.md`.
+- **`canon-conventions` slimmed** — the templates are the authoritative Vitals field lists
+  (sync note in `completeness.py`); the INDEX example defers to its template.
+- **Arc pass moved into code** — the Reconciler enumerates `campaign/arcs/*.md` itself and
+  dispatches **one `apply-arcs` brief per arc** (untouched → "untouched", change nothing) plus a
+  close brief (new minor arcs / threads dashboard / sweep); per-arc `arcs-{slug}` markers, and the
+  old whole-pass `arcs` marker still short-circuits already-reconciled sessions. The skill lost
+  its todowrite expand/collapse choreography (198 → 110 lines).
+- **Code cleanup** — the five non-runtime gate results collapsed into one `StageGateResult`;
+  `latest_session` has a single home (`canon.py`).
+- **One stage protocol** — `Setup` announces its stages over the same `on_stage` callback the
+  Reconciler uses; the TUI renders every phase from one `PHASE_LABELS` table (the seam for a
+  richer progress UI later). Each gated turn also leaves a muted `✓ checked` / `✎ corrected`
+  line in the scene pane.
+- **CLI rebuilt** (`dev/cli.py`) — one `with_engine` runner owns the backend
+  boot/stream/shutdown lifecycle all model-calling commands share; one render vocabulary
+  (`verdict`/`show_turn`/`show_prep`) replaces three ad-hoc variants; `--session` is inferred
+  from disk (prep → next, reconcile → latest played) and printed; prep/reconcile **commit by
+  default** (`--no-commit` for dry runs); new `status` command (phase, per-session artifacts,
+  reconcile markers, lint count, git state — disk only); the dead `bench` stub dropped.
+
 ## Backlog (deferred — not blocking the slices above)
 
-The whole rework is built (history in git): slices (i)–(iii) [slice (ii) live-validated], the prompt
-rehome, the `session-review` rewrite, the `dm.md` POST-flow repoint, the `arc-design` Model-B review,
-the `campaign-setup` reorder + orchestrator/TUI init wiring, the **PC vitals contract** + import-first
-`character-create` (delegating to the `character-importer` subagent), and **documenting PC capabilities
-through play** (`log-extract` taxonomy item *PC capabilities* → `apply-canon` appends to the sheet's
-`## Known capabilities` and applies level-ups).
+The earlier rework is all built (history in git): slices (i)–(iii) [slice (ii) live-validated], the
+prompt rehome, the `session-review` rewrite, the `dm.md` POST-flow repoint, the `arc-design` Model-B
+review, the `campaign-setup` reorder + orchestrator/TUI init wiring, the **PC vitals contract** +
+import-first `character-create` (delegating to the `character-importer` subagent), and **documenting
+PC capabilities through play** (`log-extract` taxonomy item *PC capabilities* → `apply-canon` appends
+to the sheet's `## Known capabilities` and applies level-ups).
 
 No open backlog items. Outstanding only: **a live shakedown** — a real new-campaign run (setup + a
-character import) and a post-session pass that exercises the PC-capabilities wiring, against the model.
+character import) and a post-session pass against the model, now also exercising the per-arc apply
+briefs and the slimmed checker skills.
+
+Deliberately **not** done (considered, rejected in the review): decomposing session prep (one
+authoring act, warm context — revisit only if plan quality sags in the shakedown); splitting
+`canon-conventions` into multiple skills; merging the `*-plan` sub-skills into `session-plan`.
 
 ## Done-tests
 
