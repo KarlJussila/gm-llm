@@ -36,6 +36,14 @@ export const TaskCompletePlugin: Plugin = async () => {
             .string()
             .optional()
             .describe("One short line naming what you completed (optional; for the log)."),
+          player_message: tool.schema
+            .string()
+            .optional()
+            .describe(
+              "A player-facing closing message to surface as this stage ends, when the brief " +
+              "asks for one — e.g. the world-build stage's spoiler-free world overview. The " +
+              "orchestrator shows this to the player verbatim, so put the real thing here."
+            ),
         },
         async execute() {
           return "Acknowledged — completion recorded. The orchestrator will take it from here."

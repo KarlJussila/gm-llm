@@ -117,11 +117,16 @@ class Setup:
             self._mark_done("INTAKE_WORLD")
             self._stage = "CHAR"
             self._announce("CHAR")
-            # Open character creation and APPEND it to the world wrap-up, so the player
-            # sees both this turn — never overwrite the dm's own closing beat.
+            # The spoiler-free world overview rides in the task_complete call's
+            # `player_message` arg — structured like the checkers' report_findings, so it's
+            # reliably present and always the closing beat. Fall back to the message text if
+            # the model put it there instead.
+            close = (reply.tool_inputs.get("task_complete", {}).get("player_message") or text).strip()
+            # Open character creation and APPEND it, so the player sees the overview and the
+            # character opening together — never overwrite the dm's closing beat.
             char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
                                             load("setup-char-brief"), whole=True)
-            return SetupTurn(f"{text}\n\n{char_open}", False)
+            return SetupTurn(f"{close}\n\n{char_open}" if close else char_open, False)
         if self._stage == "CHAR" and done:
             self._mark_done("CHAR")
             self._run_pipeline()
