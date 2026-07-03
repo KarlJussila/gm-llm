@@ -63,18 +63,33 @@ gm-llm update path/to/my-campaign                          # refresh that projec
 plugin deps, while leaving your `campaign/` data, `.orchestrator` markers, and `node_modules`
 untouched. `gm-llm --version` shows what the tool is on.
 
-### Windows (native) — verified prerequisite steps
+### Windows (native) — one-line install
 
-Run these first (Command Prompt or PowerShell), then follow **Install the command** and
-**Scaffold and run** above. For `gm-llm play`, prefer **Windows Terminal** — the Textual UI
-renders poorly in the legacy `cmd.exe` console.
+The simplest path. Open **PowerShell** and paste:
 ```
-winget install Python.Python.3.12 OpenJS.NodeJS
+irm https://raw.githubusercontent.com/KarlJussila/gm-llm/main/install.ps1 | iex
+```
+That installs git, Python, Node, opencode, and the `gm-llm` command (all per-user, no admin —
+winget may show a UAC prompt), then scaffolds a `my-campaign` folder in your home directory.
+It's idempotent, so it's safe to re-run. When it finishes it prints the only two commands left:
+```
+opencode auth login          # log in to a model provider (one time, interactive)
+cd ~\my-campaign; gm-llm play
+```
+For the game UI, use **Windows Terminal** (the installer adds it) — the legacy `cmd.exe`
+console renders the Textual interface poorly.
+
+<details><summary>Manual prerequisite steps (if you'd rather not run the script)</summary>
+
+Run these, then follow **Install the command** and **Scaffold and run** above:
+```
+winget install Git.Git Python.Python.3.12 OpenJS.NodeJS
 npm install -g --allow-scripts=opencode-ai opencode-ai   # the opencode CLI
 
 python -m pip install --user pipx
 python -m pipx ensurepath                                 # then restart the terminal
 ```
+</details>
 
 An empty directory opens in the **setup** phase: the DM interviews you (free-form or
 guided), builds the world, creates your character with you, designs the arcs, plans
