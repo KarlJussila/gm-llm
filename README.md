@@ -2,8 +2,9 @@
 
 A framework that lets an LLM design, run, and maintain a long-running solo tabletop D&D
 campaign: guided campaign setup, macro-scale arc planning, live gated sessions, and a
-post-session pipeline that folds what was played back into canon. It is self-contained —
-drop this `.opencode/` directory into any empty project directory and start.
+post-session pipeline that folds what was played back into canon. It installs as a single
+`gm-llm` command that scaffolds a new campaign project and runs it — Linux, macOS, or
+native Windows.
 
 **The one principle:** *deterministic control in code; generative work in agents.* A Python
 orchestrator owns all sequencing — what runs, in what order, when it's checked, when it's
@@ -20,18 +21,21 @@ the end.
 
 ## Quick start
 
-Requirements: the [opencode](https://opencode.ai) CLI, Python 3.12+, Node (for the plugin
-dependency).
+Requirements: the [opencode](https://opencode.ai) CLI (with a model provider configured),
+a JS runtime (bun or node, for the plugin dependency), and Python 3.10+.
 
 ```sh
-# from the project root (the directory that CONTAINS .opencode/)
-cd .opencode
-npm install                       # @opencode-ai/plugin, for the dice/signal tools
-python -m venv .venv && .venv/bin/pip install textual   # TUI only; the core is stdlib
-cd ..
+git clone <repo> gm-llm && cd gm-llm
+pipx install .                # installs the `gm-llm` command (or: pip install .)
 
-python .opencode/dev/cli.py tui --live
+gm-llm init my-campaign       # scaffold a new project's .opencode/ assets
+cd my-campaign
+gm-llm doctor                 # verify opencode / runtime / port / provider
+gm-llm play                   # launch the TUI — setup runs on first play
 ```
+
+`gm-llm play` (or a bare `gm-llm`) is the everyday command. `dev/cli.py` still carries the
+orchestrator power-commands (`status` / `prep` / `reconcile` / `lint`) for development.
 
 An empty directory opens in the **setup** phase: the DM interviews you (free-form or
 guided), builds the world, creates your character with you, designs the arcs, plans

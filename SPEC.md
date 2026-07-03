@@ -189,13 +189,14 @@ the `log-extractor` (extraction).
 The framework and the campaigns it generates are tracked in **separate git repositories**, so
 framework development and play history don't entangle:
 
-- **Framework repo — rooted at `.opencode/`.** Tracks the agents, skills, plugins, and this spec.
-  It is self-contained and portable: drop `.opencode/` into any opencode project to use the
-  framework. `node_modules/` is the only ignored content.
+- **Framework repo — the `gm-llm` source.** Tracks the Python tool (`gm_llm/`, `orchestrator/`,
+  `tui/`), the opencode assets it ships (`gm_llm/assets/opencode/` — agents, skills, plugin,
+  templates), and this spec. `gm-llm init <project>` copies those assets into a project's
+  `.opencode/`; `gm-llm` installs from here.
 - **Campaign repo — rooted at the project root.** Tracks the generated `campaign/` directory and
   its play history (init, session plans, session logs, assessments). It gitignores `.opencode/`.
-  Campaign setup creates this repo and the directory structure itself (from
-  `.opencode/templates/campaign/`), so the system can be started in an empty directory.
+  Campaign setup creates this repo and the directory structure itself (from the bundled
+  `templates/campaign/` assets), so the system can be started in an empty directory.
 
 The DM agents run with the project root as their working directory, so their plain `git`
 commits land in the campaign repo. Framework changes are committed in `.opencode/`.

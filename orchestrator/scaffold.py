@@ -11,10 +11,24 @@ import shutil
 import subprocess
 from pathlib import Path
 
-_ROOT = Path(__file__).parent.parent  # .opencode/
+_ROOT = Path(__file__).parent.parent  # repo root (source checkout)
 
-_SKILL_TEMPLATES = _ROOT / "skills" / "canon-conventions" / "templates"
-_CAMPAIGN_TEMPLATES = _ROOT / "templates" / "campaign"
+
+def _assets_root() -> Path:
+    """Where the opencode assets (skills templates, campaign templates) live — the
+    bundled package data when gm-llm is installed, else the repo root in a checkout.
+    Resolved through gm_llm so this survives the assets moving under the package; a
+    function (not a hard import) keeps orchestrator loosely coupled and falls back if
+    gm_llm isn't importable for some reason."""
+    try:
+        from gm_llm.assets import opencode_assets_dir
+        return opencode_assets_dir()
+    except Exception:
+        return _ROOT
+
+
+_SKILL_TEMPLATES = _assets_root() / "skills" / "canon-conventions" / "templates"
+_CAMPAIGN_TEMPLATES = _assets_root() / "templates" / "campaign"
 
 _SUBDIRS = [
     "world/npcs", "world/factions", "world/locations",

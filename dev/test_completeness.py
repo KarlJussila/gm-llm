@@ -7,6 +7,7 @@ OPENCODE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(OPENCODE))
 
 from orchestrator.completeness import lint_text, lint_file  # noqa: E402
+from gm_llm.assets import opencode_assets_dir  # noqa: E402
 
 NPC_FULL = """\
 ---
@@ -124,7 +125,7 @@ check(PC_BARE, etype="pc",
 check(PC_FULL, etype="pc", missing=[], ok=True, label="complete pc sheet passes")
 
 # the shipped worked example must satisfy its own contract
-ex = lint_file(OPENCODE / "skills/canon-conventions/examples/lysa-fenn.md")
+ex = lint_file(opencode_assets_dir() / "skills/canon-conventions/examples/lysa-fenn.md")
 assert ex.ok and not ex.missing, f"worked example incomplete: {ex.missing}"
 print("  ok  worked example lysa-fenn.md is complete")
 

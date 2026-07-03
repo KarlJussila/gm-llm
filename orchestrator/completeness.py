@@ -25,7 +25,8 @@ from pathlib import Path
 # Required Vitals fields per entity type. The label is matched case-insensitively and
 # must appear as a `- **Label:** value` line inside the file's `## Vitals` section.
 # The prompt-side source of these sets is the templates in
-# skills/canon-conventions/templates/ (each template's `## Vitals` lines) — keep in sync.
+# gm_llm/assets/opencode/skills/canon-conventions/templates/ (each template's
+# `## Vitals` lines) — keep in sync.
 REQUIRED_FIELDS: dict[str, list[str]] = {
     "npc": [
         "Full name", "Race / lineage", "Pronouns", "Age",
