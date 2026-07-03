@@ -134,9 +134,12 @@ if (-not (Find-Python)) {
   Sync-Path
 }
 if (-not (Find-Python)) {
-  Die ("No working Python found even after installing it — the Microsoft Store alias may be " +
-       "shadowing it. Turn it off in Settings > Apps > Advanced app settings > App execution " +
-       "aliases (python.exe / python3.exe), open a NEW terminal, and re-run this installer.")
+  Die ("No working Python found (winget may be unavailable or out of date on this machine). " +
+       "Surest fix: install Python 3.12 from https://www.python.org/downloads/ — tick 'Add " +
+       "python.exe to PATH' in the installer — then open a NEW terminal and re-run this. " +
+       "(If you DO have Python and this still fails, the Microsoft Store alias is shadowing it: " +
+       "Settings > Apps > App execution aliases on Windows 10, or Settings > Apps > Advanced app " +
+       "settings > App execution aliases on Windows 11 — turn off python.exe and python3.exe.)")
 }
 Ok ("using Python: " + $script:PyExe + " " + ($script:PyArgs -join ' '))
 # Run a Python command with stderr merged into stdout and stringified: pip/venv write progress
