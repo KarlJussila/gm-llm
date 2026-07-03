@@ -15,10 +15,13 @@
 
 $ErrorActionPreference = 'Stop'
 
-# Let this run bypass the machine's script-execution policy for THIS process only (no admin,
-# nothing persisted). Without it, calling `npm` resolves to Node's unsigned `npm.ps1` shim,
-# which a Restricted/AllSigned policy refuses to run.
+# Bypass the machine's script-execution policy for THIS process (no admin, nothing persisted)
+# so this run can call Node's unsigned `npm.ps1` shim.
 try { Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force } catch {}
+# Also relax the *persistent* CurrentUser policy to RemoteSigned (still no admin) so the
+# npm-installed shims the player later runs by hand — notably `opencode auth login` — aren't
+# blocked as unsigned. RemoteSigned allows local scripts, still blocks unsigned web downloads.
+try { Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force } catch {}
 
 $RepoUrl     = 'https://github.com/KarlJussila/gm-llm.git'
 $RepoDir     = Join-Path $HOME 'gm-llm'          # the tool's source checkout
@@ -105,17 +108,32 @@ Say "Installing the gm-llm command"
 python -m pipx install $RepoDir --force | Out-Host
 Sync-Path
 
-# Resolve the gm-llm executable explicitly — PATH may not reflect pipx's bin dir in THIS
-# session even after ensurepath, so fall back to its known location.
+# Resolve the gm-llm executable. PATH may not reflect pipx's bin dir in THIS session even
+# after ensurepath, so if it's not on PATH, ask pipx itself where it puts app binaries
+# (authoritative — never guess the directory).
 $gmllm = (Get-Command gm-llm -ErrorAction SilentlyContinue).Source
-if (-not $gmllm) { $gmllm = Join-Path $HOME '.local\bin\gm-llm.exe' }
-if (-not (Test-Path $gmllm)) { Die "gm-llm didn't install where expected ($gmllm)." }
-Ok "gm-llm ready"
+if (-not $gmllm) {
+  $cands = @()
+  $binDir = (python -m pipx environment --value PIPX_BIN_DIR 2>$null)
+  if ($binDir) { $cands += (Join-Path $binDir.Trim() 'gm-llm.exe') }
+  $cands += (Join-Path $HOME '.local\bin\gm-llm.exe')
+  foreach ($cand in $cands) {
+    if (Test-Path $cand) { $gmllm = $cand; break }
+  }
+}
 
 # --- 4. scaffold a playable campaign folder (also installs the .opencode plugin deps) ---
-Say "Creating your campaign folder"
-& $gmllm init $CampaignDir | Out-Host
-Ok "campaign scaffolded at $CampaignDir"
+if ($gmllm) {
+  Ok "gm-llm ready"
+  Say "Creating your campaign folder"
+  & $gmllm init $CampaignDir | Out-Host
+  Ok "campaign scaffolded at $CampaignDir"
+} else {
+  # gm-llm is installed (pipx succeeded) but its bin dir isn't visible in this session.
+  # A fresh terminal will have it on PATH — don't fail the whole install; guide the last step.
+  Warn "gm-llm installed, but not callable in this window yet."
+  Warn "Open a NEW terminal and run:  gm-llm init $CampaignDir"
+}
 
 # --- done: the one manual, interactive step remains ---
 Write-Host "`n============================================================" -ForegroundColor Green
