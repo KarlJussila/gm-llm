@@ -91,18 +91,23 @@ class Backend:
     def start(self, ready_timeout: int = 60) -> "Backend":
         """Boot our own `opencode serve` and wait until it answers."""
         log = open(self.logs.serve, "w")
-        # Resolve the executable ourselves: on native Windows `opencode` is a `.cmd`/`.exe`
-        # shim that Popen won't find without a shell, so shutil.which does the PATHEXT lookup.
         exe = shutil.which("opencode") or "opencode"
-        # New process group on Windows so stop() can deliver CTRL_BREAK to the server (and
-        # the runtime children it spawns); a no-op elsewhere. The attribute only exists on
-        # Windows, so it's referenced only when os.name == "nt".
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
-        self._proc = subprocess.Popen(
-            [exe, "serve", "--port", str(self.port)],
-            cwd=self.directory, stdout=log, stderr=subprocess.STDOUT,
-            creationflags=creationflags,
-        )
+        if os.name == "nt":
+            # From `npm i -g opencode-ai`, `opencode` is an `opencode.cmd` shim that
+            # CreateProcess can't launch directly, so run it through the shell (a bare
+            # Popen list would fail with "not a valid Win32 application"). A new process
+            # group isolates it from the TUI's console signals; stop() reaps the whole
+            # tree with taskkill.
+            self._proc = subprocess.Popen(
+                f'"{exe}" serve --port {self.port}',
+                cwd=self.directory, stdout=log, stderr=subprocess.STDOUT,
+                shell=True, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            )
+        else:
+            self._proc = subprocess.Popen(
+                [exe, "serve", "--port", str(self.port)],
+                cwd=self.directory, stdout=log, stderr=subprocess.STDOUT,
+            )
         self._owns_server = True
         self._wait_until_ready(ready_timeout)
         return self
@@ -116,11 +121,15 @@ class Backend:
     def stop(self) -> None:
         if self._proc and self._owns_server:
             try:
-                # No SIGINT on Windows — CTRL_BREAK reaches the process group we created;
-                # SIGINT elsewhere. kill() is the fallback if graceful shutdown times out.
-                # (CTRL_BREAK_EVENT exists only on Windows, hence the os.name guard.)
-                self._proc.send_signal(
-                    signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT)
+                if os.name == "nt":
+                    # The server sits under a cmd.exe shim (.cmd); a graceful CTRL_BREAK
+                    # risks cmd's "Terminate batch job (Y/N)?" prompt hanging shutdown, and
+                    # kill() would reap only the shell. taskkill /T force-kills the whole
+                    # tree (shell + opencode + its runtime children).
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(self._proc.pid)],
+                                   capture_output=True)
+                else:
+                    self._proc.send_signal(signal.SIGINT)
                 self._proc.wait(timeout=10)
             except Exception:
                 self._proc.kill()
