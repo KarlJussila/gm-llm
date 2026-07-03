@@ -59,7 +59,10 @@ Flag any of:
 - **PC knowledge leaks are conduct violations too.** If the draft has the runner narrate the PC
   acting on information they don't have (a `[hidden]` fact, something only an NPC knows, a twist
   not yet revealed), flag it — that's a metagame leak. Your warm context from `check-turn` (the
-  ledger, the `[hidden]`/`[revealed]` flags) is exactly what lets you catch this.
+  ledger, the `[hidden]`/`[revealed]` flags) is exactly what lets you catch this. **But the ledger is
+  frozen at session start** — a fact the PC *learned earlier this session* (in the transcript) is
+  known now, even though it still reads `[hidden]` here; acting on it is not a leak. Flag only info the
+  PC has genuinely never gained, in canon or in this session's play.
 
 ### 5. Check pacing
 Pacing fails in **both** directions — flag either:
