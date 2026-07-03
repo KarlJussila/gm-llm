@@ -14,6 +14,12 @@
 #>
 
 $ErrorActionPreference = 'Stop'
+
+# Let this run bypass the machine's script-execution policy for THIS process only (no admin,
+# nothing persisted). Without it, calling `npm` resolves to Node's unsigned `npm.ps1` shim,
+# which a Restricted/AllSigned policy refuses to run.
+try { Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force } catch {}
+
 $RepoUrl     = 'https://github.com/KarlJussila/gm-llm.git'
 $RepoDir     = Join-Path $HOME 'gm-llm'          # the tool's source checkout
 $CampaignDir = Join-Path $HOME 'my-campaign'     # the playable project it scaffolds
@@ -72,8 +78,10 @@ if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
 }
 
 # --- 2. opencode (the model runtime gm-llm drives) ---
+# Call npm.cmd, not npm: the bare name resolves to Node's unsigned npm.ps1, which a locked-down
+# execution policy blocks; the .cmd shim sidesteps that entirely.
 Say "Installing opencode"
-npm install -g --allow-scripts=opencode-ai opencode-ai | Out-Host
+npm.cmd install -g --allow-scripts=opencode-ai opencode-ai | Out-Host
 Sync-Path
 if (Get-Command opencode -ErrorAction SilentlyContinue) { Ok "opencode installed" }
 else { Warn "opencode not on PATH yet — a new terminal will pick it up" }
