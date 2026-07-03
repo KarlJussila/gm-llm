@@ -90,9 +90,29 @@ if (Get-Command opencode -ErrorAction SilentlyContinue) { Ok "opencode installed
 else { Warn "opencode not on PATH yet — a new terminal will pick it up" }
 
 # --- 3. pipx + the gm-llm command ---
+# Resolve a REAL Python, dodging the Microsoft Store "App execution alias": with the alias on,
+# bare `python` is a stub that just prints "Python was not found" — so we prefer the `py`
+# launcher and verify each candidate actually runs code before trusting it.
+$script:PyExe = $null; $script:PyArgs = @()
+foreach ($cand in @(,@('py','-3')) + @(,@('python')) + @(,@('python3'))) {
+  $exe = $cand[0]; $a = @(); if ($cand.Count -gt 1) { $a = @($cand[1]) }
+  try {
+    $out = & $exe @a -c "print('pyok')" 2>$null
+    if ($LASTEXITCODE -eq 0 -and (($out -join '') -match 'pyok')) {
+      $script:PyExe = $exe; $script:PyArgs = $a; break
+    }
+  } catch {}
+}
+if (-not $script:PyExe) {
+  Die ("No working Python found — the Microsoft Store alias is likely shadowing it. Turn it off " +
+       "in Settings > Apps > Advanced app settings > App execution aliases (python.exe / python3.exe), " +
+       "open a NEW terminal, and re-run this installer.")
+}
+function Py { & $script:PyExe @script:PyArgs @args }
+
 Say "Installing pipx"
-python -m pip install --user --upgrade pipx | Out-Host
-python -m pipx ensurepath | Out-Host
+Py -m pip install --user --upgrade pipx 2>&1 | Out-Host
+Py -m pipx ensurepath 2>&1 | Out-Host
 Sync-Path
 
 Say "Fetching gm-llm"
@@ -105,7 +125,7 @@ if (Test-Path (Join-Path $RepoDir '.git')) {
 }
 
 Say "Installing the gm-llm command"
-python -m pipx install $RepoDir --force | Out-Host
+Py -m pipx install $RepoDir --force 2>&1 | Out-Host
 Sync-Path
 
 # Resolve the gm-llm executable. PATH may not reflect pipx's bin dir in THIS session even
@@ -114,7 +134,7 @@ Sync-Path
 $gmllm = (Get-Command gm-llm -ErrorAction SilentlyContinue).Source
 if (-not $gmllm) {
   $cands = @()
-  $binDir = (python -m pipx environment --value PIPX_BIN_DIR 2>$null)
+  $binDir = (Py -m pipx environment --value PIPX_BIN_DIR 2>$null)
   if ($binDir) { $cands += (Join-Path $binDir.Trim() 'gm-llm.exe') }
   $cands += (Join-Path $HOME '.local\bin\gm-llm.exe')
   foreach ($cand in $cands) {
