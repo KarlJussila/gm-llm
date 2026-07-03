@@ -3,15 +3,23 @@ MockGame — a stand-in for the real Game so interfaces (the TUI, tests) can run
 without a backend or model calls. Duck-types Game's start()/turn()/meta() and
 returns scripted TurnResults, cycling through clean / corrected / violation states
 so the UI exercises every path. No opencode, no rate limit.
+
+The mock mirrors every seam the TUI wires: the per-turn `on_step` ticker, a
+`backend.on_retry` notice (turn 4), a session-complete ending (turn 6), and
+cancellable sleeps (`abort()` raises `BackendCancelled` out of the in-flight
+call, like the real Backend) — so the whole UI is testable offline.
 """
 
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
+from .backend import BackendCancelled
 from .gate import GateResult, Verdict
 from .loop import TurnResult
 from .setup import SetupTurn
+from .status import CampaignStatus
 
 _WRAP_STAGES = ["digest", "assess", "feedback", "canon", "arcs", "state", "propagation", "prep"]
 
@@ -32,40 +40,100 @@ _OPENING = (
     "satchel at your hip stirs.\n\nReady when you are."
 )
 
+_CLOSING = (
+    "Magren bolts the door behind the last regular and snuffs the lamps one by one. \"Get some "
+    "sleep,\" he says. \"Whatever that satchel wants of you, it'll still want it tomorrow.\" The "
+    "night takes the harbour quiet, for once.\n\n— a good place to rest —"
+)
+
+
+class _MockBackend:
+    """Just enough backend surface for the TUI's unconditional wiring: a retry
+    hook to render and an abort() for the cancel path (the real cancel signal
+    lives on MockGame; this abort only reports nothing-in-flight)."""
+
+    def __init__(self):
+        self.on_retry = None
+
+    def abort(self) -> bool:
+        return False
+
 
 class MockGame:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, backend=None, *args, **kwargs):
         self.runner_sid = "mock-runner"
+        self.backend = backend or _MockBackend()
+        self.on_step = None  # the TUI assigns this, same as on the real Game
         self._n = 0
+        self._abort = False
+
+    def _step(self, key: str) -> None:
+        if self.on_step:
+            try:
+                self.on_step(key)
+            except Exception:  # noqa: BLE001 — same best-effort contract as the real Game
+                pass
+
+    def _sleep(self, seconds: float) -> None:
+        """A cancellable sleep: abort() flips the flag and the in-flight call raises
+        BackendCancelled, mirroring the real Backend's cancel semantics."""
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if self._abort:
+                self._abort = False
+                raise BackendCancelled("mock call cancelled")
+            time.sleep(0.05)
 
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
-        time.sleep(1.5)  # let the heartbeat tick so the UI is testable offline
+        self._step("draft")
+        self._sleep(1.0)
+        self._step("check")
+        self._sleep(0.5)
+        self._step("done")
         return self._result(_OPENING, kickoff, clean=True)
 
     def resume(self) -> str | None:
         return None  # mock always opens fresh
 
     def turn(self, player_input: str) -> TurnResult:
-        time.sleep(1.5)  # let the heartbeat tick so the UI is testable offline
         self._n += 1
-        corrected = self._n % 3 == 0  # every third turn exercises the correction path
-        narration = (
+        corrected = self._n % 3 == 0   # every third turn exercises the correction path
+        ending = self._n % 6 == 0      # every sixth turn ends the session (the wrap prompt)
+        try:
+            self._step("draft")
+            if self._n % 4 == 0 and self.backend.on_retry:  # turn 4 exercises the retry notice
+                self.backend.on_retry("dm-runner", 1, 5, "429 (mock)")
+                self._sleep(1.0)
+            self._sleep(0.8)
+            self._step("check")
+            self._sleep(0.5)
+            if corrected:
+                self._step("correct")
+                self._sleep(0.5)
+            self._step("done")
+        except BackendCancelled:
+            self._n -= 1  # a cancelled turn is reverted — it doesn't consume a script slot
+            raise
+        narration = _CLOSING if ending else (
             f"Magren's gaze flicks to you, then the satchel. \"That glow,\" he says. \"Not the first "
             f"I've seen.\" He slides a mug across the bar. (mock reply to: “{player_input[:60]}”)"
         )
-        return self._result(narration, player_input, clean=not corrected, corrected=corrected)
+        return self._result(narration, player_input, clean=not corrected,
+                            corrected=corrected, session_complete=ending)
 
     def meta(self, question: str) -> str:
-        time.sleep(1.5)  # let the heartbeat tick so the UI is testable offline
+        self._sleep(1.5)
         return "(out-of-game) We can wrap at the next natural beat — no rush."
 
     def abort(self) -> bool:
-        return False  # mock turns resolve instantly — nothing in flight to cancel
+        self._abort = True  # the in-flight _sleep raises BackendCancelled
+        return True
 
     def revert_last_turn(self) -> bool:
         return False  # no backend session to roll back
 
-    def _result(self, narration, player_msg, clean=True, corrected=False) -> TurnResult:
+    def _result(self, narration, player_msg, clean=True, corrected=False,
+                session_complete=False) -> TurnResult:
         narrative = Verdict(
             "narrative-checker", clean,
             "" if clean else
@@ -75,7 +143,7 @@ class MockGame:
         conduct = Verdict("check-conduct", True, "")
         gate = GateResult(narrative, conduct, player_msg, canon_sections=9)
         draft = ("(pre-correction draft) " + narration) if corrected else narration
-        return TurnResult(player_msg, draft, narration, gate, corrected)
+        return TurnResult(player_msg, draft, narration, gate, corrected, session_complete)
 
 
 class MockSetup:
@@ -123,18 +191,33 @@ class MockLifecycle:
 
     def __init__(self, start_in_setup: bool = False, *args, **kwargs):
         self._session = 1
+        self.backend = _MockBackend()
         if start_in_setup:
             self.phase = "setup"
             self.game = None
             self.setup = MockSetup()
         else:
             self.phase = "play"
-            self.game = MockGame()
+            self.game = MockGame(self.backend)
             self.setup = None
 
     @property
     def session(self) -> int:
         return self._session
+
+    def status(self) -> CampaignStatus:
+        """A canned snapshot so the TUI's status modal renders offline."""
+        n = None if self.phase == "setup" else self._session
+        return CampaignStatus(
+            root=Path("/mock/campaign"), phase=self.phase, session=n,
+            artifacts=[] if n is None else [
+                ("plan", True), ("transcript", True), ("notes", False),
+                ("digest", False), ("assessment", False)],
+            reconcile_stages=[] if (n is None or n < 2) else ["digest", "assess"],
+            entities_total=12, entities_complete=11,
+            incomplete=["campaign/world/npcs/magren-soley.md"],
+            git_state="clean", last_commit=f"session {n or 1} plan",
+        )
 
     def setup_stream(self, stream_write, on_tool=None):
         return _NoTap()
@@ -152,7 +235,7 @@ class MockLifecycle:
             stream_write("  (mock) writing the session-1 plan…\n")
         time.sleep(0.6)
         self.phase = "play"
-        self.game = MockGame()
+        self.game = MockGame(self.backend)
         self.setup = None
         return self._session
 
@@ -168,5 +251,5 @@ class MockLifecycle:
                 stream_write(f"[yellow]  ⚙ {key}: write  world/notes/{key}.md[/]\n")
             time.sleep(0.6)  # let the ticker breathe so the flow is visible
         self._session += 1
-        self.game = MockGame()
+        self.game = MockGame(self.backend)
         return self._session

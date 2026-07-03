@@ -34,6 +34,7 @@ OPENCODE = DEV.parent               # the .opencode dir
 sys.path.insert(0, str(OPENCODE))   # put .opencode on the path
 from orchestrator import (  # noqa: E402
     Backend, BackendError, CanonPreloader, Gate, Game, Logs, Planner, Reconciler,
+    campaign_status,
 )
 from orchestrator.canon import latest_session  # noqa: E402
 from orchestrator.stream import EventTap  # noqa: E402
@@ -282,44 +283,31 @@ def cmd_reconcile(args):
 
 
 def cmd_status(args):
-    """Where the campaign stands — read from disk only, no server, no model."""
+    """Where the campaign stands — a renderer over `campaign_status()` (disk only,
+    no server, no model). The TUI's status modal renders the same snapshot."""
     root = Path(args.dir)
-    campaign = root / "campaign"
-    if not campaign.is_dir():
+    if not (root / "campaign").is_dir():
         print(f"campaign: {root}\nphase: no campaign yet — the TUI opens in setup "
               f"(`cli.py tui --live`)")
         return
-    sessions = campaign / "sessions"
-    n = latest_session(sessions)
-    print(f"campaign: {root}")
-    print(f"phase: {'setup (no session planned yet)' if n is None else f'play · latest session: {n}'}")
+    st = campaign_status(root)
+    print(f"campaign: {st.root}")
+    print(f"phase: {'setup (no session planned yet)' if st.session is None else f'play · latest session: {st.session}'}")
 
-    if n is not None:
-        artifacts = (("plan", f"session-{n}-plan.md"), ("transcript", f"session-{n}-transcript.md"),
-                     ("notes", f"session-{n}-notes.md"), ("digest", f"session-{n}.md"),
-                     ("assessment", f"../assessment/session-{n}-assessment.md"))
-        marks = [c("32", f"{name} ✓") if (sessions / rel).resolve().is_file() else c("2", f"{name} ✗")
-                 for name, rel in artifacts]
-        print(f"session {n}: " + " · ".join(marks))
-        markers = sorted(p.name for p in (root / ".opencode" / ".orchestrator").glob(f"reconcile-{n}-*.done")) \
-            if (root / ".opencode" / ".orchestrator").is_dir() else []
-        if markers:
-            stages = ", ".join(m[len(f"reconcile-{n}-"):-len(".done")] for m in markers)
-            print(f"reconcile {n}: {len(markers)} stage(s) done ({stages})")
+    if st.session is not None:
+        marks = [c("32", f"{name} ✓") if present else c("2", f"{name} ✗")
+                 for name, present in st.artifacts]
+        print(f"session {st.session}: " + " · ".join(marks))
+        if st.reconcile_stages:
+            print(f"reconcile {st.session}: {len(st.reconcile_stages)} stage(s) done "
+                  f"({', '.join(st.reconcile_stages)})")
 
-    from orchestrator.completeness import lint_dir
-    reports = lint_dir(root)
-    bad = [r for r in reports if not r.ok]
-    line = f"entities: {len(reports) - len(bad)}/{len(reports)} complete (lint)"
-    print(c("31", line + " — run `cli.py lint` for detail") if bad else c("32", line))
+    line = f"entities: {st.entities_complete}/{st.entities_total} complete (lint)"
+    print(c("31", line + " — run `cli.py lint` for detail") if st.incomplete else c("32", line))
 
-    git = subprocess.run(["git", "status", "--porcelain", "--", "campaign"],
-                         cwd=root, capture_output=True, text=True)
-    if git.returncode == 0:
-        last = subprocess.run(["git", "log", "-1", "--pretty=%s"],
-                              cwd=root, capture_output=True, text=True).stdout.strip()
-        state = "dirty (uncommitted campaign changes)" if git.stdout.strip() else "clean"
-        print(f"git: {state}" + (f' · last: "{last}"' if last else ""))
+    if st.git_state is not None:
+        state = "dirty (uncommitted campaign changes)" if st.git_state == "dirty" else "clean"
+        print(f"git: {state}" + (f' · last: "{st.last_commit}"' if st.last_commit else ""))
 
 
 def cmd_lint(args):

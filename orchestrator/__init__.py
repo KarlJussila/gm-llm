@@ -14,9 +14,11 @@ from .loop import Game, TurnResult
 from .planner import Planner, PlannerError, PrepResult
 from .reconciler import Reconciler, ReconcileResult
 from .setup import Setup, SetupTurn
+from .status import CampaignStatus, campaign_status
 
 __all__ = [
     "Backend", "BackendError", "CanonPreloader",
+    "CampaignStatus", "campaign_status",
     "Gate", "GateResult", "StageGateResult", "Verdict",
     "Game", "TurnResult", "Lifecycle", "Logs",
     "Planner", "PlannerError", "PrepResult",

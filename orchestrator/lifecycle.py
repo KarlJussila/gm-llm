@@ -19,6 +19,7 @@ from .canon import latest_session
 from .loop import Game
 from .reconciler import Reconciler
 from .setup import Setup
+from .status import CampaignStatus, campaign_status
 from .stream import EventTap
 
 
@@ -42,6 +43,11 @@ class Lifecycle:
     @property
     def session(self) -> int:
         return self.game.session if self.game else 0
+
+    def status(self) -> CampaignStatus:
+        """Where the campaign stands — disk only (lint + git), no model calls.
+        Blocking (subprocesses); the TUI runs it off the UI thread."""
+        return campaign_status(self.directory)
 
     def _tap(self, stream_write):
         """An EventTap routing the live model stream to the behind-the-screen pane —

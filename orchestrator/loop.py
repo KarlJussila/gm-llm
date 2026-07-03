@@ -51,13 +51,14 @@ class TurnResult:
 
 class Game:
     def __init__(self, backend, gate, runner_agent: str = "dm-runner",
-                 on_turn=None, logs=None,
+                 on_turn=None, on_step=None, logs=None,
                  campaign_dir: str | None = None, session: int | None = None,
                  transcript: bool = True):
         self.backend = backend
         self.gate = gate
         self.runner_agent = runner_agent
         self.on_turn = on_turn
+        self.on_step = on_step  # fires per turn-step ("draft"/"check"/"correct"/"done")
         # True only while the (single, bounded) correction prompt is in flight — left
         # set if that prompt is cancelled, so revert_last_turn knows to roll back past
         # the correction brief to the player's own message. Reset at the next op.
@@ -167,14 +168,25 @@ class Game:
         so a turn adds at most two user messages)."""
         return self.backend.revert_to_recent_user(self.runner_sid, back=2 if self._correcting else 1)
 
+    def _step(self, key: str) -> None:
+        """Announce a turn-step to a watcher (the TUI status bar). Never raises —
+        a UI failure must not break the turn (same contract as Setup._announce)."""
+        if self.on_step:
+            try:
+                self.on_step(key)
+            except Exception:  # noqa: BLE001 — the watcher is best-effort by design
+                pass
+
     def _gated_turn(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
         self._correcting = False
+        self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, message)
         draft = reply.text
         # The runner ends a session by calling `task_complete` as its final act (after its
         # closing beats). We read that off the draft's tool calls — never the opening, which
         # is a scene-set, not an ending.
         session_complete = (not opening) and ("task_complete" in reply.tools)
+        self._step("check")
         result = self.gate.check(draft, player_msg)
         final, corrected = draft, False
         if result.violations:
@@ -183,9 +195,11 @@ class Game:
             # _correcting brackets the correction prompt: if it's cancelled it stays
             # set, so revert_last_turn rolls back past the brief to the player message.
             self._correcting = True
+            self._step("correct")
             final = self.backend.prompt(self.runner_sid, self.runner_agent, result.correction_brief())
             self._correcting = False
             corrected = True
+        self._step("done")
         tr = TurnResult(player_msg, draft, final, result, corrected, session_complete)
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
         self._log(tr)
