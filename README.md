@@ -21,21 +21,50 @@ the end.
 
 ## Quick start
 
-Requirements: the [opencode](https://opencode.ai) CLI (with a model provider configured),
-a JS runtime (bun or node, for the plugin dependency), and Python 3.10+.
+`gm-llm` runs the same on Linux, macOS, and **native Windows** — the `gm-llm` commands are
+identical; only the prerequisites are installed differently.
 
-```sh
-git clone <repo> gm-llm && cd gm-llm
+**Prerequisites**
+- The [opencode](https://opencode.ai) CLI, authenticated to a model provider (`opencode auth`).
+- A JS runtime — **bun** or **node** — for opencode and the plugin dependency.
+- **Python 3.10+**, plus [pipx](https://pipx.pypa.io) (or plain `pip`).
+
+**Install the command**
+```
+git clone https://github.com/KarlJussila/gm-llm.git
+cd gm-llm
 pipx install .                # installs the `gm-llm` command (or: pip install .)
+```
 
-gm-llm init my-campaign       # scaffold a new project's .opencode/ assets
-cd my-campaign
+**Scaffold and run a campaign**
+```
+gm-llm init ../my-campaign    # create a new project's .opencode/ (a sibling dir)
+cd ../my-campaign
+
+cd .opencode                  # install the plugin deps (dice / report / task-complete)
+npm install                   # or: bun install
+cd ..
+
+opencode auth                 # authenticate opencode to your model provider (once)
 gm-llm doctor                 # verify opencode / runtime / port / provider
 gm-llm play                   # launch the TUI — setup runs on first play
 ```
 
 `gm-llm play` (or a bare `gm-llm`) is the everyday command. `dev/cli.py` still carries the
 orchestrator power-commands (`status` / `prep` / `reconcile` / `lint`) for development.
+
+### Windows (native) — verified prerequisite steps
+
+Run these first (Command Prompt or PowerShell), then follow **Install the command** and
+**Scaffold and run** above. For `gm-llm play`, prefer **Windows Terminal** — the Textual UI
+renders poorly in the legacy `cmd.exe` console.
+```
+winget install Python.Python.3.12 OpenJS.NodeJS
+npm install -g --allow-scripts=opencode-ai opencode-ai   # the opencode CLI
+
+python -m pip install --user pipx
+python -m pipx ensurepath                                 # then restart the terminal
+```
 
 An empty directory opens in the **setup** phase: the DM interviews you (free-form or
 guided), builds the world, creates your character with you, designs the arcs, plans
