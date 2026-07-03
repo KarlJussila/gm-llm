@@ -1,4 +1,4 @@
-# Campaign engine — a D&D campaign manager for opencode
+# gm-llm — a D&D campaign manager for opencode
 
 A framework that lets an LLM design, run, and maintain a long-running solo tabletop D&D
 campaign: guided campaign setup, macro-scale arc planning, live gated sessions, and a

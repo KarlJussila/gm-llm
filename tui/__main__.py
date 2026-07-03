@@ -30,16 +30,16 @@ def main() -> None:
         from orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
         # One object owns every log path (serve/raw/checks/detail); ORCH_DEBUG=1
         # turns on the raw per-reply dump. See orchestrator/logs.py.
-        logs = Logs.under("/tmp", debug=bool(os.environ.get("ORCH_DEBUG")))
+        logs = Logs.under(debug=bool(os.environ.get("ORCH_DEBUG")))
         backend = Backend(args.dir, port=args.port, logs=logs).start()
         gate = Gate(backend, CanonPreloader(args.dir), logs=logs)
         lifecycle = Lifecycle(backend, gate, args.dir, logs=logs)
         cleanup = backend.stop
-        title = "Campaign — orchestrator (live)"
+        title = "gm-llm (live)"
     else:
         from orchestrator.mock import MockLifecycle
         lifecycle = MockLifecycle(start_in_setup=args.setup)
-        title = "Campaign — orchestrator (MOCK)"
+        title = "gm-llm (MOCK)"
 
     app = PlayApp(lifecycle, cleanup=cleanup, theme=args.theme)
     app.title = title

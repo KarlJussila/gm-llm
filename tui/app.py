@@ -11,7 +11,8 @@ The scene pane mounts one widget per beat (see tui/widgets.py) into a
 `VerticalScroll`, capped at `_SCENE_MAX_BLOCKS` — the full transcript is
 always on disk at `campaign/sessions/session-{N}-transcript.md`. The
 behind-the-screen pane is a `RichLog` — append-efficient, but not
-text-selectable; the full gate log is on disk at /tmp/orchestrator-checks.log.
+text-selectable; the full gate log is on disk under the OS temp dir
+(`<tempdir>/gm-llm/orchestrator-checks.log`).
 
 Model calls block, so they run off the UI thread (`asyncio.to_thread`). While
 the table works, the input stays live for drafting (submits are held with a
@@ -119,7 +120,7 @@ class PlayApp(App):
             # RichLog: append-efficient (no O(n²) re-render), handles its own
             # scrolling, parses console markup (so EventTap's markup dialect
             # renders coloured). Not text-selectable — the full gate log is on
-            # disk at /tmp/orchestrator-checks.log.
+            # disk under the OS temp dir (<tempdir>/gm-llm/orchestrator-checks.log).
             # min_width=0 overrides RichLog's default of 78 columns, which
             # otherwise forces the pane wider than its 1fr layout slot and
             # produces a horizontal scrollbar (wrapping at 78, not at the

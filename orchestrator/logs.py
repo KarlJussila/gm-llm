@@ -12,15 +12,22 @@ Now a single `Logs` object holds all four paths, is built once at the entry
 point, and is threaded as one thing; `append()` is the lone write primitive and
 `banner()` / `section()` are the shared formatters.
 
-    logs = Logs.under("/tmp", debug=bool(os.environ.get("ORCH_DEBUG")))
+    logs = Logs.under(debug=bool(os.environ.get("ORCH_DEBUG")))
     Backend(dir, logs=logs); Gate(backend, preloader, logs=logs)
     Lifecycle(backend, gate, dir, logs=logs)
 """
 
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+
+def default_log_dir() -> Path:
+    """The per-user directory for orchestrator logs — the OS temp dir, so it works
+    the same on Linux, macOS, and native Windows (no hardcoded `/tmp`)."""
+    return Path(tempfile.gettempdir()) / "gm-llm"
 
 
 def append(path, text: str) -> None:
@@ -71,10 +78,15 @@ class Logs:
     debug: bool = False
 
     @classmethod
-    def under(cls, base="/tmp", *, debug: bool = False, raw=None) -> "Logs":
-        """Standard filenames under `base`. `raw` overrides just the raw-dump path
-        (the old `ORCH_DEBUG_LOG`); `debug` toggles whether raw dumps are written."""
-        base = Path(base)
+    def under(cls, base=None, *, debug: bool = False, raw=None) -> "Logs":
+        """Standard filenames under `base` (the OS temp dir by default — cross-platform,
+        so no hardcoded `/tmp`). `raw` overrides just the raw-dump path (the old
+        `ORCH_DEBUG_LOG`); `debug` toggles whether raw dumps are written."""
+        base = Path(base) if base is not None else default_log_dir()
+        try:
+            base.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
         return cls(
             serve=base / "orchestrator-serve.log",
             raw=Path(raw) if raw else base / "orchestrator-raw.log",

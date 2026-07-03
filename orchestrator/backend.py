@@ -19,6 +19,8 @@ talk to this, never to opencode directly.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import signal
 import subprocess
 import threading
@@ -89,9 +91,17 @@ class Backend:
     def start(self, ready_timeout: int = 60) -> "Backend":
         """Boot our own `opencode serve` and wait until it answers."""
         log = open(self.logs.serve, "w")
+        # Resolve the executable ourselves: on native Windows `opencode` is a `.cmd`/`.exe`
+        # shim that Popen won't find without a shell, so shutil.which does the PATHEXT lookup.
+        exe = shutil.which("opencode") or "opencode"
+        # New process group on Windows so stop() can deliver CTRL_BREAK to the server (and
+        # the runtime children it spawns); a no-op elsewhere. The attribute only exists on
+        # Windows, so it's referenced only when os.name == "nt".
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
         self._proc = subprocess.Popen(
-            ["opencode", "serve", "--port", str(self.port)],
+            [exe, "serve", "--port", str(self.port)],
             cwd=self.directory, stdout=log, stderr=subprocess.STDOUT,
+            creationflags=creationflags,
         )
         self._owns_server = True
         self._wait_until_ready(ready_timeout)
@@ -106,7 +116,11 @@ class Backend:
     def stop(self) -> None:
         if self._proc and self._owns_server:
             try:
-                self._proc.send_signal(signal.SIGINT)
+                # No SIGINT on Windows — CTRL_BREAK reaches the process group we created;
+                # SIGINT elsewhere. kill() is the fallback if graceful shutdown times out.
+                # (CTRL_BREAK_EVENT exists only on Windows, hence the os.name guard.)
+                self._proc.send_signal(
+                    signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT)
                 self._proc.wait(timeout=10)
             except Exception:
                 self._proc.kill()

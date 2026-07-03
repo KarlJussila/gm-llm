@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-campaign — orchestrator control CLI.
+gm-llm — orchestrator control CLI.
 
 The developer control surface over the orchestrator core (`Game`, `Planner`,
 `Reconciler`); the player's surface is the TUI. Every subcommand is a thin
@@ -42,7 +42,7 @@ from orchestrator.stream import EventTap  # noqa: E402
 # Every log the orchestrator writes lives under one object (see orchestrator/logs.py):
 # the serve/raw/checks/detail files, wired once and threaded to Backend, Gate, and the
 # lifecycle. ORCH_DEBUG=1 turns on the raw per-reply dump.
-LOGS = Logs.under("/tmp", debug=bool(os.environ.get("ORCH_DEBUG")))
+LOGS = Logs.under(debug=bool(os.environ.get("ORCH_DEBUG")))
 
 
 # ─────────────────────────────── output ────────────────────────────────────
@@ -352,7 +352,7 @@ def cmd_ping(args):
 # ─────────────────────────────── parser ────────────────────────────────────
 
 def main():
-    ap = argparse.ArgumentParser(prog="campaign", description="orchestrator control CLI")
+    ap = argparse.ArgumentParser(prog="gm-llm", description="orchestrator control CLI")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     # shared flags for every model-calling command

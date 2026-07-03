@@ -1,4 +1,4 @@
-# D&D Campaign Management System for opencode
+# gm-llm — D&D Campaign Management System for opencode
 
 ## Purpose
 
