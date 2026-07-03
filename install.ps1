@@ -104,16 +104,16 @@ else { Warn "opencode not on PATH yet — a new terminal will pick it up" }
 function Find-Python {
   $script:PyExe = $null; $script:PyArgs = @()
   $cands = @()
-  $cands += ,@('py','-3')
-  $cands += ,@('python')
-  $cands += ,@('python3')
+  $cands += ,@('py','-3')                        # launcher: picks a real, venv-clean interpreter
   foreach ($glob in @("$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
                       "$env:ProgramFiles\Python3*\python.exe",
                       "${env:ProgramFiles(x86)}\Python3*\python.exe")) {
     foreach ($f in (Get-ChildItem -Path $glob -ErrorAction SilentlyContinue)) {
-      $cands += ,@($f.FullName)
+      $cands += ,@($f.FullName)                   # real on-disk installs (winget / python.org)
     }
   }
+  $cands += ,@('python')                          # last: bare names, most likely the Store build
+  $cands += ,@('python3')
   foreach ($cand in $cands) {
     $exe = $cand[0]; $a = @(); if ($cand.Count -gt 1) { $a = @($cand[1]) }
     try {
@@ -140,54 +140,51 @@ if (-not (Find-Python)) {
        "aliases (python.exe / python3.exe), open a NEW terminal, and re-run this installer.")
 }
 Ok ("using Python: " + $script:PyExe + " " + ($script:PyArgs -join ' '))
-# NB: don't name this `Py` — PowerShell resolves commands case-insensitively and prefers
-# functions over executables, so a function `Py` would shadow the `py` launcher and recurse.
-function Invoke-Py { & $script:PyExe @script:PyArgs @args }
-
-Say "Installing pipx"
-Invoke-Py -m pip install --user --upgrade pipx 2>&1 | Out-Host
-Invoke-Py -m pipx ensurepath 2>&1 | Out-Host
-Sync-Path
+# Run a Python command with stderr merged into stdout and stringified: pip/venv write progress
+# to stderr, which PowerShell would otherwise raise as red NativeCommandErrors. Success is judged
+# by probes afterward, not by this stream. (Not named `Py` — PowerShell prefers a function over
+# the `py` executable case-insensitively, which would make it recurse into itself.)
+function Invoke-Py { & $script:PyExe @script:PyArgs @args 2>&1 | ForEach-Object { "$_" } }
 
 Say "Fetching gm-llm"
 if (Test-Path (Join-Path $RepoDir '.git')) {
-  git -C $RepoDir pull --ff-only | Out-Host
+  git -C $RepoDir pull --ff-only 2>&1 | ForEach-Object { "$_" } | Out-Host
   Ok "updated $RepoDir"
 } else {
-  git clone $RepoUrl $RepoDir | Out-Host
+  git clone $RepoUrl $RepoDir 2>&1 | ForEach-Object { "$_" } | Out-Host
   Ok "cloned to $RepoDir"
 }
 
-Say "Installing the gm-llm command"
-Invoke-Py -m pipx install $RepoDir --force 2>&1 | Out-Host
+# Install gm-llm into a dedicated venv we control — no pipx. We pick the path, so we know exactly
+# where the launcher lands ($VenvScripts\gm-llm.exe): no bin-dir discovery, no ensurepath.
+$Venv        = Join-Path $HOME '.gm-llm-venv'
+$VenvScripts = Join-Path $Venv 'Scripts'
+$VenvPy      = Join-Path $VenvScripts 'python.exe'
+$gmllm       = Join-Path $VenvScripts 'gm-llm.exe'
+
+Say "Building the gm-llm environment"
+Invoke-Py -m venv $Venv | Out-Host
+if (-not (Test-Path $VenvPy)) { Die "Failed to create the Python venv at $Venv." }
+& $VenvPy -m pip install --upgrade pip 2>&1 | ForEach-Object { "$_" } | Out-Host
+& $VenvPy -m pip install --force-reinstall $RepoDir 2>&1 | ForEach-Object { "$_" } | Out-Host
+if (-not (Test-Path $gmllm)) { Die "gm-llm didn't install into the venv (expected $gmllm)." }
+Ok "gm-llm installed"
+
+# Put the venv's Scripts dir on the *persistent* user PATH so `gm-llm` works by name in new
+# terminals — one deterministic registry write, no ensurepath.
+$userPath = [Environment]::GetEnvironmentVariable('Path','User')
+if (-not (($userPath -split ';') -contains $VenvScripts)) {
+  $newPath = (@($userPath, $VenvScripts) | Where-Object { $_ }) -join ';'
+  [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+  Ok "added gm-llm to your PATH"
+}
 Sync-Path
 
-# Resolve the gm-llm executable. PATH may not reflect pipx's bin dir in THIS session even
-# after ensurepath, so if it's not on PATH, ask pipx itself where it puts app binaries
-# (authoritative — never guess the directory).
-$gmllm = (Get-Command gm-llm -ErrorAction SilentlyContinue).Source
-if (-not $gmllm) {
-  $cands = @()
-  $binDir = (Invoke-Py -m pipx environment --value PIPX_BIN_DIR 2>$null)
-  if ($binDir) { $cands += (Join-Path $binDir.Trim() 'gm-llm.exe') }
-  $cands += (Join-Path $HOME '.local\bin\gm-llm.exe')
-  foreach ($cand in $cands) {
-    if (Test-Path $cand) { $gmllm = $cand; break }
-  }
-}
-
 # --- 4. scaffold a playable campaign folder (also installs the .opencode plugin deps) ---
-if ($gmllm) {
-  Ok "gm-llm ready"
-  Say "Creating your campaign folder"
-  & $gmllm init $CampaignDir | Out-Host
-  Ok "campaign scaffolded at $CampaignDir"
-} else {
-  # gm-llm is installed (pipx succeeded) but its bin dir isn't visible in this session.
-  # A fresh terminal will have it on PATH — don't fail the whole install; guide the last step.
-  Warn "gm-llm installed, but not callable in this window yet."
-  Warn "Open a NEW terminal and run:  gm-llm init $CampaignDir"
-}
+Ok "gm-llm ready"
+Say "Creating your campaign folder"
+& $gmllm init $CampaignDir | Out-Host
+Ok "campaign scaffolded at $CampaignDir"
 
 # --- done: the one manual, interactive step remains ---
 Write-Host "`n============================================================" -ForegroundColor Green
