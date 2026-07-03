@@ -16,10 +16,16 @@ from pathlib import Path
 
 
 def _cmd_init(args) -> int:
-    from .scaffold import init_project
+    from .scaffold import init_project, install_plugin_deps
     dest = init_project(Path(args.dir), force=args.force)
     print(f"initialized opencode assets in {dest}")
-    print("next: `gm-llm doctor` to check your environment, then `gm-llm play` here.")
+    if args.no_install:
+        print("skipped plugin-deps install (--no-install) — run `npm install` in that dir yourself.")
+    else:
+        print("installing plugin deps (dice / report / task-complete) …")
+        ok, msg = install_plugin_deps(dest)
+        print(f"  {'✓' if ok else '✗'} {msg}")
+    print("next: `gm-llm doctor` to check your environment, then `gm-llm play`.")
     return 0
 
 
@@ -64,9 +70,10 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="Textual theme (dracula, tokyo-night, gruvbox, nord, …)")
     p.set_defaults(func=_cmd_play)
 
-    p = sub.add_parser("init", help="scaffold opencode assets into a project")
+    p = sub.add_parser("init", help="scaffold opencode assets into a project + install plugin deps")
     p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")
     p.add_argument("--force", action="store_true", help="overwrite existing assets")
+    p.add_argument("--no-install", action="store_true", help="skip installing the .opencode plugin deps")
     p.set_defaults(func=_cmd_init)
 
     p = sub.add_parser("doctor", help="check the environment (opencode, runtime, port)")

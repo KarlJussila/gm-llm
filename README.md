@@ -38,17 +38,16 @@ pipx install .                # installs the `gm-llm` command (or: pip install .
 
 **Scaffold and run a campaign**
 ```
-gm-llm init ../my-campaign    # create a new project's .opencode/ (a sibling dir)
+gm-llm init ../my-campaign    # scaffold .opencode/ and install its plugin deps (a sibling dir)
 cd ../my-campaign
-
-cd .opencode                  # install the plugin deps (dice / report / task-complete)
-npm install                   # or: bun install
-cd ..
 
 opencode auth                 # authenticate opencode to your model provider (once)
 gm-llm doctor                 # verify opencode / runtime / port / provider
 gm-llm play                   # launch the TUI — setup runs on first play
 ```
+
+`gm-llm init` installs the `.opencode` plugin deps for you with the first package manager it
+finds (npm / bun / pnpm / yarn); pass `--no-install` to skip and do it yourself.
 
 `gm-llm play` (or a bare `gm-llm`) is the everyday command. `dev/cli.py` still carries the
 orchestrator power-commands (`status` / `prep` / `reconcile` / `lint`) for development.

@@ -1,5 +1,22 @@
 {
   "dependencies": {
     "@opencode-ai/plugin": "1.17.3"
+  },
+  "//": "Allow msgpackr-extract's native-build install script across package managers (npm v12+, bun, yarn, pnpm all block lifecycle scripts by default). msgpackr-extract is the optional native accelerator for msgpackr, pulled in transitively by @opencode-ai/plugin.",
+  "allowScripts": {
+    "msgpackr-extract": true
+  },
+  "trustedDependencies": [
+    "msgpackr-extract"
+  ],
+  "dependenciesMeta": {
+    "msgpackr-extract": {
+      "built": true
+    }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "msgpackr-extract"
+    ]
   }
 }
