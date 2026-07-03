@@ -14,18 +14,41 @@ import os
 import sys
 from pathlib import Path
 
+from . import __version__
+
+
+def _install_deps(dest: Path, skip: bool, *, verb: str) -> None:
+    """Shared by init/update: run (or skip) the plugin-deps install and report."""
+    if skip:
+        print("skipped plugin-deps install (--no-install).")
+        return
+    from .scaffold import install_plugin_deps
+    print(f"{verb} plugin deps (dice / report / task-complete) …")
+    ok, msg = install_plugin_deps(dest)
+    print(f"  {'✓' if ok else '✗'} {msg}")
+
 
 def _cmd_init(args) -> int:
-    from .scaffold import init_project, install_plugin_deps
+    from .scaffold import init_project
     dest = init_project(Path(args.dir), force=args.force)
     print(f"initialized opencode assets in {dest}")
-    if args.no_install:
-        print("skipped plugin-deps install (--no-install) — run `npm install` in that dir yourself.")
-    else:
-        print("installing plugin deps (dice / report / task-complete) …")
-        ok, msg = install_plugin_deps(dest)
-        print(f"  {'✓' if ok else '✗'} {msg}")
+    _install_deps(dest, args.no_install, verb="installing")
     print("next: `gm-llm doctor` to check your environment, then `gm-llm play`.")
+    return 0
+
+
+def _cmd_update(args) -> int:
+    """Refresh an existing project's framework assets to this gm-llm version."""
+    from .scaffold import init_project
+    directory = Path(args.dir).resolve()
+    if not (directory / ".opencode" / "agent").is_dir():
+        print(f"{directory} isn't a gm-llm project (no .opencode/agent) — "
+              f"use `gm-llm init` to create one.", file=sys.stderr)
+        return 1
+    dest = init_project(directory, force=True)   # overwrite the framework assets
+    print(f"updated framework assets in {dest} (to gm-llm {__version__})")
+    _install_deps(dest, args.no_install, verb="refreshing")
+    print("your campaign/ data, .orchestrator markers, and node_modules were left untouched.")
     return 0
 
 
@@ -61,6 +84,7 @@ def _cmd_play(args) -> int:
 def _build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="gm-llm", description="An LLM game master for solo D&D campaigns, over opencode.")
+    ap.add_argument("--version", action="version", version=f"gm-llm {__version__}")
     sub = ap.add_subparsers(dest="cmd")
 
     p = sub.add_parser("play", help="launch the TUI against a project (the default)")
@@ -75,6 +99,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force", action="store_true", help="overwrite existing assets")
     p.add_argument("--no-install", action="store_true", help="skip installing the .opencode plugin deps")
     p.set_defaults(func=_cmd_init)
+
+    p = sub.add_parser("update", help="refresh an existing project's framework assets to this version")
+    p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")
+    p.add_argument("--no-install", action="store_true", help="skip refreshing the .opencode plugin deps")
+    p.set_defaults(func=_cmd_update)
 
     p = sub.add_parser("doctor", help="check the environment (opencode, runtime, port)")
     p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")

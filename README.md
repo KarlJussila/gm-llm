@@ -52,6 +52,17 @@ finds (npm / bun / pnpm / yarn); pass `--no-install` to skip and do it yourself.
 `gm-llm play` (or a bare `gm-llm`) is the everyday command. `dev/cli.py` still carries the
 orchestrator power-commands (`status` / `prep` / `reconcile` / `lint`) for development.
 
+### Updating
+
+A project's `.opencode/` is a snapshot taken at `init` time, so updating happens in two steps:
+```
+cd path/to/gm-llm && git pull && pipx install . --force   # update the tool (or: pipx upgrade)
+gm-llm update path/to/my-campaign                          # refresh that project's framework assets
+```
+`gm-llm update` overwrites the framework files (agents, skills, plugin, templates) and refreshes the
+plugin deps, while leaving your `campaign/` data, `.orchestrator` markers, and `node_modules`
+untouched. `gm-llm --version` shows what the tool is on.
+
 ### Windows (native) — verified prerequisite steps
 
 Run these first (Command Prompt or PowerShell), then follow **Install the command** and
