@@ -105,7 +105,6 @@ class PlayApp(App):
         self._pending = None         # phase action awaiting a yes: "wrap" | "finish_setup"
         self._thinking = None        # the PendingBlock in the scene, while a call is in flight
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
-        self._setup_hidden = True    # screen pane's visibility before setup borrowed it
         self._setup_stages_seen = set()  # spoiler-free setup stages already shown (each shows once)
 
     @property
@@ -318,10 +317,8 @@ class PlayApp(App):
 
     async def _open_setup(self) -> None:
         """Open a brand-new campaign: a guided conversation in the scene pane, with the
-        dm's authoring streamed behind the screen for the whole setup."""
-        screen = self.query_one("#screen", RichLog)
-        self._setup_hidden = screen.has_class("hidden")
-        screen.remove_class("hidden")
+        dm's authoring streamed behind the screen. The pane stays closed by default (as
+        in every mode) so it doesn't compete with the conversation — ctrl+g to watch."""
         self._write_screen("\n[b]— building the campaign —[/b]\n")
         self._setup_stages_seen.clear()
         stream = lambda s: self.call_from_thread(self._append_screen, s)
@@ -387,8 +384,6 @@ class PlayApp(App):
             self._scene_status(f"— setup failed: {escape(str(e))} —", kind="error")
             self._busy(False)
             return
-        if self._setup_hidden:
-            self.query_one("#screen", RichLog).add_class("hidden")
         self._scene_status(f"— campaign ready · opening session {n} —", kind="success")
         self._turn = 0
         await self._open()  # phase is now "play" → opens session 1
@@ -563,12 +558,8 @@ class PlayApp(App):
         self._wrapping = True
         self._busy(True, label="wrapping the session")
         self._scene_status("— wrapping the session —", kind="rule")
-        # Reveal the behind-the-screen pane so the live pipeline stream is visible,
-        # remembering whether it was hidden so we can restore that afterward (it stays
-        # closed by default — the wrap just borrows it).
-        screen = self.query_one("#screen", RichLog)
-        was_hidden = screen.has_class("hidden")
-        screen.remove_class("hidden")
+        # The pane stays closed by default (as in every mode); the pipeline streams into
+        # it silently and the scene ticker shows spoiler-free progress — ctrl+g to watch.
         self._write_screen("\n[b]— post-session pipeline —[/b]\n")
         ticker = lambda key: self.call_from_thread(self._announce_stage, "wrap", key)
         # EventTap emits console markup (markup=True) with body text already escaped,
@@ -582,8 +573,6 @@ class PlayApp(App):
             self._busy(False)
             return
         self._scene_status(f"— session {new_n} ready · opening the scene —", kind="success")
-        if was_hidden:
-            screen.add_class("hidden")  # restore the default closed state
         self._turn = 0
         self._wrapping = False
         await self._open()  # opens the next session's scene and re-enables input
