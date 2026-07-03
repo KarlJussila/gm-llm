@@ -75,7 +75,7 @@ class Backend:
         self.turn_timeout = turn_timeout
         self.retries = retries
         self.min_call_gap = min_call_gap
-        self.logs = logs or Logs.under()
+        self.logs = logs or Logs.under(project=self.directory)
         self._proc: subprocess.Popen | None = None
         self._owns_server = False
         self._last_call = 0.0

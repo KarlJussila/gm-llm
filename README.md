@@ -144,10 +144,11 @@ Defaults do the right thing: `prep` targets the next session and `reconcile` the
 played one (inferred from disk and printed before running), and both **commit by
 default** — `--no-commit` for a dry run.
 
-Logs land in a `gm-llm/` folder under the OS temp dir (`$TMPDIR` / `%TEMP%`, so it works the
-same on every OS): `orchestrator-checks.log` (per-turn/per-stage summaries),
-`orchestrator-check-detail.log` (every checker call in full), `orchestrator-serve.log`
-(the opencode server), `orchestrator-raw.log` (`ORCH_DEBUG=1` reply dumps).
+Logs land in the campaign's `.opencode/logs/` (gitignored, so they're never committed):
+`orchestrator-checks.log` (per-turn/per-stage summaries), `orchestrator-check-detail.log`
+(every checker call in full), `orchestrator-serve.log` (the opencode server), and
+`orchestrator-raw.log` (`ORCH_DEBUG=1` reply dumps). Set `GM_LLM_LOG_DIR` to redirect them
+anywhere; with no campaign in play they fall back to a `gm-llm/` folder under the OS temp dir.
 
 ## Architecture
 

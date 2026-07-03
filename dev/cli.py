@@ -42,7 +42,7 @@ from orchestrator.stream import EventTap  # noqa: E402
 # Every log the orchestrator writes lives under one object (see orchestrator/logs.py):
 # the serve/raw/checks/detail files, wired once and threaded to Backend, Gate, and the
 # lifecycle. ORCH_DEBUG=1 turns on the raw per-reply dump.
-LOGS = Logs.under(debug=bool(os.environ.get("ORCH_DEBUG")))
+LOGS = Logs.under(project=ROOT, debug=bool(os.environ.get("ORCH_DEBUG")))
 
 
 # ─────────────────────────────── output ────────────────────────────────────

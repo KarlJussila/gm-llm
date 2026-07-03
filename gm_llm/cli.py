@@ -68,7 +68,7 @@ def _cmd_play(args) -> int:
     from orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
     from tui.app import PlayApp
 
-    logs = Logs.under(debug=bool(os.environ.get("ORCH_DEBUG")))
+    logs = Logs.under(project=directory, debug=bool(os.environ.get("ORCH_DEBUG")))
     backend = Backend(str(directory), port=args.port, logs=logs).start()
     try:
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)

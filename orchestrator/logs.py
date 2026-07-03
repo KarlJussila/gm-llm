@@ -19,15 +19,39 @@ point, and is threaded as one thing; `append()` is the lone write primitive and
 
 from __future__ import annotations
 
+import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+# Environment override for the log directory — an explicit user choice that wins over
+# the per-project default (but not over a `base` passed in code).
+LOG_DIR_ENV = "GM_LLM_LOG_DIR"
+
 
 def default_log_dir() -> Path:
-    """The per-user directory for orchestrator logs — the OS temp dir, so it works
-    the same on Linux, macOS, and native Windows (no hardcoded `/tmp`)."""
+    """The fallback log dir when no project is known — the OS temp dir, so it works the
+    same on Linux, macOS, and native Windows (no hardcoded `/tmp`)."""
     return Path(tempfile.gettempdir()) / "gm-llm"
+
+
+def resolve_log_dir(project=None, base=None) -> Path:
+    """Where logs go, by precedence:
+
+      1. an explicit `base` (a programmatic override),
+      2. the `GM_LLM_LOG_DIR` environment variable (`~` expanded),
+      3. `<project>/.opencode/logs` — beside the project's other runtime state, under a
+         path the campaign repo already gitignores (so logs are never committed),
+      4. `<os-temp>/gm-llm` — last resort when no project directory is known.
+    """
+    if base is not None:
+        return Path(base)
+    env = os.environ.get(LOG_DIR_ENV)
+    if env:
+        return Path(env).expanduser()
+    if project is not None:
+        return Path(project) / ".opencode" / "logs"
+    return default_log_dir()
 
 
 def append(path, text: str) -> None:
@@ -78,11 +102,12 @@ class Logs:
     debug: bool = False
 
     @classmethod
-    def under(cls, base=None, *, debug: bool = False, raw=None) -> "Logs":
-        """Standard filenames under `base` (the OS temp dir by default — cross-platform,
-        so no hardcoded `/tmp`). `raw` overrides just the raw-dump path (the old
-        `ORCH_DEBUG_LOG`); `debug` toggles whether raw dumps are written."""
-        base = Path(base) if base is not None else default_log_dir()
+    def under(cls, base=None, *, debug: bool = False, raw=None, project=None) -> "Logs":
+        """Standard filenames under the resolved log dir. Precedence (see `resolve_log_dir`):
+        explicit `base` > `$GM_LLM_LOG_DIR` > `<project>/.opencode/logs` > the OS temp dir.
+        `raw` overrides just the raw-dump path (the old `ORCH_DEBUG_LOG`); `debug` toggles
+        whether raw dumps are written."""
+        base = resolve_log_dir(project, base)
         try:
             base.mkdir(parents=True, exist_ok=True)
         except OSError:
