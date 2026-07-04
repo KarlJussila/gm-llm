@@ -176,7 +176,7 @@ def lint_text(text: str, path: Path | str = "<string>") -> FileReport:
 def lint_file(path: Path | str) -> FileReport:
     path = Path(path)
     try:
-        return lint_text(path.read_text(), path)
+        return lint_text(path.read_text(encoding="utf-8"), path)
     except OSError:
         return FileReport(path, None, skipped=True)
 

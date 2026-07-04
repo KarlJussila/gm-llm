@@ -18,7 +18,6 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  bash: allow
   todowrite: allow
   skill: allow
   report_findings: allow
@@ -53,7 +52,7 @@ exactly:**
      "this one checks out" walkthrough. On findings, a numbered list — for each: what's wrong,
      the **source** (file/evidence), and the **fix instruction**. The skill may name
      role-specific labels or extra per-finding fields; include those.
-   - **verdict** — exactly `PASS` (nothing to flag) or `VIOLATIONS`.
+   - **passed** — `true` if you found nothing to flag, `false` if you found violations.
    Keep it terse and specific — the caller acts on it directly, so no prose padding.
 4. **Judge substance, not taste.** You check consistency and completeness per the skill's rules —
    never style or design choices you'd have made differently.

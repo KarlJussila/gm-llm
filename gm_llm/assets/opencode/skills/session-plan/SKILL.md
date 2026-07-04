@@ -1,6 +1,6 @@
 ---
 name: session-plan
-description: Prepare an upcoming D&D session — a flexible plan that advances at least one arc, commits every load-bearing fact, and leaves the player's path open. Orchestrates the focused plan skills (encounter-plan, investigation-plan, npc-plan, pacing-plan). Loaded by the dm, which authors the plan inline and then gates it with the narrative-checker's check-plan role.
+description: Prepare an upcoming D&D session — a flexible plan that advances at least one arc, commits every load-bearing fact, and leaves the player's path open. Orchestrates the focused plan skills (encounter-plan, investigation-plan, npc-plan, pacing-plan). Loaded by the dm, which authors the plan inline; the orchestrator then gates it with the narrative-checker's check-plan role.
 ---
 
 # Session Plan

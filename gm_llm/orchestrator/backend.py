@@ -303,9 +303,9 @@ class Backend:
             for m in (msgs if isinstance(msgs, list) else [])
             if isinstance(m, dict) and m.get("info", {}).get("role") == "user" and m["info"].get("id")
         ]
-        if not users:
+        if len(users) < back:
             return False
-        target = users[-back] if len(users) >= back else users[0]
+        target = users[-back]
         try:
             self._raw_post(f"/session/{session_id}/revert", {"messageID": target}, timeout=10)
             return True
@@ -385,6 +385,12 @@ class Backend:
                         self._dump_parts(session_id, agent, resp, out)
                     if out:
                         return out
+                    if self._recent_tool_names(session_id):
+                        # A tool-call-only turn is a legitimate reply, not a failure —
+                        # e.g. a checker told to submit report_findings and output
+                        # nothing else. Retrying would re-send the same prompt (and
+                        # re-fire the tool); the caller reads the call from history.
+                        return ""
                     reason = "empty reply (likely a rate-limited/errored stream)"
                 except BackendCancelled:
                     raise

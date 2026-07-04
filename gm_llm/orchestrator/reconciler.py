@@ -84,7 +84,7 @@ class Reconciler:
         try:
             self._marker_dir().mkdir(parents=True, exist_ok=True)
             self._marker(n, stage).write_text(
-                datetime.now(timezone.utc).isoformat(timespec="seconds"))
+                datetime.now(timezone.utc).isoformat(timespec="seconds"), encoding="utf-8")
         except OSError:
             pass
 

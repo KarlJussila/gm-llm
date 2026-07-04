@@ -28,13 +28,16 @@ Standardize the **product/tool** name on `gm-llm`. Leave **domain nouns** alone 
 
 - CLI `prog` + docstring (`dev/cli.py`), TUI titles (`tui/__main__.py`), doc titles
   (`README.md`, `SPEC.md`). **[done in the first increment]**
-- **Decision (settled): keep the internal import package `orchestrator/`** — ship as dist
-  `gm-llm`, no import churn. "orchestrator" is an accurate internal name.
+- **Decision (revised): the engine and UI live under the tool package** — `gm_llm.orchestrator`
+  and `gm_llm.tui`. The earlier "keep top-level `orchestrator/`" call shipped generic
+  top-level packages (`orchestrator`, `tui`) into site-packages, colliding with any other
+  distribution using those names; one mechanical import sweep fixed it.
 
 ## 1. Packaging model — **Option B, chosen and built**
 
 `gm-llm` is an installable tool (`pipx install .`) whose `init` scaffolds the bundled opencode
-assets into a target project's `.opencode/`. The Python code (`gm_llm/`, `orchestrator/`, `tui/`)
+assets into a target project's `.opencode/`. The Python code (`gm_llm/`, with the engine and
+UI as `gm_llm.orchestrator` / `gm_llm.tui`)
 is packaged; the opencode assets live under `gm_llm/assets/opencode/` and are copied by `init`.
 The source repo is no longer itself a drop-in `.opencode/` — dogfood via `gm-llm init` + `gm-llm play`.
 
@@ -45,17 +48,16 @@ The source repo is no longer itself a drop-in `.opencode/` — dogfood via `gm-l
 - **opencode launch (`backend.py`).** Resolve via `shutil.which("opencode")` (native Windows may
   expose it as a `.cmd`/`.exe` shim), and create it in a new process group so it can be signalled.
   **[done]**
-- **Server shutdown (`backend.py`).** `signal.SIGINT` isn't portable → `CTRL_BREAK_EVENT` on
-  Windows, `SIGINT` elsewhere, `kill()` fallback. **[done]**
-  - *Probe on a real Windows box:* child-process-tree teardown (opencode spawns a runtime;
-    `kill()` may not reap it — may need `taskkill /T` or a Job Object).
+- **Server shutdown (`backend.py`).** `signal.SIGINT` isn't portable → `taskkill /F /T` on
+  Windows (reaps the shim's whole process tree; a graceful CTRL_BREAK risked cmd's
+  "Terminate batch job?" prompt hanging shutdown), `SIGINT` elsewhere, `kill()` fallback. **[done]**
 - **Terminal:** require **Windows Terminal / PowerShell** (Textual + rich auto-enable VT there;
   legacy `cmd.exe` renders poorly). Document, don't code.
 
 ## 3. Phase 2 — packaging for easy setup  **[built]**
 
 - **`pyproject.toml`** — dist `gm-llm`, pinned `rich`/`textual`, console entry point
-  `gm-llm = gm_llm.cli:main`, package-data for `orchestrator/prompts/*.md` and the bundled assets. **[done]**
+  `gm-llm = gm_llm.cli:main`, package-data for the orchestrator prompts and the bundled assets. **[done]**
 - **`gm_llm` package** — `play` (launch TUI; bare `gm-llm` too), `init` (scaffold), `doctor`
   (opencode / JS runtime / plugin installer / port / project-init checks). **[done]**
 - **README quickstart** rewritten to the install→init→doctor→play flow. **[done]**
@@ -78,7 +80,7 @@ paths with spaces, ANSI.
 
 ## Decisions — all settled
 
-1. ~~Package rename?~~ **Keep `orchestrator`.**
+1. ~~Package rename?~~ **`gm_llm.orchestrator` / `gm_llm.tui`** (revised — see §0).
 2. ~~Packaging model?~~ **Option B (installable + `gm-llm init`).** Built.
 3. ~~CLI surface?~~ **`gm-llm` = play/init/doctor; power-commands stay in `dev/cli.py`.**
 4. ~~Model config?~~ **Default `mimo`; configurable model deferred to its own increment (above).**

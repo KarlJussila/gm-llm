@@ -17,12 +17,13 @@ dependencies = [
 gm-llm = "gm_llm.cli:main"
 
 [tool.setuptools]
-# The installable tool (gm_llm) plus the engine (orchestrator) and UI (tui). dev/ is
+# One top-level package: the tool (gm_llm) with the engine (gm_llm.orchestrator) and
+# UI (gm_llm.tui) beneath it — nothing generic lands in site-packages. dev/ is
 # developer tooling and is not shipped.
-packages = ["gm_llm", "orchestrator", "tui"]
+packages = ["gm_llm", "gm_llm.orchestrator", "gm_llm.tui"]
 
 [tool.setuptools.package-data]
 # Runtime data loaded by path, so it must ship in the wheel: the checker/turn prompts,
-# and (once relocated under the package) the opencode assets that `gm-llm init` copies.
-orchestrator = ["prompts/*.md"]
+# and the opencode assets that `gm-llm init` copies.
+"gm_llm.orchestrator" = ["prompts/*.md"]
 gm_llm = ["assets/opencode/**/*"]

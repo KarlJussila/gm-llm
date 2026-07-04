@@ -111,8 +111,8 @@ session 1, and rolls straight into play. Thereafter the same screen carries the 
 lifecycle: play a session, `ctrl+w` (or `/wrap`) to run the post-session pipeline and
 open the next one.
 
-No opencode / no model? `python .opencode/dev/cli.py tui` runs the same UI against a
-scripted mock (`--setup` to demo the new-campaign flow).
+No opencode / no model? From a source checkout, `python dev/cli.py tui` runs the same
+UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
 ### The TUI
 
@@ -128,7 +128,8 @@ scripted mock (`--setup` to demo the new-campaign flow).
 
 ### The CLI
 
-`dev/cli.py` is one dispatcher over the same orchestrator core:
+`dev/cli.py` is one dispatcher over the same orchestrator core. Every command targets
+a campaign project via `--dir` (default: the current directory):
 
 ```
 status                                 where the campaign stands (disk only, no model)
@@ -147,7 +148,7 @@ default** — `--no-commit` for a dry run.
 Logs land in the campaign's `.opencode/logs/` (gitignored, so they're never committed):
 `orchestrator-checks.log` (per-turn/per-stage summaries), `orchestrator-check-detail.log`
 (every checker call in full), `orchestrator-serve.log` (the opencode server), and
-`orchestrator-raw.log` (`ORCH_DEBUG=1` reply dumps). Set `GM_LLM_LOG_DIR` to redirect them
+`orchestrator-raw.log` (`GM_LLM_DEBUG=1` reply dumps). Set `GM_LLM_LOG_DIR` to redirect them
 anywhere; with no campaign in play they fall back to a `gm-llm/` folder under the OS temp dir.
 
 ## Architecture
@@ -157,12 +158,12 @@ anywhere; with no campaign in play they fall back to a `gm-llm/` folder under th
 **The framework repo (this directory)** is the installable tool plus its engine:
 
 ```
-gm_llm/                the pip-installable command (cli, init/scaffold, doctor, --version)
+gm_llm/                the pip-installable tool (cli, init, doctor, --version)
   assets/opencode/     the opencode assets it ships and copies into a project:
                          agent/  skills/  plugin/  templates/  package.json
-orchestrator/          the Python orchestrator (over `opencode serve`)
-tui/                   the Textual app
-dev/                   the developer CLI + test harness
+  orchestrator/        the Python orchestrator (over `opencode serve`)
+  tui/                 the Textual app
+dev/                   the developer CLI + test harness (not shipped)
 install.ps1            the native-Windows one-line installer
 ```
 
@@ -218,7 +219,7 @@ Skills hold the procedures; agents stay thin. Groups:
   protocol (task list, report-only, `report_findings` submission) lives once in the
   agent prompt; each skill is just its role's checks.
 
-### Orchestrator (`orchestrator/`)
+### Orchestrator (`gm_llm/orchestrator/`)
 
 Backend-agnostic Python over `opencode serve`'s HTTP API. Stdlib-only.
 
@@ -226,7 +227,7 @@ Backend-agnostic Python over `opencode serve`'s HTTP API. Stdlib-only.
 | --- | --- |
 | `backend.py` | HTTP client: sessions, prompts, pacing, cancel/revert, timeouts |
 | `loop.py` | `Game` — the gated per-turn loop, the transcript, the per-turn craft reminder |
-| `gate.py` | `Gate` — spawns the checker, reads its `report_findings` verdict; fail-safe to VIOLATIONS |
+| `gate.py` | `Gate` — spawns the checker, reads its `report_findings` verdict; a missing verdict is nudged once, then passes by default (surfaced in the log) |
 | `canon.py` | `CanonPreloader` — reads canon in code and hands the checker/runner a pre-loaded context block |
 | `planner.py` | PRE: dm authors the plan → `check-plan` → ≤1 correction → commit |
 | `reconciler.py` | POST: the staged pipeline (below) with per-stage resume markers |
@@ -286,14 +287,18 @@ The system adapts to the player without the framework changing.
 
 ## Development
 
+From a source checkout (`python -m venv .venv && .venv/bin/pip install -e .`):
+
 ```sh
-cd .opencode
 .venv/bin/python dev/test_completeness.py     # lint unit checks
 .venv/bin/python dev/cli.py tui               # offline TUI (mock play/wrap)
 .venv/bin/python dev/cli.py tui --setup       # offline TUI (mock new-campaign setup)
-.venv/bin/python dev/cli.py play --turns 6    # scripted player vs. the real model
+.venv/bin/python dev/cli.py play --turns 6 --dir ../my-campaign   # scripted player vs. the real model
 ```
 
+Model-facing `dev/cli.py` commands target a `gm-llm init`-ed campaign project via
+`--dir` (default: the current directory).
+
 `SPEC.md` describes what the system is; `PLAN.md` is the active design doc (what's in
-flight and why). The mock layer (`orchestrator/mock.py`) duck-types `Game`/`Setup`/
-`Lifecycle` so the whole TUI runs offline.
+flight and why). The mock layer (`gm_llm/orchestrator/mock.py`) duck-types `Game`/
+`Setup`/`Lifecycle` so the whole TUI runs offline.

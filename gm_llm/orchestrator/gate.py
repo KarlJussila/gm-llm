@@ -3,8 +3,9 @@ The gate — run the independent checks on drafted content, in code.
 
 This is what the runner (and the dm, at planning) used to invoke as a tool; now the
 orchestrator owns it, so it runs by construction (never skipped). Each checker
-submits its verdict via the `report_findings` tool (structured `report` + `verdict`
-fields); the gate reads the tool call from the session history — no text parsing.
+submits its verdict via the `report_findings` tool (structured `report` + boolean
+`passed` fields); the gate reads the tool call from the session history — no text
+parsing.
 
 Two result shapes share one spawn-and-check engine:
   - `check(narration, player_msg)` — the RUNTIME gate (`GateResult`, two verdicts).
@@ -36,17 +37,20 @@ from .prompts import load
 
 @dataclass
 class Verdict:
-    agent: str
+    check: str   # which check produced this ("check-turn", "check-plan", …)
     passed: bool
     report: str  # full text, for the correction brief and logging
-    empty_violation: bool = False  # stamped VIOLATIONS with no findings → downgraded to pass
+    # The checker gave no usable verdict (no tool call even after the nudge, or a
+    # failure verdict with no findings anywhere) → the content passes by default.
+    # Surfaced in logs/UI so a checker not doing its job never disappears silently.
+    defaulted: bool = False
 
     @property
     def label(self) -> str:
-        """Human label for logs/UI, distinguishing a real pass from a downgraded one."""
-        if self.empty_violation:
-            return "PASS (empty VIOLATIONS — checker gave no findings)"
-        return "PASS" if self.passed else "VIOLATIONS"
+        """Human label for logs/UI, distinguishing a real pass from a defaulted one."""
+        if self.defaulted:
+            return "passed (defaulted — checker gave no usable verdict)"
+        return "passed" if self.passed else "violations"
 
 
 @dataclass
@@ -95,12 +99,25 @@ class StageGateResult:
 
 
 # Safety-hatch nudge: sent if a checker ends its turn without submitting report_findings,
-# so a forgotten tool call is retried once before the fail-safe-to-VIOLATIONS kicks in.
+# so a forgotten tool call is reminded once before the content passes by default.
 _NUDGE_REPORT_FINDINGS = (
     "You ended your turn without submitting your verdict. Call the `report_findings` tool "
     "now as your only action — put your findings in `report` (an empty string if there are "
-    "none) and your `verdict` (exactly 'PASS' or 'VIOLATIONS'). Output nothing else."
+    "none) and set `passed` (true if you found no violations, false if you found any). "
+    "Output nothing else."
 )
+
+
+def _parse_passed(tool_input: dict) -> bool | None:
+    """The verdict from a report_findings call. `passed` is schema-typed boolean, but
+    tolerate the string forms a modest model may produce. None → no usable verdict
+    (the caller passes the content by default)."""
+    raw = tool_input.get("passed")
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, str) and raw.strip().lower() in ("true", "false"):
+        return raw.strip().lower() == "true"
+    return None
 
 
 def _narrative_brief(player_msg: str, canon: str, narration: str) -> str:
@@ -139,8 +156,8 @@ def _log_check(path, label: str, verdict: "Verdict", reply, tool_input) -> None:
     try:
         lines = [
             banner(f"CHECK  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
-                   f"label={label}  ·  verdict={'PASS' if verdict.passed else 'VIOLATIONS'}"
-                   f"{' (empty-violation downgraded)' if verdict.empty_violation else ''}"),
+                   f"label={label}  ·  passed={verdict.passed}"
+                   f"{' (defaulted — no usable verdict)' if verdict.defaulted else ''}"),
         ]
         # Show every tool the model called this turn — if report_findings is
         # missing but todowrite is present, the model followed the skill's
@@ -153,7 +170,7 @@ def _log_check(path, label: str, verdict: "Verdict", reply, tool_input) -> None:
         lines.append("")
         if tool_input:
             lines.append(f"  ── report_findings INPUT ──")
-            lines.append(f"  verdict: {tool_input.get('verdict', '(missing)')}")
+            lines.append(f"  passed: {tool_input.get('passed', tool_input.get('verdict', '(missing)'))}")
             report = tool_input.get("report", "")
             if report:
                 lines.append(f"  report ({len(report)} chars):")
@@ -163,7 +180,7 @@ def _log_check(path, label: str, verdict: "Verdict", reply, tool_input) -> None:
                 lines.append("  report: (empty)")
             lines.append("")
         else:
-            lines.append("  ── report_findings NOT CALLED — fail-safe to VIOLATIONS ──")
+            lines.append("  ── report_findings NOT CALLED — content passes by default ──")
             lines.append("")
         lines.append("  ── MODEL TEXT OUTPUT ──")
         for line in reply.text.splitlines():
@@ -185,41 +202,46 @@ class Gate:
         tool call.
 
         The skills instruct the checker to call `report_findings` with `report`
-        (findings text) and `verdict` ("PASS" / "VIOLATIONS") fields as its final
-        act — that's the only verdict signal. If it ends the turn without the call,
-        `ensure_tool` nudges it once to make it; only if that still fails do we
-        fail-safe to VIOLATIONS with the model's text as the report body, so the
-        checker's output still reaches the caller rather than slipping by silently.
+        (findings text) and `passed` (boolean) fields as its final act — that's the
+        only verdict signal. If it ends the turn without the call, `ensure_tool`
+        reminds it once; if there is still no usable verdict, the content passes by
+        default — a checker that didn't follow protocol has no actionable findings,
+        and its stray text would be worse than nothing as a correction brief. The
+        miss is stamped `defaulted` and surfaced in the log/UI, never silent.
 
         `whole=True`: a checker runs a todowrite list then reports, so its findings
         and tool call can land in separate text parts — we need all of them."""
         reply = self.backend.prompt_full(sid, "narrative-checker", brief, whole=True)
         reply = self.backend.ensure_tool(sid, "narrative-checker", reply,
-                                         tool="report_findings", args=("verdict",),
+                                         tool="report_findings", args=("passed",),
                                          nudge=_NUDGE_REPORT_FINDINGS, whole=True)
         tool_input = reply.tool_inputs.get("report_findings")
         if tool_input:
-            verdict_str = str(tool_input.get("verdict", "")).upper().strip()
+            passed = _parse_passed(tool_input)
             report = str(tool_input.get("report", "")).strip()
-            if verdict_str in ("PASS", "VIOLATIONS"):
-                passed = verdict_str == "PASS"
-                # Empty-body guard: VIOLATIONS with no findings → not actionable → pass.
-                empty = not passed and not report
+            if passed is not None:
+                # Empty-body guard: a failure verdict with no findings anywhere is
+                # not actionable → passes by default. Findings the checker left in
+                # its text (with an empty `report` field) still count — the Verdict
+                # body falls back to reply.text below, so the correction brief has
+                # something to act on.
+                empty = not passed and not report and not reply.text.strip()
                 if empty:
                     passed = True
-                verdict = Verdict(label, passed, report or reply.text, empty_violation=empty)
+                verdict = Verdict(label, passed, report or reply.text, defaulted=empty)
                 _log_check(self.logs.detail if self.logs else None, label, verdict, reply, tool_input)
                 return verdict
-        # No usable tool call → fail-safe to VIOLATIONS (the model didn't follow
-        # the skill; surface its text so the caller can see what went wrong).
-        verdict = Verdict(label, passed=False, report=reply.text)
+        # No usable verdict even after the reminder → the content passes by default;
+        # the model's text is kept as the report so the log shows what it did instead.
+        verdict = Verdict(label, passed=True, report=reply.text, defaulted=True)
         _log_check(self.logs.detail if self.logs else None, label, verdict, reply, tool_input)
         return verdict
 
-    def _run(self, title: str, brief: str, label: str) -> Verdict:
-        """Spawn a fresh checker session and run one check on it."""
-        sid = self.backend.create_session(title)
-        return self._check(sid, brief, label)
+    def _run(self, check: str, brief: str) -> Verdict:
+        """Spawn a fresh checker session and run one check on it. `check` names the
+        check everywhere it surfaces: the session title, the Verdict, the logs."""
+        sid = self.backend.create_session(check)
+        return self._check(sid, brief, check)
 
     def check(self, narration: str, player_msg: str) -> GateResult:
         """The RUNTIME gate. One narrative-checker session, two checks, warm:
@@ -231,7 +253,7 @@ class Gate:
         canon = self.preloader.build(narration)
         sid = self.backend.create_session("check-turn")
         narrative = self._check(sid, _narrative_brief(player_msg, canon, narration),
-                                "narrative-checker")
+                                "check-turn")
         conduct = self._check(sid, _conduct_brief(player_msg, narration),
                               "check-conduct")
         return GateResult(
@@ -246,7 +268,7 @@ class Gate:
         drives the canon preload exactly as a draft turn does (names match by name)."""
         canon = self.preloader.build(plan)
         return StageGateResult(
-            narrative=self._run("check-plan", _plan_brief(plan, canon), "narrative-checker"),
+            narrative=self._run("check-plan", _plan_brief(plan, canon)),
             prompt="plan", label="Canon",
             canon_sections=canon.count("\n### "),
         )
@@ -256,7 +278,7 @@ class Gate:
         everywhere. No preload — propagation is a whole-repo audit (the digest vs.
         the updated files), not a single draft, so the checker reads on demand."""
         return StageGateResult(
-            narrative=self._run("check-propagation", _propagation_brief(n), "narrative-checker"),
+            narrative=self._run("check-propagation", _propagation_brief(n)),
             prompt="propagation", label="Propagation", session=n,
         )
 
@@ -265,7 +287,7 @@ class Gate:
         source-fidelity (did the extraction keep faith with what was played), which
         the checker reads on demand, not a canon comparison."""
         return StageGateResult(
-            narrative=self._run("check-digest", _digest_brief(n), "narrative-checker"),
+            narrative=self._run("check-digest", _digest_brief(n)),
             prompt="digest", label="Digest", session=n,
         )
 
@@ -274,7 +296,7 @@ class Gate:
         preload — the checker reads the digest's feedback section and the feedback
         files on demand."""
         return StageGateResult(
-            narrative=self._run("check-feedback", _feedback_brief(n), "narrative-checker"),
+            narrative=self._run("check-feedback", _feedback_brief(n)),
             prompt="feedback", label="Feedback", session=n,
         )
 
@@ -282,6 +304,6 @@ class Gate:
         """The INIT gate: verify all canon written during setup against the seven-point
         checklist. No preload — the checker reads campaign/ on demand."""
         return StageGateResult(
-            narrative=self._run("check-init", load("setup-gate-brief"), "narrative-checker"),
+            narrative=self._run("check-init", load("setup-gate-brief")),
             prompt="init", label="Init",
         )

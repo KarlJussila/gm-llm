@@ -32,17 +32,25 @@ export const TaskCompletePlugin: Plugin = async () => {
           "work) the player has confirmed. Calling it hands control back to the orchestrator to " +
           "move on; do not call it while you still intend to keep talking to the player.",
         args: {
-          summary: tool.schema
-            .string()
-            .optional()
-            .describe("One short line naming what you completed (optional; for the log)."),
+          // Two channels, both optional; the brief for the task in hand says which one
+          // (if any) it expects and what belongs in it.
           player_message: tool.schema
             .string()
             .optional()
             .describe(
-              "A player-facing closing message to surface as this stage ends, when the brief " +
-              "asks for one — e.g. the world-build stage's spoiler-free world overview. The " +
-              "orchestrator shows this to the player verbatim, so put the real thing here."
+              "The PLAYER-VISIBLE channel: a closing message the orchestrator shows to the " +
+              "player verbatim, when the brief asks for one (e.g. the world-build stage's " +
+              "spoiler-free world overview). Nothing spoiler-bearing, and put the real " +
+              "thing here — prose you type outside the call is not surfaced."
+            ),
+          notes: tool.schema
+            .string()
+            .optional()
+            .describe(
+              "The INTERNAL channel: the deliverable the brief asked you to hand back to " +
+              "the orchestrator, when it asks for one (e.g. the end-of-session handoff " +
+              "notes). Never shown to the player, so spoilers are fine; it is filed " +
+              "verbatim, so put the complete text here, not a summary of it."
             ),
         },
         async execute() {

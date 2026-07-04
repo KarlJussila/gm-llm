@@ -11,8 +11,8 @@ The scene pane mounts one widget per beat (see tui/widgets.py) into a
 `VerticalScroll`, capped at `_SCENE_MAX_BLOCKS` — the full transcript is
 always on disk at `campaign/sessions/session-{N}-transcript.md`. The
 behind-the-screen pane is a `RichLog` — append-efficient, but not
-text-selectable; the full gate log is on disk under the OS temp dir
-(`<tempdir>/gm-llm/orchestrator-checks.log`).
+text-selectable; the full gate log is on disk under the project's log dir
+(`.opencode/logs/orchestrator-checks.log`).
 
 Model calls block, so they run off the UI thread (`asyncio.to_thread`). While
 the table works, the input stays live for drafting (submits are held with a
@@ -51,8 +51,8 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, Input, RichLog
 
-from orchestrator.backend import BackendCancelled
-from orchestrator.textmarkup import inline
+from gm_llm.orchestrator.backend import BackendCancelled
+from gm_llm.orchestrator.textmarkup import inline
 
 from .screens import MenuScreen, RollScreen, StatusScreen
 from .widgets import DMBlock, PendingBlock, PlayerLine, PromptBar, SceneLine, StatusBar
@@ -119,7 +119,7 @@ class PlayApp(App):
             # RichLog: append-efficient (no O(n²) re-render), handles its own
             # scrolling, parses console markup (so EventTap's markup dialect
             # renders coloured). Not text-selectable — the full gate log is on
-            # disk under the OS temp dir (<tempdir>/gm-llm/orchestrator-checks.log).
+            # disk under the project's .opencode/logs/.
             # min_width=0 overrides RichLog's default of 78 columns, which
             # otherwise forces the pane wider than its 1fr layout slot and
             # produces a horizontal scrollbar (wrapping at 78, not at the
@@ -212,7 +212,7 @@ class PlayApp(App):
     def _sync_input(self) -> None:
         inp = self.query_one("#cmd", Input)
         if self._working:
-            inp.border_title = "…thinking — draft freely, enter sends when the table frees up…"
+            inp.border_title = "…thinking — draft freely, send once the table frees up…"
         elif self.lc.phase == "setup":
             inp.border_title = "SETUP — talk to the DM"
         elif self.mode == "action":
@@ -278,6 +278,9 @@ class PlayApp(App):
         except BackendCancelled:
             self._cancelled_note()
             return
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._phase_failed("opening the session", e)
+            return
         finally:
             # stop() flushes buffered stream content through the write callback
             # (which uses call_from_thread) — must run off the app thread, same
@@ -336,6 +339,9 @@ class PlayApp(App):
         except BackendCancelled:
             self._cancelled_note()
             return
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._phase_failed("opening setup", e)
+            return
         self._scene_dm(inline(st.reply))
         if st.done:
             await self._setup_done()
@@ -349,6 +355,9 @@ class PlayApp(App):
             st = await asyncio.to_thread(self.lc.setup.turn, text)
         except BackendCancelled:
             self._cancelled_note()
+            return
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._phase_failed("the setup exchange", e)
             return
         self._clear_thinking()
         self._scene_dm(inline(st.reply))
@@ -449,6 +458,9 @@ class PlayApp(App):
         except BackendCancelled:
             await self._cancel_cleanup(text)
             return
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._phase_failed("the turn", e)
+            return
         finally:
             # stop() flushes buffered stream content through the write callback
             # (which uses call_from_thread) — must run off the app thread.
@@ -479,6 +491,9 @@ class PlayApp(App):
             answer = await asyncio.to_thread(self.game.meta, question)
         except BackendCancelled:
             await self._cancel_cleanup(question)
+            return
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._phase_failed("the question", e)
             return
         finally:
             # stop() flushes buffered stream content through the write callback
@@ -534,6 +549,14 @@ class PlayApp(App):
     def _cancelled_note(self, msg: str = "— cancelled —") -> None:
         self._clear_thinking()
         self._scene_status(msg, kind="rule")
+        self._busy(False)
+
+    def _phase_failed(self, what: str, e: Exception) -> None:
+        """A model call failed for good (retries exhausted, server gone): surface it
+        in the scene and free the input — a worker exception must never kill the app
+        (same contract as _do_wrap/_finish_setup)."""
+        self._clear_thinking()
+        self._scene_status(f"— {what} failed: {escape(str(e))} —", kind="error")
         self._busy(False)
 
     # -- wrap: end the session, run the post-session pipeline, open the next -
@@ -619,8 +642,8 @@ class PlayApp(App):
         # Standard Rich color names (not Textual $-tokens): the screen pane is a
         # RichLog, which parses markup with Rich's parser — $-tokens like
         # [$success] are Textual-specific and Rich sees the [/] closer as orphaned.
-        nv = "[green]PASS[/]" if g.narrative.passed else "[red]VIOLATIONS[/]"
-        cv = "[green]PASS[/]" if g.conduct.passed else "[red]VIOLATIONS[/]"
+        nv = "[green]passed[/]" if g.narrative.passed else "[red]violations[/]"
+        cv = "[green]passed[/]" if g.conduct.passed else "[red]violations[/]"
         status = "[yellow]CORRECTED[/]" if tr.corrected else "[green]clean[/]"
         self._write_screen(f"\n[b]turn {self._turn}[/b]  canon {nv} · conduct {cv} · {status} · {g.canon_sections} canon")
         if not g.narrative.passed:

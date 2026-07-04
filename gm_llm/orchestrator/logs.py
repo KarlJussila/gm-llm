@@ -2,17 +2,17 @@
 One place that owns every log the orchestrator writes.
 
 There are four destinations, and before this module each was wired its own way
-— an env var (`ORCH_DEBUG`), a constructor default (`serve_log`), a `checks_log`
-param threaded through half a dozen constructors, a `detail_log` on the gate —
-and each writer re-implemented the same best-effort `open(path, "a")` dance. The
-block formatters were copied three times over (and had drifted: `█`/`──` in one
-file, `#`/`--` in the others).
+— an env var, a constructor default (`serve_log`), a `checks_log` param threaded
+through half a dozen constructors, a `detail_log` on the gate — and each writer
+re-implemented the same best-effort `open(path, "a")` dance. The block
+formatters were copied three times over (and had drifted: `█`/`──` in one file,
+`#`/`--` in the others).
 
 Now a single `Logs` object holds all four paths, is built once at the entry
 point, and is threaded as one thing; `append()` is the lone write primitive and
 `banner()` / `section()` are the shared formatters.
 
-    logs = Logs.under(debug=bool(os.environ.get("ORCH_DEBUG")))
+    logs = Logs.under(project=directory, debug=debug_enabled())
     Backend(dir, logs=logs); Gate(backend, preloader, logs=logs)
     Lifecycle(backend, gate, dir, logs=logs)
 """
@@ -27,6 +27,15 @@ from pathlib import Path
 # Environment override for the log directory — an explicit user choice that wins over
 # the per-project default (but not over a `base` passed in code).
 LOG_DIR_ENV = "GM_LLM_LOG_DIR"
+
+# Toggles the raw per-reply debug dump (`Logs.raw`). Read through `debug_enabled()`
+# at every entry point so the flag has one name and one reader.
+DEBUG_ENV = "GM_LLM_DEBUG"
+
+
+def debug_enabled() -> bool:
+    """Whether the raw per-reply debug dump is on (`GM_LLM_DEBUG=1`)."""
+    return bool(os.environ.get(DEBUG_ENV))
 
 
 def default_log_dir() -> Path:
@@ -61,9 +70,9 @@ def append(path, text: str) -> None:
     if not path:
         return
     try:
-        with open(path, "a") as f:
+        with open(path, "a", encoding="utf-8") as f:
             f.write(text)
-    except OSError:
+    except (OSError, ValueError):
         pass
 
 
@@ -105,7 +114,7 @@ class Logs:
     def under(cls, base=None, *, debug: bool = False, raw=None, project=None) -> "Logs":
         """Standard filenames under the resolved log dir. Precedence (see `resolve_log_dir`):
         explicit `base` > `$GM_LLM_LOG_DIR` > `<project>/.opencode/logs` > the OS temp dir.
-        `raw` overrides just the raw-dump path (the old `ORCH_DEBUG_LOG`); `debug` toggles
+        `raw` overrides just the raw-dump path; `debug` toggles
         whether raw dumps are written."""
         base = resolve_log_dir(project, base)
         try:

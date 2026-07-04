@@ -26,4 +26,4 @@ _DIR = Path(__file__).parent / "prompts"
 def load(name: str) -> str:
     """Return the prompt text for `name` (file `prompts/{name}.md`), trailing
     newlines stripped. Cached — prompts don't change within a run."""
-    return (_DIR / f"{name}.md").read_text().rstrip("\n")
+    return (_DIR / f"{name}.md").read_text(encoding="utf-8").rstrip("\n")

@@ -66,7 +66,7 @@ class Planner:
     def _read_plan(self, n: int) -> str:
         p = self._plan_path(n)
         try:
-            return p.read_text() if p.is_file() else ""
+            return p.read_text(encoding="utf-8") if p.is_file() else ""
         except OSError:
             return ""
 

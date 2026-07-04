@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Standalone checks for orchestrator.completeness (no pytest; run me directly)."""
+"""Standalone checks for gm_llm.orchestrator.completeness (no pytest; run me directly)."""
 import sys
 from pathlib import Path
 
-OPENCODE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(OPENCODE))
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
-from orchestrator.completeness import lint_text, lint_file  # noqa: E402
+from gm_llm.orchestrator.completeness import lint_text, lint_file  # noqa: E402
 from gm_llm.assets import opencode_assets_dir  # noqa: E402
 
 NPC_FULL = """\

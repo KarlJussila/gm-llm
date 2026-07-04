@@ -6,13 +6,17 @@ The developer control surface over the orchestrator core (`Game`, `Planner`,
 `Reconciler`); the player's surface is the TUI. Every subcommand is a thin
 front-end — the determinism lives in the library, not here.
 
-    python .opencode/dev/cli.py status                 where the campaign stands (no model)
-    python .opencode/dev/cli.py play      [--turns 6] [--resume]
-    python .opencode/dev/cli.py prep      [--session N] [--no-commit]
-    python .opencode/dev/cli.py reconcile [--session N] [--no-commit] [--no-prep] [--fresh]
-    python .opencode/dev/cli.py tui       [--live] [--setup] [--theme tokyo-night]
-    python .opencode/dev/cli.py lint      [--dir ...]
-    python .opencode/dev/cli.py ping      [N]
+    python dev/cli.py status    [--dir …]             where the campaign stands (no model)
+    python dev/cli.py play      [--turns 6] [--resume]
+    python dev/cli.py prep      [--session N] [--no-commit]
+    python dev/cli.py reconcile [--session N] [--no-commit] [--no-prep] [--fresh]
+    python dev/cli.py tui       [--live] [--setup] [--theme tokyo-night]
+    python dev/cli.py lint      [--dir …]
+    python dev/cli.py ping      [N]
+
+Every command targets a campaign project (a `gm-llm init`-ed directory) via
+`--dir`, defaulting to the current directory — run from your test campaign, or
+point `--dir` at one.
 
 Defaults do the right thing: `prep` targets the next session, `reconcile` the
 latest played one (both inferred from disk, printed before running), and both
@@ -29,20 +33,15 @@ import sys
 from pathlib import Path
 
 DEV = Path(__file__).resolve().parent
-ROOT = DEV.parents[1]               # project root (campaign dir's parent of .opencode)
-OPENCODE = DEV.parent               # the .opencode dir
-sys.path.insert(0, str(OPENCODE))   # put .opencode on the path
-from orchestrator import (  # noqa: E402
+REPO = DEV.parent                   # the framework checkout
+sys.path.insert(0, str(REPO))       # so `gm_llm` imports straight from the checkout
+from gm_llm.orchestrator import (  # noqa: E402
     Backend, BackendError, CanonPreloader, Gate, Game, Logs, Planner, Reconciler,
     campaign_status,
 )
-from orchestrator.canon import latest_session  # noqa: E402
-from orchestrator.stream import EventTap  # noqa: E402
-
-# Every log the orchestrator writes lives under one object (see orchestrator/logs.py):
-# the serve/raw/checks/detail files, wired once and threaded to Backend, Gate, and the
-# lifecycle. ORCH_DEBUG=1 turns on the raw per-reply dump.
-LOGS = Logs.under(project=ROOT, debug=bool(os.environ.get("ORCH_DEBUG")))
+from gm_llm.orchestrator.canon import latest_session  # noqa: E402
+from gm_llm.orchestrator.logs import debug_enabled  # noqa: E402
+from gm_llm.orchestrator.stream import EventTap  # noqa: E402
 
 
 # ─────────────────────────────── output ────────────────────────────────────
@@ -78,33 +77,33 @@ def speaker(label, color, text):
 
 def verdict(label, v, *, extra="", show_report=True):
     """One gate verdict, rendered the same way everywhere: the status line, the
-    report body when it failed, and the empty-VIOLATIONS note when the checker
-    stamped a verdict without findings (downgraded to a pass — surfaced so a
-    checker not doing its job doesn't disappear silently)."""
-    status = "PASS" if v.passed else "VIOLATIONS"
+    report body when it failed, and the defaulted note when the checker gave no
+    usable verdict (passed by default — surfaced so a checker not doing its job
+    doesn't disappear silently)."""
+    status = "passed" if v.passed else "violations"
     tail = f" · {extra}" if extra else ""
     print(c("33", f"┄┄ {label}: {status}{tail} ┄┄"), flush=True)
     if show_report and not v.passed:
         print(c("2", v.report.strip()), flush=True)
-    if getattr(v, "empty_violation", False):
-        print(c("1;31", f"┄┄ note: {v.agent} stamped VIOLATIONS with no findings — "
-                        f"treated as PASS ┄┄"), flush=True)
+    if getattr(v, "defaulted", False):
+        print(c("1;31", f"┄┄ note: {v.check} gave no usable verdict — "
+                        f"passed by default ┄┄"), flush=True)
 
 
 def show_turn(tr):
     """A play turn's gate summary (canon + conduct on one line, reports beneath)."""
     g = tr.gate
-    nv = "PASS" if g.narrative.passed else "VIOLATIONS"
-    cv = "PASS" if g.conduct.passed else "VIOLATIONS"
+    nv = "passed" if g.narrative.passed else "violations"
+    cv = "passed" if g.conduct.passed else "violations"
     status = "CORRECTED" if tr.corrected else "clean"
     print(c("33", f"┄┄ gate: canon {nv} · conduct {cv} · {status} · "
                   f"{g.canon_sections} canon sections ┄┄"), flush=True)
     for label, v in (("CANON", g.narrative), ("CONDUCT", g.conduct)):
         if not v.passed:
             print(c("2", f"{label}:\n{v.report.strip()}"), flush=True)
-        if getattr(v, "empty_violation", False):
-            print(c("1;31", f"┄┄ note: {v.agent} stamped VIOLATIONS with no findings — "
-                            f"treated as PASS ┄┄"), flush=True)
+        if getattr(v, "defaulted", False):
+            print(c("1;31", f"┄┄ note: {v.check} gave no usable verdict — "
+                            f"passed by default ┄┄"), flush=True)
 
 
 def show_prep(pr, *, show_report=True):
@@ -119,9 +118,11 @@ def show_prep(pr, *, show_report=True):
 # ─────────────────────────────── engine ────────────────────────────────────
 
 def with_engine(args, body, *, default_timeout=360):
-    """Run `body(backend, gate)` inside the one backend lifecycle every model-calling
-    command shares: boot `opencode serve`, optionally attach the live stream tap,
-    guarantee shutdown, and turn BackendError / Ctrl-C into a clean exit code.
+    """Run `body(backend, gate, logs)` inside the one backend lifecycle every
+    model-calling command shares: boot `opencode serve`, optionally attach the live
+    stream tap, guarantee shutdown, and turn BackendError / Ctrl-C into a clean exit
+    code. `logs` is the campaign's log bundle (see gm_llm/orchestrator/logs.py);
+    GM_LLM_DEBUG=1 turns on the raw per-reply dump.
 
     `default_timeout` is the per model-call socket timeout when the user hasn't
     overridden it. Runtime turns are short, but a between-session stage can be one
@@ -130,8 +131,9 @@ def with_engine(args, body, *, default_timeout=360):
     retry re-runs it."""
     timeout = args.turn_timeout or default_timeout
     note(f"starting opencode serve on :{args.port} (dir={args.dir}, call-timeout={timeout}s)")
+    logs = Logs.under(project=args.dir, debug=debug_enabled())
     backend = Backend(args.dir, port=args.port, min_call_gap=args.min_gap,
-                      turn_timeout=timeout, logs=LOGS)
+                      turn_timeout=timeout, logs=logs)
     backend.on_retry = lambda agent, attempt, wait, reason: warn(
         f"{agent} call failed: {reason} — retry {attempt} in {wait}s")
     tap = None
@@ -141,7 +143,7 @@ def with_engine(args, body, *, default_timeout=360):
         if args.stream:
             tap = EventTap(backend.base, backend.directory).start()
             note("streaming live model output (--stream)…")
-        body(backend, Gate(backend, CanonPreloader(args.dir), logs=LOGS))
+        body(backend, Gate(backend, CanonPreloader(args.dir), logs=logs), logs)
         note("done.")
     except BackendError as e:
         fail(f"backend gave up: {e}")
@@ -192,7 +194,7 @@ def cmd_play(args):
     story so far, on a resume) and then just plays."""
     character = ""
     if args.character and os.path.exists(args.character):
-        character = re.sub(r"<!--.*?-->", "", Path(args.character).read_text(), flags=re.DOTALL).strip()
+        character = re.sub(r"<!--.*?-->", "", Path(args.character).read_text(encoding="utf-8"), flags=re.DOTALL).strip()
         note(f"player packet: {args.character} ({len(character)} chars)")
     elif args.character:
         warn(f"WARNING: no character packet at {args.character} — player runs blind")
@@ -211,8 +213,8 @@ def cmd_play(args):
             parts.append(scene)
         return "\n\n".join(parts)
 
-    def body(backend, gate):
-        game = Game(backend, gate, logs=LOGS)
+    def body(backend, gate, logs):
+        game = Game(backend, gate, logs=logs)
         player_sid = backend.create_session("play-player")
         note(f"runner={game.runner_sid} player={player_sid} session={game.session}")
 
@@ -250,10 +252,10 @@ def cmd_play(args):
 
 
 def cmd_prep(args):
-    def body(backend, gate):
+    def body(backend, gate, logs):
         n = _pick_session(args, next_session=True)
         note(f"prepping session {n} — the dm authors, then the gate runs…")
-        pr = Planner(backend, gate, logs=LOGS).prep_session(n, commit=args.commit)
+        pr = Planner(backend, gate, logs=logs).prep_session(n, commit=args.commit)
         print(flush=True)
         show_prep(pr, show_report=not args.stream)
 
@@ -261,10 +263,10 @@ def cmd_prep(args):
 
 
 def cmd_reconcile(args):
-    def body(backend, gate):
+    def body(backend, gate, logs):
         n = _pick_session(args, next_session=False)
         note(f"reconciling session {n} — staged apply, gated stage by stage…")
-        rr = Reconciler(backend, gate, logs=LOGS).reconcile_session(
+        rr = Reconciler(backend, gate, logs=logs).reconcile_session(
             n, commit=args.commit, prep=not args.no_prep, fresh=args.fresh)
 
         print(flush=True)
@@ -312,7 +314,7 @@ def cmd_status(args):
 
 def cmd_lint(args):
     """Deterministic entity-completeness lint — no backend, no model calls."""
-    from orchestrator.completeness import lint_dir
+    from gm_llm.orchestrator.completeness import lint_dir
     reports = lint_dir(args.dir)
     incomplete = [r for r in reports if not r.ok]
     for r in reports:
@@ -333,16 +335,16 @@ def cmd_lint(args):
 
 def cmd_tui(args):
     """Hand off to the Textual app (needs the venv's textual)."""
-    venv_py = OPENCODE / ".venv" / "bin" / "python"
+    venv_py = REPO / ".venv" / "bin" / "python"
     py = str(venv_py) if venv_py.exists() else sys.executable
-    cmd = [py, "-m", "tui"]
+    cmd = [py, "-m", "gm_llm.tui", "--dir", str(Path(args.dir).resolve())]
     if args.live:
         cmd.append("--live")
     if args.setup:
         cmd.append("--setup")
     if args.theme:
         cmd += ["--theme", args.theme]
-    sys.exit(subprocess.call(cmd, cwd=str(OPENCODE)))
+    sys.exit(subprocess.call(cmd, cwd=str(REPO)))
 
 
 def cmd_ping(args):
@@ -357,7 +359,7 @@ def main():
 
     # shared flags for every model-calling command
     common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("--dir", default=str(ROOT))
+    common.add_argument("--dir", default=".", help="campaign project directory (default: cwd)")
     common.add_argument("--port", type=int, default=4181)
     common.add_argument("--min-gap", type=float, default=1.0,
                         help="min seconds between any two model calls")
@@ -368,7 +370,7 @@ def main():
                              "play=360, prep/reconcile=1800)")
 
     p = sub.add_parser("status", help="where the campaign stands (disk only, no model)")
-    p.add_argument("--dir", default=str(ROOT))
+    p.add_argument("--dir", default=".", help="campaign project directory (default: cwd)")
     p.set_defaults(func=cmd_status)
 
     p = sub.add_parser("play", parents=[common],
@@ -397,6 +399,7 @@ def main():
     p.set_defaults(func=cmd_reconcile)
 
     p = sub.add_parser("tui", help="launch the Textual app (mock by default)")
+    p.add_argument("--dir", default=".", help="campaign project directory (default: cwd)")
     p.add_argument("--live", action="store_true")
     p.add_argument("--setup", action="store_true",
                    help="mock only: start in the new-campaign setup phase")
@@ -404,7 +407,7 @@ def main():
     p.set_defaults(func=cmd_tui)
 
     p = sub.add_parser("lint", help="check entity files against the completeness contract")
-    p.add_argument("--dir", default=str(ROOT))
+    p.add_argument("--dir", default=".", help="campaign project directory (default: cwd)")
     p.set_defaults(func=cmd_lint)
 
     p = sub.add_parser("ping", help="probe the model's rate-limit state")

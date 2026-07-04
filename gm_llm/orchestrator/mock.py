@@ -135,7 +135,7 @@ class MockGame:
     def _result(self, narration, player_msg, clean=True, corrected=False,
                 session_complete=False) -> TurnResult:
         narrative = Verdict(
-            "narrative-checker", clean,
+            "check-turn", clean,
             "" if clean else
             "1. Magren's hair is grey-streaked, not black — fix the description "
             "(source: world/npcs/magren-soley.md).",

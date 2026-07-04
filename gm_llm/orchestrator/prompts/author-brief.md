@@ -1,3 +1,3 @@
 Prepare session {n}. Run your PRE-SESSION planning pass: read current state and the active arc(s), identify which arc(s) to advance, then author the plan yourself into `campaign/sessions/session-{n}-plan.md`. Load `session-plan` and `canon-conventions`, work the completeness loop (author -> self-expand -> verify), and author + register every new entity the plan needs as a full file. Commit every load-bearing fact; leave open only the player's path.
 
-For this pass the plan is gated and committed FOR you: do NOT dispatch the narrative-checker yourself, and do NOT run git. When the plan file is written, stop and report only that it is ready — spoiler-free, no summary of its contents.
+The plan is gated and committed for you after you finish. When the plan file is written, stop and report only that it is ready — spoiler-free, no summary of its contents.

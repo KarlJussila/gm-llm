@@ -10,7 +10,6 @@ campaign back to an earlier state, and so on.
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -22,14 +21,14 @@ def _install_deps(dest: Path, skip: bool, *, verb: str) -> None:
     if skip:
         print("skipped plugin-deps install (--no-install).")
         return
-    from .scaffold import install_plugin_deps
+    from .project import install_plugin_deps
     print(f"{verb} plugin deps (dice / report / task-complete) …")
     ok, msg = install_plugin_deps(dest)
     print(f"  {'✓' if ok else '✗'} {msg}")
 
 
 def _cmd_init(args) -> int:
-    from .scaffold import init_project
+    from .project import init_project
     dest = init_project(Path(args.dir), force=args.force)
     print(f"initialized opencode assets in {dest}")
     _install_deps(dest, args.no_install, verb="installing")
@@ -39,7 +38,7 @@ def _cmd_init(args) -> int:
 
 def _cmd_update(args) -> int:
     """Refresh an existing project's framework assets to this gm-llm version."""
-    from .scaffold import init_project
+    from .project import init_project
     directory = Path(args.dir).resolve()
     if not (directory / ".opencode" / "agent").is_dir():
         print(f"{directory} isn't a gm-llm project (no .opencode/agent) — "
@@ -65,10 +64,11 @@ def _cmd_play(args) -> int:
               file=sys.stderr)
         return 1
 
-    from orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
-    from tui.app import PlayApp
+    from .orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
+    from .orchestrator.logs import debug_enabled
+    from .tui.app import PlayApp
 
-    logs = Logs.under(project=directory, debug=bool(os.environ.get("ORCH_DEBUG")))
+    logs = Logs.under(project=directory, debug=debug_enabled())
     backend = Backend(str(directory), port=args.port, logs=logs).start()
     try:
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)

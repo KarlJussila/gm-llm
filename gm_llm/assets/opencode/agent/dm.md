@@ -2,8 +2,8 @@
 description: >-
   The between-sessions brain of the campaign. Initializes the campaign, assesses
   state, plans upcoming sessions, reviews finished ones, and adjusts arcs and
-  world state. Authors every campaign file itself and commits state to git.
-  Does NOT run live sessions — that is dm-runner's job.
+  world state. Authors every campaign file itself; the orchestrator sequences
+  its work and owns git. Does NOT run live sessions — that is dm-runner's job.
 mode: primary
 model: opencode/mimo-v2.5-free
 temperature: 0.2
@@ -75,4 +75,4 @@ you when. Don't run ahead into a later stage, and don't wrap up setup on your ow
 - The runner was at the table; you weren't. Treat its log as canon.
 - Every session should advance at least one arc.
 - Flag decisions that need the player's input (tone, theme) — don't guess on those.
-- Commit after each phase. The handoff to/from the runner depends on git being current.
+- The orchestrator owns git: it commits at each phase boundary. Never run git yourself.

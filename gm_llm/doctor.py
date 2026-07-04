@@ -30,6 +30,7 @@ def collect(directory: Path, port: int = 4181) -> list[Check]:
     opencode = shutil.which("opencode")
     runtime = shutil.which("bun") or shutil.which("node")
     npm = shutil.which("npm") or shutil.which("bun")
+    port_free = _port_free(port)
     initialized = (Path(directory) / ".opencode" / "agent").is_dir()
     return [
         Check("opencode on PATH", bool(opencode),
@@ -38,8 +39,8 @@ def collect(directory: Path, port: int = 4181) -> list[Check]:
               runtime or "not found — opencode needs bun or node"),
         Check("plugin installer (bun/npm)", bool(npm),
               npm or "not found — needed to install the .opencode plugin deps", warn=True),
-        Check(f"port {port} free", _port_free(port),
-              "free" if _port_free(port) else "in use — a server may already be running",
+        Check(f"port {port} free", port_free,
+              "free" if port_free else "in use — a server may already be running",
               warn=True),
         Check(f"project initialized ({directory})", initialized,
               "yes" if initialized else "run `gm-llm init` here first"),

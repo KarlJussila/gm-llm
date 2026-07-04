@@ -11,24 +11,17 @@ import shutil
 import subprocess
 from pathlib import Path
 
-_ROOT = Path(__file__).parent.parent  # repo root (source checkout)
+from gm_llm.assets import opencode_assets_dir
 
 
-def _assets_root() -> Path:
-    """Where the opencode assets (skills templates, campaign templates) live — the
-    bundled package data when gm-llm is installed, else the repo root in a checkout.
-    Resolved through gm_llm so this survives the assets moving under the package; a
-    function (not a hard import) keeps orchestrator loosely coupled and falls back if
-    gm_llm isn't importable for some reason."""
-    try:
-        from gm_llm.assets import opencode_assets_dir
-        return opencode_assets_dir()
-    except Exception:
-        return _ROOT
+def _skill_templates() -> Path:
+    """The canon-conventions templates in the bundled assets — resolved at call time
+    so importing this module never touches the filesystem."""
+    return opencode_assets_dir() / "skills" / "canon-conventions" / "templates"
 
 
-_SKILL_TEMPLATES = _assets_root() / "skills" / "canon-conventions" / "templates"
-_CAMPAIGN_TEMPLATES = _assets_root() / "templates" / "campaign"
+def _campaign_templates() -> Path:
+    return opencode_assets_dir() / "templates" / "campaign"
 
 _SUBDIRS = [
     "world/npcs", "world/factions", "world/locations",
@@ -55,8 +48,9 @@ def scaffold_campaign(directory: Path) -> None:
     for subdir in _SUBDIRS:
         (campaign / subdir).mkdir(parents=True, exist_ok=True)
 
-    shutil.copy(_CAMPAIGN_TEMPLATES / "README.md", campaign / "README.md")
-    shutil.copy(_CAMPAIGN_TEMPLATES / "feedback" / "README.md",
+    templates = _campaign_templates()
+    shutil.copy(templates / "README.md", campaign / "README.md")
+    shutil.copy(templates / "feedback" / "README.md",
                 campaign / "feedback" / "README.md")
 
     _write_index(campaign)
@@ -72,25 +66,26 @@ def _ensure_gitignore(root: Path) -> None:
     gitignore = root / ".gitignore"
     line = ".opencode/"
     if not gitignore.exists():
-        gitignore.write_text(line + "\n")
-    elif line not in gitignore.read_text().splitlines():
-        with gitignore.open("a") as f:
+        gitignore.write_text(line + "\n", encoding="utf-8")
+    elif line not in gitignore.read_text(encoding="utf-8").splitlines():
+        with gitignore.open("a", encoding="utf-8") as f:
             f.write("\n" + line + "\n")
 
 
 def _write_index(campaign: Path) -> None:
     """Copy INDEX template with placeholder data rows stripped (headers only)."""
-    template = (_SKILL_TEMPLATES / "INDEX.template.md").read_text()
+    template = (_skill_templates() / "INDEX.template.md").read_text(encoding="utf-8")
     lines = template.splitlines()
     # Remove placeholder data rows (cells that start with <) — keep comment, headings, headers, separators
     out = [ln for ln in lines if not ln.strip().startswith("| <")]
-    (campaign / "INDEX.md").write_text("\n".join(out) + "\n")
+    (campaign / "INDEX.md").write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
 def _write_state_files(campaign: Path) -> None:
     state_dir = campaign / "state"
+    templates = _skill_templates()
     for name in _STATE_FILES:
-        template = (_SKILL_TEMPLATES / f"{name}.template.md").read_text()
+        template = (templates / f"{name}.template.md").read_text(encoding="utf-8")
         content = template.replace("S<n>", "S1")
         out_name = name.removeprefix("state-") + ".md"
-        (state_dir / out_name).write_text(content)
+        (state_dir / out_name).write_text(content, encoding="utf-8")

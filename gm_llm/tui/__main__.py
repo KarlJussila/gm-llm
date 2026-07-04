@@ -1,17 +1,14 @@
-"""Entry point: `python -m tui` (run from the .opencode dir, in the venv).
+"""Entry point: `python -m gm_llm.tui` (from a checkout: the repo venv).
 
 Defaults to the mock backend so you can prototype the UI with no opencode and no
-rate limit. `--live` boots a real opencode backend and plays for real.
+rate limit. `--live` boots a real opencode backend against `--dir` (default: the
+current directory, a `gm-llm init`-ed project) and plays for real.
 """
 
 import argparse
-import os
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # put .opencode on the path
-
-from tui.app import PlayApp  # noqa: E402
+from gm_llm.tui.app import PlayApp
 
 
 def main() -> None:
@@ -19,7 +16,7 @@ def main() -> None:
     ap.add_argument("--live", action="store_true", help="use a real opencode backend (default: mock)")
     ap.add_argument("--setup", action="store_true",
                     help="mock only: start in the new-campaign setup phase (live detects this from disk)")
-    ap.add_argument("--dir", default=str(Path(__file__).resolve().parents[2]))
+    ap.add_argument("--dir", default=".", help="project directory (default: cwd)")
     ap.add_argument("--port", type=int, default=4181)
     ap.add_argument("--theme", default="dracula",
                     help="Textual theme (e.g. dracula, tokyo-night, gruvbox, catppuccin-mocha, nord)")
@@ -27,17 +24,19 @@ def main() -> None:
 
     cleanup = None
     if args.live:
-        from orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
-        # One object owns every log path (serve/raw/checks/detail); ORCH_DEBUG=1
-        # turns on the raw per-reply dump. See orchestrator/logs.py.
-        logs = Logs.under(project=args.dir, debug=bool(os.environ.get("ORCH_DEBUG")))
-        backend = Backend(args.dir, port=args.port, logs=logs).start()
-        gate = Gate(backend, CanonPreloader(args.dir), logs=logs)
-        lifecycle = Lifecycle(backend, gate, args.dir, logs=logs)
+        from gm_llm.orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
+        from gm_llm.orchestrator.logs import debug_enabled
+        directory = str(Path(args.dir).resolve())
+        # One object owns every log path (serve/raw/checks/detail); GM_LLM_DEBUG=1
+        # turns on the raw per-reply dump. See gm_llm/orchestrator/logs.py.
+        logs = Logs.under(project=directory, debug=debug_enabled())
+        backend = Backend(directory, port=args.port, logs=logs).start()
+        gate = Gate(backend, CanonPreloader(directory), logs=logs)
+        lifecycle = Lifecycle(backend, gate, directory, logs=logs)
         cleanup = backend.stop
         title = "gm-llm (live)"
     else:
-        from orchestrator.mock import MockLifecycle
+        from gm_llm.orchestrator.mock import MockLifecycle
         lifecycle = MockLifecycle(start_in_setup=args.setup)
         title = "gm-llm (MOCK)"
 

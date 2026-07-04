@@ -195,6 +195,9 @@ class EventTap:
     def _emit_text(self, sid: str | None, pid: str | None, full: str, reasoning: bool) -> None:
         if not pid:
             return
+        # Resolve the session title before taking the lock — the first lookup is an
+        # HTTP fetch, and log() (called from the main thread) waits on this lock.
+        title = self._title(sid)
         with self._lock:
             prev = self._printed.get(pid, 0)
             if len(full) <= prev:
@@ -205,7 +208,7 @@ class EventTap:
                 self._flush_body()
                 if self._cur is not None:
                     self._emit("\n")
-                self._emit(self._style("heading", f"\n──── {self._title(sid)} ────\n"))
+                self._emit(self._style("heading", f"\n──── {title} ────\n"))
                 self._cur = sid
                 self._cur_pid = None
             elif pid != self._cur_pid and self._cur_pid is not None:
@@ -227,12 +230,13 @@ class EventTap:
         self._seen_tools.add(pid)
         name = part.get("tool") or "tool"
         arg = self._tool_arg(state.get("input") or {})
+        title = self._title(part.get("sessionID"))  # HTTP on first lookup — keep it off the lock
         with self._lock:
             self._flush_body()
             if self._cur is not None:
                 self._emit("\n")
                 self._cur = None
-            self._emit(self._style("tool", f"  ⚙ {self._title(part.get('sessionID'))}: {name}{arg}\n"))
+            self._emit(self._style("tool", f"  ⚙ {title}: {name}{arg}\n"))
         if self._on_tool:
             self._on_tool(name, arg.strip())
 

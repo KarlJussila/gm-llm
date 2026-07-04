@@ -29,7 +29,7 @@ class CanonPreloader:
     def _read(self, rel: str) -> str | None:
         p = self.campaign / rel
         try:
-            return p.read_text() if p.is_file() else None
+            return p.read_text(encoding="utf-8") if p.is_file() else None
         except OSError:
             return None
 

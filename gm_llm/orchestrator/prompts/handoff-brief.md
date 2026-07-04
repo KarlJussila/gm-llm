@@ -10,4 +10,4 @@ Cover, in whatever order fits what happened (skip a heading if nothing applies):
 - **The character** — what the PC did, learned, gained or lost, and any development worth recording.
 - **Loose ends** — unresolved questions, promises made, hooks left dangling, and anything you set up that expects a payoff.
 
-Write the notes as your reply — do not try to write any files. Do not call `task_complete`; this is a direct request and your reply is the deliverable.
+Deliver the notes the same way you ended the session: call `task_complete` with the complete notes in its `notes` argument. That argument is the only channel the orchestrator files — prose you type as a reply is not captured — so put the full text there, not a summary of it.

@@ -191,7 +191,8 @@ class Setup:
         return self._marker(stage).is_file()
 
     def _mark_done(self, stage: str) -> None:
-        self._marker(stage).write_text(datetime.now(timezone.utc).isoformat() + "\n")
+        self._marker(stage).write_text(datetime.now(timezone.utc).isoformat() + "\n",
+                                       encoding="utf-8")
 
     def _marker(self, stage: str) -> Path:
         d = self.root / ".opencode" / ".orchestrator"

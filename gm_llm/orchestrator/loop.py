@@ -34,9 +34,19 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .backend import BackendCancelled, BackendError
 from .canon import latest_session
 from .logs import append, banner, section
 from .prompts import load
+
+# Safety-hatch nudge: sent if the runner wrote its handoff notes as prose instead of
+# delivering them in task_complete's `notes` arg (the only channel the orchestrator
+# files — same pattern as setup's world overview).
+_NUDGE_NOTES = (
+    "You wrote the handoff notes but didn't deliver them — the `notes` argument of "
+    "`task_complete` is the only channel the orchestrator files; a prose reply is not "
+    "captured. Call `task_complete` now with the complete notes in `notes`."
+)
 
 
 @dataclass
@@ -128,22 +138,42 @@ class Game:
         threads touched — and write them to `campaign/sessions/session-{N}-notes.md`, which
         the between-session pipeline folds in alongside the transcript.
 
+        The notes ride in `task_complete`'s `notes` argument (the same delivery as the
+        world overview at setup): a structured field code reads from the tool call, never
+        prose fished out of the reply, which text-part splits and trailing closers have
+        made unreliable. The reply text stays as a fallback for a runner that wrote the
+        notes but skipped the call even after the nudge.
+
         Ungated (internal notes, not player-facing narration; never hits the transcript).
-        The runner has no write permission, so the orchestrator writes the file from the
-        returned text. Idempotent: no-ops if the notes already exist, so a re-run/resume of
-        the wrap doesn't re-dispatch. Best-effort — a failure never blocks the wrap."""
+        The runner has no write permission, so the orchestrator writes the file itself.
+        Idempotent: no-ops if the notes already exist, so a re-run/resume of the wrap
+        doesn't re-dispatch. Best-effort — a failure never blocks the wrap."""
         if not self.session:
             return None
         notes_path = self.campaign / "sessions" / f"session-{self.session}-notes.md"
         if notes_path.is_file():
             return notes_path
         self._correcting = False
-        notes = self.backend.prompt(self.runner_sid, self.runner_agent, load("handoff-brief"))
+        try:
+            reply = self.backend.prompt_full(self.runner_sid, self.runner_agent,
+                                             load("handoff-brief"), whole=True)
+            reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
+                                             tool="task_complete", args=("notes",),
+                                             nudge=_NUDGE_NOTES, whole=True)
+        except BackendCancelled:
+            raise  # the player cancelled — unwind the wrap, don't paper over it
+        except BackendError:
+            return None  # notes are optional — the pipeline proceeds without them
+        notes = (reply.tool_inputs.get("task_complete", {}).get("notes") or "").strip()
+        notes = notes or reply.text.strip()
+        if not notes:
+            return None
         try:
             notes_path.parent.mkdir(parents=True, exist_ok=True)
             notes_path.write_text(
-                f"# Session {self.session} — runner handoff notes\n\n{notes.strip()}\n")
-        except OSError:
+                f"# Session {self.session} — runner handoff notes\n\n{notes.strip()}\n",
+                encoding="utf-8")
+        except (OSError, ValueError):
             return None
         return notes_path
 
@@ -214,8 +244,9 @@ class Game:
             return
         try:
             self.transcript_path.parent.mkdir(parents=True, exist_ok=True)
-            self.transcript_path.write_text(f"# Session {self.session} — transcript\n\n")
-        except OSError:
+            self.transcript_path.write_text(f"# Session {self.session} — transcript\n\n",
+                                            encoding="utf-8")
+        except (OSError, ValueError):
             pass
 
     def _append_transcript(self, player_msg: str, final: str, opening: bool) -> None:
@@ -226,17 +257,18 @@ class Game:
             blocks += ["## Player", "", player_msg.strip(), ""]
         blocks += ["## DM", "", final.strip(), ""]
         try:
-            with open(self.transcript_path, "a") as f:
+            with open(self.transcript_path, "a", encoding="utf-8") as f:
                 f.write("\n".join(blocks) + "\n")
-        except OSError:
+        except (OSError, ValueError):
             pass
 
     def _read_transcript(self) -> str:
         if not self.transcript_path:
             return ""
         try:
-            return self.transcript_path.read_text() if self.transcript_path.is_file() else ""
-        except OSError:
+            return (self.transcript_path.read_text(encoding="utf-8")
+                    if self.transcript_path.is_file() else "")
+        except (OSError, ValueError):
             return ""
 
     def _runner_preload(self) -> str:
@@ -266,8 +298,8 @@ class Game:
             return
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(json.dumps({"runner_sid": self.runner_sid}))
-        except OSError:
+            p.write_text(json.dumps({"runner_sid": self.runner_sid}), encoding="utf-8")
+        except (OSError, ValueError):
             pass
 
     def _load_runner_sid(self) -> str | None:
@@ -275,7 +307,7 @@ class Game:
         if not p:
             return None
         try:
-            return json.loads(p.read_text()).get("runner_sid")
+            return json.loads(p.read_text(encoding="utf-8")).get("runner_sid")
         except (OSError, ValueError):
             return None
 
