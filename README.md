@@ -60,8 +60,9 @@ Two things update independently — the `gm-llm` **tool**, and each project's co
 **Update the tool:**
 - **Windows one-liner install** — just re-run the installer; it pulls the latest and reinstalls
   into its venv.
-- **Manual pipx/pip install** — `cd path/to/gm-llm && git pull && pipx install . --force`
-  (or `pip install . --force-reinstall`).
+- **Manual pipx/pip install** — `cd path/to/gm-llm && git pull && pipx reinstall gm-llm`
+  (or `pip install . --force-reinstall`). Use `reinstall`, not `install --force`: with
+  pipx's uv backend, `--force` trips over uv's refusal to overwrite an existing venv.
 
 **Then refresh each project's assets** to match the updated tool:
 ```
