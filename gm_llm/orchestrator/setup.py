@@ -208,7 +208,8 @@ class Setup:
             return True
         try:
             log = subprocess.run(["git", "log", "--pretty=%s"], cwd=self.root,
-                                 capture_output=True, text=True)
+                                 capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace")
         except OSError:
             return False
         return log.returncode == 0 and "campaign: init" in log.stdout.splitlines()

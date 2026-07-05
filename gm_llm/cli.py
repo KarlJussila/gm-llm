@@ -10,6 +10,7 @@ campaign back to an earlier state, and so on.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -114,6 +115,15 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=None) -> int:
+    if os.name == "nt":
+        # Redirected/piped stdio on Windows defaults to the legacy ANSI code page
+        # (cp1252), which can't encode ✓/✗ or the TUI's box-drawing characters —
+        # force UTF-8 so output degrades to replacement chars instead of crashing.
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, OSError):
+                pass
     ap = _build_parser()
     args = ap.parse_args(argv)
     if not getattr(args, "cmd", None):

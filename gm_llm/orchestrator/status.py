@@ -66,11 +66,13 @@ def campaign_status(directory: str | Path) -> CampaignStatus:
 
     try:
         git = subprocess.run(["git", "status", "--porcelain", "--", "campaign"],
-                             cwd=root, capture_output=True, text=True)
+                             cwd=root, capture_output=True, text=True,
+                             encoding="utf-8", errors="replace")
         if git.returncode == 0:
             st.git_state = "dirty" if git.stdout.strip() else "clean"
             last = subprocess.run(["git", "log", "-1", "--pretty=%s"],
-                                  cwd=root, capture_output=True, text=True).stdout.strip()
+                                  cwd=root, capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace").stdout.strip()
             st.last_commit = last or None
     except OSError:
         pass

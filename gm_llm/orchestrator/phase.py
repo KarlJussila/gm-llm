@@ -33,15 +33,18 @@ def commit_campaign(root: str | Path, message: str) -> bool:
     root = Path(root)
     try:
         staged = subprocess.run(["git", "add", "--", "campaign"],
-                                cwd=root, capture_output=True, text=True)
+                                cwd=root, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace")
         if staged.returncode != 0:
             return False
         dirty = subprocess.run(["git", "diff", "--cached", "--quiet"],
-                               cwd=root, capture_output=True, text=True)
+                               cwd=root, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace")
         if dirty.returncode == 0:  # nothing staged -> nothing to commit
             return False
         done = subprocess.run(["git", "commit", "-m", message],
-                              cwd=root, capture_output=True, text=True)
+                              cwd=root, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
         return done.returncode == 0
     except OSError:
         return False

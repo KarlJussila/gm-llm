@@ -58,10 +58,12 @@ def install_plugin_deps(opencode_dir: Path) -> tuple[bool, str]:
                 # npm/bun/pnpm/yarn are .cmd shims on Windows that CreateProcess
                 # can't launch directly — route through the shell there.
                 proc = subprocess.run(f'"{exe}" install', cwd=opencode_dir,
-                                      shell=True, capture_output=True, text=True)
+                                      shell=True, capture_output=True, text=True,
+                                      encoding="utf-8", errors="replace")
             else:
                 proc = subprocess.run([exe, "install"], cwd=opencode_dir,
-                                      capture_output=True, text=True)
+                                      capture_output=True, text=True,
+                                      encoding="utf-8", errors="replace")
         except OSError as e:
             return False, f"{name} install could not start: {e}"
         if proc.returncode == 0:

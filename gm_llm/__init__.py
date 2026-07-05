@@ -6,4 +6,4 @@ in `gm_llm.tui`, and the opencode assets (agents, skills, plugin) ship as packag
 and are copied into a project by `gm-llm init`.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
