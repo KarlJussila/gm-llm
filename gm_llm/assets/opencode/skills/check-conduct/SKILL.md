@@ -37,6 +37,18 @@ Flag any of:
 - **Double-volley** — demanded the PC re-verbalize or re-confirm a conclusion the player already
   gave.
 
+Two things that look like a dropped action but aren't — don't flag either:
+- **A pending roll, not a drop.** The player often declares several things in one message, and the
+  draft calls for a roll on the contested part while leaving the rest to land in the follow-up turn
+  once the result is known — you're reading one turn in isolation and can't see whether the next one
+  folds the rest in. Only flag a drop when nothing is pending to explain the gap: no roll was asked
+  for, and the action still never lands.
+- **Incidental beats don't need their own line.** Not everything the player's message names is worth
+  narrating — putting on glasses before reading a scroll, drawing a coin purse before paying. That
+  kind of setup carries no stakes and nobody's waiting to hear it confirmed; only the consequential
+  part (reading the scroll, the payment landing) has to actually appear. Don't flag the ambient half
+  as dropped.
+
 ### 3. Check dice & uncertainty
 Flag any of:
 - **Rolled on the player's behalf**, or **resolved an uncertain/risky PC action with no roll** when
