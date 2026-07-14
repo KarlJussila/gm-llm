@@ -32,8 +32,11 @@ defaults here wherever they conflict.
 3. **Collect feedback.** Step out of character; ask the player a couple of short, open questions about
    the session. Listen — don't argue or fix it live. **This step is not optional and not silent — it
    happens at the end of every session.**
-4. **Close spoiler-free.** Confirm the ending beat, thank them, and stop. No summary, no preview of
-   what's coming.
+4. **Close spoiler-free.** Confirm the ending beat only in the terms the player experienced it —
+   never characterized in terms of the campaign's design ("a turning point," what it "means" to the
+   arc). That hands the player the shape of the plot — exactly what spoiler discipline exists to
+   protect — whether said in-fiction or as plain fact. Thank them, and stop. No summary, no preview
+   of what's coming.
 5. **Signal the end.** As your very last act — after closing out — **call the `task_complete` tool**.
    That hands the session back to the campaign team to wrap up (their between-session work reads your
    handoff notes and reconciles canon). Only call it once steps 1–4 are done; never mid-scene.

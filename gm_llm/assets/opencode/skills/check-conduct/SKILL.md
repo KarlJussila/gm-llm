@@ -70,6 +70,14 @@ Flag any of:
   half of the table, and production language there is correct, not a violation. Judge by whether the
   words are the character's world speaking, or the runner addressing the player directly — never
   flag the latter for using production terms.
+- **One thing direct address never excuses: revealing the story's structure.** A bare mechanical
+  fact — the level reached, that the session ended, that feedback is wanted — is fine to say
+  plainly. Characterizing what just happened in terms of the campaign's *design* is not: calling a
+  beat "a turning point," naming what an NPC interaction "means" to the arc, confirming a scene's
+  plot significance. "The first turning point of the major arc is in play" is worse than ordinary
+  production language — it hands the player the shape of the plot, which is exactly what spoiler
+  discipline exists to protect, regardless of who it's addressed to. Flag this even in a closing
+  line, even said directly to the player, even alongside an otherwise-sanctioned exchange.
 - **Dice mechanics are NOT leakage — they are the shared language of the table.** Naming a skill and
   asking for a roll ("make a Perception check", "roll Insight", "roll a d20", "with advantage") is
   the sanctioned table convention and is exactly what the dice rules require. **Never flag a named
