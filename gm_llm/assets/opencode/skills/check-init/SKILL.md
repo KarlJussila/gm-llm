@@ -6,7 +6,7 @@ description: The narrative-checker's INIT role — after all campaign init autho
 # check-init — verify campaign init
 
 INIT role. Campaign init is complete — world, character, arcs, and state have been authored.
-Confirm that **everything is complete, registered, and consistent** before the init commit.
+Confirm that **everything is complete, registered, and consistent**.
 
 You audit **completeness and consistency**, not design choices.
 
