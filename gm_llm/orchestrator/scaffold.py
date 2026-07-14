@@ -49,7 +49,6 @@ def scaffold_campaign(directory: Path) -> None:
         (campaign / subdir).mkdir(parents=True, exist_ok=True)
 
     templates = _campaign_templates()
-    shutil.copy(templates / "README.md", campaign / "README.md")
     shutil.copy(templates / "feedback" / "README.md",
                 campaign / "feedback" / "README.md")
 

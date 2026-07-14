@@ -73,7 +73,7 @@ A set of opencode skills and agents that enable an LLM to design, run, and maint
 
 ### Campaign Documentation
 - Maintain human-readable markdown files for all campaign state, one home per kind of
-  information (see `campaign/README.md` for the layout and capture conventions)
+  information (the layout and capture conventions are the `canon-conventions` skill's contract)
 - Capture verbatim the text of in-world written materials (letters, journals, inscriptions) in
   `campaign/documents/` at the moment they are shown to the player
 - Track significant objects/artifacts (owner, location, state, history) in `campaign/world/items.md`,
