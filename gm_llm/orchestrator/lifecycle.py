@@ -16,7 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .canon import latest_session
-from .loop import Game
+from .loop import Game, session_is_complete
 from .reconciler import Reconciler
 from .setup import Setup
 from .status import CampaignStatus, campaign_status
@@ -30,15 +30,18 @@ class Lifecycle:
         self.directory = directory
         self.logs = logs
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
-        # that needs setup; otherwise jump straight into play.
-        if latest_session(Path(directory) / "campaign" / "sessions") is None:
+        # that needs setup; a session whose runner already signalled the end (even in
+        # a prior run the player never confirmed the wrap on) ⇒ show that choice again,
+        # never resume it into more play; otherwise jump straight into play.
+        n = latest_session(Path(directory) / "campaign" / "sessions")
+        if n is None:
             self.phase = "setup"
             self.game = None
             self.setup = Setup(backend, gate, directory, logs=logs)
         else:
-            self.phase = "play"
-            self.game = Game(backend, gate, logs=logs)
+            self.game = Game(backend, gate, logs=logs, session=n)
             self.setup = None
+            self.phase = "wrap_pending" if session_is_complete(directory, n) else "play"
 
     @property
     def session(self) -> int:
@@ -114,4 +117,5 @@ class Lifecycle:
             if tap:
                 tap.stop()
         self.game = Game(self.backend, self.gate, logs=self.logs, session=n + 1)
+        self.phase = "play"  # the new session hasn't signalled an end yet
         return n + 1

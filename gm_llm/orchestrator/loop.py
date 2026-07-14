@@ -216,6 +216,11 @@ class Game:
         # closing beats). We read that off the draft's tool calls — never the opening, which
         # is a scene-set, not an ending.
         session_complete = (not opening) and ("task_complete" in reply.tools)
+        if session_complete:
+            # A disk fact, not just this TurnResult — so a wrap the player never
+            # confirms still shows the same choice after a restart instead of
+            # quietly resuming into more play (see `session_is_complete`).
+            self._mark_complete()
         self._step("check")
         result = self.gate.check(draft, player_msg)
         final, corrected = draft, False
@@ -290,7 +295,7 @@ class Game:
         which the campaign repo gitignores, so it never lands in a commit."""
         if not self.session:
             return None
-        return Path(self.backend.directory) / ".opencode" / ".orchestrator" / f"session-{self.session}.json"
+        return _session_state_path(self.backend.directory, self.session)
 
     def _save_runner_sid(self) -> None:
         p = self._state_path()
@@ -311,9 +316,41 @@ class Game:
         except (OSError, ValueError):
             return None
 
+    def _mark_complete(self) -> None:
+        """Persist that this session's runner has signalled the end (`task_complete`
+        fired) as a disk fact, not just this call's TurnResult — so `Lifecycle` can
+        see it on the next launch too, before ever touching the model, and show the
+        same wrap-or-quit choice again instead of quietly resuming into more play."""
+        p = self._state_path()
+        if not p:
+            return
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps({"runner_sid": self.runner_sid, "complete": True}),
+                        encoding="utf-8")
+        except (OSError, ValueError):
+            pass
+
     def _log(self, tr: TurnResult) -> None:
         if self.logs:
             append(self.logs.checks, _format_block(tr))
+
+
+def _session_state_path(directory: str, n: int) -> Path:
+    return Path(directory) / ".opencode" / ".orchestrator" / f"session-{n}.json"
+
+
+def session_is_complete(directory: str, n: int) -> bool:
+    """Whether session `n`'s runner already signalled the end via `task_complete` —
+    read straight off disk, no model call. `Lifecycle` checks this before deciding
+    whether to resume play or show the wrap-or-quit choice again, so a session the
+    player closed the app on without confirming the wrap can't be resumed into more
+    play on the next launch."""
+    try:
+        data = json.loads(_session_state_path(directory, n).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return bool(data.get("complete"))
 
 
 def _last_dm_beat(transcript: str) -> str:

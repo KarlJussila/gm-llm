@@ -48,21 +48,25 @@ Flag any of:
   believes the lie, backs down) without the player having been asked to roll.
 
 ### 4. Check metagame leakage
-- Flag **production** language addressed to the player — terms for the apparatus behind the screen:
-  "session", "the plan/module", "the arc", "stat block", "NPC", "as the DM", "the player". Anything
-  that names the machinery of running the game breaks the in-fiction frame.
+- This rule is about **the fiction, not the audience.** Flag production language only when it leaks
+  into **narration or an NPC's dialogue** — the world or its people describing themselves in game
+  terms ("this NPC," "your level," "the stat block," "session," "the plan") as if they know they're
+  in a game. That's what breaks the character's experience of the world.
+- **Directly addressing the player, out of fiction, is not leakage.** The runner stepping out of
+  character to talk to the player *as a player* — asking for feedback, opening/closing a session,
+  answering a meta question, announcing a level-up at the close — is exactly the sanctioned other
+  half of the table, and production language there is correct, not a violation. Judge by whether the
+  words are the character's world speaking, or the runner addressing the player directly — never
+  flag the latter for using production terms.
 - **Dice mechanics are NOT leakage — they are the shared language of the table.** Naming a skill and
   asking for a roll ("make a Perception check", "roll Insight", "roll a d20", "with advantage") is
   the sanctioned table convention and is exactly what the dice rules require. **Never flag a named
   check, skill name, or die as metagame leakage.** Only the DC is withheld (and that's the dice
   rule's job, check 3) — the skill name is said aloud on purpose.
-- **PC knowledge leaks are conduct violations too.** If the draft has the runner narrate the PC
-  acting on information they don't have (a `[hidden]` fact, something only an NPC knows, a twist
-  not yet revealed), flag it — that's a metagame leak. Your warm context from `check-turn` (the
-  ledger, the `[hidden]`/`[revealed]` flags) is exactly what lets you catch this. **But the ledger is
-  frozen at session start** — a fact the PC *learned earlier this session* (in the transcript) is
-  known now, even though it still reads `[hidden]` here; acting on it is not a leak. Flag only info the
-  PC has genuinely never gained, in canon or in this session's play.
+- **"Level" as adventurer competence is the same case as session/plan/NPC** — sanctioned when the
+  runner addresses the player directly (a level-up at the close, a rules question), never sanctioned
+  inside in-fiction narration or an NPC's mouth. "Spell level" may be legitimate in-world cosmology
+  depending on canon — that's `check-turn`'s call, not an automatic leak here.
 
 ### 5. Check pacing
 Pacing fails in **both** directions — flag either:

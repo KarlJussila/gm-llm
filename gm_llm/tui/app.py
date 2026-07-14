@@ -146,7 +146,22 @@ class PlayApp(App):
                                   f"retry {attempt} in {int(wait)}s")
         self._sync_input()
         self.sub_title = "ACTION mode"
+        if self.lc.phase == "wrap_pending":
+            # A prior run ended session N (task_complete fired) and the player
+            # never confirmed the wrap — show the same choice again, no model
+            # call, no resume: reconcile-and-prep or quit, nothing else.
+            self._show_wrap_pending()
+            return
         self.run_worker(self._open(), exclusive=True)
+
+    def _show_wrap_pending(self) -> None:
+        self._pending = "wrap"
+        self._sync_input()
+        self._scene_status(f"— session {self.lc.session} complete — reconcile & prep "
+                           f"session {self.lc.session + 1}, or quit and decide later —",
+                           kind="rule")
+        self._prompt.ask(f"Session {self.lc.session} complete — "
+                         f"reconcile & prep session {self.lc.session + 1}?")
 
     # -- scene pane (one widget per beat) ------------------------------------
 
@@ -215,11 +230,14 @@ class PlayApp(App):
             inp.border_title = "…thinking — draft freely, send once the table frees up…"
         elif self.lc.phase == "setup":
             inp.border_title = "SETUP — talk to the DM"
+        elif self._pending == "wrap":
+            inp.border_title = "SESSION COMPLETE — reconcile or quit, nothing else"
         elif self.mode == "action":
             inp.border_title = "ACTION — gated"
         else:
             inp.border_title = "META — out-of-game, ungated"
         inp.placeholder = ("Answer the DM…" if self.lc.phase == "setup"
+                           else "Y to wrap, N not yet, or /quit" if self._pending == "wrap"
                            else "What does your character do?" if self.mode == "action"
                            else "Ask the DM a logistical question…")
 
@@ -432,6 +450,15 @@ class PlayApp(App):
             result = roll_expr(text[5:].strip())
             self._scene_status(result or "could not parse — try /roll 2d6+3", kind="rule")
             return
+        # Session complete, awaiting wrap-or-quit — the only two choices. Block
+        # everything else here so a stray message can't reach the already-ended
+        # runner (that's how a level-up once ended up delivered days late, buried
+        # in an unrelated reply, instead of at the actual close).
+        if self._pending == "wrap":
+            self._scene_status("— session complete — answer Y/N above, or /wrap · "
+                               "/quit — nothing else reaches the table until then —",
+                               kind="rule")
+            return
         # /meta — an out-of-game question without switching modes.
         if text.lower().startswith("/meta"):
             q = text[5:].strip()
@@ -476,8 +503,8 @@ class PlayApp(App):
             # The runner signalled the session's end — offer the wrap (reconcile +
             # prep N+1) instead of auto-running minutes of pipeline.
             self._scene_status("— the session has reached its end —", kind="rule")
-            self._busy(False)
             self._pending = "wrap"
+            self._busy(False)
             self._prompt.ask(f"Session {self.lc.session} complete — "
                              f"reconcile & prep session {self.lc.session + 1}?")
             return
@@ -572,7 +599,7 @@ class PlayApp(App):
             self._pending = None
             self.run_worker(self._finish_setup(), exclusive=True)
             return
-        if self.lc.phase != "play":  # nothing to wrap during setup
+        if self.lc.phase not in ("play", "wrap_pending"):  # nothing to wrap during setup
             return
         self._pending = None
         self.run_worker(self._do_wrap(), exclusive=True)
