@@ -33,8 +33,7 @@ So when a discovery is on the table:
 - **"What does my character see/realize?" is an invitation, not a dodge.** It means *let the
   character's expertise do the work.* Either call for the fitting check (Investigation, Arcana,
   Medicine, Insight…) and narrate what the character realizes on success, or — if the pieces are
-  complete and no check is needed — just tell them what the character makes of it. Don't volley it
-  back.
+  complete and no check is needed — just tell them what the character makes of it.
 - **Follow the plan's resolution mode.** The session plan flags each discovery as *player-assembled*
   or *check-gated*. If it laid out only partial pieces, that's check-gated: ask for the roll and
   narrate the synthesis — don't ask the player to bridge a gap the plan left for the character. If

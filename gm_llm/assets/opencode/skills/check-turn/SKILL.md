@@ -57,11 +57,10 @@ an error to flag; diverging from the arc is allowed and only recorded.
   know or are doing — against that entity's pre-loaded `### ` block (and its `.state.md` block, if one
   is in the brief) and the transcript.
 - **Before flagging a contradiction on anything play could have changed** (location, activity,
-  disposition, condition, what someone holds, what's been opened/taken/destroyed): the frozen file is
-  stale, so the transcript decides. If the tail in your brief doesn't settle it, **`grep` the full
-  transcript file** for the entity/subject first. Flag **only** if the transcript itself contradicts
-  the draft (or is silent *and* the draft also breaks canon) — never flag a change the session already
-  made on the strength of a session-start file.
+  disposition, condition, what someone holds, what's been opened/taken/destroyed): the transcript
+  decides (check 1) — `grep` it if the tail doesn't settle it. Flag **only** if the transcript itself
+  contradicts the draft (or is silent *and* the draft also breaks canon) — never flag a change the
+  session already made on the strength of a session-start file.
 - Flag every genuine contradiction. For each, **supply the correct fact** and **name the source**
   (`### <path>`, or the transcript line) so the runner can fix it without guessing.
 
