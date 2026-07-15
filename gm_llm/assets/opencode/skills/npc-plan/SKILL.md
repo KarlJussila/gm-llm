@@ -43,4 +43,3 @@ reveal (the general gating mechanic is in `investigation-plan`), with an NPC-spe
 - **NPCs are not satellites of the PC.** They perceive, judge, and act on their own. Once the PC
   commits to a course, the NPC who'd take charge should act rather than wait to be consulted.
 - **Not uniformly kind.** Friction, suspicion, agendas. Kindness is a choice, not the default.
-- **Consistency with what they know.** An NPC never acts on a secret they aren't party to.

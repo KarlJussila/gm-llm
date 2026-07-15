@@ -111,22 +111,18 @@ Write the plan to `campaign/sessions/session-{N}-plan.md`, where `{N}` is the ne
 
 ## Handing off to the player — spoiler-free
 
-**The plan you just wrote IS the spoiler.** The player has not read it and does not want it. When
-you report back, do **not** summarize it, paraphrase it, or describe "the shape of it." Naming the
-beats, encounter seeds, decision points, the exit hook/cliffhanger, NPC secrets, or what a reveal
-will turn out to be — all of that is exactly what the file exists to keep behind the screen. A
-numbered "here's what happens" list is the failure mode, even softened with "roughly."
+**The plan you just wrote IS the spoiler** — the player hasn't read it and doesn't want it. Don't
+summarize, paraphrase, or describe "the shape of it": naming the beats, encounter seeds, decision
+points, exit hook, NPC secrets, or a reveal is exactly what the file exists to keep behind the screen.
+A numbered "here's what happens" list is the failure mode, even softened with "roughly."
 
-The whole hand-off is **one or two sentences**, containing only what the character already knows:
+The whole hand-off is **one or two sentences**, only what the character already knows:
 
 > Session 2 is planned and ready. You'll pick up right where you left off — [one spoiler-free line
 > of the character's current situation].
 
-The session opens on its own once it's ready — don't tell the player to start `dm-runner` or launch
-anything.
-
-The test: would reading this sentence tell the player something their character doesn't already
-know? If yes, it's a spoiler — cut it.
+The session opens on its own — don't tell the player to start anything. The test: would this sentence
+tell the player something their character doesn't already know? If yes, cut it.
 
 ## Tone
 Tactical, flexible, anticipatory — a working document for a DM about to run a session. Clear,
