@@ -8,8 +8,7 @@ description: The post-session arc pass for ONE arc — reconcile the arc named i
 This is where the campaign's stories absorb what happened at the table. The runner played a session;
 the arc named in your brief must now be **reconciled toward what was actually played** — a real
 revision of the arc's living *design body*, never just a status line. The orchestrator runs this
-pass **once per arc**; your scope is the one arc your brief names. (New minor arcs, the threads
-dashboard, and the cross-arc sweep are separate dispatches — not yours here.)
+pass **once per arc**; your scope is the one arc your brief names (the exclusions are in *Boundaries*).
 
 ## Read first
 Read `campaign/feedback/arc-design.md` if it exists — accumulated player guidance on how arcs should
