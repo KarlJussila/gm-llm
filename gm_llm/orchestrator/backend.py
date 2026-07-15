@@ -114,6 +114,13 @@ class Backend:
         """Boot our own `opencode serve` and wait until it answers."""
         log = open(self.logs.serve, "w")
         exe = shutil.which("opencode") or "opencode"
+        # Disable opencode's own auto-compaction. It's a single undifferentiated LLM
+        # summarization pass over the whole session — exactly the model-judgment-driven,
+        # lossy canon rewrite this pipeline avoids everywhere else. We replace it with a
+        # deterministic session-wrap nudge (see `Game._update_wrap_countdown`): once the
+        # runner session reaches opencode's own compaction threshold, the orchestrator
+        # steers the runner to close the session at a clean beat rather than summarizing.
+        env = {**os.environ, "OPENCODE_DISABLE_AUTOCOMPACT": "1"}
         if os.name == "nt":
             # From `npm i -g opencode-ai`, `opencode` is an `opencode.cmd` shim that
             # CreateProcess can't launch directly, so run it through the shell (a bare
@@ -122,13 +129,13 @@ class Backend:
             # tree with taskkill.
             self._proc = subprocess.Popen(
                 f'"{exe}" serve --port {self.port}',
-                cwd=self.directory, stdout=log, stderr=subprocess.STDOUT,
+                cwd=self.directory, stdout=log, stderr=subprocess.STDOUT, env=env,
                 shell=True, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
             )
         else:
             self._proc = subprocess.Popen(
                 [exe, "serve", "--port", str(self.port)],
-                cwd=self.directory, stdout=log, stderr=subprocess.STDOUT,
+                cwd=self.directory, stdout=log, stderr=subprocess.STDOUT, env=env,
             )
         self._owns_server = True
         self._wait_until_ready(ready_timeout)
