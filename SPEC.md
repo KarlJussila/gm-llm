@@ -187,7 +187,8 @@ the `log-extractor` (extraction).
   compaction threshold, the orchestrator counts down a `<session-length>` nudge that steers the runner
   to end the session at a clean beat (explicitly *without* rushing the story — an odd stopping point
   beats a hurried one). No live narration is ever summarized by a model. The TUI header shows a live
-  `ctx NN% (used/threshold)` readout of the runner session's footprint.
+  `ctx NN% (used/window)` readout of the runner session's footprint (against the full context
+  window, so it stays under 100% as tokens climb past the wrap threshold during the countdown).
 - **Session completion is a disk fact:** when the runner ends a session (`task_complete`), the
   orchestrator records it under `.opencode/.orchestrator/session-{N}.json`, so a session the player
   closed the app on without confirming the wrap reopens to the same wrap-or-quit choice on the next

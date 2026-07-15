@@ -106,7 +106,7 @@ class PlayApp(App):
         self._thinking = None        # the PendingBlock in the scene, while a call is in flight
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
         self._setup_stages_seen = set()  # spoiler-free setup stages already shown (each shows once)
-        self._ctx_note = ""          # " · ctx 47% (78k/168k)" — refreshed after each turn
+        self._ctx_note = ""          # " · ctx 39% (78k/200k)" — refreshed after each turn
 
     @property
     def game(self):
@@ -280,9 +280,10 @@ class PlayApp(App):
             cu = await asyncio.to_thread(self.game.context_usage)
         except Exception:  # noqa: BLE001 — a status readout, never worth surfacing
             cu = None
-        # Denominator is the compaction threshold, not the raw context window, so the
-        # fraction and the percentage agree (pct is measured against the threshold too).
-        self._ctx_note = (f" · ctx {cu.pct:.0f}% ({cu.tokens / 1000:.0f}k/{cu.threshold / 1000:.0f}k)"
+        # Denominator is the full window (the hard wall), not the wrap threshold, so the
+        # readout stays under 100% while tokens climb past the threshold during the wrap
+        # countdown; pct is measured against the same window, so fraction and percent agree.
+        self._ctx_note = (f" · ctx {cu.pct:.0f}% ({cu.tokens / 1000:.0f}k/{cu.context_limit / 1000:.0f}k)"
                           if cu else "")
         self._refresh_subtitle()
 

@@ -59,14 +59,22 @@ class ContextUsage:
     instead. Nothing here is fetched from that trigger directly (opencode doesn't
     expose it) — this recomputes it from the same public numbers
     (`/config/providers`), so it can drift if opencode changes the formula, but
-    it's the best available signal short of parsing their source."""
+    it's the best available signal short of parsing their source.
+
+    `context_limit` is the model's full usable input ceiling (its input cap if it
+    advertises one, else its context window) — the true wall. `threshold` is only
+    where the wrap nudge begins; tokens legitimately keep climbing past it, into the
+    reserve between the two, while the session winds down to a close."""
     tokens: int
     context_limit: int
     threshold: int
 
     @property
     def pct(self) -> float:
-        return (self.tokens / self.threshold * 100) if self.threshold else 0.0
+        """Fraction of the full window in use — measured against `context_limit`, not
+        `threshold`, so it never reads past 100% during the wrap countdown (tokens do
+        exceed the threshold there by design)."""
+        return (self.tokens / self.context_limit * 100) if self.context_limit else 0.0
 
 
 class BackendError(RuntimeError):
@@ -439,10 +447,11 @@ class Backend:
         # models that advertise a larger `output` — mirror that so the threshold
         # matches for models with output > 32k, not just this project's mimo (32k).
         context = limit["context"]
+        ceiling = limit.get("input") or context  # the true input wall (== context without an input cap)
         max_output = min(limit.get("output") or 32000, 32000)
         threshold = (max(0, limit["input"] - min(20000, max_output)) if limit.get("input")
                      else max(0, context - max_output))
-        return ContextUsage(tokens=used, context_limit=context, threshold=threshold)
+        return ContextUsage(tokens=used, context_limit=ceiling, threshold=threshold)
 
     def _run_prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
         """Prompt `agent` on `session_id`; return its text. Retries on failure/empty/
