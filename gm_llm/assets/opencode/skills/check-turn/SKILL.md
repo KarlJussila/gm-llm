@@ -1,6 +1,6 @@
 ---
 name: check-turn
-description: The narrative-checker's RUNTIME role — verify a runner's drafted turn against canon, the running transcript, and the PC's knowledge ledger. Run by the runtime gate on each drafted turn before it reaches the player.
+description: The narrative-checker's RUNTIME role — verify a runner's drafted turn against canon, the running transcript, the PC's knowledge ledger, and what the NPCs in the scene could plausibly know. Run by the runtime gate on each drafted turn before it reaches the player.
 ---
 
 # check-turn — narrative check of a drafted runtime turn
@@ -90,6 +90,16 @@ an error to flag; diverging from the arc is allowed and only recorded.
 - Flag a fact the draft hands the PC that is `[hidden]`, **not yet `[revealed]`, and not learned
   earlier this session**, or that the PC has no in-scene way to know — and name the `### <path>` the
   flag lives in. Spoiler discipline is **yours**.
+
+### 6. Check NPC knowledge provenance
+The mirror of check 5 — that guards what the **PC** shouldn't know, this what an **NPC** shouldn't.
+Info the PC originated or that arose in play has no `Known to:` set, so canon flags miss it; the
+transcript is your only source (`grep` it for the fact and the NPC).
+- For anything an NPC knows or acts on, ask whether a channel *could* plausibly have reached them —
+  presence, a conversation, word-of-mouth over the elapsed time. It need not be on screen. If one
+  could exist, pass silently.
+- Flag only when no plausible route exists — the fix is that the **NPC doesn't know it**. Never have
+  the runner narrate how they found out.
 
 ## Report
 Per finding: what's wrong; the **correct fact** (for contradictions); the **source file(s)** to

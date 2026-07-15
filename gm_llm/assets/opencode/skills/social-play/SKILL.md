@@ -34,8 +34,11 @@ the PC, and not frozen until the PC decides something.
   they've stepped back from being the decision-maker), stop asking them to decide again. Let the NPC
   who would take charge take charge. A suspicious ally interrogating the newcomer while the oblivious
   PC happily talks shop — that tension *is* the scene.
-- Within their `Known to:` set, NPCs have full agency; outside it, they can't act on what they don't
-  know.
+- **NPCs only know what's reached them.** The `Known to:` set covers canonical secrets — but the same
+  rule governs anything that happened in play. An NPC can reference or act on a fact only if it is
+  possible for the information to have reached them: they were present, someone told them, or word
+  plausibly spread given the elapsed time and distance. Something the PC just learned, decided, or
+  intends — but hasn't announced — is not in an NPC's mouth. When in doubt, they haven't heard.
 
 ## Running social encounters
 
