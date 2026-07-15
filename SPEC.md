@@ -176,6 +176,22 @@ the `log-extractor` (extraction).
 - **Automatic transcript capture:** the orchestrator writes
   `campaign/sessions/session-{N}-transcript.md` from each turn's final messages (player + corrected
   DM narration). Note-taking never depends on the model.
+- **Fenced control channels:** every orchestrator→runner message is a user-role text part (opencode
+  distinguishes only system from user, not the kinds of user content), so the orchestrator fences
+  each of its channels in closed tags — `<turn-reminder>`, `<player>`, `<correction>`,
+  `<prepared-context>`, `<play-so-far>`, `<session-length>` — keeping its own instructions
+  unambiguously distinct from the player's in-fiction input.
+- **Live-session context management:** the runner reuses one warm session for a whole game session.
+  opencode's own auto-compaction — a single LLM summarization pass that would lossily rewrite canon —
+  is disabled (`OPENCODE_DISABLE_AUTOCOMPACT`); instead, once the session reaches opencode's own
+  compaction threshold, the orchestrator counts down a `<session-length>` nudge that steers the runner
+  to end the session at a clean beat (explicitly *without* rushing the story — an odd stopping point
+  beats a hurried one). No live narration is ever summarized by a model. The TUI header shows a live
+  `ctx NN% (used/threshold)` readout of the runner session's footprint.
+- **Session completion is a disk fact:** when the runner ends a session (`task_complete`), the
+  orchestrator records it under `.opencode/.orchestrator/session-{N}.json`, so a session the player
+  closed the app on without confirming the wrap reopens to the same wrap-or-quit choice on the next
+  launch instead of resuming into more play.
 - **Subagent invocation:** the orchestrator spawns each subagent as its own `opencode serve`
   session over the HTTP API — no `task`-tool delegation, no `opencode run` subprocess.
 - **Markdown files:** all state is stored in human-readable markdown (no database).

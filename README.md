@@ -117,6 +117,10 @@ UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
 ### The TUI
 
+- **Header** — the current phase/mode (`SETUP`, `ACTION mode`, `META mode`) plus a live
+  `ctx 47% (78k/168k)` readout of how full the runner session's context is. As it approaches
+  the limit the DM is steered to bring the session to a close at a natural beat (it won't rush
+  the story to do so).
 - **Scene pane** — the play itself: DM narration, your lines, spoiler-free progress
   tickers (`▸ advancing the story…`) during setup and wraps, and a muted per-turn status
   (`✓ checked` / `✎ corrected (canon)`) showing the gate at work.

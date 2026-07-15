@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gm-llm"
-version = "0.1.1"
+version = "0.2.0"
 description = "An LLM game master for solo, long-form D&D campaigns — over opencode."
 readme = "README.md"
 requires-python = ">=3.10"
