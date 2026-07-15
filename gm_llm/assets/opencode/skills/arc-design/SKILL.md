@@ -99,10 +99,3 @@ it is, no one hands out level-ups because no one owns them — this is where tha
   file shape. Write `arcs/{slug}.md`, set `tier` and `hooks-into` in the frontmatter, register the arc
   in `INDEX.md` (Arcs) with its tier, link entities with `[[slug]]`, and flag spoilers `[hidden]` +
   `Known to:`.
-
-## The bar
-
-- Every load-bearing answer is fixed — no blanks, no "DM decides."
-- Registered in `INDEX.md` with its `tier`, linked, and spoiler-flagged; a minor arc names the major
-  in `hooks-into:` and cross-links it both ways.
-- The only thing left open is the player's path.

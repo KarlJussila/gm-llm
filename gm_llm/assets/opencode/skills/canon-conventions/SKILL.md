@@ -100,13 +100,11 @@ that share a slug stem and sit side by side**:
   it's doing. **Mutable** — rewritten at session boundaries by the dm's apply pass.
 
 The **PC is a stateful entity like any other** and gets the full pair — `{slug}.md` (the sheet:
-class, level, ability scores, features — update it on level-up, ability/feature change, or when a
-new spell/ability first appears) + `{slug}.state.md` (current location, notable condition, key
-items, objective) — **plus** one extra
-PC-specific file: `{slug}.knowledge.md`, the epistemic ledger of what the PC knows, believes, and
-wonders. The ledger sits *alongside* the state file; it does not replace it. **Don't track granular
-mechanical resources** (HP, spell slots, coin) in state — the player owns those; record only
-narratively significant state, exactly as for an NPC.
+class, level, ability scores, features — update on level-up, ability/feature change, or a new
+spell/ability's first appearance) + `{slug}.state.md` (location, notable condition, key items,
+objective) — **plus** one PC-specific file: `{slug}.knowledge.md`, the epistemic ledger of what the
+PC knows, believes, and wonders. **Don't track granular mechanical resources** (HP, spell slots,
+coin) in state — the player owns those; record only narratively significant state, as for an NPC.
 
 **State files are session-boundary snapshots, not a live feed.** A `.state.md` is accurate at
 session *start* and is **frozen during play** — no agent rewrites it mid-session. During a session
@@ -149,18 +147,15 @@ adjudication, *not* a full stat block) — and **`## Abilities`** for spells / s
 supernatural powers (write "None" if they have none).
 
 **PC files carry a `## Known capabilities`** section — proficiencies, spells known, named abilities,
-and feats — seeded from whatever the player provides at creation and **grown through play** (record
-each new one the first time it shows at the table). It is *not* gated by the lint: it accretes, and
-no one types their whole list up front. It records what the character *can do*, never live resources
-(HP, slots, coin — those are the player's).
+and feats — seeded at creation and **grown through play** (record each new one the first time it
+shows at the table). *Not* gated by the lint: it accretes, and no one types their whole list up
+front. It records what the character *can do*, not resources.
 
-Vitals are the *structured* basics; the prose sections below them add depth (presence, reputation,
-true nature). A completeness lint checks the required fields and NPC sections are present and filled;
-the narrative-checker judges whether the values cohere with the rest of canon.
+The completeness lint checks the required fields and NPC sections are present and filled; the
+narrative-checker judges whether the values *cohere* with canon.
 
-**World-truth docs are a separate, non-entity shape.** `overview.md`, `cosmology.md`, and
-`history.md` are setting prose, not entities — no slug frontmatter, no state file, not in `INDEX`.
-Use the `world-overview` / `world-cosmology` / `world-history` templates; they still carry the
+**World-truth docs** (`overview`/`cosmology`/`history`) are the separate non-entity shape from §2 —
+use the `world-overview` / `world-cosmology` / `world-history` templates; they still carry the
 surface/hidden two-layer structure.
 
 ### State file (`{slug}.state.md`) frontmatter + sections
