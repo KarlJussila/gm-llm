@@ -93,12 +93,15 @@ def section(label: str, body: str) -> str:
 class Logs:
     """Every log destination the orchestrator writes, in one object:
 
-      serve  — the `opencode serve` subprocess's stdout/stderr (always on; the
-               Popen redirect needs a real file).
-      raw    — every model reply's full part structure, for debugging findings
-               split across parts. Only written when `debug` is set.
-      checks — the per-turn / per-prep / per-reconcile summary blocks.
-      detail — the gate's per-check model output (one block per checker call).
+      serve   — the `opencode serve` subprocess's stdout/stderr (always on; the
+                Popen redirect needs a real file).
+      raw     — every model reply's full part structure, for debugging findings
+                split across parts. Only written when `debug` is set.
+      checks  — the per-turn / per-prep / per-reconcile summary blocks.
+      detail  — the gate's per-check model output (one block per checker call).
+      archive — the run's score-event stream (`archive.Archive`, one JSONL file
+                per run): the benchmark's ground truth. Created lazily on first
+                emit, so runs that never gate anything leave no file.
 
     Built once via `Logs.under()` at the entry point and threaded as a single
     object; each component reads the path it needs and writes through `append`.
@@ -108,6 +111,7 @@ class Logs:
     raw: Path
     checks: Path
     detail: Path
+    archive: "object | None" = None  # archive.Archive — typed loosely to avoid the import cycle
     debug: bool = False
 
     @classmethod
@@ -116,6 +120,8 @@ class Logs:
         explicit `base` > `$GM_LLM_LOG_DIR` > `<project>/.opencode/logs` > the OS temp dir.
         `raw` overrides just the raw-dump path; `debug` toggles
         whether raw dumps are written."""
+        from .archive import Archive  # local: archive builds on this module's append
+
         base = resolve_log_dir(project, base)
         try:
             base.mkdir(parents=True, exist_ok=True)
@@ -126,5 +132,6 @@ class Logs:
             raw=Path(raw) if raw else base / "orchestrator-raw.log",
             checks=base / "orchestrator-checks.log",
             detail=base / "orchestrator-check-detail.log",
+            archive=Archive.under(base),
             debug=debug,
         )

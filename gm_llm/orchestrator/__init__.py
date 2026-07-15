@@ -5,6 +5,7 @@ bounded correction, then the result is returned. Interfaces (TUI, benchmark) bui
 on `Game`; nothing here depends on the interface.
 """
 
+from .archive import Archive
 from .backend import Backend, BackendError
 from .canon import CanonPreloader
 from .gate import Gate, GateResult, StageGateResult, Verdict
@@ -17,7 +18,7 @@ from .setup import Setup, SetupTurn
 from .status import CampaignStatus, campaign_status
 
 __all__ = [
-    "Backend", "BackendError", "CanonPreloader",
+    "Archive", "Backend", "BackendError", "CanonPreloader",
     "CampaignStatus", "campaign_status",
     "Gate", "GateResult", "StageGateResult", "Verdict",
     "Game", "TurnResult", "Lifecycle", "Logs",

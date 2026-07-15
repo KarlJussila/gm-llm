@@ -144,6 +144,8 @@ def with_engine(args, body, *, default_timeout=360):
             tap = EventTap(backend.base, backend.directory).start()
             note("streaming live model output (--stream)…")
         body(backend, Gate(backend, CanonPreloader(args.dir), logs=logs), logs)
+        if logs.archive and logs.archive.path.is_file():
+            note(f"score archive: {logs.archive.path}")
         note("done.")
     except BackendError as e:
         fail(f"backend gave up: {e}")

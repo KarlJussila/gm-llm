@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .archive import verdict_fields
 from .logs import append, banner, section
 from .phase import apply_one_correction, commit_campaign
 from .prompts import load
@@ -39,6 +40,7 @@ class PrepResult:
     gate: "StageGateResult"    # noqa: F821 — annotation only (lazy via __future__)
     corrected: bool
     committed: bool
+    draft: str = ""            # the plan as gated (== plan unless corrected)
 
 
 class PlannerError(RuntimeError):
@@ -82,6 +84,7 @@ class Planner:
         result = self.gate.check_plan(plan)
 
         # 3. Exactly one bounded correction (no re-gate). Re-read the file after.
+        draft = plan  # the text the gate judged — archived even once corrected over
         corrected = apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
         if corrected:
             plan = self._read_plan(n)
@@ -89,7 +92,7 @@ class Planner:
         # 4. Commit deterministically (the orchestrator owns git, not the model).
         committed = commit_campaign(self.root, f"campaign: session {n} plan") if commit else False
 
-        pr = PrepResult(n, plan, result, corrected, committed)
+        pr = PrepResult(n, plan, result, corrected, committed, draft=draft)
         self._log(pr)
         if self.on_prep:
             self.on_prep(pr)
@@ -98,6 +101,18 @@ class Planner:
     def _log(self, pr: PrepResult) -> None:
         if self.logs:
             append(self.logs.checks, _format_block(pr))
+        if self.logs and self.logs.archive:
+            # Both plan texts ride along: `draft` is what the gate judged (what a
+            # grader must read the verdict against), `plan` what landed on disk.
+            # The reconcile stages' artifacts are all committed to the campaign
+            # repo; a gated draft exists only here.
+            self.logs.archive.emit(
+                "stage", stage="plan", session=pr.n,
+                verdict=verdict_fields(pr.gate.narrative),
+                corrected=pr.corrected, committed=pr.committed,
+                canon_sections=pr.gate.canon_sections,
+                draft=pr.draft, plan=pr.plan,
+            )
 
 
 def _format_block(pr: PrepResult) -> str:

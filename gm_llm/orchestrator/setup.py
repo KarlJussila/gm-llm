@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .archive import verdict_fields
 from .phase import apply_one_correction, commit_campaign
 from .planner import Planner
 from .prompts import load
@@ -169,7 +170,11 @@ class Setup:
         if not self._setup_done("GATE"):
             self._announce("GATE")
             result = self.gate.check_init()
-            apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
+            corrected = apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
+            if self.logs and self.logs.archive:
+                self.logs.archive.emit("stage", stage="init",
+                                       verdict=verdict_fields(result.narrative),
+                                       corrected=corrected)
             self._mark_done("GATE")
 
         self._announce("COMMIT")

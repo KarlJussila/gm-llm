@@ -34,6 +34,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .archive import verdict_fields
 from .backend import BackendCancelled, BackendError
 from .canon import latest_session
 from .logs import append, banner, section
@@ -83,6 +84,9 @@ class Game:
         # per-turn countdown that steers the runner to wrap the session (see
         # `_update_wrap_countdown`). Fresh per Game, so it never carries across sessions.
         self._wrap_countdown: int | None = None
+        # Turn ordinal within THIS run (the archive's turn id). A resume starts a new
+        # run over the same session — the archive's `resume` event marks the restart.
+        self._turn_no = 0
         self.logs = logs
         self.runner_sid = backend.create_session("dm-runner game")
         # The session being played = the highest plan on disk, unless told otherwise.
@@ -128,6 +132,8 @@ class Game:
                      + "\n\n<play-so-far>\n" + transcript + "\n</play-so-far>")
             self.backend.prompt(self.runner_sid, self.runner_agent, prime)
         self._save_runner_sid()
+        if self.logs and self.logs.archive:
+            self.logs.archive.emit("resume", session=self.session)
         return _last_dm_beat(transcript)
 
     def turn(self, player_input: str) -> TurnResult:
@@ -241,6 +247,7 @@ class Game:
 
     def _gated_turn(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
         self._correcting = False
+        self._turn_no += 1
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, message)
         draft = reply.text
@@ -269,13 +276,15 @@ class Game:
         self._step("done")
         tr = TurnResult(player_msg, draft, final, result, corrected, session_complete)
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
-        self._update_wrap_countdown(session_complete)
+        cu = self.backend.context_usage(self.runner_sid)  # one read, shared: countdown + archive
+        self._update_wrap_countdown(session_complete, cu)
         self._log(tr)
+        self._archive_turn(tr, opening, cu)
         if self.on_turn:
             self.on_turn(tr)
         return tr
 
-    def _update_wrap_countdown(self, session_complete: bool) -> None:
+    def _update_wrap_countdown(self, session_complete: bool, cu) -> None:
         """After each turn, track how many turns until the runner should wrap. It stays
         None until the runner session first reaches opencode's own compaction threshold
         (the point opencode would have auto-summarized, which we disabled — see
@@ -290,7 +299,6 @@ class Game:
         if self._wrap_countdown is not None:
             self._wrap_countdown = max(1, self._wrap_countdown - 1)
             return
-        cu = self.backend.context_usage(self.runner_sid)
         if cu and cu.threshold and cu.tokens >= cu.threshold:
             self._wrap_countdown = _WRAP_WARN_TURNS
 
@@ -386,6 +394,22 @@ class Game:
     def _log(self, tr: TurnResult) -> None:
         if self.logs:
             append(self.logs.checks, _format_block(tr))
+
+    def _archive_turn(self, tr: TurnResult, opening: bool, cu) -> None:
+        """One `turn` score event — the DRAFT always rides along (the benchmark
+        scores the draft; the correction is its own signal)."""
+        if not (self.logs and self.logs.archive):
+            return
+        g = tr.gate
+        self.logs.archive.emit(
+            "turn", session=self.session, turn=self._turn_no, opening=opening,
+            player=tr.player_input, draft=tr.draft, final=tr.final,
+            corrected=tr.corrected, session_complete=tr.session_complete,
+            verdicts=[verdict_fields(g.narrative), verdict_fields(g.conduct)],
+            canon_sections=g.canon_sections,
+            context=({"tokens": cu.tokens, "limit": cu.context_limit,
+                      "threshold": cu.threshold} if cu else None),
+        )
 
 
 def _session_state_path(directory: str, n: int) -> Path:

@@ -31,6 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import completeness
+from .archive import verdict_fields
 from .logs import append, banner, section
 from .phase import apply_one_correction, commit_campaign
 from .planner import Planner, PrepResult  # noqa: F401 — PrepResult used in annotations
@@ -118,7 +119,12 @@ class Reconciler:
             self.backend.prompt(self.extractor_sid, self.extractor_agent,
                                 load("digest-brief").format(n=n))
             rr.digest = self.gate.check_digest(n)
-            apply_one_correction(self.backend, self.extractor_sid, self.extractor_agent, rr.digest)
+            # The digest as gated, before the correction rewrites it in place — the
+            # one reconcile artifact whose checked state never reaches a commit.
+            draft = self._read_campaign(f"sessions/session-{n}.md")
+            corrected = apply_one_correction(self.backend, self.extractor_sid,
+                                             self.extractor_agent, rr.digest)
+            self._archive_stage("digest", n, rr.digest, corrected, draft=draft)
             self._mark(n, "digest")
 
         # C. Assessment (analyst): digest -> assessment. No gate — it's analysis, not canon.
@@ -134,7 +140,9 @@ class Reconciler:
             self.backend.prompt(self.analyst_sid, self.analyst_agent,
                                 load("curate-feedback-brief").format(n=n))
             rr.feedback = self.gate.check_feedback(n)
-            apply_one_correction(self.backend, self.analyst_sid, self.analyst_agent, rr.feedback)
+            corrected = apply_one_correction(self.backend, self.analyst_sid,
+                                             self.analyst_agent, rr.feedback)
+            self._archive_stage("feedback", n, rr.feedback, corrected)
             self._mark(n, "feedback")
 
         # D1. New/changed entity canon (dm), guarded by the completeness lint.
@@ -142,6 +150,10 @@ class Reconciler:
             self._announce("canon")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("apply-canon-brief").format(n=n))
             rr.lint_incomplete = self._lint_correct()
+            if self.logs and self.logs.archive:
+                self.logs.archive.emit("stage", stage="lint", session=n,
+                                       incomplete=rr.lint_incomplete,
+                                       corrected=bool(rr.lint_incomplete))
             self._mark(n, "canon")
 
         # D2. Arc pass (same dm thread): the orchestrator enumerates the arcs — code,
@@ -173,7 +185,9 @@ class Reconciler:
         if not self._done(n, "propagation"):
             self._announce("propagation")
             rr.propagation = self.gate.check_propagation(n)
-            apply_one_correction(self.backend, self.dm_sid, self.dm_agent, rr.propagation)
+            corrected = apply_one_correction(self.backend, self.dm_sid,
+                                             self.dm_agent, rr.propagation)
+            self._archive_stage("propagation", n, rr.propagation, corrected)
             self._mark(n, "propagation")
 
         # Commit the post-session updates (digest, assessment, feedback, canon, arcs, state).
@@ -218,6 +232,21 @@ class Reconciler:
         self.backend.prompt(self.dm_sid, self.dm_agent,
                             load("correct-completeness") + "\n\n— Incomplete —\n" + "\n".join(lines))
         return len(bad)
+
+    def _read_campaign(self, rel: str) -> str:
+        try:
+            p = self.root / "campaign" / rel
+            return p.read_text(encoding="utf-8") if p.is_file() else ""
+        except OSError:
+            return ""
+
+    def _archive_stage(self, stage: str, n: int, g, corrected: bool, **extra) -> None:
+        """One `stage` score event, emitted as the stage completes — a crashed or
+        resumed run archives exactly the stages that actually gated this run."""
+        if self.logs and self.logs.archive:
+            self.logs.archive.emit("stage", stage=stage, session=n,
+                                   verdict=verdict_fields(g.narrative),
+                                   corrected=corrected, **extra)
 
     def _log(self, rr: ReconcileResult) -> None:
         if self.logs:
