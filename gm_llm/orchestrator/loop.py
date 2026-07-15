@@ -125,6 +125,12 @@ class Game:
         message = f"{load('turn-reminder')}\n\n--- PLAYER MESSAGE ---\n{player_input}"
         return self._gated_turn(message, player_input)
 
+    def context_usage(self):
+        """The runner session's live context footprint — see
+        `Backend.context_usage`. Best-effort; `None` if the lookup fails (a
+        status-only signal, never worth failing a turn over)."""
+        return self.backend.context_usage(self.runner_sid)
+
     def meta(self, question: str) -> str:
         """An out-of-game question. The runner answers it (spoiler-free, per its
         prompt); the orchestrator does NOT gate it — it isn't narration, and it

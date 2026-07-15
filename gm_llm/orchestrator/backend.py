@@ -48,6 +48,27 @@ class Reply:
     tool_inputs: dict[str, dict] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class ContextUsage:
+    """A session's live context footprint, read straight off opencode's own
+    accounting. `threshold` mirrors opencode's auto-compaction trigger: it caps
+    the model's output reservation at OUTPUT_TOKEN_MAX (32000) and auto-summarizes
+    once cumulative tokens reach whatever's left of the window. With no input cap
+    (this project's model) that leftover is `context - min(output, 32000)`; when
+    the model advertises an input cap it's `input - min(20000, output, 32000)`
+    instead. Nothing here is fetched from that trigger directly (opencode doesn't
+    expose it) — this recomputes it from the same public numbers
+    (`/config/providers`), so it can drift if opencode changes the formula, but
+    it's the best available signal short of parsing their source."""
+    tokens: int
+    context_limit: int
+    threshold: int
+
+    @property
+    def pct(self) -> float:
+        return (self.tokens / self.threshold * 100) if self.threshold else 0.0
+
+
 class BackendError(RuntimeError):
     pass
 
@@ -85,6 +106,7 @@ class Backend:
         self._cancel = threading.Event()
         self._inflight_sid: str | None = None
         self.on_retry = None  # optional callback(agent, attempt, wait, reason)
+        self._providers_cache: dict | None = None  # /config/providers, fetched once (static)
 
     # -- server lifecycle ---------------------------------------------------
 
@@ -359,6 +381,61 @@ class Backend:
                 break
             reply = self.prompt_full(session_id, agent, nudge, whole=whole)
         return reply
+
+    def _model_limit(self, provider_id: str, model_id: str) -> dict | None:
+        """A model's `limit` dict (`context`, `output`, optionally `input`) from
+        `/config/providers` — fetched once and cached for the server's lifetime
+        (static catalog data, not per-session state)."""
+        if self._providers_cache is None:
+            try:
+                self._providers_cache = self._raw_get("/config/providers", timeout=15)
+            except (urllib.error.URLError, OSError, ValueError):
+                self._providers_cache = {}
+        for p in (self._providers_cache.get("providers") or []):
+            if p.get("id") == provider_id:
+                return ((p.get("models") or {}).get(model_id) or {}).get("limit")
+        return None
+
+    def context_usage(self, session_id: str) -> ContextUsage | None:
+        """`session_id`'s live context footprint: tokens actually sent on its
+        most recent completed turn (that turn's `tokens.total` — the whole
+        context goes out on every call, so this is the current size, not a
+        delta) against the model's advertised limits. A dev/status-only signal
+        — best-effort, returns None on any lookup miss (no history yet, an
+        unrecognized model, a server hiccup); never worth failing a turn over."""
+        try:
+            msgs = self._raw_get(f"/session/{session_id}/message", timeout=15)
+        except (urllib.error.URLError, OSError, ValueError):
+            return None
+        if not isinstance(msgs, list):
+            return None
+        info = None
+        for m in reversed(msgs):
+            i = m.get("info", {}) if isinstance(m, dict) else {}
+            if i.get("role") == "assistant" and i.get("tokens"):
+                info = i
+                break
+        if info is None:
+            return None
+        tok = info.get("tokens") or {}
+        cache = tok.get("cache") or {}
+        used = tok.get("total") or (
+            (tok.get("input") or 0) + (tok.get("output") or 0)
+            + (cache.get("read") or 0) + (cache.get("write") or 0))
+        provider_id, model_id = info.get("providerID"), info.get("modelID")
+        if not (used and provider_id and model_id):
+            return None
+        limit = self._model_limit(provider_id, model_id)
+        if not limit or not limit.get("context"):
+            return None
+        # opencode caps the reply reservation at OUTPUT_TOKEN_MAX (32000), even for
+        # models that advertise a larger `output` — mirror that so the threshold
+        # matches for models with output > 32k, not just this project's mimo (32k).
+        context = limit["context"]
+        max_output = min(limit.get("output") or 32000, 32000)
+        threshold = (max(0, limit["input"] - min(20000, max_output)) if limit.get("input")
+                     else max(0, context - max_output))
+        return ContextUsage(tokens=used, context_limit=context, threshold=threshold)
 
     def _run_prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
         """Prompt `agent` on `session_id`; return its text. Retries on failure/empty/

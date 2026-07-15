@@ -106,6 +106,7 @@ class PlayApp(App):
         self._thinking = None        # the PendingBlock in the scene, while a call is in flight
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
         self._setup_stages_seen = set()  # spoiler-free setup stages already shown (each shows once)
+        self._ctx_note = ""          # " · ctx 47% (78k/168k)" — refreshed after each turn
 
     @property
     def game(self):
@@ -145,7 +146,7 @@ class PlayApp(App):
                                   f"⚠ {agent} call failed ({escape(str(reason))}) — "
                                   f"retry {attempt} in {int(wait)}s")
         self._sync_input()
-        self.sub_title = "ACTION mode"
+        self._refresh_subtitle()
         if self.lc.phase == "wrap_pending":
             # A prior run ended session N (task_complete fired) and the player
             # never confirmed the wrap — show the same choice again, no model
@@ -258,11 +259,32 @@ class PlayApp(App):
             self._status.start(label or self._default_busy_label())
         else:
             self._status.stop()
-            self.sub_title = "SETUP" if self.lc.phase == "setup" else f"{self.mode.upper()} mode"
+            self._refresh_subtitle()
             self.query_one("#cmd", Input).focus()
 
     def _turn_step(self, key: str) -> None:
         self._status.set_phase(self.TURN_STEPS.get(key, key))
+
+    def _refresh_subtitle(self) -> None:
+        base = "SETUP" if self.lc.phase == "setup" else f"{self.mode.upper()} mode"
+        self.sub_title = base + self._ctx_note
+
+    def _spawn_context_refresh(self) -> None:
+        """Kick off a background refresh of the context-usage note (a couple of
+        HTTP round-trips) — fire-and-forget, doesn't hold up the input."""
+        if self.lc.phase == "play":
+            self.run_worker(self._refresh_context_note(), exclusive=False)
+
+    async def _refresh_context_note(self) -> None:
+        try:
+            cu = await asyncio.to_thread(self.game.context_usage)
+        except Exception:  # noqa: BLE001 — a status readout, never worth surfacing
+            cu = None
+        # Denominator is the compaction threshold, not the raw context window, so the
+        # fraction and the percentage agree (pct is measured against the threshold too).
+        self._ctx_note = (f" · ctx {cu.pct:.0f}% ({cu.tokens / 1000:.0f}k/{cu.threshold / 1000:.0f}k)"
+                          if cu else "")
+        self._refresh_subtitle()
 
     # -- play stream (live model output → behind-the-screen pane) -----------
 
@@ -310,6 +332,7 @@ class PlayApp(App):
             self._scene_status("— resuming the session in progress —")
         self._scene_dm(inline(scene))
         self._busy(False)
+        self._spawn_context_refresh()
 
     # -- setup: the new-campaign conversation (phase == "setup") ------------
 
@@ -499,6 +522,7 @@ class PlayApp(App):
         fixed = [n for n, v in (("canon", g.narrative), ("conduct", g.conduct)) if not v.passed]
         block.set_gate(tr.corrected, fixed)
         self._render_gate(tr)
+        self._spawn_context_refresh()
         if tr.session_complete:
             # The runner signalled the session's end — offer the wrap (reconcile +
             # prep N+1) instead of auto-running minutes of pipeline.
@@ -530,6 +554,7 @@ class PlayApp(App):
         self._clear_thinking()
         self._scene_dm(inline(answer), meta=True)
         self._busy(False)
+        self._spawn_context_refresh()
 
     # -- phase prompt (yes/no at phase boundaries) ----------------------------
 
@@ -744,7 +769,7 @@ class PlayApp(App):
             return  # setup has no modes — the bar is always a DM answer
         self.mode = "meta" if self.mode == "action" else "action"
         self._sync_input()
-        self.sub_title = f"{self.mode.upper()} mode"
+        self._refresh_subtitle()
 
     async def on_unmount(self) -> None:
         if self.cleanup:
