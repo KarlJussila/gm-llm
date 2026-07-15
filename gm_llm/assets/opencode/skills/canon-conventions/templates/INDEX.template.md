@@ -1,7 +1,8 @@
 <!--
   The registry / slug resolver. Path: campaign/INDEX.md
   Three jobs: dedup guard, slug->file resolver, inventory (canon-conventions §6).
-  Every named entity gets a row — including named-only stubs with no file yet.
+  Every named entity gets a row — including named-only stubs with no file yet (a mid-session
+  tolerance only; whoever is authoring canon turns every named-only into a full file, same pass).
   Registered: NPCs, factions, locations, regions, items, concepts, arcs. NOT registered: the
   world-truth singletons (overview/cosmology/history) and state/* docs (fixed paths), nor clocks/threads.
   One table per type. Keep one-line entries to a single clause.

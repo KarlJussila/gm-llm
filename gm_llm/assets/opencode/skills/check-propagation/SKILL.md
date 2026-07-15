@@ -23,9 +23,9 @@ every established fact made it from the record (the digest) into canon and state
 
 ### 2. Check new canon filed
 - For every **new or changed NPC/location/faction/event** in the digest's *World canon* section
-  (including anything the DM improvised): confirm it now has an `INDEX.md` row **and** a real file (a
-  load-bearing one a full file, not a lingering `named-only`). Flag any that's still unfiled or
-  stub-only.
+  (including anything the DM improvised): confirm it now has an `INDEX.md` row **and** a full file
+  built from its template — the POST pass files everything named in play; a lingering `named-only`
+  is a dropped-entity bug. Flag any that's still unfiled or stub-only.
 - For every **plan/arc divergence** in the digest's *Plan vs. actual* section: confirm it's reflected
   in the arc body/`.state.md` (the body was actually revised, not just a status bump). Flag any
   divergence left unreconciled.

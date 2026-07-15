@@ -23,11 +23,15 @@ a row in `campaign/INDEX.md`. Flag any file with no registry row.
 
 ### 3. No dangling links
 `grep` for `[[slug]]` patterns across `campaign/`. For each slug found, confirm it has a row in
-`INDEX.md` and a corresponding file on disk. Flag any that doesn't resolve.
+`INDEX.md` and a corresponding file on disk. Flag any that doesn't resolve. The fix you prescribe
+is always both halves: author the **complete entity file** from its `canon-conventions` template
+*and* register it in `INDEX.md`. At init there is no `named-only` tolerance — that is a mid-session
+allowance only. Never prescribe an index row alone, a stub, or file creation as "optional."
 
 ### 4. No lingering named-only
 Check `INDEX.md` for any row whose `info` column reads `named-only` or where the linked file
-doesn't exist. Flag anything the campaign will need that isn't a full file yet.
+doesn't exist. Flag every one. At init, anything named anywhere in `campaign/` gets a full file —
+there is no "index row only" state and no judgment call about what the campaign will need.
 
 ### 5. No duplicates
 Scan `INDEX.md` for any two entries that overlap in name or role (near-identical names, same
@@ -43,4 +47,6 @@ Read `campaign/campaign.md` and `campaign/world/overview.md`. Flag anything in t
 files that contradicts the setting, tone, or established facts in those documents.
 
 ## Report
-Per finding: what's wrong, which file, and the fix.
+Per finding: what's wrong, which file, and the fix. For any missing or unfiled entity, the fix is
+always the same and never softened: author the complete file from its template and register it.
+Nothing at init is optional, deferred, or "if needed."

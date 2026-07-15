@@ -272,8 +272,9 @@ table adds `tier` and `design` columns). Each row maps a slug to its files, stat
       (NPCs also carry `## Stats (rough sketch)` and `## Abilities`).
 - [ ] Stateful entity? Both `{slug}.md` and `{slug}.state.md` exist, frontmatter filled.
 - [ ] Every referenced entity is a `[[slug]]` link, first mention per doc.
-- [ ] No dangling links — everything referenced is registered (or deliberately stubbed
-      `named-only`).
+- [ ] No dangling links — everything referenced is registered **and filed**. (`named-only` is a
+      mid-session runtime tolerance, never something an authoring pass leaves behind — if you are
+      writing canon right now, resolve every dangling reference to a full file before you finish.)
 - [ ] New entity checked against `INDEX.md` for slug/role overlap before creating.
 - [ ] Secrets flagged `[hidden]` + `Known to:`; surface details left unflagged.
 - [ ] `INDEX.md` row added/updated for anything created or renamed.
