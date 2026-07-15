@@ -111,8 +111,11 @@ class Game:
             self.runner_sid = saved                       # fast path: live session, context intact
         else:
             # durable path: a fresh session has neither the plan nor the play so far —
-            # give it both (prepared context, then the transcript to continue from).
-            prime = self._runner_preload() + load("resume-prime") + "\n" + transcript
+            # give it both (prepared context, then the transcript to continue from). The
+            # transcript is fenced in <play-so-far>…</play-so-far> so the runner reads it
+            # as the established record to absorb, not a scene to re-narrate.
+            prime = (self._runner_preload() + load("resume-prime")
+                     + "\n\n<play-so-far>\n" + transcript + "\n</play-so-far>")
             self.backend.prompt(self.runner_sid, self.runner_agent, prime)
         self._save_runner_sid()
         return _last_dm_beat(transcript)
@@ -120,9 +123,11 @@ class Game:
     def turn(self, player_input: str) -> TurnResult:
         # The per-turn craft reminder rides in front of the player's message — the
         # most salient slot, fresh every turn, so the algorithm (especially "ask for
-        # a roll") doesn't decay over a long session. The gate and the transcript see
-        # only the clean player_msg, never the reminder.
-        message = f"{load('turn-reminder')}\n\n--- PLAYER MESSAGE ---\n{player_input}"
+        # a roll") doesn't decay over a long session. The player's own words are fenced
+        # in <player>…</player> so the runner never mistakes an orchestrator instruction
+        # for the player's fiction (or vice versa). The gate and the transcript see only
+        # the clean player_msg, never the reminder or the fence.
+        message = f"{load('turn-reminder')}\n\n<player>\n{player_input}\n</player>"
         return self._gated_turn(message, player_input)
 
     def context_usage(self):

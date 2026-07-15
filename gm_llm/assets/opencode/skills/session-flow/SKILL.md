@@ -20,9 +20,9 @@ and must not see it. **Produce no pre-session report of any kind**: no assessmen
 summary, no thread/clock list, no "what's ready" or "recommended focus." None of that ever reaches the
 player. Your only player-facing output at the start is the in-fiction opening.
 
-1. **Take in the plan + canon.** If your opening message carries a **PREPARED SESSION CONTEXT** block,
-   the plan and the canon it draws on are already loaded there — work from it; you needn't re-open
-   those files. Otherwise read them yourself: the plan `campaign/sessions/session-{N}-plan.md`
+1. **Take in the plan + canon.** If your opening message carries a `<prepared-context>` block (labeled
+   PREPARED SESSION CONTEXT), the plan and the canon it draws on are already loaded there — work from
+   it; you needn't re-open those files. Otherwise read them yourself: the plan `campaign/sessions/session-{N}-plan.md`
    (**no plan? Stop** — tell the player to run the `dm` to prepare it; don't plan it yourself), then
    `campaign/state/current.md`, the active arc(s), the entities in play, and the ledger
    `campaign/characters/{slug}.knowledge.md`.

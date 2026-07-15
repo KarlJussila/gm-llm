@@ -65,13 +65,15 @@ class GateResult:
         return not (self.narrative.passed and self.conduct.passed)
 
     def correction_brief(self) -> str:
-        """The message handed back to the runner to revise its narration."""
+        """The message handed back to the runner to revise its narration. Fenced in
+        <correction>…</correction> so the runner reads it as out-of-fiction orchestrator
+        direction — a note to act on, never story input to narrate to the player."""
         parts = [load("correct-turn") + "\n"]
         if not self.narrative.passed:
             parts.append("— Canon —\n" + self.narrative.report.strip())
         if not self.conduct.passed:
             parts.append("— Conduct —\n" + self.conduct.report.strip())
-        return "\n\n".join(parts)
+        return "<correction>\n" + "\n\n".join(parts) + "\n</correction>"
 
 
 @dataclass

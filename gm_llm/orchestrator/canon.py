@@ -139,7 +139,10 @@ class CanonPreloader:
         blocks += self._render(self._baseline() + self._matched_entities(plan or ""))
         if not blocks:
             return ""
-        return load("runner-header") + "\n\n" + "\n\n".join(blocks) + "\n\n--- end prepared context ---\n\n"
+        # Fenced in <prepared-context>…</prepared-context> so the runner reads it as its
+        # working set — canon read for it, not player-facing fiction to narrate back.
+        return ("<prepared-context>\n" + load("runner-header") + "\n\n"
+                + "\n\n".join(blocks) + "\n</prepared-context>\n\n")
 
 
 def latest_session(sessions_dir: Path) -> int | None:
