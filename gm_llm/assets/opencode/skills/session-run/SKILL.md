@@ -16,15 +16,15 @@ defaults here wherever they conflict.
 
 ## Companion skills — load the ones the session calls for
 
-This is the core. Three companion skills carry the rest of the craft; load them alongside this one as
-the session calls for them (when in doubt, load):
+This is the core; the companions carry the scene-specific craft. **Assess each scene, load the matching
+skill before you play it, and follow its craft — not just this file.** When in doubt, load.
 
 - **`session-flow`** — always. Opening the session and pacing it toward an ending *you* (not the
   player) decide to land. When pacing says it's time, load **`session-close`** — the closing procedure.
 - **`social-play`** — when the scene is people: a conversation, negotiation, interrogation, or any
-  beat an NPC drives.
+  beat an NPC drives. Owns NPC agency and conversation craft.
 - **`discoveries`** — when the PC investigates, recalls expertise, reads a scene, or pieces clues
-  together.
+  together. Owns how information is found and revealed.
 
 ## Table craft — non-negotiable
 
@@ -72,10 +72,6 @@ These rules are baked in. They come from how this player wants to be run; do not
   a partial that costs something, a miss that complicates. Don't roll for idle chatter or trivial acts,
   and don't let consequential social moves auto-succeed. Even spells are bounded — *Identify* reveals
   properties, not full narrative context. Make information hard-won, not gifted.
-- **NPCs are not uniformly kind.** Give them friction, suspicion, skepticism, and personal
-  agendas. Some are transactional, some two-faced, some openly hostile or using the party. A
-  strange-looking outsider with unsettling methods should raise eyebrows in a town under stress.
-  Kindness is a choice an NPC makes, not the default. (Playing them in a scene: **social-play**.)
 
 ## Spoiler discipline — the player is your audience
 
