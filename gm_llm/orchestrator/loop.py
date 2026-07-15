@@ -48,6 +48,12 @@ _NUDGE_NOTES = (
     "captured. Call `task_complete` now with the complete notes in `notes`."
 )
 
+# How many turns of wrap-nudge the runner gets once its session reaches opencode's
+# compaction threshold (see `Game._update_wrap_countdown`). The reserve between that
+# threshold and the model's hard context limit is many turns of headroom at the observed
+# growth rate, so this is comfortable pressure, not a scramble.
+_WRAP_WARN_TURNS = 4
+
 
 @dataclass
 class TurnResult:
@@ -73,6 +79,10 @@ class Game:
         # set if that prompt is cancelled, so revert_last_turn knows to roll back past
         # the correction brief to the player's own message. Reset at the next op.
         self._correcting = False
+        # None until the runner session reaches opencode's compaction threshold; then a
+        # per-turn countdown that steers the runner to wrap the session (see
+        # `_update_wrap_countdown`). Fresh per Game, so it never carries across sessions.
+        self._wrap_countdown: int | None = None
         self.logs = logs
         self.runner_sid = backend.create_session("dm-runner game")
         # The session being played = the highest plan on disk, unless told otherwise.
@@ -127,8 +137,19 @@ class Game:
         # in <player>…</player> so the runner never mistakes an orchestrator instruction
         # for the player's fiction (or vice versa). The gate and the transcript see only
         # the clean player_msg, never the reminder or the fence.
-        message = f"{load('turn-reminder')}\n\n<player>\n{player_input}\n</player>"
+        message = f"{self._wrap_banner()}{load('turn-reminder')}\n\n<player>\n{player_input}\n</player>"
         return self._gated_turn(message, player_input)
+
+    def _wrap_banner(self) -> str:
+        """The session-length nudge that rides in front of the next player message, or
+        "" until the runner session reaches opencode's compaction threshold. Once it
+        has, the count in it descends turn by turn (see `_update_wrap_countdown`) so the
+        pressure to wrap escalates, instead of the runner perpetually reading the same
+        'a few more turns' and deferring."""
+        if self._wrap_countdown is None:
+            return ""
+        body = load("session-length").format(n=self._wrap_countdown)
+        return f"<session-length>\n{body}\n</session-length>\n\n"
 
     def context_usage(self):
         """The runner session's live context footprint — see
@@ -248,10 +269,30 @@ class Game:
         self._step("done")
         tr = TurnResult(player_msg, draft, final, result, corrected, session_complete)
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
+        self._update_wrap_countdown(session_complete)
         self._log(tr)
         if self.on_turn:
             self.on_turn(tr)
         return tr
+
+    def _update_wrap_countdown(self, session_complete: bool) -> None:
+        """After each turn, track how many turns until the runner should wrap. It stays
+        None until the runner session first reaches opencode's own compaction threshold
+        (the point opencode would have auto-summarized, which we disabled — see
+        `Backend.start`); then it latches to `_WRAP_WARN_TURNS` and floors at 1, so the
+        nudge in `_wrap_banner` keeps escalating until the runner ends the session rather
+        than quietly vanishing. A no-op once the runner has signalled the end (the session
+        is already closing) and whenever the context read is unavailable — best-effort,
+        never worth failing a turn over."""
+        if session_complete:
+            self._wrap_countdown = None
+            return
+        if self._wrap_countdown is not None:
+            self._wrap_countdown = max(1, self._wrap_countdown - 1)
+            return
+        cu = self.backend.context_usage(self.runner_sid)
+        if cu and cu.threshold and cu.tokens >= cu.threshold:
+            self._wrap_countdown = _WRAP_WARN_TURNS
 
     # -- transcript (final messages only) -----------------------------------
 

@@ -1,0 +1,3 @@
+This session has been running for a while and its live context is near the point where continuity gets expensive to hold. Bring the session to a close within about {n} more turn(s): find a natural stopping beat and end it the way you would any session you judge complete — load `session-close` and call `task_complete`. Ending the session is your call, as always; this is only a heads-up that now is the time to look for the exit.
+
+Do NOT rush or compress the story to hit this. An odd, quiet, or mid-scene stopping point is far better than a hurried climax or a beat skipped to wrap faster — how well the ending lands matters more than the exact turn it lands on. If a clean beat isn't within reach, stop on an unclean one rather than racing the story ahead to force one.
