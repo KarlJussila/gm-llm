@@ -73,7 +73,7 @@ contradictory "truth."
   shapes how they act when the PC isn't steering.
 - **NPCs are not uniformly kind.** Kindness is a choice an NPC makes, not a default. Give them
   friction, suspicion, self-interest, and their own agendas. A stranger's manner, methods, or
-  reputation can and should raise eyebrows. (Mirrors the table craft in `session-run`.)
+  reputation can and should raise eyebrows.
 - **Factions have competing goals** — overlapping, conflicting aims are where interesting pressure
   comes from. Map how each faction relates to the others and how it might intersect the PC.
 - **The world acts on its own.** Things happen whether or not the PC is present. Capture in-motion
@@ -83,9 +83,3 @@ contradictory "truth."
 - **Stay internally consistent.** Read existing world files and `campaign.md` before adding
   anything; never contradict established canon. Check `INDEX.md` before creating an entity so you
   reuse what exists instead of spawning a near-duplicate.
-
-## What "good" looks like when you're done
-
-- Each entity reads as a real, motivated presence with a surface and a committed hidden layer.
-- Every load-bearing fact is decided — no blanks, no "DM decides."
-- Everything is registered, linked, and format-clean per canon-conventions.
