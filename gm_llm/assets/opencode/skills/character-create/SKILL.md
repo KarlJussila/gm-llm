@@ -47,11 +47,9 @@ Use your `todowrite` tool to create entries for steps 1–5 plus Confirm, Write 
    notes doc, whatever they've got), or **build one together** from scratch at their chosen control
    level. Hand off to the player and wait. Continue from whatever they say; don't re-ask from a standing start.
 2. **Import the file.** For any real character file they point you at — a JSON/HTML/PDF/sheet export
-   *or* a multi-section notes doc — **load the `character-import` skill and follow it** to parse the
-   whole structure into the sheet (`characters/{slug}.md`). Parse it properly, not at a glance — a
-   D&D Beyond export buries the stats, class, and subclass in nested structure; extract every detail
-   the file states, never invent, and note which vitals it lacked so you know what to ask. (A one-line
-   "level 5 elf wizard" needs no import. No file → gather the vitals by talking.)
+   *or* a multi-section notes doc — **load the `character-import` skill and follow it** to parse it
+   into the sheet (`characters/{slug}.md`); it notes which vitals the file lacked so you know what to
+   ask. (A one-line "level 5 elf wizard" needs no import. No file → gather the vitals by talking.)
 3. **Fill the vital gaps.** Ask the player for any **vital** detail still missing after the import:
    race/lineage, class (and subclass, if they have one), level, ability scores, pronouns. Just the
    vitals — don't make them recite their whole proficiency and spell list; the rest gets documented
