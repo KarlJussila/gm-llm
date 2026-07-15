@@ -54,6 +54,7 @@ class _MockBackend:
 
     def __init__(self):
         self.on_retry = None
+        self.retries = 4  # mirrors Backend's default, read by the retry-notice renderer
 
     def abort(self) -> bool:
         return False

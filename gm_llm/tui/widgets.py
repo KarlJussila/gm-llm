@@ -109,6 +109,7 @@ class StatusBar(Static):
         self._trail: list[str] = []
         self._timer = None
         self._note_timer = None
+        self._warn: str | None = None  # a sticky warning (backend retries), cleared on progress
 
     def start(self, title: str) -> None:
         if self._t0 is None:  # don't reset the clock on re-entry — the wait is continuous
@@ -124,20 +125,35 @@ class StatusBar(Static):
         if self._phase and self._phase != label:
             self._trail.append(self._phase)
         self._phase = label
+        self._clear_warn()  # reaching a new phase means the stuck call recovered
         self._render_line()
 
-    def note(self, text: str) -> None:
-        """A transient notice (e.g. a backend retry) over the phase line."""
+    def note(self, text: str, sticky: bool = False) -> None:
+        """A warning over the phase line. Transient by default (clears after a few
+        seconds); `sticky` keeps it up — with the running clock — until the next phase
+        transition clears it, so a run of backend retries stays plainly on screen the
+        whole time a call is stuck instead of flickering past between attempts."""
         if self._note_timer is not None:
             self._note_timer.stop()
+            self._note_timer = None
         self.add_class("warn")
-        self.update(text)
-        self._note_timer = self.set_timer(6, self._clear_note)
+        if sticky:
+            self._warn = text
+            self._render_line()
+        else:
+            self._warn = None
+            self.update(text)
+            self._note_timer = self.set_timer(6, self._clear_note)
 
     def _clear_note(self) -> None:
         self._note_timer = None
         self.remove_class("warn")
         self._render_line()
+
+    def _clear_warn(self) -> None:
+        if self._warn is not None:
+            self._warn = None
+            self.remove_class("warn")
 
     def stop(self) -> None:
         if self._timer is not None:
@@ -149,6 +165,7 @@ class StatusBar(Static):
         self._t0 = None
         self._phase = None
         self._trail = []
+        self._warn = None
         self.remove_class("active")
         self.remove_class("warn")
         self.update("")
@@ -157,6 +174,9 @@ class StatusBar(Static):
         if self._t0 is None or self._note_timer is not None:
             return
         m, s = divmod(int(time.monotonic() - self._t0), 60)
+        if self._warn is not None:
+            self.update(f"[$warning]⚠[/] {self._warn}  ·  {m}:{s:02d}")
+            return
         trail = " ▸ ".join(self._trail[-self._TRAIL_MAX:])
         parts = [f"[$warning]●[/] {self._phase}"]
         if trail:

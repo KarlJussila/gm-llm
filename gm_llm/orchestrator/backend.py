@@ -7,8 +7,11 @@ final text. All the throttle-handling the autoplay harness learned the hard way
 lives here, in one place:
 
   - retry with backoff on errors, empty replies, and rate-limited *hangs*
-    (a throttled call holds the connection open rather than erroring, so we cap
-    the per-call timeout and treat a timeout as a retryable failure);
+    (a throttled call holds the connection open rather than erroring; a liveness
+    tap on the `/event` stream lets us notice when output has stopped flowing —
+    no token for `stall_timeout` seconds — and abort that attempt as a retryable
+    stall, so a hang surfaces in a couple of minutes instead of the full
+    per-call timeout);
   - a minimum gap between calls, so the orchestrator doesn't burst the model's
     rate limit the way fan-out (runner + two checkers) did.
 
@@ -94,20 +97,33 @@ class Backend:
         directory: str,
         port: int = 4181,
         turn_timeout: int = 360,
-        retries: int = 6,
+        retries: int = 4,
         min_call_gap: float = 1.0,
+        stall_timeout: int = 120,
         logs: Logs | None = None,
     ):
         self.directory = str(Path(directory).resolve())
         self.port = port
         self.base = f"http://127.0.0.1:{port}"
+        # `turn_timeout` is the hard backstop; the stall watchdog normally fires first.
         self.turn_timeout = turn_timeout
         self.retries = retries
         self.min_call_gap = min_call_gap
+        # A call that emits no stream activity for this long is a rate-limited hang, not
+        # a slow turn (a productive turn keeps streaming tokens/tool events) — abort and
+        # retry rather than block to the full `turn_timeout`.
+        self.stall_timeout = stall_timeout
+        self._stall_poll = 5.0  # how often the watchdog checks the liveness clock
         self.logs = logs or Logs.under(project=self.directory)
         self._proc: subprocess.Popen | None = None
         self._owns_server = False
         self._last_call = 0.0
+        # Liveness: a background tap on /event bumps `_last_activity` on every stream
+        # event, so the stall watchdog can tell a hung call from a slow-but-working one.
+        self._last_activity = 0.0
+        self._stalled = False
+        self._live_stop = threading.Event()
+        self._live_thread: threading.Thread | None = None
         # Cancellation: `abort()` (any thread) sets the event and aborts the session
         # whose id is parked in `_inflight_sid`; the running `prompt` loop sees the
         # event and raises BackendCancelled instead of retrying/returning.
@@ -147,15 +163,18 @@ class Backend:
             )
         self._owns_server = True
         self._wait_until_ready(ready_timeout)
+        self._start_liveness()
         return self
 
     def attach(self) -> "Backend":
         """Use an already-running server on this port."""
         self._owns_server = False
         self._wait_until_ready(10)
+        self._start_liveness()
         return self
 
     def stop(self) -> None:
+        self._live_stop.set()
         if self._proc and self._owns_server:
             try:
                 if os.name == "nt":
@@ -190,6 +209,36 @@ class Backend:
                 time.sleep(0.5)
         raise BackendError(f"server never came up on :{self.port}: {last}")
 
+    # -- liveness -----------------------------------------------------------
+
+    def _start_liveness(self) -> None:
+        """Subscribe to the server's `/event` SSE stream in the background and stamp
+        `_last_activity` whenever a message part or message updates — the signal the
+        stall watchdog reads. Rendering-free (the TUI's verbose `EventTap` is a
+        separate subscriber); this runs headless too, so bench runs get stall
+        detection with no UI attached. Prompts are serialized, so any part activity
+        during a call belongs to that call."""
+        self._last_activity = time.time()
+        self._live_stop.clear()
+        self._live_thread = threading.Thread(target=self._liveness_run, daemon=True)
+        self._live_thread.start()
+
+    def _liveness_run(self) -> None:
+        while not self._live_stop.is_set():
+            try:
+                req = urllib.request.Request(self._url("/event"), method="GET")
+                with urllib.request.urlopen(req) as resp:  # streaming; server-lived
+                    for raw in resp:
+                        if self._live_stop.is_set():
+                            return
+                        line = raw.decode("utf-8", "replace")
+                        if "message.part.updated" in line or "message.updated" in line:
+                            self._last_activity = time.time()
+            except Exception:  # noqa: BLE001 — stream dropped/server gone; reconnect
+                if self._live_stop.is_set():
+                    return
+                time.sleep(1)
+
     # -- HTTP ---------------------------------------------------------------
 
     def _url(self, path: str) -> str:
@@ -207,6 +256,36 @@ class Backend:
         req = urllib.request.Request(self._url(path), method="GET")
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode())
+
+    def _post_watched(self, path: str, body: dict, session_id: str) -> dict:
+        """A prompt POST guarded by the stall watchdog: while the (blocking) call is in
+        flight, a helper thread checks the liveness clock; if no stream activity has
+        arrived for `stall_timeout`, it aborts the server-side generation — which
+        unwinds the POST — and sets `_stalled` so `_run_prompt` retries it as a
+        rate-limited hang rather than a real reply. The hard `turn_timeout` stays as a
+        backstop for the pathological case where the abort itself doesn't unblock."""
+        self._stalled = False
+        self._last_activity = time.time()
+        done = threading.Event()
+
+        def watch() -> None:
+            while not done.wait(self._stall_poll):
+                if self._cancel.is_set():
+                    return
+                if time.time() - self._last_activity > self.stall_timeout:
+                    self._stalled = True
+                    try:
+                        self._raw_post(f"/session/{session_id}/abort", {}, timeout=10)
+                    except (urllib.error.URLError, OSError, ValueError):
+                        pass  # best-effort; the POST still unwinds via the backstop
+                    return
+
+        w = threading.Thread(target=watch, daemon=True)
+        w.start()
+        try:
+            return self._raw_post(path, body, self.turn_timeout)
+        finally:
+            done.set()
 
     def _raw_create(self, body: dict) -> dict:
         return self._raw_post("/session", body, timeout=10)
@@ -470,21 +549,24 @@ class Backend:
             for attempt in range(self.retries):
                 self._pace()
                 try:
-                    resp = self._raw_post(f"/session/{session_id}/message", body, self.turn_timeout)
+                    resp = self._post_watched(f"/session/{session_id}/message", body, session_id)
                     if self._cancel.is_set():
                         raise BackendCancelled(f"{agent} call cancelled")
-                    out = self._all_text(resp) if whole else self._last_text(resp)
-                    if self.logs.debug:
-                        self._dump_parts(session_id, agent, resp, out)
-                    if out:
-                        return out
-                    if self._recent_tool_names(session_id):
-                        # A tool-call-only turn is a legitimate reply, not a failure —
-                        # e.g. a checker told to submit report_findings and output
-                        # nothing else. Retrying would re-send the same prompt (and
-                        # re-fire the tool); the caller reads the call from history.
-                        return ""
-                    reason = "empty reply (likely a rate-limited/errored stream)"
+                    if self._stalled:
+                        reason = f"no output for {self.stall_timeout}s (rate-limited hang)"
+                    else:
+                        out = self._all_text(resp) if whole else self._last_text(resp)
+                        if self.logs.debug:
+                            self._dump_parts(session_id, agent, resp, out)
+                        if out:
+                            return out
+                        if self._recent_tool_names(session_id):
+                            # A tool-call-only turn is a legitimate reply, not a failure —
+                            # e.g. a checker told to submit report_findings and output
+                            # nothing else. Retrying would re-send the same prompt (and
+                            # re-fire the tool); the caller reads the call from history.
+                            return ""
+                        reason = "empty reply (likely a rate-limited/errored stream)"
                 except BackendCancelled:
                     raise
                 except urllib.error.HTTPError as e:
@@ -495,7 +577,10 @@ class Backend:
                 except (urllib.error.URLError, OSError, ValueError) as e:
                     if self._cancel.is_set():
                         raise BackendCancelled(f"{agent} call cancelled")
-                    reason = str(e)
+                    # A stall abort can surface here (aborted POST) rather than as a
+                    # clean return — name it as the hang it is, not a raw socket error.
+                    reason = (f"no output for {self.stall_timeout}s (rate-limited hang)"
+                              if self._stalled else str(e))
                 wait = min(15 * (2 ** attempt), 120)
                 if self.on_retry:
                     self.on_retry(agent, attempt + 1, wait, reason)

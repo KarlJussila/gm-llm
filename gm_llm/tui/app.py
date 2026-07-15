@@ -139,12 +139,14 @@ class PlayApp(App):
         self._write_screen("[b]behind the screen[/b] — live model stream · gate verdicts")
         self._scene_status("esc menu · ctrl+t action/meta · ctrl+g behind-screen · "
                            "ctrl+x cancel · ctrl+w wrap · /roll 2d6+3 · /meta <q> · /quit")
-        # Backend retries surface in the status bar ("call failed — retry …"),
-        # so a rate-limited wait doesn't look like a hang.
+        # Backend retries surface as a *sticky* status-bar warning (with the running
+        # clock), so a rate-limited hang stays visibly flagged the whole time it retries
+        # instead of looking like a silent hang. It clears when a call finally gets through.
         self.lc.backend.on_retry = lambda agent, attempt, wait, reason: \
             self.call_from_thread(self._status.note,
-                                  f"⚠ {agent} call failed ({escape(str(reason))}) — "
-                                  f"retry {attempt} in {int(wait)}s")
+                                  f"{agent} call failed ({escape(str(reason))}) — "
+                                  f"retry {attempt}/{self.lc.backend.retries} in {int(wait)}s",
+                                  True)
         self._sync_input()
         self._refresh_subtitle()
         if self.lc.phase == "wrap_pending":
