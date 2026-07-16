@@ -37,6 +37,7 @@ from pathlib import Path
 from .archive import verdict_fields
 from .backend import BackendCancelled, BackendError
 from .canon import latest_session
+from .combat import CombatMixin, CombatState
 from .logs import append, banner, section
 from .prompts import load
 
@@ -64,9 +65,10 @@ class TurnResult:
     gate: "GateResult"  # noqa: F821 — annotation only (lazy via __future__)
     corrected: bool
     session_complete: bool = False  # the runner signalled the session's end via task_complete
+    combat_started: bool = False    # the runner called start_encounter this turn — enter combat mode
 
 
-class Game:
+class Game(CombatMixin):
     def __init__(self, backend, gate, runner_agent: str = "dm-runner",
                  on_turn=None, on_step=None, logs=None,
                  campaign_dir: str | None = None, session: int | None = None,
@@ -89,6 +91,12 @@ class Game:
         self._turn_no = 0
         self.logs = logs
         self.runner_sid = backend.create_session("dm-runner game")
+        # Combat mode (COMBAT.md C1). `_in_combat` reflects a live tracker state file, so
+        # a resume into a fight picks it up; `_combat_first` skips the top-of-turn advance
+        # for the opening combatant (start_encounter already seated them). See combat.py.
+        self._in_combat = CombatState(backend.directory).exists()
+        self._combat_first = self._in_combat  # resume: re-dispatch the current combatant, don't skip one
+        self._combat_pending = None
         # The session being played = the highest plan on disk, unless told otherwise.
         self.campaign = Path(campaign_dir) if campaign_dir else Path(backend.directory) / "campaign"
         self.session = session if session is not None else latest_session(self.campaign / "sessions")
@@ -260,21 +268,13 @@ class Game:
             # confirms still shows the same choice after a restart instead of
             # quietly resuming into more play (see `session_is_complete`).
             self._mark_complete()
-        self._step("check")
-        result = self.gate.check(draft, player_msg)
-        final, corrected = draft, False
-        if result.violations:
-            # Exactly one correction pass. We do NOT re-gate the revision — bounded
-            # by construction; if it's still imperfect it goes out and the log shows it.
-            # _correcting brackets the correction prompt: if it's cancelled it stays
-            # set, so revert_last_turn rolls back past the brief to the player message.
-            self._correcting = True
-            self._step("correct")
-            final = self.backend.prompt(self.runner_sid, self.runner_agent, result.correction_brief())
-            self._correcting = False
-            corrected = True
+        final, result, corrected = self._run_gate(draft, player_msg)
         self._step("done")
-        tr = TurnResult(player_msg, draft, final, result, corrected, session_complete)
+        # A start_encounter mid-narration flips the interface into the combat loop once
+        # this (player-driven) turn returns; end_encounter flips it back.
+        self._combat_observe(reply)
+        tr = TurnResult(player_msg, draft, final, result, corrected, session_complete,
+                        combat_started=("start_encounter" in reply.tools))
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
         cu = self.backend.context_usage(self.runner_sid)  # one read, shared: countdown + archive
         self._update_wrap_countdown(session_complete, cu)
@@ -283,6 +283,25 @@ class Game:
         if self.on_turn:
             self.on_turn(tr)
         return tr
+
+    def _run_gate(self, draft: str, player_msg: str):
+        """Gate a draft and apply at most one bounded correction pass. Shared by the
+        play-driven turn and the combat loop. Returns (final, GateResult, corrected).
+
+        Exactly one correction pass — we do NOT re-gate the revision (bounded by
+        construction; if it's still imperfect it goes out and the log shows it).
+        `_correcting` brackets the correction prompt: if it's cancelled it stays set, so
+        `revert_last_turn` rolls back past the brief to the player's own message."""
+        self._step("check")
+        result = self.gate.check(draft, player_msg)
+        final, corrected = draft, False
+        if result.violations:
+            self._correcting = True
+            self._step("correct")
+            final = self.backend.prompt(self.runner_sid, self.runner_agent, result.correction_brief())
+            self._correcting = False
+            corrected = True
+        return final, result, corrected
 
     def _update_wrap_countdown(self, session_complete: bool, cu) -> None:
         """After each turn, track how many turns until the runner should wrap. It stays
@@ -314,11 +333,13 @@ class Game:
         except (OSError, ValueError):
             pass
 
-    def _append_transcript(self, player_msg: str, final: str, opening: bool) -> None:
+    def _append_transcript(self, player_msg: str, final: str, opening: bool,
+                           dm_only: bool = False) -> None:
         if not self.transcript_path:
             return
         blocks = []
-        if not opening:  # the opening has no player line — it's the runner's scene-set
+        # No player line for the opening scene-set or an NPC combat beat (dm_only).
+        if not opening and not dm_only:
             blocks += ["## Player", "", player_msg.strip(), ""]
         blocks += ["## DM", "", final.strip(), ""]
         try:

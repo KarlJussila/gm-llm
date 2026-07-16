@@ -348,10 +348,28 @@ turn-slot-anchored, auto-ids echoed on fire, elapsed-round surfacing, owner-cull
 `start_encounter`/`end_encounter`. Verified by direct plugin tests — no model in the loop. *Exit: the
 tracker is provably correct as a state machine.*
 
-### C1 — Mode-switch plumbing in `loop.py` *(code only)*
+### C1 — Mode-switch plumbing in `loop.py` *(code only)* — **done**
 `_in_combat`, the initiative-driven loop surface, orchestrator-owned commit/rollback bracketing,
 `start`/`end` signal observation off `reply.tools`. Verified under the mock backend. *Exit: a scripted
 combat drives through the loop with correct commit/rollback boundaries and no model.*
+
+Built as `orchestrator/combat.py` — a `CombatState` file-wrapper (the two frame swaps: `commit` =
+pending→committed, `rollback` = committed→pending; `turn`/`round`/`next_timer_id` top-level and
+untouched) plus a `CombatMixin` on `Game` with the surface: `combat_step()`, `combat_confirm()`,
+`combat_interject(text)`, `combat_player_action(input)`, and an `in_combat` property. Key resolutions:
+- **The advance is a real model call at the top of each combatant's turn.** opencode exposes no
+  execute-a-tool endpoint (only list-tools), so the orchestrator can't run `advance_turn` itself — it
+  drives a minimal advance prompt, then commits immediately, so `committed` == the combatant's
+  post-advance start (their timers fired). `combat_step` skips the advance only on the first step
+  (`start_encounter` already seated the opener). The orchestrator owns *only* the frame swaps; the
+  tracker's advance semantics stay solely in the TS engine.
+- **The action call never advances**, so `turn` stays put through the action and an interject's
+  frame-only rollback lands on the right combatant — the invariant the top-level `turn` layout demands.
+- **The PC's turn commits directly** (no confirm gate — a player doesn't confirm their own beat);
+  **an NPC turn awaits confirm**, and an **interject re-presents for confirm** (re-confirmable, so a
+  reaction to a reaction stays cheap). Verified by `dev/test_combat_loop.py`.
+- *Deferred (hardening):* a post-advance delta guard (reject an advance call that also mutated HP/
+  conditions — a weak model over-acting on the "advance only" prompt), and resume-mid-combat replay.
 
 ### C2 — Gate: `check-combat`
 The role skill + `gate.check()` branch + state-file preload into the check brief. *Exit: a drafted
