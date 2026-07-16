@@ -32,27 +32,33 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
 
 1. **State is authoritative in a tracker, not in the model's head.** A stateful, file-backed opencode
    plugin (the pattern is `plugin/dice-roller.ts`, but persistent) owns HP, conditions, initiative
-   order, round/turn position, the reaction/action economy, timers, and position. File-backed (not
+   order, round/turn position, the reaction economy, timers, and position. File-backed (not
    in-memory) because the orchestrator does reverts, resumes, and correction passes; in-memory plugin
    state would desync — and a file the orchestrator can also read is inspectable and preload-able.
 
 2. **Positioning is egocentric, and movement *reasoning* stays with the model.** No grid exposed to
-   the model (SPEC is text-only/no-VTT), no pairwise zones. Each combatant carries three fields
-   against the PC as origin: **distance** (always; an approximate *number* of feet — fudge the input,
-   keep the representation crisp so range checks are deterministic), **height** (only when someone
-   climbs/flies), **direction** (coarse bearing, only with more than one opponent). This is O(n)
-   state, not O(n²), and position doubles as target disambiguation ("the one on the ledge" → the
-   combatant with `height` set). *Whether and how far* anything moves is the model's call — difficult
-   terrain, obstacles, grapples/restraints, fly/swim/climb speeds are beyond the orchestrator. The
-   tracker only ever applies a displacement the model has already decided and reports the result back.
-   - **PC movement is a geometric fan-out.** The PC moving is the one action that shifts *everyone's*
-     relative distance. The model decides the PC ends up "20 ft NE"; the tracker translates the whole
-     egocentric frame and echoes the re-synced roster, so the model's spatial picture can't drift.
-     Backend uses Chebyshev distance (5e's "every square is 5 ft" — diagonals untaxed), keeping the
-     vector math round-integer; the model never sees the grid, only "the boss is now 10 ft E of you."
-   - Enemy-to-enemy distance — needed only for ally-targeting stat-block mechanics — is *derived*
-     approximately from two egocentric vectors (`between`), which is why direction matters once there
-     is more than one foe.
+   the model (SPEC is text-only/no-VTT), no pairwise zones. **The model-facing frame is egocentric —
+   every position is spoken as distance/height/direction against the PC as origin** — but *storage is
+   world-absolute Cartesian* (each combatant an `x/y/z` in feet, the PC seeded at the origin), and the
+   egocentric view is a *projection* rendered on demand. This is the load-bearing split: Cartesian is
+   exact and never accumulates rounding, while the model only ever sees "the boss is 10 ft E of you."
+   Each projection carries **distance** (always; the model fudges the input, the stored coord stays
+   crisp), **height** (z, surfaced only when someone climbs/flies), **direction** (coarse bearing,
+   snapped to 8 points, meaningful with more than one opponent). This is O(n) state, not O(n²), and
+   position doubles as target disambiguation ("the one on the ledge" → the combatant with a height).
+   *Whether and how far* anything moves is the model's call — difficult terrain, obstacles, grapples/
+   restraints, fly/swim/climb speeds are beyond the orchestrator. The tracker only ever applies a
+   displacement the model has already decided and reports the result back.
+   - **PC movement is a pure origin shift.** There is one `move` tool; calling it on the PC is the one
+     case that shifts *everyone's* relative distance — but with Cartesian storage it's just moving the
+     PC's own point, so every other combatant's *displayed* position re-syncs for free (no fan-out
+     loop, no per-combatant re-rounding). The model decides the PC ends up "20 ft NE"; the tracker
+     translates that one displacement and echoes the re-synced roster, so the model's spatial picture
+     can't drift. Backend uses Chebyshev distance (5e's "every square is 5 ft" — diagonals untaxed),
+     keeping the projected feet round-integer; the model never sees the grid.
+   - Enemy-to-enemy distance — needed only for ally-targeting stat-block mechanics — is now *exact*
+     Chebyshev between two stored points (`distance_between`), no longer a lossy re-derivation from two
+     projected vectors; direction still matters for how the model narrates and disambiguates foes.
 
 3. **The mode-switch is orchestrator-owned and initiative-driven.** Out of combat the *player* drives
    (each message → one DM response). In combat, *initiative* drives: the orchestrator pumps the loop,
@@ -89,7 +95,7 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
    narrative-checker role, warm-chained before `check-conduct` when `_in_combat`) reads *both* blobs:
    `committed` is the known-good baseline that makes the delta checkable — it confirms the HP/position/
    condition changes in `pending` are exactly what the narrated action should produce (catching both
-   fabricated damage and narrated-but-unapplied damage, and double-spent economy), plus the usual
+   fabricated damage and narrated-but-unapplied damage, and a double-spent reaction), plus the usual
    canon/spoiler/agency checks. **Read** access only (via preload of the state file) — never the
    mutators. Per-combatant granularity makes this a tiny, high-confidence check.
 
@@ -109,8 +115,12 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
 
 ## The pieces (mapped to existing seams)
 
-- **Combat tracker** — new `plugin/combat-tracker.ts` + its state file under `.opencode/.orchestrator/`.
-  Dumb-but-authoritative; full state, tools, and obligation channel detailed in the next section.
+- **Combat tracker** — new `plugin/combat-tracker.ts` (thin file-backed adapter, the only export is the
+  plugin) over a pure engine in `plugin/combat/engine.ts` + its state file under `.opencode/.orchestrator/`.
+  The engine lives one directory down because opencode auto-loads every direct child of `plugin/` as a
+  plugin (`Glob.scan("{plugin,plugins}/*.{ts,js}")`) — so the unit-tested engine functions can be freely
+  exported without the loader mistaking them for plugins. Dumb-but-authoritative; full state, tools, and
+  obligation channel detailed in the next section.
 - **Mode-switch plumbing** — `orchestrator/loop.py` gains `_in_combat` and an initiative-driven loop
   surface distinct from `turn(player_input)`: roughly `combat_step()` (advance one combatant; returns
   "awaiting PC input" or "NPC acted, awaiting confirm" + the gated narration), `combat_confirm()`,
@@ -143,52 +153,75 @@ lenient normalization only for the one irreducible vocab (`direction`, e.g. `ne`
 start_encounter(roster, scene)                 end_encounter()
 damage(id, amount)   heal(id, amount)
 add_condition(id, name)   remove_condition(id, name)
-move(id, {distance?, height?, direction?})     # NPC, set-absolute
-pc_move(distance, direction)                   # PC displacement; returns re-synced roster
+move(id, {distance?, height?, direction?})     # "pc" fans out to everyone; anyone else is absolute-set
+set_dead(id, dead)   death_save(id, success)    # NPC death is a narrative call; PC death is derived
+use_reaction(id)
 remind_in(rounds, note) -> id                  remind_each_turn(combatant, note, {owner?}) -> id
 clear_timer(id)
-spare(id)   flee(id)   death_save(id, success)  # other down-states derived from HP + death saves
 advance_turn()   rollback()
-reads:  state()   ·   in_range(id, feet) -> bool   ·   between(a, b) -> ~feet
+reads:  state()   ·   describe(id)   ·   distance_between(a, b) -> feet   # Chebyshev over stored coords
 ```
 
+(No `in_range` tool: every mutator's roster echo already prints each foe's projected distance, so a
+range check is a comparison the model reads off the board rather than a round-trip — one fewer tool on
+a surface a weak model has to choose from.)
+
 Every mutator echoes the **full compact roster with ids**, so the current id list, positions, and HP
-are always in front of the model — the echo after `pc_move` *is* the position report-back.
+are always in front of the model — the echo after `move("pc", ...)` *is* the position report-back.
+`describe(id)` is the single-combatant equivalent for when the compact echo isn't enough — full
+condition effect text, reaction state, death saves, position, and any timers pinned to that combatant's
+turn, in human-readable prose (the one read that surfaces a live timer between fires).
 
 **Identity/addressing.** `start_encounter` assigns stable ids from the roster (`goblin` ×3 →
 `goblin-1..3`). The `turn` field disambiguates by default; position disambiguates by reference ("the
 one on the ledge"). The roster echo keeps ids current so the model mutates the right combatant.
 
 **Conditions are a bounded standard library, not free tags.** The model calls
-`add_condition(goblin-2, prone)` (minimal input); the tracker owns the canonical effect text and
-duration for D&D's ~15 named conditions and echoes them back (rich, self-documenting output — the
-ledger move: don't make the model recall what prone does, hand it the rule). Save-ends conditions are
-just a `remind_each_turn` on the target.
+`add_condition(goblin-2, prone)` (minimal input); the tracker owns the canonical effect text for D&D's
+~15 named conditions and echoes it back (rich, self-documenting output — the ledger move: don't make
+the model recall what prone does, hand it the rule). Duration is never a condition field — save-ends
+and fixed-length conditions alike are just a `remind_each_turn`/`remind_in` on the target, per the
+obligation channel below.
 
-**Per-turn economy — tracked, gate-enforced.** Action / bonus / reaction / `movement_remaining`, reset
-on `advance_turn` (reaction refreshes at the combatant's own turn). Informational for the common
-one-attack turn; `check-combat` catches a double-action against it rather than demanding perfect
-spend-discipline from the model.
+**Reaction is the one tracked resource, not a full economy.** Action, bonus action, and movement are
+once-per-round resources spent *on a combatant's own turn* — the model keeps those straight without
+help, the same reasoning that keeps movement distance itself a model judgment call (see principle 2).
+A reaction is different: it's spent *off-turn*, interrupting someone else's turn, which is exactly the
+eligibility question the confirm-gate/interject flow (principles 4–5) turns on. So each combatant
+carries one `reaction` boolean, reset to `true` on that combatant's own `advance_turn` and set `false`
+by `use_reaction(id)` — the one piece of economy worth a source of truth for the interject flow and
+`check-combat` to read.
 
-**Death/downed is a code-owned mini-state.** At 0 HP the tracker sets the state itself — `dead` for an
-NPC, `unconscious` + a death-save tally (3/3) for the PC — plus the massive-damage instant-death check.
-The model only signals the two choices code can't infer: `spare(id)` (drop non-lethal instead of
-killing) and `flee(id)` (leaves the fight); death saves report as a boolean, `death_save(id, success)`.
-No status enum.
+**Death is a single boolean, not a status enum.** `dead` is the only status bit a combatant has —
+"alive" is simply `!dead`. Ordinary damage reaching 0 HP does **not** auto-kill an NPC: whether a
+downed enemy is dead, fleeing, or surrendering is the model's narrative call (principle 8), signaled
+with one tool, `set_dead(id, dead)` — boolean in, callable either direction, so a wrong call is
+trivially corrected. Fleeing is not a tracked state at all; it's just `move` plus narration, same as
+any other movement. The one mechanical exception is 5e's massive-damage rule (overkill ≥ `hp_max`
+while already at 0 forces `dead = true` unconditionally, PC included) — genuinely deterministic, so
+it's code-owned. The PC additionally gets a `death_saves` tally once at 0 HP, reported via a boolean,
+`death_save(id, success)`: three failures sets `dead = true`; three successes just stops the prompting
+(still 0 HP, still alive — the roster echo already shows that, no separate label needed).
 
 **The obligation channel.** Save-ends conditions, effect timers, and any "at the start/end of X's turn,
-do Y" are trigger-hung reminders the tracker surfaces at the matching turn boundary on `advance_turn`.
-Two primitives cover every shape — they never mix, and the rare compound composes (a `remind_in` whose
-note tells the model to set a `remind_each_turn`):
+do Y" are trigger-hung reminders, each pinned to a **turn-slot**, not a round-boundary. `advance_turn`
+steps through initiative one slot at a time — a dead combatant still occupies their slot (their
+initiative is still "passed," just with no action to narrate), so a timer pinned to a dead combatant
+still counts down and fires on schedule. `round` only increments when the walk wraps back to the top
+of initiative. Two primitives cover every shape — they never mix, and the rare compound composes (a
+`remind_in` whose note tells the model to set a `remind_each_turn`):
 
 ```
-remind_in(rounds, note) -> id                       # fires ONCE, `rounds` out: delayed effects, plain expiries
-remind_each_turn(combatant, note, {owner?}) -> id   # fires EVERY that-combatant's-turn: save-ends, per-round effects
+remind_in(rounds, note) -> id                       # fires ONCE, `rounds` occurrences of the calling combatant's slot from now
+remind_each_turn(combatant, note, {owner?}) -> id   # fires EVERY time `combatant`'s slot comes up: save-ends, per-round effects
 ```
 
-- The trigger (which combatant's turn, or how many rounds out) says *when it fires*; the note says
-  *what to remember* — the affected combatant lives in the note, since the triggering combatant often
-  isn't the affected one (the caster's turn moves the sphere; the *target's* turn ends the hold).
+- **`remind_in` binds to whoever's turn is active when it's called** — no combatant argument needed.
+  "In 3 rounds" means the next 3 times *that* slot comes back around, so a spell cast on the caster's
+  turn naturally times out on the caster's own future turn.
+- **`remind_each_turn` takes an explicit `combatant`**, since the affected combatant is often not the
+  one setting the timer (the caster's turn moves the sphere; the *target's* turn ends the hold) — the
+  note carries *what to remember*, the `combatant` arg carries *whose slot fires it*.
 - **Intra-turn timing lives in the note too.** Save-at-*end* vs. tick-at-*start* is not a structured
   arg (an enum code never branches on): the tracker fires a combatant's reminders when its turn comes
   up, and the model resolves each at the right beat, cued by the note.
@@ -210,16 +243,16 @@ remind_each_turn(combatant, note, {owner?}) -> id   # fires EVERY that-combatant
   "encounter": "goblin-ambush", "round": 2, "turn": "goblin-2",
   "committed": {                                   // hardened truth as of the last confirmed action
     "combatants": {
-      "pc":       { "hp": 24, "hp_max": 31, "status": "alive", "conditions": [],
-                    "economy": { "action": true, "bonus": true, "reaction": true, "move_ft": 30 } },
-      "goblin-2": { "hp": 5, "hp_max": 12, "status": "alive",
-                    "conditions": [{ "name": "prone", "effect": "...", "ends": null }],
-                    "distance": 30, "height": 0, "direction": "NE" }    // egocentric, vs. the PC
+      "pc":       { "hp": 24, "hp_max": 31, "dead": false, "conditions": [], "reaction": true,
+                    "x": 0, "y": 0, "z": 0 },                           // the origin of the egocentric frame
+      "goblin-2": { "hp": 5, "hp_max": 12, "dead": false, "reaction": true,
+                    "conditions": [{ "name": "prone", "effect": "..." }],
+                    "x": 21, "y": 21, "z": 0 }    // world coords; projects to ~30 ft NE of the PC
     },
     "initiative": ["pc", "goblin-1", "goblin-2"],
     "timers": [{ "id": 3, "kind": "each_turn", "combatant": "goblin-boss", "owner": "goblin-boss",
                  "note": "move flaming sphere (10 rds)", "set_round": 1 },
-               { "id": 4, "kind": "in", "fires_round": 5, "note": "bless ends" }]  // elapsed = round − set_round, surfaced on fire
+               { "id": 4, "kind": "in", "combatant": "pc", "passes_remaining": 3, "note": "bless ends" }]
   },
   "pending": { /* same shape: committed + the one action in flight; == committed after a commit */ }
 }
@@ -236,12 +269,22 @@ loop over initiative (tracker owns the order and the position):
                  confirm (Enter) → commit that delta, advance
                  interject      → reaction: rollback pending→committed, replay this combatant's turn
                                   with the reaction, gate, commit, advance
-until the tracker says the fight is over (all foes down/fled) or the runner calls end_encounter
+until the runner calls end_encounter (all foes dead or narratively withdrawn)
 ```
 
 Player turns are symmetric to NPC turns for commit purposes — a DM error on the PC's own turn is
 equally retconnable within its window. The wrap/`session-length` machinery should not interrupt a
 fight mid-round (detail TBD).
+
+**Commit snapshots *after* `advance_turn`, not before (C1 must honor this).** `rollback` restores only
+the `pending` **frame** (combatants, initiative, timers); `round`/`turn`/`next_timer_id` are top-level
+and shared. `advance_turn` is what mutates the turn pointer *and* fires/decrements this slot's timers,
+so the orchestrator must take its commit snapshot at the **top of each combatant's turn, right after
+`advance_turn` fires** — then `pending == committed` with the fired-timer state baked in, an interject's
+`rollback` cleanly reverts just the combatant's action, and the turn pointer needs no rewind because no
+per-combatant action moves it. Snapshotting *before* the advance would strand a fired save-ends timer on
+rollback (reverted in `pending`, never re-fired on replay). So the loop's "confirm → commit, advance" is
+really "confirm → commit, advance, **re-commit at the new slot**."
 
 ## Balance — a skill, not a mechanism
 
@@ -279,8 +322,9 @@ PC-rescue reflex (principle 8).
 
 - **Tracker serialization + HP roll-vs-average** on instantiation (fixed average is one fewer roll;
   rolled gives variance). The `state()`/mutator echo format.
-- **AoE query.** "Everyone within 20 ft of that point" is derivable from the egocentric geometry and
-  worth a later `aoe(center, radius)` read; deferred from C0 to avoid schema bloat.
+- **AoE query.** "Everyone within 20 ft of that point" is now an *exact* filter over the stored
+  Cartesian coords (the Cartesian switch removed the lossiness that made it approximate) and worth a
+  later `aoe(center, radius)` read; deferred from C0 to avoid schema bloat.
 - **Reaching back past a confirmed combatant.** By design, confirming combatant A closes A's reaction
   window, so a reaction referencing an already-committed combatant is handled going forward, not
   retconned. Confirm-as-consent is what makes granular commit sound; flagged as a deliberate scope
@@ -296,10 +340,11 @@ what would validate its prompts.
 
 ### C0 — Tracker plugin + schema *(code only, unit-tested)*
 The `combat-tracker` plugin and state file: combatants, egocentric position, the bounded condition
-library (tag-in, effect+duration-out), per-turn economy, death/downed mini-state, initiative, the
-timer/obligation channel (`remind_in` + `remind_each_turn`, auto-ids echoed on fire, elapsed-round
-surfacing, owner-cull), `committed`/`pending`, forward
-mutators, `pc_move` fan-out (Chebyshev), `rollback`, range/`between` reads,
+library (tag-in, effect-text-out), the single tracked `reaction` resource, the `dead` boolean +
+death-save tally, initiative, the timer/obligation channel (`remind_in` + `remind_each_turn`,
+turn-slot-anchored, auto-ids echoed on fire, elapsed-round surfacing, owner-cull), `committed`/
+`pending`, forward mutators, world-Cartesian position with `move` on the PC as an origin shift
+(Chebyshev projection), `rollback`, `state`/`describe`/`distance_between` reads,
 `start_encounter`/`end_encounter`. Verified by direct plugin tests — no model in the loop. *Exit: the
 tracker is provably correct as a state machine.*
 
