@@ -240,8 +240,9 @@ remind_each_turn(combatant, note, {owner?}) -> id   # fires EVERY time `combatan
 
 ```jsonc
 {
-  "encounter": "goblin-ambush", "round": 2, "turn": "goblin-2",
+  "encounter": "goblin-ambush", "next_timer_id": 5,   // next_timer_id top-level: never rewinds on a rollback
   "committed": {                                   // hardened truth as of the last confirmed action
+    "turn": "goblin-2", "round": 2,                // turn/round live IN the frame, so a swap carries them
     "combatants": {
       "pc":       { "hp": 24, "hp_max": 31, "dead": false, "conditions": [], "reaction": true,
                     "x": 0, "y": 0, "z": 0 },                           // the origin of the egocentric frame
@@ -258,17 +259,24 @@ remind_each_turn(combatant, note, {owner?}) -> id   # fires EVERY time `combatan
 }
 ```
 
+`turn`/`round` sit inside each frame (not top-level) so `commit`/`rollback` snapshot the turn pointer
+with everything else — that is what lets each turn end by calling `advance_turn` and still replay
+cleanly on an interject (the rollback rewinds the pointer to the interrupted combatant). `next_timer_id`
+stays top-level: it must never rewind, or a rolled-back timer's id could be handed out twice.
+
 ## The combat loop
 
 ```
 enter combat (runner calls start_encounter; orchestrator flips _in_combat)
-loop over initiative (tracker owns the order and the position):
-  advance_turn → tracker fires any matching saves/timers (with their ids) as obligations
-  PC's turn:   solicit full player input → DM adjudicates via tracker+dice → gate → commit
-  NPC's turn:  DM narrates ONE combatant's action → gate (committed→pending) → present + confirm gate
-                 confirm (Enter) → commit that delta, advance
-                 interject      → reaction: rollback pending→committed, replay this combatant's turn
-                                  with the reaction, gate, commit, advance
+loop over initiative (the tracker's own turn pointer is the cursor):
+  whose turn = the pending frame's turn pointer (advanced by the previous turn's closing advance_turn,
+               which already fired this combatant's saves/timers as obligations)
+  PC's turn:   solicit full player input → DM adjudicates via tracker+dice, ends by advance_turn → gate → commit
+  NPC's turn:  DM resolves ONE combatant's action, ends by advance_turn → gate (committed→pending)
+                 → present + confirm gate
+                 confirm (Enter) → commit that delta
+                 interject      → reaction: rollback pending→committed (pointer rewinds to this
+                                  combatant), replay the turn with the reaction, gate, present again
 until the runner calls end_encounter (all foes dead or narratively withdrawn)
 ```
 
@@ -276,15 +284,17 @@ Player turns are symmetric to NPC turns for commit purposes — a DM error on th
 equally retconnable within its window. The wrap/`session-length` machinery should not interrupt a
 fight mid-round (detail TBD).
 
-**Commit snapshots *after* `advance_turn`, not before (C1 must honor this).** `rollback` restores only
-the `pending` **frame** (combatants, initiative, timers); `round`/`turn`/`next_timer_id` are top-level
-and shared. `advance_turn` is what mutates the turn pointer *and* fires/decrements this slot's timers,
-so the orchestrator must take its commit snapshot at the **top of each combatant's turn, right after
-`advance_turn` fires** — then `pending == committed` with the fired-timer state baked in, an interject's
-`rollback` cleanly reverts just the combatant's action, and the turn pointer needs no rewind because no
-per-combatant action moves it. Snapshotting *before* the advance would strand a fired save-ends timer on
-rollback (reverted in `pending`, never re-fired on replay). So the loop's "confirm → commit, advance" is
-really "confirm → commit, advance, **re-commit at the new slot**."
+**The turn pointer travels in the snapshot, so the advance can end the turn (C1).** `turn`/`round` live
+inside the `committed`/`pending` frames, so a `rollback` (committed→pending) restores the turn pointer
+along with HP/conditions/timers. That is what lets each combatant's turn *end* by calling `advance_turn`
+(seating the next combatant, firing their timers) rather than needing a separate orchestrator-driven
+advance step: `committed` holds this combatant's pre-action start, the action mutates `pending` and
+advances its pointer, and an interject's `rollback` rewinds `pending` — pointer included — to replay
+*this* combatant. Were `turn` top-level and shared, rollback couldn't rewind it and the replay would
+resolve the wrong combatant; that constraint (and the extra advance model call it forced) is why the
+pointer moved into the frame. A combatant's timers therefore fire on the *previous* turn's closing
+advance — one beat early in the transcript, resolved on the turn they belong to (a `combat-reminder`
+matter, C5). `next_timer_id` stays top-level so a rolled-back timer id is never reused.
 
 ## Balance — a skill, not a mechanism
 
@@ -354,22 +364,22 @@ tracker is provably correct as a state machine.*
 combat drives through the loop with correct commit/rollback boundaries and no model.*
 
 Built as `orchestrator/combat.py` — a `CombatState` file-wrapper (the two frame swaps: `commit` =
-pending→committed, `rollback` = committed→pending; `turn`/`round`/`next_timer_id` top-level and
-untouched) plus a `CombatMixin` on `Game` with the surface: `combat_step()`, `combat_confirm()`,
-`combat_interject(text)`, `combat_player_action(input)`, and an `in_combat` property. Key resolutions:
-- **The advance is a real model call at the top of each combatant's turn.** opencode exposes no
-  execute-a-tool endpoint (only list-tools), so the orchestrator can't run `advance_turn` itself — it
-  drives a minimal advance prompt, then commits immediately, so `committed` == the combatant's
-  post-advance start (their timers fired). `combat_step` skips the advance only on the first step
-  (`start_encounter` already seated the opener). The orchestrator owns *only* the frame swaps; the
-  tracker's advance semantics stay solely in the TS engine.
-- **The action call never advances**, so `turn` stays put through the action and an interject's
-  frame-only rollback lands on the right combatant — the invariant the top-level `turn` layout demands.
+pending→committed, `rollback` = committed→pending, both carrying the in-frame turn pointer) plus a
+`CombatMixin` on `Game` with the surface: `combat_step()`, `combat_confirm()`, `combat_interject(text)`,
+`combat_player_action(input)`, and an `in_combat` property. Key resolutions:
+- **Every turn ends by advancing (advance-at-end).** The runner resolves its action and calls
+  `advance_turn` as its closing act; the orchestrator owns *only* the two frame swaps, never the
+  tracker's advance semantics (which stay in the TS engine — opencode exposes no execute-a-tool
+  endpoint, so the orchestrator can't run the advance itself anyway). One model call per combatant, no
+  separate advance step, no first-step special-case; a forgotten advance is caught by the pointer not
+  moving and nudged once (`_ensure_advanced`).
+- **This works only because the turn pointer moved into the frame** (see the state sketch): a rollback
+  now rewinds it, so an interject replays the interrupted combatant, not the next one.
 - **The PC's turn commits directly** (no confirm gate — a player doesn't confirm their own beat);
   **an NPC turn awaits confirm**, and an **interject re-presents for confirm** (re-confirmable, so a
   reaction to a reaction stays cheap). Verified by `dev/test_combat_loop.py`.
-- *Deferred (hardening):* a post-advance delta guard (reject an advance call that also mutated HP/
-  conditions — a weak model over-acting on the "advance only" prompt), and resume-mid-combat replay.
+- *Deferred (hardening):* resume-mid-combat loop-position recovery (the tracker state persists, but
+  which combatant is mid-turn / awaiting confirm is in-memory only).
 
 ### C2 — Gate: `check-combat`
 The role skill + `gate.check()` branch + state-file preload into the check brief. *Exit: a drafted

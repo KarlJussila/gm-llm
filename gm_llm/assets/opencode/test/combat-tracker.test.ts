@@ -40,8 +40,8 @@ describe("start_encounter / end_encounter", () => {
     expect(s.pending.initiative).toEqual(["pc", "goblin-1", "goblin-2", "goblin-3", "orc"])
     expect(s.pending.combatants["goblin-1"].name).toBe("goblin")
     expect(s.pending.combatants["orc"].id).toBe("orc") // no suffix for a lone instance
-    expect(s.round).toBe(1)
-    expect(s.turn).toBe("pc")
+    expect(s.pending.round).toBe(1)
+    expect(s.pending.turn).toBe("pc")
     expect(s.committed).toEqual(s.pending)
   })
 

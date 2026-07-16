@@ -9,26 +9,27 @@ calling the `start_encounter` / `end_encounter` tracker tools (observed off
 `reply.tools`, like `task_complete`); the orchestrator flips `_in_combat`, which
 selects the driver.
 
-**The one load-bearing invariant — commit snapshots right after `advance_turn`.**
-The tracker state file keeps two frames, `committed` (hardened truth) and `pending`
-(the action in flight); `turn`/`round`/`next_timer_id` sit *top-level*, shared. A
-commit copies pending→committed; a rollback copies committed→pending — frames only,
-never the shared turn pointer. So the advance (which moves `turn` and fires the new
-combatant's timers) must happen at the **top of each combatant's turn as its own
-step**, with the commit taken immediately after and *before* the action:
+**The one load-bearing invariant — the snapshot carries the turn pointer.** The
+tracker state file keeps two frames, `committed` (hardened truth) and `pending` (the
+action in flight), and each frame carries its own `turn`/`round`. A commit copies
+pending→committed; a rollback copies committed→pending — the turn pointer included.
+So the runner ends its turn by calling `advance_turn` as its closing act, and:
 
-    committed  ==  this combatant's post-advance start (their timers already fired)
+  committed  ==  this combatant's turn, before they acted (their timers already fired
+                 by the previous combatant's closing advance)
 
-Then the action mutates `pending` without touching `turn`; an interject rolls
-`pending` back to `committed` with the turn pointer still on this combatant, and the
-replay re-runs *this* combatant's action — no double-fired timers, no wrong-combatant
-replay. Snapshotting before the advance, or letting the action call advance, would
-strand the moved turn pointer on rollback (see COMBAT.md "The combat loop").
+The action call mutates `pending` and advances its turn pointer to the next
+combatant. On confirm we commit. On interject we roll `pending` back to `committed`
+— which restores the turn pointer to *this* combatant — and replay their turn; no
+double-fired timers, no wrong-combatant replay. (Because the turn pointer travels in
+the snapshot, the advance can safely live at the end of the action call; were it
+top-level and shared, a rollback couldn't rewind it and the replay would resolve the
+wrong combatant — see COMBAT.md "The combat loop".)
 
-Because a plugin tool can only run inside a model turn (opencode exposes no
-execute-a-tool endpoint), the advance is a real — if minimal — model call; the
-orchestrator owns only the frame swaps (commit/rollback), never the tracker's
-semantics, which stay solely in the TS engine.
+The orchestrator owns only the two frame swaps (commit/rollback); every semantic
+mutation — damage, move, advance_turn — is the model calling a tracker tool, which
+the TS engine applies. `next_timer_id` stays top-level so a rolled-back timer's id is
+never reused.
 """
 
 from __future__ import annotations
@@ -48,8 +49,8 @@ class CombatState:
     """A thin read/modify/write wrapper over the tracker's state file. The orchestrator
     only ever performs the two frame swaps here — `commit` and `rollback`; every
     semantic mutation (damage, move, advance_turn, …) is the model calling a tracker
-    tool, which the TS engine applies. `turn`/`round`/`next_timer_id` are top-level and
-    deliberately untouched by either swap (see the module docstring)."""
+    tool, which the TS engine applies. `turn`/`round` live inside each frame, so the
+    swaps carry them; `next_timer_id` is top-level and never rewinds."""
 
     def __init__(self, directory: str):
         self.path = combat_state_path(directory)
@@ -65,25 +66,25 @@ class CombatState:
         self.path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
     def commit(self) -> None:
-        """Harden the in-flight action: pending → committed (frame only)."""
+        """Harden the in-flight action: pending → committed (turn pointer included)."""
         s = self.load()
         s["committed"] = copy.deepcopy(s["pending"])
         self.save(s)
 
     def rollback(self) -> None:
-        """Undo the in-flight action: committed → pending (frame only). The turn
-        pointer stays on this combatant, so the replay resolves the right one."""
+        """Undo the in-flight action: committed → pending. Restores the turn pointer to
+        this combatant, so the replay resolves the right one."""
         s = self.load()
         s["pending"] = copy.deepcopy(s["committed"])
         self.save(s)
 
     @property
     def turn(self) -> str | None:
-        return self.load().get("turn") if self.exists() else None
+        return self.load()["pending"]["turn"] if self.exists() else None
 
     @property
     def round(self) -> int | None:
-        return self.load().get("round") if self.exists() else None
+        return self.load()["pending"]["round"] if self.exists() else None
 
     def is_pc_turn(self) -> bool:
         return self.turn == "pc"
@@ -115,15 +116,13 @@ class CombatStep:
 # combat play-craft (the per-combatant algorithm, proactive-pause discipline, the
 # repertoire consult, real lethality) is C5 — `combat-reminder` / `combat-run` — and
 # replaces these. They are inert under the mock backend that C1 is verified against.
-
-_ADVANCE_BRIEF = (
-    "It is the top of the next combatant's turn. Call `advance_turn` once to move "
-    "initiative forward and surface any timers that fire now. Do not narrate or "
-    "resolve any action yet — just advance."
-)
+#
+# Every turn ends with advance_turn — that closing advance is what seats the next
+# combatant and fires their timers, and it is what a rollback rewinds on an interject.
 
 _ADVANCE_NUDGE = (
-    "The turn did not advance — call `advance_turn` now, and nothing else."
+    "You resolved the action but didn't end the turn — call `advance_turn` now to pass "
+    "initiative to the next combatant, and nothing else."
 )
 
 
@@ -131,14 +130,15 @@ def _npc_brief(combatant: str) -> str:
     return (
         f"It is {combatant}'s turn. Resolve this one combatant's action: consult the "
         f"tracker, apply the results with its tools (damage/move/condition/…), and "
-        f"narrate the beat. Do not advance the turn — that is handled for you."
+        f"narrate the beat. End the turn by calling `advance_turn`."
     )
 
 
 def _pc_brief(player_input: str) -> str:
     return (
         "It is the PC's turn. Adjudicate the player's action below, apply the results "
-        "with the tracker's tools, and narrate the outcome. Do not advance the turn.\n\n"
+        "with the tracker's tools, and narrate the outcome. End the turn by calling "
+        "`advance_turn`.\n\n"
         f"<player>\n{player_input}\n</player>"
     )
 
@@ -147,8 +147,8 @@ def _replay_brief(combatant: str, text: str) -> str:
     return (
         f"The player interjects before {combatant}'s action resolves — treat it as a "
         f"reaction. The tracker has been rolled back to the start of {combatant}'s turn. "
-        f"Replay the turn with the reaction below folded in, apply the results, and "
-        f"narrate. Do not advance the turn.\n\n<reaction>\n{text}\n</reaction>"
+        f"Replay the turn with the reaction below folded in, apply the results, narrate, "
+        f"and end the turn by calling `advance_turn`.\n\n<reaction>\n{text}\n</reaction>"
     )
 
 
@@ -160,7 +160,6 @@ class CombatMixin:
 
     # These are initialised in Game.__init__; declared here for reference.
     _in_combat: bool
-    _combat_first: bool
     _combat_pending: CombatStep | None
 
     @property
@@ -173,37 +172,31 @@ class CombatMixin:
         interface into the combat loop after this turn returns."""
         if "start_encounter" in reply.tools:
             self._in_combat = True
-            self._combat_first = True   # start_encounter already positioned combatant 0
             self._combat_pending = None
         if "end_encounter" in reply.tools:
             self._in_combat = False
 
     def combat_step(self) -> CombatStep:
-        """Advance into the current combatant's turn (firing their timers) and either
-        hand back to the player (PC turn) or resolve one NPC action (awaiting confirm).
-        The advance + commit at the top is the rollback baseline (see module docstring);
-        it is skipped only on the very first step, since `start_encounter` already seated
-        the opening combatant."""
+        """Dispatch the current combatant: hand back to the player (PC turn) or resolve
+        one NPC action (awaiting confirm). The tracker's turn pointer — advanced by the
+        previous turn's closing `advance_turn` — is the loop's cursor; no advance happens
+        here."""
         st = CombatState(self.backend.directory)
         if not st.exists():
             self._in_combat = False
             return CombatStep(kind="ended")
-
-        if not self._combat_first:
-            self._combat_advance(st)
-        self._combat_first = False
 
         up = st.turn
         rnd = st.round
         if up == "pc":
             return CombatStep(kind="await_pc", combatant="pc", round=rnd)
 
-        # NPC turn: resolve one combatant's action. The runner does NOT advance — that is
-        # the orchestrator's separate step at the top of the next combat_step.
+        # NPC turn: the runner resolves one combatant's action and ends it by advancing.
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, _npc_brief(up))
         if "end_encounter" in reply.tools:
             return self._combat_end(reply.text, player_line="")
+        self._ensure_advanced(st, up)
         final, result, corrected = self._run_gate(reply.text, f"(combat: {up}'s turn)")
         self._step("done")
         step = CombatStep(kind="await_confirm", combatant=up, round=rnd,
@@ -211,20 +204,18 @@ class CombatMixin:
         self._combat_pending = step
         return step
 
-    def _combat_advance(self, st: CombatState) -> None:
-        """Drive the turn-advance model call, then snapshot: committed := the just-entered
-        combatant's post-advance start. Nudges once if the runner forgot to advance (the
-        turn pointer would be unchanged)."""
-        before = st.turn
-        self._step("draft")
-        self.backend.prompt_full(self.runner_sid, self.runner_agent, _ADVANCE_BRIEF)
-        if st.turn == before:
+    def _ensure_advanced(self, st: CombatState, acted: str) -> None:
+        """The runner ends its turn by calling `advance_turn`. If the pointer didn't move
+        off `acted`, it forgot — nudge once so initiative doesn't stall. (A missed advance
+        is benign and self-evident; the old separate advance step's failure mode — the
+        model over-acting on an 'advance only' prompt — does not exist here.)"""
+        if st.turn == acted:
             self.backend.prompt_full(self.runner_sid, self.runner_agent, _ADVANCE_NUDGE)
-        st.commit()  # the rollback baseline for this combatant's turn
 
     def combat_confirm(self) -> CombatStep | None:
         """Bare-Enter confirm of the NPC action awaiting confirm: harden it into
-        `committed` and record the beat. The next `combat_step` advances past it."""
+        `committed` and record the beat. `combat_step` then reads the already-advanced
+        turn pointer to reach the next combatant."""
         CombatState(self.backend.directory).commit()
         step = self._combat_pending
         self._combat_pending = None
@@ -234,16 +225,19 @@ class CombatMixin:
 
     def combat_interject(self, text: str) -> CombatStep:
         """The player reacts before the NPC action resolves. Roll `pending` back to this
-        combatant's start (turn pointer intact), replay the turn with the reaction folded
-        in, gate, and present it for confirm again — a missed pause stays cheap."""
+        combatant's start (the turn pointer comes back with it), replay the turn with the
+        reaction folded in, gate, and present for confirm again — a missed pause stays
+        cheap."""
         st = CombatState(self.backend.directory)
         st.rollback()
-        up = st.turn
+        up = st.turn  # rollback restored the pointer to the interrupted combatant
+        rnd = st.round
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, _replay_brief(up, text))
+        self._ensure_advanced(st, up)
         final, result, corrected = self._run_gate(reply.text, f"(combat reaction: {text})")
         self._step("done")
-        step = CombatStep(kind="await_confirm", combatant=up, round=st.round,
+        step = CombatStep(kind="await_confirm", combatant=up, round=rnd,
                           narration=final, gate=result, corrected=corrected)
         self._combat_pending = step
         return step
@@ -252,17 +246,19 @@ class CombatMixin:
         """The PC's turn: adjudicate the player's action, gate, and commit directly — a
         player's own turn has no confirm gate (it is symmetric to an NPC turn for commit
         purposes, retconnable within its window, but the player does not confirm their own
-        beat)."""
+        beat). The action ends by advancing, same as any turn."""
         st = CombatState(self.backend.directory)
+        rnd = st.round
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, _pc_brief(player_input))
         if "end_encounter" in reply.tools:
             return self._combat_end(reply.text, player_line=player_input)
+        self._ensure_advanced(st, "pc")
         final, result, corrected = self._run_gate(reply.text, player_input)
         st.commit()
         self._append_transcript(player_input, final, opening=False)
         self._step("done")
-        return CombatStep(kind="committed", combatant="pc", round=st.round,
+        return CombatStep(kind="committed", combatant="pc", round=rnd,
                           narration=final, gate=result, corrected=corrected)
 
     def _combat_end(self, narration: str, player_line: str) -> CombatStep:

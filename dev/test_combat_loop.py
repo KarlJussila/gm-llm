@@ -9,11 +9,16 @@ is the **commit/rollback boundaries**: after each step we read the state file an
 `committed` vs. `pending` are exactly where the invariant says they should be —
 
   - the PC's own turn commits directly (no confirm gate);
-  - an NPC turn advances + commits at the TOP (committed == that combatant's post-advance
-    start), then resolves the action into `pending` only, awaiting confirm;
-  - an interject rolls `pending` back to `committed` (turn pointer intact) and replays;
+  - an NPC turn resolves the action into `pending` (advancing the turn pointer as its
+    closing act) while `committed` still holds that combatant's pre-action start, awaiting
+    confirm;
+  - an interject rolls `pending` back to `committed` (turn pointer restored) and replays;
   - a bare confirm hardens `pending` into `committed`;
   - end_encounter leaves combat and drops the file.
+
+Every turn ends by advancing (advance-at-end), so the turn pointer travels inside the
+committed/pending frames — which is what makes the interject rollback land on the right
+combatant.
 
 This is the C1 exit criterion in miniature: a scripted combat drives through the loop
 with correct commit/rollback boundaries and no model.
@@ -46,6 +51,7 @@ def _initial_state():
         return {"id": cid, "name": name, "hp": hp, "hp_max": hp, "dead": False,
                 "conditions": [], "reaction": True, "x": x, "y": y, "z": 0}
     frame = {
+        "turn": "pc", "round": 1,  # turn/round live in the frame, so commit/rollback carry them
         "combatants": {
             "pc": {"id": "pc", "name": "Dallid", "hp": 30, "hp_max": 30, "dead": False,
                    "conditions": [], "reaction": True, "x": 0, "y": 0, "z": 0},
@@ -55,7 +61,7 @@ def _initial_state():
         "initiative": ["pc", "goblin-1", "goblin-2"],
         "timers": [],
     }
-    return {"encounter": "goblin ambush", "round": 1, "turn": "pc", "next_timer_id": 1,
+    return {"encounter": "goblin ambush", "next_timer_id": 1,
             "committed": copy.deepcopy(frame), "pending": copy.deepcopy(frame)}
 
 
@@ -102,23 +108,24 @@ def m_start(directory):
     CombatState(directory).save(_initial_state())
 
 
-def m_advance(directory):
-    st = CombatState(directory)
-    s = st.load()
+def _advance_pending(s):
+    """Move the pending turn pointer to the next combatant (the plugin's advance_turn)."""
     init = s["pending"]["initiative"]
-    ni = (init.index(s["turn"]) + 1) % len(init)
+    ni = (init.index(s["pending"]["turn"]) + 1) % len(init)
     if ni == 0:
-        s["round"] += 1
-    s["turn"] = init[ni]
-    st.save(s)
+        s["pending"]["round"] += 1
+    s["pending"]["turn"] = init[ni]
 
 
-def m_damage(cid, amt):
+def m_act(cid, amt):
+    """A whole turn's effect: damage `cid` in pending, then advance — the runner resolves
+    its action and ends the turn with advance_turn, in one call."""
     def _mut(directory):
         st = CombatState(directory)
         s = st.load()
         c = s["pending"]["combatants"][cid]
         c["hp"] = max(0, c["hp"] - amt)
+        _advance_pending(s)
         st.save(s)
     return _mut
 
@@ -131,6 +138,10 @@ def m_end(directory):
 
 def hp(st, frame, cid):
     return st.load()[frame]["combatants"][cid]["hp"]
+
+
+def turn_of(st, frame):
+    return st.load()[frame]["turn"]
 
 
 def check(cond, msg):
@@ -147,17 +158,13 @@ def main():
     script = [
         # 1. entry: a normal turn whose narration calls start_encounter
         ("Blades out — roll initiative!", {"start_encounter"}, m_start),
-        # 2. PC's turn: strike goblin-1 for 5
-        ("You lunge; your blade bites deep.", {"damage"}, m_damage("goblin-1", 5)),
-        # 3. advance pc -> goblin-1
-        ("", {"advance_turn"}, m_advance),
-        # 4. goblin-1's turn: hit the PC for 6
-        ("The goblin's blade rakes your side.", {"damage"}, m_damage("pc", 6)),
-        # 5. interject replay: the shield spell blunts it to 2
-        ("Your shield flares; the blow glances off.", {"damage"}, m_damage("pc", 2)),
-        # 6. advance goblin-1 -> goblin-2
-        ("", {"advance_turn"}, m_advance),
-        # 7. goblin-2's turn: it breaks and the fight ends
+        # 2. PC's turn: strike goblin-1 for 5, then advance (pc -> goblin-1)
+        ("You lunge; your blade bites deep.", {"damage", "advance_turn"}, m_act("goblin-1", 5)),
+        # 3. goblin-1's turn: hit the PC for 6, then advance (goblin-1 -> goblin-2)
+        ("The goblin's blade rakes your side.", {"damage", "advance_turn"}, m_act("pc", 6)),
+        # 4. interject replay: shield blunts it to 2, then advance (goblin-1 -> goblin-2)
+        ("Your shield flares; the blow glances off.", {"damage", "advance_turn"}, m_act("pc", 2)),
+        # 5. goblin-2's turn: it breaks and the fight ends
         ("The last goblin turns and flees into the dark.", {"end_encounter"}, m_end),
     ]
     backend = FakeBackend(tmp, script)
@@ -171,30 +178,32 @@ def main():
     check(tr.combat_started, "turn() reports combat_started on start_encounter")
     check(game.in_combat, "in_combat flips True after start_encounter")
 
-    # --- combat_step 1: the PC is up (first step never advances) --------------
+    # --- combat_step 1: the PC is up ------------------------------------------
     step = game.combat_step()
     check(step.kind == "await_pc", "first combat_step yields the PC's turn")
-    check(st.turn == "pc", "first step did NOT advance (start_encounter seated the PC)")
+    check(st.turn == "pc", "the PC is the opening combatant (start_encounter seated them)")
 
-    # --- PC acts: commits directly, no advance --------------------------------
+    # --- PC acts: resolves + advances as its closing act, commits directly ----
     step = game.combat_player_action("I attack the nearer goblin.")
     check(step.kind == "committed", "PC action commits directly (no confirm gate)")
-    check(st.turn == "pc", "PC action does not advance the turn")
+    check(turn_of(st, "committed") == "goblin-1", "the PC's closing advance moved the pointer")
     check(hp(st, "committed", "goblin-1") == 7, "PC's 5 damage hardened into committed")
     check(hp(st, "pending", "goblin-1") == 7, "pending matches committed after PC commit")
 
-    # --- combat_step 2: advance into goblin-1, then it acts -------------------
+    # --- combat_step 2: goblin-1 acts (and advances), awaiting confirm --------
     step = game.combat_step()
     check(step.kind == "await_confirm", "NPC turn awaits confirm")
     check(step.combatant == "goblin-1", "the acting combatant is goblin-1")
-    check(st.turn == "goblin-1", "combat_step advanced the turn pointer to goblin-1")
-    check(hp(st, "committed", "pc") == 30,
-          "committed == goblin-1's post-advance start (PC unhurt in committed)")
-    check(hp(st, "pending", "pc") == 24, "goblin-1's 6 damage lives only in pending")
+    check(turn_of(st, "committed") == "goblin-1",
+          "committed still holds goblin-1's pre-action start")
+    check(turn_of(st, "pending") == "goblin-2", "pending advanced past goblin-1 as its closing act")
+    check(hp(st, "committed", "pc") == 30, "committed PC unhurt (the hit lives only in pending)")
+    check(hp(st, "pending", "pc") == 24, "goblin-1's 6 damage is in pending")
 
     # --- interject: rollback to goblin-1's start, replay with the reaction ----
     step = game.combat_interject("I cast shield!")
     check(step.kind == "await_confirm", "interject re-presents for confirm")
+    check(step.combatant == "goblin-1", "the rollback restored the pointer to goblin-1")
     check(hp(st, "committed", "pc") == 30, "committed untouched by the rolled-back action")
     check(hp(st, "pending", "pc") == 28,
           "rollback restored pending to 30, replay then applied the blunted 2 damage")
@@ -202,8 +211,9 @@ def main():
     # --- confirm: harden the replayed beat ------------------------------------
     game.combat_confirm()
     check(hp(st, "committed", "pc") == 28, "confirm hardened the replayed action into committed")
+    check(turn_of(st, "committed") == "goblin-2", "committed now carries the advance to goblin-2")
 
-    # --- combat_step 3: advance into goblin-2, which ends the fight -----------
+    # --- combat_step 3: goblin-2 acts and ends the fight ----------------------
     step = game.combat_step()
     check(step.kind == "ended", "end_encounter ends the combat loop")
     check(not game.in_combat, "in_combat flips back to False")

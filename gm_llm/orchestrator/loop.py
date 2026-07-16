@@ -91,11 +91,10 @@ class Game(CombatMixin):
         self._turn_no = 0
         self.logs = logs
         self.runner_sid = backend.create_session("dm-runner game")
-        # Combat mode (COMBAT.md C1). `_in_combat` reflects a live tracker state file, so
-        # a resume into a fight picks it up; `_combat_first` skips the top-of-turn advance
-        # for the opening combatant (start_encounter already seated them). See combat.py.
+        # Combat mode (COMBAT.md C1). `_in_combat` reflects a live tracker state file, so a
+        # resume into a fight picks it up; the loop's cursor is the tracker's own turn
+        # pointer, advanced by each turn's closing advance_turn. See combat.py.
         self._in_combat = CombatState(backend.directory).exists()
-        self._combat_first = self._in_combat  # resume: re-dispatch the current combatant, don't skip one
         self._combat_pending = None
         # The session being played = the highest plan on disk, unless told otherwise.
         self.campaign = Path(campaign_dir) if campaign_dir else Path(backend.directory) / "campaign"

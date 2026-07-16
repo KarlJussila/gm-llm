@@ -44,6 +44,13 @@ export type Timer = {
 }
 
 export type Frame = {
+  // turn/round live INSIDE the frame (not top-level) so a commit/rollback snapshots them
+  // with everything else: rollback restores the turn pointer too, which is what lets the
+  // runner's turn end by advancing and still be cleanly replayed on an interject (COMBAT.md
+  // "The combat loop"). next_timer_id stays top-level — it must never rewind, or a rolled-back
+  // timer's id could be reused.
+  turn: string
+  round: number
   combatants: Record<string, Combatant>
   initiative: string[]
   timers: Timer[]
@@ -51,8 +58,6 @@ export type Frame = {
 
 export type TrackerState = {
   encounter: string
-  round: number
-  turn: string
   next_timer_id: number
   committed: Frame
   pending: Frame
@@ -323,10 +328,10 @@ export function remindIn(state: TrackerState, rounds: number, note: string): num
   const id = state.next_timer_id++
   state.pending.timers.push({
     id,
-    combatant: state.turn,
+    combatant: state.pending.turn,
     kind: "in",
     passes_remaining: rounds,
-    set_round: state.round,
+    set_round: state.pending.round,
     note,
   })
   return id
@@ -344,7 +349,7 @@ export function remindEachTurn(
     id,
     combatant,
     kind: "each_turn",
-    set_round: state.round,
+    set_round: state.pending.round,
     note,
     owner,
   })
@@ -364,23 +369,23 @@ export function advanceTurn(
   state: TrackerState,
 ): { turn: string; round: number; fired: FiredObligation[] } {
   const frame = state.pending
-  const idx = frame.initiative.indexOf(state.turn)
+  const idx = frame.initiative.indexOf(frame.turn)
   const nextIdx = (idx + 1) % frame.initiative.length
-  if (nextIdx === 0) state.round++
-  state.turn = frame.initiative[nextIdx]
+  if (nextIdx === 0) frame.round++
+  frame.turn = frame.initiative[nextIdx]
 
-  const entering = frame.combatants[state.turn]
+  const entering = frame.combatants[frame.turn]
   if (entering) entering.reaction = true
 
   const fired: FiredObligation[] = []
   const remaining: Timer[] = []
   for (const t of frame.timers) {
-    if (t.combatant !== state.turn) {
+    if (t.combatant !== frame.turn) {
       remaining.push(t)
       continue
     }
     if (t.kind === "each_turn") {
-      fired.push({ id: t.id, note: t.note, elapsed: state.round - t.set_round })
+      fired.push({ id: t.id, note: t.note, elapsed: frame.round - t.set_round })
       remaining.push(t)
     } else {
       const left = (t.passes_remaining ?? 1) - 1
@@ -394,7 +399,7 @@ export function advanceTurn(
   }
   frame.timers = remaining
 
-  return { turn: state.turn, round: state.round, fired }
+  return { turn: frame.turn, round: frame.round, fired }
 }
 
 export function rollback(state: TrackerState): void {
@@ -465,11 +470,9 @@ export function createEncounter(scene: string, roster: RosterEntry[]): TrackerSt
     }
   }
 
-  const frame: Frame = { combatants, initiative, timers: [] }
+  const frame: Frame = { turn: initiative[0], round: 1, combatants, initiative, timers: [] }
   return {
     encounter: scene,
-    round: 1,
-    turn: initiative[0],
     next_timer_id: 1,
     committed: clone(frame),
     pending: clone(frame),
@@ -496,7 +499,7 @@ export function formatRoster(frame: Frame): string {
 }
 
 export function describeEncounter(state: TrackerState): string {
-  return `Round ${state.round} — ${state.turn}'s turn\n${formatRoster(state.pending)}`
+  return `Round ${state.pending.round} — ${state.pending.turn}'s turn\n${formatRoster(state.pending)}`
 }
 
 /** The full, human-readable picture on one combatant — describe(id)'s payload. */
