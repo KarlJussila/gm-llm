@@ -238,5 +238,48 @@ def main():
     print("\nC1+C2 combat loop: all boundaries correct, combat check wired.")
 
 
+# ── resume mid-combat recovery ────────────────────────────────────────────────
+
+def _await_confirm_state():
+    """The persisted tracker state at the instant an NPC action awaits confirm: committed
+    still holds goblin-1's pre-action start; pending holds the applied hit and the closing
+    advance. If the process dies here (before confirm), a resume must not skip the gate."""
+    s = _initial_state()
+    for frame in ("committed", "pending"):
+        s[frame]["turn"] = "goblin-1"
+    s["pending"]["combatants"]["pc"]["hp"] = 24   # goblin-1's 6 damage, in pending only
+    _advance_pending(s)                            # pending's closing advance: goblin-1 -> goblin-2
+    return s
+
+
+def resume_recovery():
+    """A crash between drafting goblin-1's action and confirming it leaves an in-flight
+    `pending` with no in-memory `_combat_pending`. On resume, `combat_step` must roll it
+    back and re-resolve goblin-1 through the confirm gate — never commit it blind or skip
+    to goblin-2 (which would drop the confirm gate and lose the un-appended narration)."""
+    tmp = tempfile.mkdtemp()
+    CombatState(tmp).save(_await_confirm_state())   # the persisted crash state
+    # One scripted reply: the fresh re-resolution of goblin-1's turn.
+    script = [("The goblin's blade rakes your side.", {"damage", "advance_turn"}, m_act("pc", 6))]
+    backend = FakeBackend(tmp, script)
+    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    st = CombatState(tmp)
+
+    check(game.in_combat, "resume into a live tracker file flips in_combat True")
+    check(st.in_flight(), "resume sees an in-flight uncommitted action (committed != pending)")
+
+    step = game.combat_step()
+    check(step.kind == "await_confirm", "resume re-resolves the interrupted combatant, awaiting confirm")
+    check(step.combatant == "goblin-1", "goblin-1 is re-resolved, not skipped to goblin-2")
+    check(hp(st, "committed", "pc") == 30, "the uncommitted action was rolled back — committed PC unhurt")
+    check(hp(st, "pending", "pc") == 24, "goblin-1's turn re-applied fresh in pending")
+    check(turn_of(st, "committed") == "goblin-1", "committed restored to goblin-1's pre-action start")
+    check(turn_of(st, "pending") == "goblin-2", "the re-resolution's closing advance moved pending on")
+    check(backend.i == len(script), "exactly one re-resolution call was consumed")
+
+    print("resume recovery: a crash mid-confirm rolls back and re-resolves, gate intact.")
+
+
 if __name__ == "__main__":
     main()
+    resume_recovery()

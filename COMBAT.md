@@ -398,8 +398,14 @@ pending→committed, `rollback` = committed→pending, both carrying the in-fram
 - **The PC's turn commits directly** (no confirm gate — a player doesn't confirm their own beat);
   **an NPC turn awaits confirm**, and an **interject re-presents for confirm** (re-confirmable, so a
   reaction to a reaction stays cheap). Verified by `dev/test_combat_loop.py`.
-- *Deferred (hardening):* resume-mid-combat loop-position recovery (the tracker state persists, but
-  which combatant is mid-turn / awaiting confirm is in-memory only).
+- *Resume-mid-combat recovery (done, post-C5).* `_in_combat` already recovered off the persisted
+  tracker file, but the in-memory `_combat_pending` (an NPC action awaiting confirm) did not — a crash
+  between drafting an action and confirming it left `pending` in-flight, and a naive resume would skip
+  the confirm gate and lose the un-appended narration. Fixed with a `CombatState.in_flight()`
+  (`committed != pending`) guard at the top of `combat_step`: on re-entry with no in-memory pending
+  step, roll the uncommitted action back to `committed` and re-resolve the interrupted combatant — the
+  same retcon-is-replay move an interject makes (works uniformly for a PC mid-draft crash too). Covered
+  by `dev/test_combat_loop.py`'s `resume_recovery` scenario.
 
 ### C2 — Gate: `check-combat` — **done**
 The role skill + `gate.check()` branch + state-file preload into the check brief. *Exit: a drafted

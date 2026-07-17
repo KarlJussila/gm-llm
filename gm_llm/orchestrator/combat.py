@@ -80,6 +80,16 @@ class CombatState:
         s["pending"] = copy.deepcopy(s["committed"])
         self.save(s)
 
+    def in_flight(self) -> bool:
+        """True when `pending` holds an action not yet committed — the two frames differ.
+        In normal operation `combat_step` is only ever entered from a just-committed state
+        (equal frames); a differing pair means a crash/resume interrupted an action between
+        drafting it and confirming it, so the resume guard rolls it back and re-resolves."""
+        if not self.exists():
+            return False
+        s = self.load()
+        return s["committed"] != s["pending"]
+
     @property
     def turn(self) -> str | None:
         return self.load()["pending"]["turn"] if self.exists() else None
@@ -186,6 +196,15 @@ class CombatMixin:
         if not st.exists():
             self._in_combat = False
             return CombatStep(kind="ended")
+
+        # Resume recovery. Normal operation always re-enters here from a just-committed
+        # state; if `pending` still holds an uncommitted action (a crash between drafting
+        # an NPC/PC action and confirming it) with no in-memory step to present, roll it
+        # back to the last committed truth and re-resolve the interrupted combatant — the
+        # same retcon-is-replay move an interject makes, so no half-applied action survives
+        # and no confirm gate is skipped.
+        if self._combat_pending is None and st.in_flight():
+            st.rollback()
 
         up = st.turn
         rnd = st.round
