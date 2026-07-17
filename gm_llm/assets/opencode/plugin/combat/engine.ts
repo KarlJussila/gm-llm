@@ -271,6 +271,104 @@ export function distanceBetween(state: TrackerState, a: string, b: string): numb
 }
 
 // ---------------------------------------------------------------------------
+// Area-of-effect shape queries — the model places the aim in egocentric terms;
+// the tracker does the geometry over the exact stored coords and returns the
+// caught combatants (initiative order). Pure reads: the model applies damage to
+// each hit with `damage`. No coordinate ever leaves the tracker.
+// ---------------------------------------------------------------------------
+
+const CONE_HALF_ANGLE = Math.atan(0.5) // 5e cone: width at a point equals its distance from origin.
+
+function livingCombatants(frame: Frame): Combatant[] {
+  return frame.initiative.map((id) => frame.combatants[id]).filter((c): c is Combatant => !!c && !c.dead)
+}
+
+/**
+ * burst(...): everyone within `radius` ft of a point placed `distance` ft `direction` from the PC
+ * (distance 0 = centered on the PC). Covers every radius footprint — sphere, cylinder, cube. The PC
+ * is caught like anyone else if in range; nobody is exempt (unlike cone/line, a burst has no caster
+ * origin — it is placed).
+ */
+export function burst(
+  state: TrackerState,
+  opts: { distance: number; direction?: string; radius: number; height?: number },
+): Combatant[] {
+  const frame = state.pending
+  const pc = frame.combatants["pc"]
+  const ox = pc?.x ?? 0
+  const oy = pc?.y ?? 0
+  const oz = pc?.z ?? 0
+  let cx = ox
+  let cy = oy
+  if (opts.distance > 0) {
+    if (!opts.direction) throw new Error("a burst away from the PC (distance > 0) needs a direction")
+    const [dx, dy] = vectorFor(normalizeDirection(opts.direction), opts.distance)
+    cx = ox + dx
+    cy = oy + dy
+  }
+  const cz = oz + (opts.height ?? 0)
+  return livingCombatants(frame).filter(
+    (c) => Math.max(chebyshev(c.x - cx, c.y - cy), Math.abs(c.z - cz)) <= opts.radius,
+  )
+}
+
+/**
+ * cone(...): everyone in a cone spreading from the combatant whose turn it is, `length` ft toward
+ * `direction`. The caster (the origin) is never caught. 5e cone geometry: a target is in if its bearing
+ * from the origin is within the cone's half-angle of `direction` and it is within `length`.
+ */
+export function cone(state: TrackerState, direction: string, length: number): Combatant[] {
+  const frame = state.pending
+  const origin = requireCombatant(state, frame.turn)
+  const [ax, ay] = DIRECTIONS[normalizeDirection(direction)]
+  const alen = Math.hypot(ax, ay)
+  return livingCombatants(frame).filter((c) => {
+    if (c.id === origin.id) return false
+    const vx = c.x - origin.x
+    const vy = c.y - origin.y
+    const d = Math.hypot(vx, vy)
+    if (d === 0 || d > length) return false
+    const angle = Math.acos(Math.max(-1, Math.min(1, (vx * ax + vy * ay) / (d * alen))))
+    return angle <= CONE_HALF_ANGLE + 1e-9
+  })
+}
+
+/**
+ * line(...): everyone in a line from the combatant whose turn it is, `length` ft toward `direction`,
+ * `width` ft wide (default 5). The caster (the origin) is never caught. A target is in if its projection
+ * onto the axis falls within [0, length] and its perpendicular offset is within half the width.
+ */
+export function line(state: TrackerState, direction: string, length: number, width = 5): Combatant[] {
+  const frame = state.pending
+  const origin = requireCombatant(state, frame.turn)
+  const [ax, ay] = DIRECTIONS[normalizeDirection(direction)]
+  const alen = Math.hypot(ax, ay)
+  const nx = ax / alen
+  const ny = ay / alen
+  const half = width / 2
+  return livingCombatants(frame).filter((c) => {
+    if (c.id === origin.id) return false
+    const vx = c.x - origin.x
+    const vy = c.y - origin.y
+    const axial = vx * nx + vy * ny
+    if (axial < 0 || axial > length) return false
+    return Math.abs(vx * -ny + vy * nx) <= half + 1e-9
+  })
+}
+
+/** Render an AoE query's caught combatants as egocentric lines (the roster echo's shape). */
+export function formatCaught(state: TrackerState, caught: Combatant[]): string {
+  if (!caught.length) return "No combatants caught."
+  return caught
+    .map((c) => {
+      if (c.id === "pc") return "pc (you)"
+      const { distance, direction } = ego(state.pending, c)
+      return `${c.id}: ${distance} ft ${direction ?? ""}`.trim()
+    })
+    .join("\n")
+}
+
+// ---------------------------------------------------------------------------
 // HP, death, reaction
 // ---------------------------------------------------------------------------
 

@@ -5,14 +5,18 @@ import * as path from "node:path"
 import {
   addCondition,
   advanceTurn,
+  burst,
   clearTimer,
+  cone,
   createEncounter,
   damage,
   deathSave,
   describeCombatant,
   describeEncounter,
   distanceBetween,
+  formatCaught,
   heal,
+  line,
   move,
   remindEachTurn,
   remindIn,
@@ -388,6 +392,70 @@ export const CombatTrackerPlugin: Plugin = async () => {
           try {
             const feet = distanceBetween(await loadState(ctx.directory), args.a, args.b)
             return `${feet} ft`
+          } catch (e: any) {
+            return `Error: ${e.message}`
+          }
+        },
+      }),
+
+      burst: tool({
+        description:
+          "Which combatants a burst catches — any radius effect (a fireball, and every sphere, " +
+          "cylinder, or cube). Centered on a point `distance` ft in `direction` from the PC " +
+          "(distance 0 = centered on the PC; direction is then ignored). Returns everyone within " +
+          "`radius` ft, the PC included if caught. A read — then apply damage to each with `damage`.",
+        args: {
+          distance: tool.schema.number().describe("Feet from the PC to the center; 0 centers it on the PC."),
+          direction: tool.schema
+            .string()
+            .optional()
+            .describe("Bearing from the PC to the center (n/ne/e/se/s/sw/w/nw); omit when distance is 0."),
+          radius: tool.schema.number().describe("Radius of the effect in feet."),
+          height: tool.schema.number().optional().describe("Center's height relative to the PC in feet."),
+        },
+        async execute(args, ctx) {
+          try {
+            const state = await loadState(ctx.directory)
+            return formatCaught(state, burst(state, args))
+          } catch (e: any) {
+            return `Error: ${e.message}`
+          }
+        },
+      }),
+
+      cone: tool({
+        description:
+          "Which combatants a cone catches (a breath weapon, burning hands). It spreads from the " +
+          "combatant whose turn it is, `length` ft toward `direction`. The caster is never caught. " +
+          "A read — then apply damage to each with `damage`.",
+        args: {
+          direction: tool.schema.string().describe("Bearing the cone points (n/ne/e/se/s/sw/w/nw)."),
+          length: tool.schema.number().describe("How far the cone reaches, in feet."),
+        },
+        async execute(args, ctx) {
+          try {
+            const state = await loadState(ctx.directory)
+            return formatCaught(state, cone(state, args.direction, args.length))
+          } catch (e: any) {
+            return `Error: ${e.message}`
+          }
+        },
+      }),
+
+      line: tool({
+        description:
+          "Which combatants a line catches (a lightning bolt). It runs from the combatant whose turn " +
+          "it is, `length` ft toward `direction`, `width` ft wide (default 5). The caster is never " +
+          "caught. A read — then apply damage to each with `damage`.",
+        args: {
+          direction: tool.schema.string().describe("Bearing the line runs (n/ne/e/se/s/sw/w/nw)."),
+          length: tool.schema.number().describe("How far the line reaches, in feet."),
+          width: tool.schema.number().optional().describe("Width of the line in feet; defaults to 5."),
+        },
+        async execute(args, ctx) {
+          try {
+            const state = await loadState(ctx.directory)
+            return formatCaught(state, line(state, args.direction, args.length, args.width))
           } catch (e: any) {
             return `Error: ${e.message}`
           }

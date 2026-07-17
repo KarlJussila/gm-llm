@@ -345,9 +345,19 @@ PC-rescue reflex (principle 8).
 
 - **Tracker serialization + HP roll-vs-average** on instantiation (fixed average is one fewer roll;
   rolled gives variance). The `state()`/mutator echo format.
-- **AoE query.** "Everyone within 20 ft of that point" is now an *exact* filter over the stored
-  Cartesian coords (the Cartesian switch removed the lossiness that made it approximate) and worth a
-  later `aoe(center, radius)` read; deferred from C0 to avoid schema bloat.
+- **AoE queries (settled + built, post-C5).** Three shape reads — **`burst`** (a radius effect: sphere,
+  cylinder, or cube; its LLM-facing description says so), **`cone`**, **`line`** — each an exact filter
+  over the stored Cartesian coords, returning the caught combatants in egocentric lines. The model
+  places the aim *in the egocentric frame it already speaks* and the tracker does the geometry, so no
+  coordinate is ever surfaced (exposing coords would push geometry onto the weak model — the exact
+  thing principle 2 offloads). **One input shape per tool, no id-or-point overloading:** `burst`'s
+  center is a placed point (`distance`/`direction`/`radius`, `distance 0` = on the PC), so nobody is
+  exempt; **`cone`/`line` emanate from the combatant whose turn it is** (origin read off the turn
+  pointer — no id arg) and never catch the caster. Pure reads: the model then applies `damage` per
+  hit. Built as `burst`/`cone`/`line` since this is an open, improvised system where any fight can
+  summon a breath weapon or lightning line. Verified in `test/combat-tracker.test.ts`. *(Cube/cylinder
+  fold onto `burst`; an off-turn AoE from a non-current combatant — vanishingly rare — is the one case
+  the implicit origin doesn't cover, deferred until it bites.)*
 - **Reaching back past a confirmed combatant.** By design, confirming combatant A closes A's reaction
   window, so a reaction referencing an already-committed combatant is handled going forward, not
   retconned. Confirm-as-consent is what makes granular commit sound; flagged as a deliberate scope

@@ -34,6 +34,9 @@ permission:
   state: allow
   describe: allow
   distance_between: allow
+  burst: allow
+  cone: allow
+  line: allow
 ---
 
 You run live D&D sessions with the player — responsive, creative, grounded in established lore. Your

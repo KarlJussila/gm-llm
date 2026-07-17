@@ -2,15 +2,19 @@ import { describe, expect, it } from "bun:test"
 import {
   addCondition,
   advanceTurn,
+  burst,
   clearTimer,
+  cone,
   createEncounter,
   damage,
   deathSave,
   describeCombatant,
   distanceBetween,
   egocentric,
+  formatCaught,
   formatRoster,
   heal,
+  line,
   move,
   normalizeDirection,
   remindEachTurn,
@@ -343,5 +347,78 @@ describe("formatRoster", () => {
     expect(text.split("\n")).toHaveLength(3)
     expect(text).toContain("pc: 24/31 hp")
     expect(text).toContain("goblin-1: 12/12 hp, 30 ft e")
+  })
+})
+
+// A cross-shaped test board around the PC at the origin:
+//   a = 30 ft E (30,0)   b = 30 ft N (0,30)   c = 60 ft E (60,0)   d = 30 ft NE (30,30)
+function aoeBoard(): TrackerState {
+  return createEncounter("aoe test", [
+    { id: "pc", name: "PC", hp: 30 },
+    { id: "a", name: "a", hp: 10, distance: 30, direction: "e" },
+    { id: "b", name: "b", hp: 10, distance: 30, direction: "n" },
+    { id: "c", name: "c", hp: 10, distance: 60, direction: "e" },
+    { id: "d", name: "d", hp: 10, distance: 30, direction: "ne" },
+  ])
+}
+
+const ids = (cs: { id: string }[]) => cs.map((c) => c.id).sort()
+
+describe("burst", () => {
+  it("catches everyone within radius of a placed point, boundary inclusive", () => {
+    const s = aoeBoard()
+    // Centered on `a` (30 ft E), radius 10: only `a` — the PC 30 ft off is not caught, proving the
+    // burst is placed away from the origin, not centered on the PC.
+    expect(ids(burst(s, { distance: 30, direction: "e", radius: 10 }))).toEqual(["a"])
+    // Radius 30 (Chebyshev): every other combatant sits exactly 30 ft from `a` on this board — all in,
+    // boundary inclusive, the PC included.
+    expect(ids(burst(s, { distance: 30, direction: "e", radius: 30 }))).toEqual(["a", "b", "c", "d", "pc"])
+  })
+
+  it("centered on the PC (distance 0) catches the PC and needs no direction", () => {
+    const s = aoeBoard()
+    expect(ids(burst(s, { distance: 0, radius: 30 }))).toEqual(["a", "b", "d", "pc"])
+    expect(ids(burst(s, { distance: 0, radius: 20 }))).toEqual(["pc"])
+  })
+
+  it("rejects a non-PC-centered burst with no direction", () => {
+    expect(() => burst(aoeBoard(), { distance: 30, radius: 10 })).toThrow(/needs a direction/)
+  })
+})
+
+describe("cone", () => {
+  it("spreads from the acting combatant within its half-angle, excluding the caster", () => {
+    const s = aoeBoard() // pc's turn: origin is the PC
+    // Eastward cone reaches the two due-east foes; the northern and NE ones are outside the spread.
+    expect(ids(cone(s, "e", 60))).toEqual(["a", "c"])
+    expect(ids(cone(s, "e", 30))).toEqual(["a"]) // length bounds out the 60-ft `c`
+  })
+
+  it("originates from whoever's turn it is", () => {
+    const s = aoeBoard()
+    s.pending.turn = "a" // `a` at (30,0) breathes east toward `c` (60,0)
+    expect(ids(cone(s, "e", 40))).toEqual(["c"]) // reaches c, not the PC behind it, never the caster
+  })
+})
+
+describe("line", () => {
+  it("catches combatants along the axis within half-width, excluding the caster", () => {
+    const s = aoeBoard() // pc's turn
+    expect(ids(line(s, "e", 60))).toEqual(["a", "c"]) // due-east foes; `b`/`d` are off-axis
+    expect(ids(line(s, "e", 30))).toEqual(["a"]) // length bounds out `c`
+  })
+
+  it("widens to catch off-axis combatants", () => {
+    const s = aoeBoard()
+    expect(ids(line(s, "e", 60, 70))).toEqual(["a", "b", "c", "d"]) // 35 ft half-width reaches N/NE
+  })
+})
+
+describe("formatCaught", () => {
+  it("renders egocentric lines, and a clear miss", () => {
+    const s = aoeBoard()
+    expect(formatCaught(s, burst(s, { distance: 0, radius: 5 }))).toBe("pc (you)")
+    expect(formatCaught(s, cone(s, "s", 30))).toBe("No combatants caught.")
+    expect(formatCaught(s, burst(s, { distance: 30, direction: "e", radius: 5 }))).toBe("a: 30 ft e")
   })
 })
