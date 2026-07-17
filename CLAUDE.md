@@ -71,8 +71,9 @@ Rules:
   across ~29 commits on one version before anyone noticed — that's the anti-pattern. If a change is
   worth a CHANGELOG line, it's heading toward a bump; flag it.
 - **"Release" here = the bump commit** (there's no PyPI publish): campaigns pick it up via the
-  `pipx reinstall` + `gm-llm update` flow above. The bump is its own commit; tagging `vX.Y.Z` is
-  encouraged.
+  `pipx reinstall` + `gm-llm update` flow above. Make the bump its own commit, then **tag it with an
+  annotated tag**: `git tag -a vX.Y.Z -m "<headline>"`. `git describe` then reads e.g.
+  `v0.3.0-2-g<sha>` so any checkout says which release it's built on.
 
 Commit style follows the global rule (short, descriptive, no attribution trailer; commit only when
 asked).
