@@ -39,6 +39,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from .prompts import load
+
 
 def combat_state_path(directory: str) -> Path:
     """The tracker's state file — the same path `plugin/combat-tracker.ts` writes."""
@@ -112,10 +114,11 @@ class CombatStep:
 
 
 # --- briefs -----------------------------------------------------------------
-# C1 scaffolding: minimal, functional prompts so the plumbing runs end to end. The
-# combat play-craft (the per-combatant algorithm, proactive-pause discipline, the
-# repertoire consult, real lethality) is C5 — `combat-reminder` / `combat-run` — and
-# replaces these. They are inert under the mock backend that C1 is verified against.
+# Each combat step re-sends the per-turn algorithm — `combat-reminder`, injected in
+# combat's place of `turn-reminder` (C5) — in front of a small runtime context block
+# (whose turn / the player's action / the reaction). The durable play-craft lives in
+# the `combat-run` skill, loaded once on entry and held in the runner session; the
+# reminder re-states only the terse algorithm so it can't decay over a long fight.
 #
 # Every turn ends with advance_turn — that closing advance is what seats the next
 # combatant and fires their timers, and it is what a rollback rewinds on an interject.
@@ -128,27 +131,25 @@ _ADVANCE_NUDGE = (
 
 def _npc_brief(combatant: str) -> str:
     return (
-        f"It is {combatant}'s turn. Resolve this one combatant's action: consult the "
-        f"tracker, apply the results with its tools (damage/move/condition/…), and "
-        f"narrate the beat. End the turn by calling `advance_turn`."
+        f"{load('combat-reminder')}\n\n"
+        f"<combat-turn>\nIt is {combatant}'s turn.\n</combat-turn>"
     )
 
 
 def _pc_brief(player_input: str) -> str:
     return (
-        "It is the PC's turn. Adjudicate the player's action below, apply the results "
-        "with the tracker's tools, and narrate the outcome. End the turn by calling "
-        "`advance_turn`.\n\n"
+        f"{load('combat-reminder')}\n\n"
+        f"<combat-turn>\nIt is the PC's turn — adjudicate the player's action.\n</combat-turn>\n"
         f"<player>\n{player_input}\n</player>"
     )
 
 
 def _replay_brief(combatant: str, text: str) -> str:
     return (
-        f"The player interjects before {combatant}'s action resolves — treat it as a "
-        f"reaction. The tracker has been rolled back to the start of {combatant}'s turn. "
-        f"Replay the turn with the reaction below folded in, apply the results, narrate, "
-        f"and end the turn by calling `advance_turn`.\n\n<reaction>\n{text}\n</reaction>"
+        f"{load('combat-reminder')}\n\n"
+        f"<combat-reaction>\nThe player interjects before {combatant}'s action resolves — treat it "
+        f"as a reaction. The tracker was rolled back to the start of {combatant}'s turn; replay the "
+        f"turn with the reaction folded in.\n<reaction>\n{text}\n</reaction>\n</combat-reaction>"
     )
 
 

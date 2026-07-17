@@ -495,7 +495,34 @@ All prose/template — no code (`start_encounter` shipped in C0). Key resolution
   and the mapping note, C5 drives it. Verified by the existing suites (completeness + combat gate/loop
   all green); the example NPC still lints with the section absent.
 
-### C5 — `combat-run` + `combat-reminder` craft *(prose; benchmark-tuned)*
+### C5 — `combat-run` + `combat-reminder` craft *(prose; benchmark-tuned)* — **done**
 The play-craft: the per-combatant algorithm, proactive-pause discipline, repertoire consult, the
 confirm/retcon contract, NPC-nature morale, real lethality. Tuned against the benchmark once a baseline
 exists. *Exit: a full combat runs end-to-end at the table.*
+
+Prose plus the wiring that lets the prose actually drive a fight. Key resolutions:
+- **Two homes, mirroring `session-run`/`turn-reminder`.** The durable craft is the **`combat-run`
+  skill** (loaded on entry, held in the runner session); the terse per-turn algorithm is
+  **`combat-reminder`** (`orchestrator/prompts/combat-reminder.md`, self-fenced `<combat-reminder>`),
+  re-sent in front of every combat step so it can't decay — exactly the `turn-reminder` pattern. They
+  don't restate each other: the algorithm lives in the reminder, the judgment (pause discipline,
+  morale, lethality, instantiation) in the skill.
+- **`combat.py` step briefs now prepend `combat-reminder`** (via `prompts.load`) over a minimal
+  runtime context block (`<combat-turn>` / `<combat-reaction>`), replacing the C1 placeholder briefs.
+  `_ADVANCE_NUDGE` stays as the terse corrective.
+- **The permission blocker (would have failed at the table).** `dm-runner` is `'*': deny`, so plugin
+  tools need explicit allow — the runner literally couldn't call the tracker. Added the **17
+  tracker tools** to its allow-list; **`rollback` deliberately excluded** — the orchestrator owns the
+  frame swaps and does rollback itself in Python, so the model must never rewind state underneath it.
+  (Invisible under C1's mock backend, which doesn't enforce permissions — a real gap for real play.)
+- **Entry/exit triggers wired.** `dm-runner` gains a **Combat** section (load `combat-run` +
+  `start_encounter` to enter; orchestrator drives via the fenced steps; `end_encounter` to leave);
+  `session-run`'s companion list and `turn-reminder` step 4 name `combat-run` as the fight-entry mode.
+- **Repertoire consult (C3's deferred runtime read) landed** in `combat-run`: the `Stop: yes/no`
+  toggle drives proactive pause vs. play-on, the one-time first-use "make this stopping?" ask, and the
+  never-nag rule. **`check-combat` gained repertoire-aware PC-reaction fidelity** — a PC reaction must
+  be in the repertoire or a universal (opportunity attack); soft, since the repertoire accretes.
+- **`start_encounter` instantiation flow** (C4's deferred runtime craft) documented in `combat-run`:
+  name+HP from the stat block / bestiary entry, count+position from the encounter seed; unplanned
+  fights load `combat-balance` first. Verified by the existing suites (combat gate/loop, completeness
+  all green under the mock backend).

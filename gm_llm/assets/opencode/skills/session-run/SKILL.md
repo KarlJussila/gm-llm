@@ -25,6 +25,9 @@ skill before you play it, and follow its craft — not just this file.** When in
   beat an NPC drives. Owns NPC agency and conversation craft.
 - **`discoveries`** — when the PC investigates, recalls expertise, reads a scene, or pieces clues
   together. Owns how information is found and revealed.
+- **`combat-run`** — when a scene becomes a fight and initiative starts. Owns the tracker-driven
+  combat loop (positions, HP, conditions, reactions); loaded on entry, then the orchestrator drives
+  it turn by turn.
 
 ## Table craft — non-negotiable
 

@@ -67,6 +67,11 @@ A reaction is the one off-turn resource, so it's worth its own look:
 - **Double-spend:** if the narration has a combatant react but its `reaction` is **already `false`
   in `committed`**, it has no reaction to spend this round — flag it (the reaction isn't available;
   the beat must be reworked or the earlier spend was wrong).
+- **PC reaction fidelity (repertoire):** when the *PC* reacts, the reaction should be one the PC
+  actually has — an entry in `characters/{slug}.repertoire.md`, or a universal every character holds (an
+  opportunity attack). A PC reaction that is neither — a spell or feature the PC has no claim to — is a
+  fabricated capability; flag it. The repertoire is **partial and accretes**, so a *missing* entry for a
+  reaction the PC plainly has is not itself a finding: judge the capability, not the ledger's coverage.
 
 ### 4. Death & HP sanity
 - An NPC the narration treats as killed → `dead: true` in `pending`. One the narration leaves alive,
