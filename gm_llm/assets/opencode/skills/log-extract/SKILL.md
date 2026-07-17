@@ -51,6 +51,13 @@ contains it, it goes in the digest:
 10. **Engagement** — what the player leaned into, skipped, or was excited by (for the assessment).
 11. **Plan vs. actual** — where the session diverged from the plan.
 12. **Player feedback** — if the session ended with player feedback, copy it **verbatim**.
+13. **Combat reactions & tactics** — only if there was a fight: each reaction the PC used or was
+    offered (opportunity attack, Shield, Counterspell, a Parry, …) **with the trigger it answered**
+    (`WHEN … THEN …`), plus any signature tactic they leaned on and any eligibility wrinkle play
+    surfaced (reach, Sentinel, War Caster). Also record any **interrupt preference the player set** —
+    e.g. "asked to be prompted for Counterspell in future" / "wants opportunity attacks left to their
+    own call." This distils into the PC's combat repertoire — capture the trigger and the preference,
+    not just the ability name (that's category 8's job). Nothing to record if no combat.
 
 ## Principles
 

@@ -71,7 +71,7 @@ campaign/
 │   ├── calendar.md                  # in-game date + event timeline
 │   ├── threads.md                   # active leads/threads (a thread spans entities)
 │   └── clocks.md                    # time-pressure dashboard (all clocks in one place)
-├── characters/       {slug}.md + {slug}.state.md + {slug}.knowledge.md   # PC: sheet, state, ledger
+├── characters/       {slug}.md + {slug}.state.md + {slug}.knowledge.md + {slug}.repertoire.md   # PC: sheet, state, knowledge ledger, combat repertoire
 ├── sessions/         session-N-plan.md  session-N-transcript.md  session-N.md (digest)
 ├── assessment/       session-N-assessment.md
 ├── documents/        verbatim handouts (letters, inscriptions, quoted text)
@@ -102,9 +102,13 @@ that share a slug stem and sit side by side**:
 The **PC is a stateful entity like any other** and gets the full pair — `{slug}.md` (the sheet:
 class, level, ability scores, features — update on level-up, ability/feature change, or a new
 spell/ability's first appearance) + `{slug}.state.md` (location, notable condition, key items,
-objective) — **plus** one PC-specific file: `{slug}.knowledge.md`, the epistemic ledger of what the
-PC knows, believes, and wonders. **Don't track granular mechanical resources** (HP, spell slots,
-coin) in state — the player owns those; record only narratively significant state, as for an NPC.
+objective) — **plus** two PC-specific ledgers: `{slug}.knowledge.md`, the epistemic ledger of what
+the PC knows, believes, and wonders, and `{slug}.repertoire.md`, the combat repertoire of how the PC
+fights (its reaction triggers as `WHEN … THEN offer …`, signature tactics, and build wrinkles). Use
+the `pc-repertoire` template; it's seeded from the sheet's reactions at create/level-up and grown
+from play by the apply pass (the sheet's *capability* pass, not the state pass — it's a distilled
+capability record, not a "now" snapshot). **Don't track granular mechanical resources** (HP, spell
+slots, coin) in state — the player owns those; record only narratively significant state, as for an NPC.
 
 **State files are session-boundary snapshots, not a live feed.** A `.state.md` is accurate at
 session *start* and is **frozen during play** — no agent rewrites it mid-session. During a session

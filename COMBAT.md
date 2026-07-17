@@ -103,6 +103,19 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
    runner correctly pauses from the repertoire ledger, the player reacts before the action resolves and
    nothing is rolled back. The confirm gate exists so a *missed* pause stays cheap and recoverable — it
    is not a license to bulldoze. `combat-run` must make that discipline explicit.
+   - **Which reactions stop is the *player's* choice, not a runner heuristic — a per-reaction `Stop:
+     yes/no` toggle in the repertoire (C3).** Whether pausing for a given reaction is worth the
+     interruption is a taste call only the player can make: a broad, fires-every-turn trigger (Warding
+     Flare on any visible attack within 30 ft; Silvery Barbs on any success the PC sees within 60 ft)
+     is exactly the kind most players would rather call themselves than have the fight stop for several
+     times a round — but that's *their* call, and a player who wants Silvery Barbs surfaced can set it.
+     So each reaction carries a **player-owned toggle**: `Stop: yes` → the runner proactively offers;
+     `Stop: no` → the runner plays on and the player interjects at the confirm gate (self-rationing
+     their one reaction/round). **New reactions default `Stop: no`, and the runner never reminds the
+     player of reactions they hold** — that's the player's game to play. The one config beat: the first
+     time a reaction is used, the runner may ask *once* whether to make it stopping going forward, and
+     the player can retune any toggle anytime (captured post-session by the apply pass). `combat-reminder`
+     reads the toggle; it never judges breadth itself, and never nags.
 
 8. **Combatants are living entities; the tracker surfaces mechanics, never morale — and PC death is a
    real stake.** The tracker surfaces *mechanical* obligations (saves due, timers firing) but never
@@ -405,9 +418,35 @@ correction brief. Key resolutions:
   agency are left to the sibling checks. Verified by `dev/test_combat_gate.py` (branch/preload/
   correction wiring) and the extended `dev/test_combat_loop.py` (the beats it chains on).
 
-### C3 — Repertoire ledger
+### C3 — Repertoire ledger — **done**
 Template + seed at character-create/level-up + reconcile capture of showcased reactions. *Exit: a PC
 accrues a combat-facing reaction repertoire the runner and checker read.*
+
+Built as the PC's **fourth file**, `characters/{slug}.repertoire.md` — the "third ledger" (knowledge =
+what the PC knows; repertoire = how the PC fights), a distilled `WHEN <trigger> THEN <reaction>` list —
+each entry carrying a **player-owned `Stop: yes/no` toggle** (whether the runner pauses to offer it;
+default `Stop: no`, tuned by the player in play — see principle 7) — plus signature tactics and build
+wrinkles. Key resolutions:
+- **Template** `pc-repertoire.template.md` under `canon-conventions/templates/`; documented in
+  `canon-conventions` §2 (layout) and §3 (the PC's two ledgers).
+- **Seeded at create** — `character-create` writes it as the fourth PC file from the sheet's
+  reactions (opportunity attack always; plus any reaction spell/feature the sheet shows), distilling
+  only what's explicit and leaving the rest to grow.
+- **Grown in the *capability* pass, not the state pass.** The repertoire is capability-lineage (fed by
+  reactions/tactics shown in play), so it lives with the sheet in **apply-canon** — keeping the whole
+  PC-capability signal in one pass — while the **knowledge** ledger stays apply-state's. `log-extract`
+  gained taxonomy item 13 (*Combat reactions & tactics*, capturing the WHEN→THEN trigger, not just the
+  ability name); apply-canon reads it into the repertoire (new step 4); `check-propagation` audits
+  that it landed.
+- **Lint** (`completeness.py`) now skips the `.repertoire.md` companion — only the sheet carries the
+  Vitals contract. Verified by the lint-skip check and the existing suites (all green).
+- *Deferred to C5 (by design — the roadmap assigns "repertoire consult" there):* the **runtime
+  consult**. The runner reading each reaction's `Stop:` toggle to decide whether to pause, the
+  one-time "make this stopping?" ask on a reaction's first use, and never nagging the player about
+  reactions they hold — all `combat-reminder`/`combat-run` craft. The combat checker's
+  repertoire-aware verification (was the offered reaction available/appropriate) rides with it. All
+  want the benchmark baseline C5 tunes against. C3 delivers the ledger, its toggle, and its accrual;
+  C5 wires the reads.
 
 ### C4 — Planning: stat blocks, encounter prep, `combat-balance`
 Stat-block template, `encounter-plan` extension (design levers + objective, not PC-rescue rails),

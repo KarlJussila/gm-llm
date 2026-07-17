@@ -44,6 +44,7 @@ slots, coin); the player tracks those.
 | `characters/{slug}.md` | PC sheet — stats, personality, backstory, hooks | `dm` |
 | `characters/{slug}.state.md` | PC state — location, notable condition, key items, objective | `dm` (apply pass) |
 | `characters/{slug}.knowledge.md` | What the PC **Knows / Believes / Open questions** | `dm` (apply pass) |
+| `characters/{slug}.repertoire.md` | Combat repertoire — the PC's reaction triggers & tactics | `dm` (apply pass) |
 | `sessions/session-{N}-plan.md` | The plan for an upcoming session | `dm` |
 | `sessions/session-{N}-transcript.md` | Play transcript (final messages), written each turn | orchestrator |
 | `sessions/session-{N}-notes.md` | The runner's end-of-session handoff notes | orchestrator (runner authors, code files) |

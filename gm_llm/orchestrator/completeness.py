@@ -187,7 +187,8 @@ _ENTITY_DIRS = ("npcs", "factions", "locations", "items", "regions", "concepts")
 
 def lint_dir(root: Path | str) -> list[FileReport]:
     """Lint every entity info file under campaign/world and the PC sheet under
-    campaign/characters (skipping `.state.md` / `.knowledge.md` companions)."""
+    campaign/characters (skipping `.state.md` / `.knowledge.md` / `.repertoire.md`
+    companions)."""
     root = Path(root)
     campaign = root / "campaign"
     reports: list[FileReport] = []
@@ -201,11 +202,12 @@ def lint_dir(root: Path | str) -> list[FileReport]:
             r = lint_file(f)
             if not r.skipped:
                 reports.append(r)
-    # The PC sheet lives in characters/ (its .state.md / .knowledge.md companions skip).
+    # The PC sheet lives in characters/ (its .state.md / .knowledge.md / .repertoire.md
+    # companions skip — only the sheet carries the linted Vitals contract).
     chars = campaign / "characters"
     if chars.is_dir():
         for f in sorted(chars.glob("*.md")):
-            if f.name.endswith((".state.md", ".knowledge.md")):
+            if f.name.endswith((".state.md", ".knowledge.md", ".repertoire.md")):
                 continue
             r = lint_file(f)
             if not r.skipped:

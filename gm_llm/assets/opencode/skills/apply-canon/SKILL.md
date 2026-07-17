@@ -22,7 +22,7 @@ contract**: the required `## Vitals` block for its type, filled with committed v
 
 ## Input
 - The **session digest** `campaign/sessions/session-{N}.md` — especially *World canon*, *Items*,
-  *Documents*, *Secrets & awareness*, and *PC capabilities*.
+  *Documents*, *Secrets & awareness*, *PC capabilities*, and *Combat reactions & tactics*.
 - The **registry** `campaign/INDEX.md` — to reuse existing slugs and resolve `named-only` entries
   rather than duplicate.
 
@@ -33,9 +33,10 @@ Use your `todowrite` tool to create exactly these entries, then work them in ord
 1. List the entities to file
 2. Author each entity *(one task per entity — see below)*
 3. Update the PC sheet
-4. Route verbatim documents
-5. Self-check completeness
-6. Report
+4. Update the combat repertoire
+5. Route verbatim documents
+6. Self-check completeness
+7. Report
 
 ### 1. List the entities to file
 From the digest's *World canon* and *Items*, list every new or changed NPC, location, faction,
@@ -59,27 +60,40 @@ From the digest's *PC capabilities*, append to the PC sheet's `## Known capabili
 proficiency, spell, named/class ability, or feat the PC demonstrated or gained that isn't already
 listed — cross-check the current sheet so nothing duplicates. If *PC capabilities* records a level-up,
 update the `## Vitals` block (level, and any subclass or ability-score change it notes), keeping it
-complete. The **sheet only** — the PC's `.state.md` and knowledge ledger are reconciled by the state
-pass, not here.
+complete. The **sheet** and the **repertoire** (next step) are the PC's *capability* record and both
+belong here; the PC's `.state.md` and **knowledge** ledger are reconciled by the state pass, not here.
 
-### 4. Route verbatim documents
+### 4. Update the combat repertoire
+Only if the session had a fight. From the digest's *Combat reactions & tactics*, update
+`characters/{pc}.repertoire.md` (its combat-facing sibling to the sheet — see `pc-repertoire`): add a
+`WHEN … THEN …` line for each reaction trigger the PC demonstrated that isn't already there — new
+entries at **`Stop: no`** — plus any new signature tactic or build wrinkle play surfaced. Then apply
+any **interrupt-preference** the player set in play (the digest records these): flip that reaction's
+toggle to `Stop: yes`/`Stop: no` as they asked — the toggle is the player's, so their word is
+authoritative. Cross-check the existing file so nothing duplicates; refine an entry the fight
+sharpened rather than restate it. Distil — a few good triggers, not a rules dump. Bump the file's
+`as-of` to this session. No combat → skip, no edit.
+
+### 5. Route verbatim documents
 For any verbatim handout in the digest's *Documents* (a letter, inscription, quoted passage), write
 the exact text to `campaign/documents/` and reference it from the entity it belongs to — don't
 inline it.
 
-### 5. Self-check completeness
+### 6. Self-check completeness
 - Every new or changed entity from the digest is filed — nothing load-bearing left `named-only` or
   unfiled.
 - Every entity file meets the completeness contract (Vitals filled; an NPC's Stats + Abilities
   present).
 - Any capability the digest shows the PC gaining is on the sheet; the PC's Vitals reflect a level-up.
+- Any combat reaction/tactic the digest records is in the repertoire (if there was a fight).
 - Every `INDEX` row points at a real file and vice-versa; no dangling `[[slug]]` links.
 
-### 6. Report
-Brief: **Result** (entities filed / updated, PC sheet changes), **Documents** routed, **Caveats**
-(anything the digest left ambiguous).
+### 7. Report
+Brief: **Result** (entities filed / updated, PC sheet + repertoire changes), **Documents** routed,
+**Caveats** (anything the digest left ambiguous).
 
 ## Boundaries
-- Your scope is **entity info files (the PC sheet included), their `INDEX` rows, and `documents/`**.
-  Leave arc bodies and every `.state.md` / global `state/*` snapshot — including the PC's `.state.md`
-  and knowledge ledger — to their own reconciliation; your job here is the entity canon.
+- Your scope is **entity info files (the PC sheet and combat repertoire included), their `INDEX` rows,
+  and `documents/`**. Both the sheet and the repertoire are the PC's *capability* record; leave arc
+  bodies and every `.state.md` / global `state/*` snapshot — including the PC's `.state.md` and
+  **knowledge** ledger — to their own reconciliation; your job here is the entity canon.

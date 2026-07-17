@@ -1,6 +1,6 @@
 ---
 name: character-create
-description: Collaboratively create a player character with the player — concept, mechanical details, placement in the world, backstory — then write the PC's three files (sheet, state, knowledge ledger) and register the PC. Use during campaign setup, or later when a new PC joins. Player-facing, so it is run by the dm (a primary), never a subagent. Records DM-side story hooks in the sheet and folds in any backstory canon the world must absorb.
+description: Collaboratively create a player character with the player — concept, mechanical details, placement in the world, backstory — then write the PC's four files (sheet, state, knowledge ledger, combat repertoire) and register the PC. Use during campaign setup, or later when a new PC joins. Player-facing, so it is run by the dm (a primary), never a subagent. Records DM-side story hooks in the sheet and folds in any backstory canon the world must absorb.
 ---
 
 # character-create
@@ -20,8 +20,8 @@ the player hands you to import (step 2).
 
 **Load `canon-conventions` and follow it for format**, and build from the PC templates:
 `pc-sheet.template` → `characters/{slug}.md`, `pc-state.template` → `characters/{slug}.state.md`,
-`pc-knowledge.template` → `characters/{slug}.knowledge.md`. The PC is a registered entity — add its
-row to `INDEX.md` (PC).
+`pc-knowledge.template` → `characters/{slug}.knowledge.md`, `pc-repertoire.template` →
+`characters/{slug}.repertoire.md`. The PC is a registered entity — add its row to `INDEX.md` (PC).
 
 This is a **narrative-integration tool, not a rules engine**: record mechanical details as the
 player provides them, and help translate a concept into a fitting class/race/background if they
@@ -37,7 +37,7 @@ Match the player's preference:
 
 ## Steps
 
-Use your `todowrite` tool to create entries for steps 1–5 plus Confirm, Write the three PC files, Fold backstory canon, and **Finish — call `task_complete`**, then work them in order. That last entry is not optional: the process always ends with the `task_complete` tool call.
+Use your `todowrite` tool to create entries for steps 1–5 plus Confirm, Write the four PC files, Fold backstory canon, and **Finish — call `task_complete`**, then work them in order. That last entry is not optional: the process always ends with the `task_complete` tool call.
 
 1. **Open — hooks and how do you want to make your character?** This is the skill's opening beat.
    At campaign setup the DM has just given the player a world overview — build directly on it: devise
@@ -77,7 +77,7 @@ theirs to sign off on; don't run ahead of what they've seen.
 When you talk to the player — here and anywhere — use plain names, not canon notation: write "Erasmus
 Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the files, not on their screen.
 
-## Write the three PC files
+## Write the four PC files
 
 - **`characters/{slug}.md`** (sheet) — from `pc-sheet.template` (or completing the imported
   draft): the **`## Vitals`** block (race/lineage, class, subclass if any, level, ability scores,
@@ -98,6 +98,14 @@ Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the f
   Keep it to what the *character* knows — **never** the campaign's secrets. Those stay `[hidden]`
   in the world and arc files (canon-conventions §5); this ledger is their mirror, flipped only when
   a secret is actually revealed in play.
+- **`characters/{slug}.repertoire.md`** (combat repertoire) — from `pc-repertoire.template`, seeded
+  from the sheet's reactions and combat abilities. Distil the PC's **reaction-eligible moves** into
+  `WHEN <trigger> THEN <reaction>` lines (an opportunity attack always; plus any reaction spell or
+  feature the sheet shows — Shield, Counterspell, Hellish Rebuke, a Parry). Seed every one at
+  **`Stop: no`** — the interrupt toggle is the player's to set in play, not yours to guess; don't ask
+  them to configure it up front. Add a signature tactic or a build wrinkle (reach 10 ft, Sentinel,
+  War Caster) only where the sheet makes it explicit. Seed what's clear and leave the rest to grow —
+  a few good triggers beat a rules dump. A PC with no reactions yet gets just the opportunity-attack line.
 
 Then **register the PC** in `INDEX.md` (PC section).
 
@@ -108,7 +116,7 @@ For every new NPC/location/faction the backstory introduced, author and register
 
 ## Finish — call `task_complete`
 
-The last step, every time. Once the PC is confirmed by the player, the three files are written and
+The last step, every time. Once the PC is confirmed by the player, the four files are written and
 registered, and any backstory canon is folded in, **call the `task_complete` tool**. That signals
 the character is done and hands control back — the rest of setup proceeds on its own. Do **not** build
 or plan anything beyond the character yourself, and do **not** tell the player to start or launch

@@ -34,6 +34,8 @@ every established fact made it from the record (the digest) into canon and state
 - For every reveal in the digest (something the PC learned): confirm the fact's home file flipped
   `[hidden]` → `[revealed: S{N}]` with `Known to:` updated, **and** a matching line was added to
   `campaign/characters/{pc}.knowledge.md`. Flag any reveal that updated only one layer or neither.
+- If the digest has a *Combat reactions & tactics* section (there was a fight): confirm each new
+  reaction trigger it records landed in `campaign/characters/{pc}.repertoire.md`. Flag any dropped.
 
 ### 4. Check state propagation
 - For every entity whose situation changed in play (per the digest): confirm its `.state.md` was
