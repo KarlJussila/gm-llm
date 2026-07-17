@@ -67,7 +67,8 @@ encounters; a travel session no investigation). Pull a skill when its content is
    place, who's present, what's at stake). The session's anchor; pull it from `state/current.md`.
 2. **Likely Beats** — 3–5 things that will probably happen or need addressing, ranked. The expected
    shape, not guarantees.
-3. **Encounter Seeds** → **`encounter-plan`**. 2–4 encounters as situations, not stat blocks.
+3. **Encounter Seeds** → **`encounter-plan`**. 2–4 encounters as situations first; combat seeds also
+   commit their combatants, footing, and objective for the tracker.
 4. **Discoveries & Investigations** → **`investigation-plan`**. Any revelation the session delivers
    — the clues, how they combine, **the committed answer**, and who assembles it.
 5. **NPC Staging** → **`npc-plan`**. The NPCs in play — disposition, agenda, what they know, how

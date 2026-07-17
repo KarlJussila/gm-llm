@@ -352,6 +352,13 @@ PC-rescue reflex (principle 8).
   window, so a reaction referencing an already-committed combatant is handled going forward, not
   retconned. Confirm-as-consent is what makes granular commit sound; flagged as a deliberate scope
   boundary, not a gap.
+- **`sessions/` per-session directories (deferred cleanup, non-combat).** The flat
+  `sessions/session-N-{plan,transcript,notes}.md` + `session-N.md` digest + `assessment/` convention
+  would read more cleanly as per-session folders (`sessions/session-N/…`). Surfaced during C4 (the
+  bestiary decision made it moot for stat blocks); it's a large cross-cutting refactor — the
+  `session-{n}-*` path convention is woven through ~7 orchestrator modules (planner, status, canon,
+  setup, reconciler, loop, mock), ~10 prompt briefs, several skills, canon-conventions §2, and the
+  tests — so it's its own task, not bundled into the combat workstream.
 
 ## Roadmap (design-stage; phases ordered so each is useful alone)
 
@@ -448,11 +455,45 @@ wrinkles. Key resolutions:
   want the benchmark baseline C5 tunes against. C3 delivers the ledger, its toggle, and its accrual;
   C5 wires the reads.
 
-### C4 — Planning: stat blocks, encounter prep, `combat-balance`
+### C4 — Planning: stat blocks, encounter prep, `combat-balance` — **done**
 Stat-block template, `encounter-plan` extension (design levers + objective, not PC-rescue rails),
 `start_encounter` instantiation from prepared blocks, and the `combat-balance` skill (planning face +
 runtime gut-check). *Exit: a planned encounter arrives at the table as loadable combatants at an
 intended, un-fudged difficulty.*
+
+All prose/template — no code (`start_encounter` shipped in C0). Key resolutions:
+- **One stat-block format, two homes — both file-backed.** New
+  `canon-conventions/templates/stat-block.template.md` (HP·AC·speed / all six abilities as
+  score-check-save / attacks / defenses & senses / special-incl-reactions / tactics & nature) is the
+  sole format. Named/recurring creatures carry it as an **optional `## Stat block`** section in their
+  NPC file (`type: npc`, already registered). **Generic, reusable creature types get their own
+  bestiary file** — `world/bestiary/{slug}.md`, `type: creature`, new `bestiary.template.md` — a
+  single **stateless** file (essentially just the stat block), registered in a new **`## Bestiary`**
+  INDEX table and referenced by `[[slug]]`. *(Revised from the first sketch, which inlined mook blocks
+  in the session plan: every combatant is now a slug-addressed file, so `start_encounter` loads
+  uniformly and reused creatures aren't re-authored per session.)* The intrinsic block holds HP; the
+  *encounter seed* supplies count + starting position, matching `start_encounter`'s roster entry.
+  Bestiary files are lint-exempt for free (`type: creature` isn't in `completeness.py`'s map and
+  `world/bestiary/` isn't a scanned dir); `scaffold.py` creates the dir.
+- **Distinct from the rough-sketch gauge, and not lint-gated.** The existing required
+  `## Stats (rough sketch)` stays a social/exploration capability gauge; the combat `## Stat block` is
+  the mechanical block the tracker runs from. It's optional (combatants only), so `completeness.py`
+  leaves it alone — and its heading doesn't prefix-collide with the required "Stats". Wired into
+  `entity-npc.template.md` (pointer to the format) and documented in `canon-conventions` §3.
+- **`encounter-plan` gains a combat layer over the situations stance**, not instead of it: a combat
+  seed still leads with situation/lever/complication, and additionally commits combatants, starting
+  positions (egocentric distance/direction/height — starting distance is a difficulty lever), and the
+  **objective** (not always kill-them-all). It points at the stat-block template and at
+  `combat-balance`. `session-plan` step 3 reconciled to match.
+- **`combat-balance` is craft prose, two faces.** Planning face (shape to an intended feel, quantify
+  two-way rounds-to-kill, telegraph danger, bake outs into design) + runtime gut-check (count enemies /
+  action economy / is there an out). Why-not-CR (single-PC action economy dominates) and real lethality
+  (intentional + telegraphed, never rescued) carried verbatim from the Balance section. SRD-only
+  examples throughout. The runtime consult is loadable now; C5 wires `combat-run` to it.
+- *Deferred to C5 (by roadmap):* `start_encounter` *instantiation flow* as runtime craft (the runner
+  reading a prepared block into a roster call) lives with `combat-run`; C4 delivers the loadable data
+  and the mapping note, C5 drives it. Verified by the existing suites (completeness + combat gate/loop
+  all green); the example NPC still lints with the section absent.
 
 ### C5 — `combat-run` + `combat-reminder` craft *(prose; benchmark-tuned)*
 The play-craft: the per-combatant algorithm, proactive-pause discipline, repertoire consult, the

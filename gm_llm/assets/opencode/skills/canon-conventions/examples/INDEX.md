@@ -32,6 +32,11 @@
 |---|---|---|---|---|---|
 | saltcoast | The Saltcoast | active | world/regions/saltcoast.md | world/regions/saltcoast.state.md | occupied coastal strip; contains Saltgate |
 
+## Bestiary
+| slug | name | file | one-line |
+|---|---|---|---|
+| thug | Thug | world/bestiary/thug.md | hired muscle; the occupation's dockside enforcers |
+
 ## Arcs
 | slug | name | status | design | state | one-line |
 |---|---|---|---|---|---|

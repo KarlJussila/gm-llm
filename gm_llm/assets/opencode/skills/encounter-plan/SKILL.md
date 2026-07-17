@@ -1,6 +1,6 @@
 ---
 name: encounter-plan
-description: Design encounter seeds for an upcoming session as situations rather than stat blocks — combat, social, exploration, or puzzle — each with a lever that makes it interesting and a complication. Use from session planning to seed 2–4 encounters that can adapt to player choices.
+description: Design encounter seeds for an upcoming session as situations first — combat, social, exploration, or puzzle — each with a lever that makes it interesting and a complication. Combat seeds also carry a mechanical layer (combatants, starting positions, objective) the tracker loads via start_encounter, shaped for difficulty with combat-balance. Use from session planning to seed 2–4 encounters that can adapt to player choices.
 ---
 
 # Encounter Design
@@ -31,5 +31,28 @@ opportunities the runner can adapt around, not scripts.
 - **Leave room.** Seeds are starting conditions, not beat-by-beat plans; the runner improvises the
   middle.
 
-Combat *running* is a separate concern (a dedicated combat skill, forthcoming) — here you only seed
-the situation and its stakes, not the tactical flow.
+## Combat seeds — the mechanical layer
+
+A combat seed is still a **situation** (the four fields above), but it also has to arrive at the table
+as loadable combatants — so a combat seed additionally commits:
+
+- **Combatants** — which creatures and how many, each by `[[slug]]`. Named/recurring creatures carry
+  their `## Stat block` in their NPC file; generic types live in the bestiary
+  (`world/bestiary/{slug}.md`) — reference an existing one, or author a new bestiary file and register
+  it for a creature the plan introduces. `start_encounter` loads from the file; never inline a stat
+  block in the plan.
+- **Starting positions** — where each combatant begins relative to the PC (distance, direction, and
+  height if any) — the tracker's egocentric frame. Starting distance is a difficulty lever, not a
+  detail; a ranged threat 60 ft off across open ground is a different fight from one 5 ft away.
+- **Objective** — the win condition. Not always "kill them all": survive N rounds, reach the door,
+  protect an NPC, hold until reinforcements. The objective shapes the fight more than any stat block.
+
+**Shape the difficulty deliberately — load `combat-balance`.** This is a single-PC game, so action
+economy (enemy count) dominates, not CR. `combat-balance` owns the levers (count, HP/damage, starting
+distance, terrain, reinforcements, objective) and the two-way rounds-to-kill gut-check. **Lethality is
+allowed — telegraphed and intentional, never an accidental PC death and never rescued by a fudge**: an
+intelligent enemy presses or flees on its own nature, and the design bakes in any out, not a
+mid-fight rescue reflex.
+
+Combat *running* — the tactical flow, turn by turn — is a separate concern (the runtime combat skill);
+here you seed the situation, commit the combatants and their footing, and set the intended difficulty.

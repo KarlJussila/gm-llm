@@ -33,6 +33,13 @@ status: <active | dormant | dead | hidden | named-only>
 <!-- Spells and unique/special abilities they can call on. If they have none, write "None." -->
 <Spells, signature techniques, supernatural traits, or gear-granted powers — or "None.">
 
+## Stat block
+<!-- OPTIONAL — include ONLY if this NPC/creature can end up in a tracked fight. The mechanical block
+     the runner runs them from and start_encounter loads (HP, AC, ability scores with checks/saves,
+     attacks, reactions). Copy the format
+     from templates/stat-block.template.md. Distinct from "Stats (rough sketch)" above, which is a
+     capability gauge. Omit this section entirely for non-combatants. -->
+
 ## Identity / Public role
 <What anyone in the world observes: appearance, bearing, how they're seen. (Vitals covers the
 basics; expand on presence and reputation here.)>

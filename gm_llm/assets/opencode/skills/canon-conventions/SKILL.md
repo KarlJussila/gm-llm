@@ -64,7 +64,8 @@ campaign/
 │   ├── factions/     {slug}.md + {slug}.state.md
 │   ├── locations/    {slug}.md + {slug}.state.md
 │   ├── items/        {slug}.md (+ {slug}.state.md if stateful)
-│   └── concepts/     {slug}.md (+ {slug}.state.md if it has live state)   # cosmological force, phenomenon, magic system…
+│   ├── concepts/     {slug}.md (+ {slug}.state.md if it has live state)   # cosmological force, phenomenon, magic system…
+│   └── bestiary/     {slug}.md   # generic reusable creature TYPES (stat blocks); stateless, no .state.md
 ├── arcs/             {slug}.md + {slug}.state.md
 ├── state/                           # GLOBAL / relational state, owned by no entity
 │   ├── current.md                   # the "you are here" scene pointer (resume baseline)
@@ -83,6 +84,11 @@ campaign/
   docs). `history.md` is the world's **backstory** — the past that produced the present — and is
   distinct from `state/calendar.md`, which is the *live* in-game clock (now and forward).
 - **Regional history** is a **section inside each region file**, not its own entity.
+- **Bestiary entries** — `world/bestiary/{slug}.md` — are generic, reusable **creature types** (a
+  "goblin", a "wolf"): a single **stateless** file (no `.state.md`), essentially just a `## Stat
+  block` for the tracker, registered in INDEX's Bestiary table and referenced by `[[slug]]`. A
+  *named*, unique creature with a story is an NPC instead; promote a bestiary creature to an NPC file
+  if it earns a name and a role. (A specific creature's HP/position is tracker state, never canon.)
 - **Verbatim handouts** — the exact text of a letter, an inscription, an NPC's quoted line meant to
   be read aloud — go in `documents/`, not buried inside a digest or an entity file.
 
@@ -148,7 +154,11 @@ records Subclass when it applies — recorded, but not gated, since it's class/l
 **NPC files carry two more required sections** beyond Vitals: a **`## Stats (rough sketch)`** —
 equivalent character level, rough ability scores, and notable proficiencies (a capability gauge for
 adjudication, *not* a full stat block) — and **`## Abilities`** for spells / signature or
-supernatural powers (write "None" if they have none).
+supernatural powers (write "None" if they have none). A combat-relevant NPC or creature additionally
+carries an **optional `## Stat block`** — the mechanical block the tracker runs it from and
+`start_encounter` loads (HP, AC, the six ability scores with checks/saves, attacks, reactions),
+format in `stat-block.template.md`. It is
+distinct from the rough-sketch gauge and omitted for non-combatants (so it is not lint-gated).
 
 **PC files carry a `## Known capabilities`** section — proficiencies, spells known, named abilities,
 and feats — seeded at creation and **grown through play** (record each new one the first time it
@@ -234,12 +244,12 @@ that has — or should have — a file is listed. Naming a thing in play or in a
 least a registry row, so it is never silently re-invented as someone else.
 
 **What's registered:** the slug-addressed, file-backed things — the **PC**, NPCs, factions,
-locations, items, **regions**, and arcs. **Not** registered: the world-truth singletons
+locations, items, **regions**, **bestiary creatures**, and arcs. **Not** registered: the world-truth singletons
 (`overview/cosmology/history`) and the `state/*` docs (fixed paths), nor clocks/threads (they live
 in their dashboards, §4).
 
-Format: a table per entity type (PC, NPCs, Factions, Locations, Regions, Items, Arcs — the Arcs
-table adds `tier` and `design` columns). Each row maps a slug to its files, status, and a one-line
+Format: a table per entity type (PC, NPCs, Factions, Locations, Regions, Items, Bestiary, Arcs — the
+Bestiary table is slug/name/file/one-line, no state column; the Arcs table adds `tier` and `design`). Each row maps a slug to its files, status, and a one-line
 "who/what." **`templates/INDEX.template.md` is the authoritative shape**; the gist:
 
 ```markdown

@@ -25,7 +25,7 @@ def _campaign_templates() -> Path:
 
 _SUBDIRS = [
     "world/npcs", "world/factions", "world/locations",
-    "world/items", "world/regions", "world/concepts",
+    "world/items", "world/regions", "world/concepts", "world/bestiary",
     "arcs", "state", "characters", "sessions",
     "assessment", "documents", "feedback",
 ]

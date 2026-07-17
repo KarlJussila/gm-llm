@@ -3,8 +3,9 @@
   Three jobs: dedup guard, slug->file resolver, inventory (canon-conventions §6).
   Every named entity gets a row — including named-only stubs with no file yet (a mid-session
   tolerance only; whoever is authoring canon turns every named-only into a full file, same pass).
-  Registered: NPCs, factions, locations, regions, items, concepts, arcs. NOT registered: the
-  world-truth singletons (overview/cosmology/history) and state/* docs (fixed paths), nor clocks/threads.
+  Registered: NPCs, factions, locations, regions, items, concepts, bestiary creatures, arcs. NOT
+  registered: the world-truth singletons (overview/cosmology/history) and state/* docs (fixed paths),
+  nor clocks/threads.
   One table per type. Keep one-line entries to a single clause.
 -->
 # INDEX — Campaign Registry
@@ -43,6 +44,13 @@
 | slug | name | status | info | state | one-line |
 |---|---|---|---|---|---|
 | <slug> | <Name> | <status> | world/concepts/<slug>.md | <— unless it has live state> | <what, in one clause> |
+
+## Bestiary
+<!-- Generic, reusable creature TYPES (goblin, wolf, guard) — single stateless files, no state column.
+     A named/unique creature is an NPC above, not here. -->
+| slug | name | file | one-line |
+|---|---|---|---|
+| <slug> | <Name> | world/bestiary/<slug>.md | <what kind of creature, in one clause> |
 
 ## Arcs
 | slug | name | tier | status | design | state | one-line |
