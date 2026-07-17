@@ -7,7 +7,7 @@ The developer control surface over the orchestrator core (`Game`, `Planner`,
 front-end — the determinism lives in the library, not here.
 
     python dev/cli.py status    [--dir …]             where the campaign stands (no model)
-    python dev/cli.py play      [--turns 6] [--resume]
+    python dev/cli.py play      [--turns 30] [--fresh] [--character …]
     python dev/cli.py prep      [--session N] [--no-commit]
     python dev/cli.py reconcile [--session N] [--no-commit] [--no-prep] [--fresh]
     python dev/cli.py tui       [--live] [--setup] [--theme tokyo-night]
@@ -21,8 +21,11 @@ point `--dir` at one.
 Defaults do the right thing: `prep` targets the next session, `reconcile` the
 latest played one (both inferred from disk, printed before running), and both
 commit — pass `--no-commit` for a dry run. `play` drives the gated loop with
-the scripted `player` agent; `--resume` continues the latest session from its
-transcript. Ctrl-C stops any mode and shuts the server down.
+the scripted `player` agent: it auto-resumes an in-progress session from its
+transcript (`--fresh` restarts it instead), auto-discovers a `*.player.md`
+packet at the project root, stops when the runner ends the session (capturing
+the handoff notes), and refuses to play a session already marked complete.
+Ctrl-C stops any mode and shuts the server down.
 """
 
 import argparse
@@ -36,10 +39,12 @@ DEV = Path(__file__).resolve().parent
 REPO = DEV.parent                   # the framework checkout
 sys.path.insert(0, str(REPO))       # so `gm_llm` imports straight from the checkout
 from gm_llm.orchestrator import (  # noqa: E402
-    Backend, BackendError, CanonPreloader, Gate, Game, Logs, Planner, Reconciler,
-    campaign_status,
+    Backend, BackendError, CanonPreloader, Gate, Game, Logs, Planner,
+    Reconciler, campaign_status,
 )
 from gm_llm.orchestrator.canon import latest_session  # noqa: E402
+from gm_llm.orchestrator.loop import session_is_complete  # noqa: E402
+from gm_llm.orchestrator.prompts import player_turn  # noqa: E402
 from gm_llm.orchestrator.logs import debug_enabled  # noqa: E402
 from gm_llm.orchestrator.stream import EventTap  # noqa: E402
 
@@ -190,29 +195,50 @@ def _pick_session(args, *, next_session: bool) -> int:
 
 # ─────────────────────────────── commands ──────────────────────────────────
 
+def _find_character(args) -> str:
+    """Resolve the player packet: `--character` wins ('' = deliberately blind);
+    otherwise auto-discover a `*.player.md` at the project root — the convention
+    for campaign-anchored packets, kept out of `campaign/` (it's a harness
+    fixture, not canon)."""
+    if args.character is not None:
+        return args.character
+    packs = sorted(Path(args.dir).glob("*.player.md"))
+    if packs:
+        return str(packs[0])
+    warn("no *.player.md at the project root and no --character — player runs blind")
+    return ""
+
+
 def cmd_play(args):
     """Drive the gated loop with the scripted `player` agent — the offline-human
     test mode. The player gets its character packet on the first turn (plus the
-    story so far, on a resume) and then just plays."""
-    character = ""
-    if args.character and os.path.exists(args.character):
-        character = re.sub(r"<!--.*?-->", "", Path(args.character).read_text(encoding="utf-8"), flags=re.DOTALL).strip()
-        note(f"player packet: {args.character} ({len(character)} chars)")
-    elif args.character:
-        warn(f"WARNING: no character packet at {args.character} — player runs blind")
+    story so far, on a resume) and then just plays. Resume is the default when a
+    transcript exists (a fresh start would overwrite it — that must be the
+    deliberate `--fresh`); a session whose runner already signalled the end is
+    refused before the server even boots, pointing at reconcile instead."""
+    n = latest_session(_sessions_dir(args))
+    if n and not args.fresh and session_is_complete(args.dir, n):
+        fail(f"session {n} is already complete (task_complete fired) — run "
+             f"`cli.py reconcile` to fold it into canon, or --fresh to replay it")
+        sys.exit(2)
+
+    character, char_path = "", _find_character(args)
+    if char_path and os.path.exists(char_path):
+        character = re.sub(r"<!--.*?-->", "", Path(char_path).read_text(encoding="utf-8"), flags=re.DOTALL).strip()
+        note(f"player packet: {char_path} ({len(character)} chars)")
+    elif char_path:
+        warn(f"WARNING: no character packet at {char_path} — player runs blind")
 
     def intro(story, scene):
+        """The first turn's extras (packet, story-so-far) in front of the per-turn
+        message; every turn ends in the same player_turn() reminder + <dm> fence."""
         parts = []
         if character:
             parts.append("[YOUR CHARACTER — read this, then stay in character for the rest "
                          f"of the session]\n\n{character}")
         if story is not None:
             parts.append(f"[This session is already underway. The story so far:]\n\n{story}")
-            parts.append(f"[Continue from here — the DM's latest beat:]\n\n{scene}")
-        elif parts:
-            parts.append(f"[The session begins. The DM says:]\n\n{scene}")
-        else:
-            parts.append(scene)
+        parts.append(player_turn(scene))
         return "\n\n".join(parts)
 
     def body(backend, gate, logs):
@@ -221,14 +247,14 @@ def cmd_play(args):
         note(f"runner={game.runner_sid} player={player_sid} session={game.session}")
 
         scene, story = None, None
-        if args.resume:
-            note("resuming from transcript (silent up to the timeout if rate-limited)…")
-            scene = game.resume()
-            if scene is None:
-                warn("nothing to resume (no transcript) — starting fresh.")
-            else:
+        if not args.fresh:
+            note("resuming if a transcript exists (a rebuild is one model call — "
+                 "silent up to the timeout if rate-limited)…")
+            scene = game.resume()  # None if there's no transcript to pick up
+            if scene is not None:
                 story = game._read_transcript()
-                note(f"resumed session {game.session}.")
+                note(f"resumed session {game.session} from its transcript "
+                     f"(--fresh restarts instead).")
                 speaker("DM", "1;36", scene)
         if scene is None:
             note("opening the scene — first model call…")
@@ -238,7 +264,7 @@ def cmd_play(args):
             show_turn(tr)
 
         for i in range(1, args.turns + 1):
-            msg = intro(story, scene) if i == 1 else scene
+            msg = intro(story, scene) if i == 1 else player_turn(scene)
             story = None  # only the first turn carries the story
             note(f"turn {i}: waiting on the player…")
             player = backend.prompt(player_sid, "player", msg)
@@ -249,6 +275,17 @@ def cmd_play(args):
             scene = tr.final
             speaker("DM", "1;36", scene)
             show_turn(tr)
+            if tr.session_complete:
+                banner(f"session {game.session} ended by the runner (turn {i})")
+                note("capturing handoff notes from the warm runner session…")
+                notes_path = game.handoff()
+                note(f"handoff notes: {notes_path}" if notes_path
+                     else "no handoff notes captured (optional — reconcile proceeds without them)")
+                note("next: `cli.py reconcile` to fold the session into canon")
+                break
+        else:
+            note(f"turn limit ({args.turns}) reached — session still open; "
+                 f"re-running play will resume it")
 
     with_engine(args, body)
 
@@ -377,12 +414,16 @@ def main():
 
     p = sub.add_parser("play", parents=[common],
                        help="drive the gated loop with the scripted player")
-    p.add_argument("--turns", type=int, default=6)
-    p.add_argument("--resume", action="store_true",
-                   help="continue the latest session from its transcript")
+    p.add_argument("--turns", type=int, default=30,
+                   help="turn cap — play stops early when the runner ends the session "
+                        "(default: 30)")
+    p.add_argument("--fresh", action="store_true",
+                   help="start the session over, overwriting its transcript "
+                        "(the default resumes an in-progress session)")
     p.add_argument("--kickoff", default="Let's begin the session.")
-    p.add_argument("--character", default=str(DEV / "dallid.player.md"),
-                   help="player packet injected into the player's first message ('' to skip)")
+    p.add_argument("--character", default=None,
+                   help="player packet injected into the player's first message "
+                        "(default: auto-discover *.player.md at the project root; '' to run blind)")
     p.set_defaults(func=cmd_play)
 
     p = sub.add_parser("prep", parents=[common], help="PRE: author + gate + commit the session plan")

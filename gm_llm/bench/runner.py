@@ -43,6 +43,7 @@ from ..orchestrator import (
     Backend, BackendError, CanonPreloader, Gate, Game, Logs, Reconciler,
 )
 from ..orchestrator.logs import debug_enabled
+from ..orchestrator.prompts import player_turn
 from ..project import init_project, install_plugin_deps
 
 # Which agents' model/temperature get stamped into the conditions event. dm-runner and
@@ -239,10 +240,9 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 30, play_only: bool = Fa
             turns += 1
             if turns == 1 and character:
                 msg = ("[YOUR CHARACTER — read this, then stay in character for the rest "
-                       f"of the session]\n\n{character}\n\n[The session begins. The DM says:]"
-                       f"\n\n{scene}")
+                       f"of the session]\n\n{character}\n\n" + player_turn(scene))
             else:
-                msg = scene
+                msg = player_turn(scene)
             note(f"turn {turns}/{turn_cap}: player…")
             player = backend.prompt(player_sid, "player", msg)
             note(f"turn {turns}/{turn_cap}: dm (draft + gate)…")

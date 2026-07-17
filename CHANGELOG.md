@@ -9,6 +9,20 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Added
+- **Per-turn player reminder** — the autoplayer now gets a fresh `player-reminder` brief in front
+  of every DM beat (the beat fenced in `<dm>…</dm>`), mirroring the runner's `turn-reminder`: a
+  per-turn algorithm (roll handling, one action, no recap/repetition, attempt-never-resolve, no
+  invented facts). One home (`orchestrator/prompts/player-reminder.md` + `prompts.player_turn`),
+  used by both `dev/cli.py play` and the bench runner. Counters the observed long-session drift:
+  echo spirals, world-narration, and perception loops.
+### Changed
+- `dev/cli.py play` needs no hand-holding: it auto-resumes an in-progress session (`--fresh` is
+  now the only way to overwrite a transcript), auto-discovers a `*.player.md` packet at the
+  project root, stops when the runner ends the session (capturing the handoff notes and pointing
+  at reconcile), refuses to play a session already marked complete, and treats `--turns`
+  (default 30, up from 6) as a cap rather than a fixed count.
+
 ## [0.4.0] — 2026-07-17
 
 Benchmark harness — gm-llm doubles as a tiered scaffolding benchmark (design in `BENCHMARK.md`):
