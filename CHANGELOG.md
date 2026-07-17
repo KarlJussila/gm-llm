@@ -9,6 +9,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-07-17
+
+Combat wired into every interface (the C0–C5 engine finally has a driver), autoplayer hardening,
+and session-end recovery — dev tooling and fixes; combat still awaits its live shakedown.
+
 ### Added
 - **Per-turn player reminder** — the autoplayer now gets a fresh `player-reminder` brief in front
   of every DM beat (the beat fenced in `<dm>…</dm>`), mirroring the runner's `turn-reminder`: a
