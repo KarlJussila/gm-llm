@@ -283,16 +283,20 @@ class Game(CombatMixin):
             self.on_turn(tr)
         return tr
 
-    def _run_gate(self, draft: str, player_msg: str):
+    def _run_gate(self, draft: str, player_msg: str, in_combat: bool = False):
         """Gate a draft and apply at most one bounded correction pass. Shared by the
         play-driven turn and the combat loop. Returns (final, GateResult, corrected).
+
+        `in_combat` chains `check-combat` into the gate (COMBAT.md C2) — the combat
+        action paths pass True so the committed→pending delta is validated against the
+        narrated action; the play-driven turn and the combat *exit* beat leave it False.
 
         Exactly one correction pass — we do NOT re-gate the revision (bounded by
         construction; if it's still imperfect it goes out and the log shows it).
         `_correcting` brackets the correction prompt: if it's cancelled it stays set, so
         `revert_last_turn` rolls back past the brief to the player's own message."""
         self._step("check")
-        result = self.gate.check(draft, player_msg)
+        result = self.gate.check(draft, player_msg, in_combat=in_combat)
         final, corrected = draft, False
         if result.violations:
             self._correcting = True

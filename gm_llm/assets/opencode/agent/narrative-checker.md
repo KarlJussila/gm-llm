@@ -3,8 +3,9 @@ description: >-
   The campaign's independent verification engine. Verifies content against
   established canon, the registry, the PC knowledge ledger, and what has actually
   been played — and reports violations. Has one skill per role: check-turn
-  (runtime, a drafted turn's canon), check-conduct (runtime, the same drafted
-  turn's table-craft conduct — runs in the same warm session as check-turn),
+  (runtime, a drafted turn's canon), check-combat (runtime, a combat turn's
+  tracker-delta fidelity), check-conduct (runtime, the same drafted turn's
+  table-craft conduct — runs in the same warm session as check-turn),
   check-plan (PRE, a session plan), check-digest (POST, the digest vs. the
   transcript), check-propagation (POST, the apply pass), check-feedback (POST,
   curated player feedback). Reads and reports only; never writes, rewrites
@@ -32,6 +33,9 @@ Your task brief names the role and provides the input. **Load the matching skill
 exactly:**
 - **`check-turn`** — runtime: a runner's drafted turn, before it reaches the player. Verifies canon
   coherence (references, consistency, ledger, spoilers).
+- **`check-combat`** — runtime (only while a fight is on): the **same drafted turn's** mechanical
+  fidelity — the combat tracker's committed→pending delta vs. what the narration says happened. Runs
+  warm between `check-turn` and `check-conduct` when the brief provides it.
 - **`check-conduct`** — runtime: the **same drafted turn's** table-craft conduct (player agency,
   dice, metagame leakage, pacing). Runs in the same warm session right after `check-turn`, so the
   canon/ledger context you just loaded is available — the skill tells you when to lean on it.

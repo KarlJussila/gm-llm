@@ -381,9 +381,29 @@ pending→committed, `rollback` = committed→pending, both carrying the in-fram
 - *Deferred (hardening):* resume-mid-combat loop-position recovery (the tracker state persists, but
   which combatant is mid-turn / awaiting confirm is in-memory only).
 
-### C2 — Gate: `check-combat`
+### C2 — Gate: `check-combat` — **done**
 The role skill + `gate.check()` branch + state-file preload into the check brief. *Exit: a drafted
 combat action is validated against the `committed → pending` transition.*
+
+Built as a third narrative-checker role, warm-chained **between** `check-turn` and `check-conduct`
+(not merely before conduct) so it inherits the canon/ledger context and stays sequenced in the
+correction brief. Key resolutions:
+- **The check runs only on the combat *action* beats.** `gate.check(narration, player_msg,
+  in_combat)` gained the flag; `loop.py:_run_gate` threads it, and combat.py passes `in_combat=True`
+  from `combat_step`/`combat_interject`/`combat_player_action` only. The play-driven entry turn and
+  the `end_encounter` exit beat stay `False` — the entry seeds `committed == pending` (empty delta)
+  and the exit's state file is already deleted, so neither has a transition to validate.
+- **Read-only preload, defensively guarded.** `gate._combat_blobs` reads the state file's two frames
+  as pretty JSON into the brief; if the file is absent (the closing beat raced the delete) the check
+  is skipped and `GateResult.combat` is `None`. The gate never touches the mutators (principle 6).
+- **`GateResult` gained an optional `combat: Verdict | None`.** It feeds `violations` and gets its own
+  `— Combat —` section in the correction brief (order: canon, combat, conduct). `None` out of combat.
+- **The skill validates the delta, not the frame.** It diffs `committed → pending` on the action
+  fields (hp/dead/conditions/reaction/position) in both directions — narrated-but-unapplied and
+  fabricated/misapplied damage, plus reaction double-spend — and explicitly ignores the closing
+  advance's turn-pointer/round/timer-countdown noise (the advance-at-end wrinkle). Canon/spoiler/
+  agency are left to the sibling checks. Verified by `dev/test_combat_gate.py` (branch/preload/
+  correction wiring) and the extended `dev/test_combat_loop.py` (the beats it chains on).
 
 ### C3 — Repertoire ledger
 Template + seed at character-create/level-up + reconcile capture of showcased reactions. *Exit: a PC

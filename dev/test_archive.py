@@ -62,7 +62,7 @@ class FakeGate:
     def __init__(self, results):
         self.results = list(results)
 
-    def check(self, narration, player_msg):
+    def check(self, narration, player_msg, in_combat=False):
         return self.results.pop(0)
 
     def check_plan(self, plan):

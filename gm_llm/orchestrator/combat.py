@@ -197,7 +197,8 @@ class CombatMixin:
         if "end_encounter" in reply.tools:
             return self._combat_end(reply.text, player_line="")
         self._ensure_advanced(st, up)
-        final, result, corrected = self._run_gate(reply.text, f"(combat: {up}'s turn)")
+        final, result, corrected = self._run_gate(reply.text, f"(combat: {up}'s turn)",
+                                                  in_combat=True)
         self._step("done")
         step = CombatStep(kind="await_confirm", combatant=up, round=rnd,
                           narration=final, gate=result, corrected=corrected)
@@ -235,7 +236,8 @@ class CombatMixin:
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, _replay_brief(up, text))
         self._ensure_advanced(st, up)
-        final, result, corrected = self._run_gate(reply.text, f"(combat reaction: {text})")
+        final, result, corrected = self._run_gate(reply.text, f"(combat reaction: {text})",
+                                                  in_combat=True)
         self._step("done")
         step = CombatStep(kind="await_confirm", combatant=up, round=rnd,
                           narration=final, gate=result, corrected=corrected)
@@ -254,7 +256,7 @@ class CombatMixin:
         if "end_encounter" in reply.tools:
             return self._combat_end(reply.text, player_line=player_input)
         self._ensure_advanced(st, "pc")
-        final, result, corrected = self._run_gate(reply.text, player_input)
+        final, result, corrected = self._run_gate(reply.text, player_input, in_combat=True)
         st.commit()
         self._append_transcript(player_input, final, opening=False)
         self._step("done")

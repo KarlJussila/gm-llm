@@ -95,11 +95,19 @@ class FakeBackend:
 
 
 class FakeGate:
-    """Always-clean verdicts — C1 is about the loop's commit boundaries, not the check."""
+    """Always-clean verdicts. C1 tests the loop's commit boundaries; C2 additionally
+    records the `in_combat` flag each `check` was called with, so the combat action
+    paths can be asserted to chain the combat check while the entry/exit beats don't."""
 
-    def check(self, narration, player_msg):
+    def __init__(self):
+        self.in_combat_calls = []  # in_combat flag per check() call, in order
+
+    def check(self, narration, player_msg, in_combat=False):
+        self.in_combat_calls.append(in_combat)
         v = Verdict("check-turn", True, "")
-        return GateResult(v, Verdict("check-conduct", True, ""), player_msg, canon_sections=0)
+        combat = Verdict("check-combat", True, "") if in_combat else None
+        return GateResult(v, Verdict("check-conduct", True, ""), player_msg,
+                          canon_sections=0, combat=combat)
 
 
 # ── state-file mutations the fake backend applies ─────────────────────────────
@@ -168,7 +176,8 @@ def main():
         ("The last goblin turns and flees into the dark.", {"end_encounter"}, m_end),
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    gate = FakeGate()
+    game = Game(backend, gate, campaign_dir=tmp, session=1, transcript=False)
     st = CombatState(tmp)
 
     check(not game.in_combat, "not in combat before start_encounter")
@@ -220,7 +229,13 @@ def main():
     check(not st.exists(), "the tracker state file is gone after end_encounter")
     check(backend.i == len(script), "every scripted model call was consumed, in order")
 
-    print("\nC1 combat loop: all boundaries correct.")
+    # --- C2: check-combat chains only on the combat action beats ---------------
+    # entry turn (False), PC action (True), goblin-1 (True), interject (True),
+    # exit beat (False) — never the play-driven entry or the end_encounter beat.
+    check(gate.in_combat_calls == [False, True, True, True, False],
+          "check-combat runs on the three combat action beats, not entry/exit")
+
+    print("\nC1+C2 combat loop: all boundaries correct, combat check wired.")
 
 
 if __name__ == "__main__":
