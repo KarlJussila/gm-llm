@@ -62,7 +62,7 @@ of its target — check that the id whose HP changed is the one the narration sa
 ### 3. Reaction economy
 A reaction is the one off-turn resource, so it's worth its own look:
 - If the narration has a combatant use a reaction (opportunity attack, Shield, Hellish Rebuke,
-  Counterspell, a parry) → that combatant's `reaction` should be `true` in `committed` and `false`
+  Counterspell, …) → that combatant's `reaction` should be `true` in `committed` and `false`
   in `pending`.
 - **Double-spend:** if the narration has a combatant react but its `reaction` is **already `false`
   in `committed`**, it has no reaction to spend this round — flag it (the reaction isn't available;

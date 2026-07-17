@@ -101,10 +101,11 @@ Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the f
 - **`characters/{slug}.repertoire.md`** (combat repertoire) — from `pc-repertoire.template`, seeded
   from the sheet's reactions and combat abilities. Distil the PC's **reaction-eligible moves** into
   `WHEN <trigger> THEN <reaction>` lines (an opportunity attack always; plus any reaction spell or
-  feature the sheet shows — Shield, Counterspell, Hellish Rebuke, a Parry). Seed every one at
-  **`Stop: no`** — the interrupt toggle is the player's to set in play, not yours to guess; don't ask
-  them to configure it up front. Add a signature tactic or a build wrinkle (reach 10 ft, Sentinel,
-  War Caster) only where the sheet makes it explicit. Seed what's clear and leave the rest to grow —
+  feature the sheet shows — Shield, Counterspell, Hellish Rebuke). Seed every one at **`Stop: no`** —
+  the interrupt toggle is the player's to set in play, not yours to guess; don't ask them to configure
+  it up front. Add a signature tactic or a build wrinkle (reach 10 ft, or a feat that changes when an
+  opportunity attack triggers or what it does) only where the sheet makes it explicit. Seed what's
+  clear and leave the rest to grow —
   a few good triggers beat a rules dump. A PC with no reactions yet gets just the opportunity-attack line.
 
 Then **register the PC** in `INDEX.md` (PC section).

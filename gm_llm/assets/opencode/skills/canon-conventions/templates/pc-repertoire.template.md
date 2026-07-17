@@ -30,7 +30,7 @@ as-of: S<n>
      the runner may ask once whether to flip it to Stop: yes going forward, then honors the answer.
      The player can retune any entry anytime. List every reaction the PC has (so the runner and
      checker know it exists and treat an interject as valid), only what this PC can actually do. -->
-- **Stop: no** — WHEN <a visible creature within 60 ft succeeds on an attack, check, or save> THEN Silvery Barbs
+- **Stop: no** — WHEN <a visible attacker hits the PC> THEN Shield
 - **Stop: no** — WHEN <a visible enemy leaves the PC's reach> THEN an opportunity attack
 - **Stop: yes** — WHEN <a visible enemy starts casting a spell> THEN offer Counterspell   <!-- player asked to be prompted for this one -->
 
@@ -42,5 +42,5 @@ as-of: S<n>
 ## Build notes <!-- optional -->
 <!-- Eligibility wrinkles that change WHEN a reaction is available or WHAT it costs — the things a
      model gets wrong. Omit until one matters. -->
-- <e.g. reach 10 ft (glaive) — opportunity attacks trigger a square earlier>
-- <e.g. Sentinel: an opportunity attack HALTS the target's movement; War Caster: cast a spell as the opportunity attack>
+- <e.g. reach 10 ft (a reach weapon) — opportunity attacks trigger a square earlier>
+- <e.g. a feat that halts a target hit by an opportunity attack, or lets a spell replace the opportunity-attack swing>

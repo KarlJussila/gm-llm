@@ -70,8 +70,8 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
 
 4. **Reactions: the runner owns the pauses, from a documented repertoire — the tracker does not
    adjudicate eligibility.** Auto-firing a pause on a distance threshold is a false-positive/negative
-   machine (weapon in hand? reach 10 not 5? monk? Sentinel *halts* the move so the threshold shouldn't
-   cross? open-ended held actions?). Eligibility is PC-build-specific and effectively unbounded, so the
+   machine (weapon in hand? reach 10 not 5? monk? a movement-halting feat that *stops* the move so the
+   threshold shouldn't cross? open-ended held actions?). Eligibility is PC-build-specific and effectively unbounded, so the
    model owns recognizing pauses — but *not* from its weights. It consults a **reaction/tactical
    repertoire ledger**: a distilled, combat-facing, PC-specific file of `WHEN <trigger> THEN offer
    <reaction>` entries, seeded from the sheet where mechanics are explicit and grown from demonstrated
@@ -105,10 +105,10 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
    is not a license to bulldoze. `combat-run` must make that discipline explicit.
    - **Which reactions stop is the *player's* choice, not a runner heuristic — a per-reaction `Stop:
      yes/no` toggle in the repertoire (C3).** Whether pausing for a given reaction is worth the
-     interruption is a taste call only the player can make: a broad, fires-every-turn trigger (Warding
-     Flare on any visible attack within 30 ft; Silvery Barbs on any success the PC sees within 60 ft)
-     is exactly the kind most players would rather call themselves than have the fight stop for several
-     times a round — but that's *their* call, and a player who wants Silvery Barbs surfaced can set it.
+     interruption is a taste call only the player can make: a broad, fires-every-turn trigger (Shield
+     on any hit; Hellish Rebuke on any hit that damages the PC) is exactly the kind most players would
+     rather call themselves than have the fight stop for several times a round — but that's *their*
+     call, and a player who wants it surfaced can set it.
      So each reaction carries a **player-owned toggle**: `Stop: yes` → the runner proactively offers;
      `Stop: no` → the runner plays on and the player interjects at the confirm gate (self-rationing
      their one reaction/round). **New reactions default `Stop: no`, and the runner never reminds the
