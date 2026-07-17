@@ -40,10 +40,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..orchestrator import (
-    Backend, BackendError, CanonPreloader, Gate, Game, Logs, Reconciler,
+    Backend, BackendError, CanonPreloader, CombatDriver, Gate, Game, Logs, Reconciler,
 )
 from ..orchestrator.logs import debug_enabled
-from ..orchestrator.prompts import player_turn
+from ..orchestrator.prompts import player_combat_turn, player_turn
 from ..project import init_project, install_plugin_deps
 
 # Which agents' model/temperature get stamped into the conditions event. dm-runner and
@@ -201,6 +201,32 @@ def _character(run_dir: Path, fixture: dict, note) -> str:
     return text
 
 
+def _play_combat(game, backend, player_sid, entry_scene, turns: int, turn_cap: int, note):
+    """Drive a fight through the library's `CombatDriver`, minimal output. **Each PC slot
+    counts as one turn against `turn_cap`** — a fight must not make a run uncappable, and a
+    PC slot is the combat analogue of a normal player turn (the beat the autoplayer acts
+    on). NPC beats are pumped and confirmed by the driver (no per-beat turn cost). Returns
+    `(exit_scene, turns, hit_cap)`: the narration to resume from, the updated turn count,
+    and whether the cap was reached mid-fight — a cap breach the caller treats like any
+    other (an unfinished fight has no clean wrap, so reconcile is skipped)."""
+    driver = CombatDriver(game)
+    state = {"scene": entry_scene}
+
+    def on_beat(narration, who):
+        state["scene"] = narration
+        return None  # autoplay never interjects
+
+    event = driver.advance(on_beat)
+    while event.kind == "pc_slot":
+        if turns >= turn_cap:
+            return state["scene"], turns, True
+        turns += 1
+        note(f"turn {turns}/{turn_cap}: combat PC slot…")
+        player = backend.prompt(player_sid, "player", player_combat_turn(state["scene"]))
+        event = driver.pc_action(player, on_beat)
+    return event.narration, turns, False
+
+
 def run_once(run_dir, fixture: dict, *, turn_cap: int = 30, play_only: bool = False,
              kickoff: str = "Let's begin the session.", port: int = 4181,
              min_gap: float = 1.0, turn_timeout: int = 360, stream: bool = False,
@@ -212,7 +238,12 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 30, play_only: bool = Fa
     `turn_cap`, then — on a natural close and unless `play_only` — writes handoff notes
     and reconciles. The backend is always stopped on the way out (sequential runs share a
     port). `BackendError` propagates to the batch loop (recorded as a failed run);
-    `KeyboardInterrupt` propagates to abort the whole batch."""
+    `KeyboardInterrupt` propagates to abort the whole batch.
+
+    Combat (a turn that calls `start_encounter`) hands off to `_play_combat`, which drives
+    the fight through the `CombatDriver` and counts **each PC slot as one turn** against
+    `turn_cap` — so a fight can't make a run uncappable. A fight that runs into the cap is a
+    cap breach like any other (reconcile skipped)."""
     run_dir = Path(run_dir)
     logs = Logs.under(project=run_dir, debug=debug_enabled())
     backend = backend_factory(run_dir, port=port, min_gap=min_gap,
@@ -248,6 +279,12 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 30, play_only: bool = Fa
             note(f"turn {turns}/{turn_cap}: dm (draft + gate)…")
             tr = game.turn(player)
             scene = tr.final
+            if tr.combat_started:
+                scene, turns, hit_cap = _play_combat(
+                    game, backend, player_sid, scene, turns, turn_cap, note)
+                if hit_cap:
+                    break  # unfinished fight — a cap breach; outcome stays "cap"
+                continue
             if tr.session_complete:
                 outcome = "complete"
                 break

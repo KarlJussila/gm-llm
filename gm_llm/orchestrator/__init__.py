@@ -8,7 +8,7 @@ on `Game`; nothing here depends on the interface.
 from .archive import Archive
 from .backend import Backend, BackendError
 from .canon import CanonPreloader
-from .combat import CombatState, CombatStep
+from .combat import CombatDriver, CombatEvent, CombatState, CombatStep
 from .gate import Gate, GateResult, StageGateResult, Verdict
 from .lifecycle import Lifecycle
 from .logs import Logs
@@ -20,7 +20,8 @@ from .status import CampaignStatus, campaign_status
 
 __all__ = [
     "Archive", "Backend", "BackendError", "CanonPreloader",
-    "CampaignStatus", "campaign_status", "CombatState", "CombatStep",
+    "CampaignStatus", "campaign_status",
+    "CombatDriver", "CombatEvent", "CombatState", "CombatStep",
     "Gate", "GateResult", "StageGateResult", "Verdict",
     "Game", "TurnResult", "Lifecycle", "Logs",
     "Planner", "PlannerError", "PrepResult",

@@ -293,3 +293,98 @@ class CombatMixin:
         CombatState(self.backend.directory).delete()
         return CombatStep(kind="ended", combatant=None, narration=final,
                           gate=result, corrected=corrected)
+
+
+# --- driver -----------------------------------------------------------------
+# The one home for combat's *sequencing policy*. The engine above (`CombatMixin`) owns
+# the per-combatant mechanics — resolve, gate, commit/rollback; the driver owns the loop
+# *around* them: pump NPC beats, confirm each, stop at a PC slot or the fight's end, thread
+# interjections and cancels. Every interface (the TUI, the two autoplay loops) drives a fight
+# through this and stays mechanical — render a beat, get input, call the next method — so no
+# combat policy ever leaks into an interface. See COMBAT.md "The combat loop".
+
+
+@dataclass
+class CombatEvent:
+    """What the driver hands an interface after a pump — where the loop stopped and why:
+
+      pc_slot — the PC's turn: solicit the player's action, then call `pc_action(text)`.
+      ended   — the fight is over; `narration` is the exit beat. Resume normal play with
+                it as the current scene.
+    """
+    kind: str
+    combatant: str | None = None
+    round: int | None = None
+    narration: str = ""
+
+
+class CombatDriver:
+    """The pull-based combat loop, policy in the library ONCE. Wraps a `Game` and pumps
+    its initiative surface (`combat_step`/`combat_player_action`/`combat_confirm`/
+    `combat_interject`), stopping only where an interface must act: the PC's slot, or the
+    end of the fight.
+
+    `on_beat(narration, combatant) -> str | None` is the interface's sole hook. The driver
+    calls it to *render* each resolved beat as it happens; for an NPC beat awaiting confirm,
+    the hook's RETURN value is also its confirm channel — return an interjection (a PC
+    reaction) to fold it in before the beat commits (the tracker rolls back, the turn
+    replays, and the new beat is re-presented — a reaction to a reaction stays cheap), or
+    return None/'' to confirm and advance. Autoplay passes a render-only hook (always None);
+    the TUI's blocks for the human's Enter-or-react. A PC beat and the exit beat are rendered
+    with the hook too, but their return is ignored (a PC beat commits directly; the exit beat
+    is handed back on the event).
+
+    Cancel survives: a `BackendCancelled` raised while a beat is drafting propagates straight
+    out — the engine's in-flight rollback / resume guard (`CombatState.in_flight`) keeps the
+    tracker consistent, so the caller reverts the runner session and re-enters through
+    `advance` again. Resume-mid-combat needs nothing special: a fresh `Game` whose `_in_combat`
+    recovered off the state file is driven by calling `advance` on it."""
+
+    def __init__(self, game: "Game"):  # noqa: F821 — Game imports this module
+        self.game = game
+
+    @property
+    def in_combat(self) -> bool:
+        return self.game.in_combat
+
+    def advance(self, on_beat=None) -> CombatEvent:
+        """Pump NPC beats until the PC's slot or the fight's end, presenting and confirming
+        each along the way. Returns a `pc_slot` or `ended` event."""
+        while True:
+            step = self.game.combat_step()
+            if step.kind == "await_pc":
+                return CombatEvent("pc_slot", combatant=step.combatant, round=step.round)
+            if step.kind == "ended":
+                return CombatEvent("ended", narration=step.narration)
+            # await_confirm: an NPC resolved its action. Present it; a returned reaction
+            # interjects and re-presents (re-confirmable) until the player is done reacting.
+            self._settle(step, on_beat)
+
+    def pc_action(self, text: str, on_beat=None) -> CombatEvent:
+        """Play the PC's slot (committed directly — no confirm gate), then resume pumping
+        to the next PC slot or the fight's end."""
+        step = self.game.combat_player_action(text)
+        if step.kind == "ended":
+            return CombatEvent("ended", narration=step.narration)
+        if on_beat:
+            on_beat(step.narration, "pc")  # the committed PC beat — render only, no confirm
+        return self.advance(on_beat=on_beat)
+
+    def interject(self, text: str, on_beat=None) -> CombatEvent:
+        """Fold a PC reaction into the NPC beat currently awaiting confirm, then carry on
+        pumping. A pass-through for interfaces that surface the confirm gate as an explicit
+        step rather than through `on_beat`'s return value; both routes reach the same engine
+        method. Legal only while an NPC beat awaits confirm (an in-flight `_combat_pending`)."""
+        step = self.game.combat_interject(text)
+        self._settle(step, on_beat)
+        return self.advance(on_beat=on_beat)
+
+    def _settle(self, step: CombatStep, on_beat) -> None:
+        """Present an NPC beat awaiting confirm and resolve the confirm gate: a returned
+        reaction interjects and re-presents (looping, so a reaction to a reaction stays
+        cheap); anything falsy confirms and hardens the beat."""
+        reaction = on_beat(step.narration, step.combatant) if on_beat else None
+        while reaction:
+            step = self.game.combat_interject(reaction)
+            reaction = on_beat(step.narration, step.combatant) if on_beat else None
+        self.game.combat_confirm()

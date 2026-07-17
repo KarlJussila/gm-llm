@@ -39,12 +39,12 @@ DEV = Path(__file__).resolve().parent
 REPO = DEV.parent                   # the framework checkout
 sys.path.insert(0, str(REPO))       # so `gm_llm` imports straight from the checkout
 from gm_llm.orchestrator import (  # noqa: E402
-    Backend, BackendError, CanonPreloader, Gate, Game, Logs, Planner,
+    Backend, BackendError, CanonPreloader, CombatDriver, Gate, Game, Logs, Planner,
     Reconciler, campaign_status,
 )
 from gm_llm.orchestrator.canon import latest_session  # noqa: E402
 from gm_llm.orchestrator.loop import session_is_complete  # noqa: E402
-from gm_llm.orchestrator.prompts import player_turn  # noqa: E402
+from gm_llm.orchestrator.prompts import player_combat_turn, player_turn  # noqa: E402
 from gm_llm.orchestrator.logs import debug_enabled  # noqa: E402
 from gm_llm.orchestrator.stream import EventTap  # noqa: E402
 
@@ -209,6 +209,29 @@ def _find_character(args) -> str:
     return ""
 
 
+def _play_combat(game, backend, player_sid, entry_scene):
+    """Drive a fight through the library's `CombatDriver` — the sequencing policy lives
+    there; this is mechanical. NPC beats print as the driver resolves them; each PC slot
+    prompts the `player` agent with the combat brief over the latest beat. Returns the
+    exit narration, which the caller resumes normal play from as the next scene."""
+    driver = CombatDriver(game)
+    state = {"scene": entry_scene}
+
+    def on_beat(narration, who):
+        speaker(f"COMBAT · {who}", "1;35", narration)
+        state["scene"] = narration
+        return None  # autoplay never interjects
+
+    event = driver.advance(on_beat)
+    while event.kind == "pc_slot":
+        note(f"combat: PC slot (round {event.round}) — waiting on the player…")
+        player = backend.prompt(player_sid, "player", player_combat_turn(state["scene"]))
+        speaker("PLAYER · combat", "1;32", player)
+        event = driver.pc_action(player, on_beat)
+    speaker("DM · combat ends", "1;36", event.narration)
+    return event.narration
+
+
 def cmd_play(args):
     """Drive the gated loop with the scripted `player` agent — the offline-human
     test mode. The player gets its character packet on the first turn (plus the
@@ -275,6 +298,10 @@ def cmd_play(args):
             scene = tr.final
             speaker("DM", "1;36", scene)
             show_turn(tr)
+            if tr.combat_started:
+                note(f"turn {i}: combat — initiative takes over…")
+                scene = _play_combat(game, backend, player_sid, scene)
+                continue
             if tr.session_complete:
                 banner(f"session {game.session} ended by the runner (turn {i})")
                 note("capturing handoff notes from the warm runner session…")

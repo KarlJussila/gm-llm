@@ -43,6 +43,7 @@ from __future__ import annotations
 import asyncio
 import random
 import re
+import threading
 
 from rich.markup import escape
 from textual.app import App, ComposeResult
@@ -52,6 +53,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, Input, RichLog
 
 from gm_llm.orchestrator.backend import BackendCancelled
+from gm_llm.orchestrator.combat import CombatDriver
 from gm_llm.orchestrator.textmarkup import inline
 
 from .screens import MenuScreen, RollScreen, StatusScreen
@@ -107,6 +109,16 @@ class PlayApp(App):
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
         self._setup_stages_seen = set()  # spoiler-free setup stages already shown (each shows once)
         self._ctx_note = ""          # " · ctx 39% (78k/200k)" — refreshed after each turn
+        # Combat mode: a CombatDriver wrapping the live game while a fight is on (None
+        # otherwise). The driver owns ALL sequencing policy; the app only renders beats,
+        # gets input, and calls the next method. `_combat_awaiting` is what the input box
+        # is currently for ("pc" = the PC's slot, "confirm" = an NPC beat awaiting the
+        # player's Enter-or-react); `_combat_gate`/`_combat_reaction` hand the confirm-gate
+        # answer from the UI thread back to the pump worker blocked in `_on_combat_beat`.
+        self._combat = None
+        self._combat_awaiting = None
+        self._combat_gate = threading.Event()
+        self._combat_reaction = None
 
     @property
     def game(self):
@@ -229,6 +241,14 @@ class PlayApp(App):
 
     def _sync_input(self) -> None:
         inp = self.query_one("#cmd", Input)
+        if self._combat_awaiting == "confirm":
+            inp.border_title = "COMBAT — Enter to confirm, or type a reaction"
+            inp.placeholder = "Enter to confirm the enemy's action · type a reaction to interject"
+            return
+        if self._combat_awaiting == "pc":
+            inp.border_title = "COMBAT — your turn"
+            inp.placeholder = "What does your character do this turn?"
+            return
         if self._working:
             inp.border_title = "…thinking — draft freely, send once the table frees up…"
         elif self.lc.phase == "setup":
@@ -334,6 +354,12 @@ class PlayApp(App):
         if resumed:
             self._scene_status("— resuming the session in progress —")
         self._scene_dm(inline(scene))
+        if self.game.in_combat:
+            # Resumed straight into a live fight (the tracker state file survived) — the
+            # driver picks up where the initiative loop left off.
+            self._scene_status("— resuming mid-fight — initiative —", kind="rule")
+            self._enter_combat()
+            return
         self._busy(False)
         self._spawn_context_refresh()
 
@@ -447,6 +473,24 @@ class PlayApp(App):
         if event.input.id != "cmd":
             return  # a modal's input (e.g. the roll prompt), not the play bar
         text = event.value.strip()
+        # Combat routing takes precedence: the confirm gate needs a bare Enter (an empty
+        # submit) to mean "confirm", and combat input must reach the fight even while the
+        # pump worker is mid-flight. `/roll` (local dice) and `/quit` still work here.
+        if self._combat_awaiting in ("confirm", "pc"):
+            event.input.value = ""
+            low = text.lower()
+            if low in ("/quit", "/exit", "/q"):
+                self.exit()
+                return
+            if low.startswith("/roll"):
+                result = roll_expr(text[5:].strip())
+                self._scene_status(result or "could not parse — try /roll 2d6+3", kind="rule")
+                return
+            if self._combat_awaiting == "confirm":
+                self._combat_resolve_confirm(text)  # empty = confirm; text = interject
+            elif text:
+                self._combat_submit_pc(text)
+            return
         if not text:
             event.input.value = ""
             return
@@ -526,6 +570,12 @@ class PlayApp(App):
         block.set_gate(tr.corrected, fixed)
         self._render_gate(tr)
         self._spawn_context_refresh()
+        if tr.combat_started:
+            # The runner called start_encounter this turn — initiative takes over. Hand
+            # off to the combat driver; the normal turn loop resumes when the fight ends.
+            self._scene_status("— initiative! the fight begins —", kind="rule")
+            self._enter_combat()
+            return
         if tr.session_complete:
             # The runner signalled the session's end — offer the wrap (reconcile +
             # prep N+1) instead of auto-running minutes of pipeline.
@@ -558,6 +608,111 @@ class PlayApp(App):
         self._scene_dm(inline(answer), meta=True)
         self._busy(False)
         self._spawn_context_refresh()
+
+    # -- combat mode (initiative-driven; the driver owns the policy) ----------
+    #
+    # A fight is driven entirely by the library's `CombatDriver`: this app only renders
+    # beats, gets input, and calls the next driver method — no combat policy here. The
+    # pump runs off the UI thread; `_on_combat_beat` renders each beat and, for an NPC
+    # beat, blocks on `_combat_gate` until the player confirms (Enter) or interjects (a
+    # typed reaction). See COMBAT.md "The combat loop".
+
+    def _enter_combat(self) -> None:
+        self._combat = CombatDriver(self.game)
+        self._run_combat(lambda: self._combat.advance(self._on_combat_beat))
+
+    def _run_combat(self, action) -> None:
+        """Run one driver pump (`advance` or `pc_action`) off the UI thread, then act on
+        the event it returns. `action` is a zero-arg callable that returns a CombatEvent."""
+        self.run_worker(self._combat_pump(action), exclusive=True)
+
+    async def _combat_pump(self, action) -> None:
+        self._busy(True, label="the fight plays out")
+        self._scene_thinking("the fight plays out")
+        tap = self._start_stream()
+        try:
+            event = await asyncio.to_thread(action)
+        except BackendCancelled:
+            await self._combat_cancelled()
+            return
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._combat = None
+            self._combat_awaiting = None
+            self._phase_failed("the fight", e)
+            return
+        finally:
+            if tap:
+                await asyncio.to_thread(tap.stop)
+        self._clear_thinking()
+        if event.kind == "ended":
+            self._combat = None
+            self._combat_awaiting = None
+            self._scene_status("— the fight is over — back to the table —", kind="rule")
+            self._scene_dm(inline(event.narration))
+            self._busy(False)
+            self._spawn_context_refresh()
+        else:  # pc_slot — solicit the player's action
+            self._combat_awaiting = "pc"
+            self._scene_status(f"— your turn (round {event.round}) —", kind="rule")
+            self._busy(False)
+
+    def _on_combat_beat(self, narration: str, who: str):
+        """Driver callback, run on the pump worker thread. Renders a beat; for an NPC beat
+        it then blocks for the player's confirm-or-react and returns the reaction (or None
+        to confirm). A PC beat is committed directly — render and return None."""
+        self.call_from_thread(self._scene_combat_beat, narration, who)
+        if who == "pc":
+            return None
+        self._combat_reaction = None
+        self._combat_gate.clear()
+        self.call_from_thread(self._combat_await_confirm, who)
+        self._combat_gate.wait()
+        return self._combat_reaction
+
+    def _scene_combat_beat(self, narration: str, who: str) -> None:
+        self._clear_thinking()
+        label = "You" if who == "pc" else who
+        self._scene_status(f"  ⚔ {label}")
+        self._scene_dm(inline(narration))
+
+    def _combat_await_confirm(self, combatant: str) -> None:
+        """UI-thread: an NPC beat has landed and awaits the player. Free the input and
+        arm the confirm gate — Enter confirms, a typed line interjects a reaction."""
+        self._combat_awaiting = "confirm"
+        self._scene_status(f"— {combatant} acted · Enter to confirm, or type a reaction —",
+                           kind="rule")
+        self._busy(False)
+
+    def _combat_resolve_confirm(self, text: str) -> None:
+        """UI-thread: the player answered the confirm gate. Hand the answer (a reaction,
+        or None for a bare-Enter confirm) to the blocked pump worker and let it resume."""
+        self._combat_awaiting = None
+        self._combat_reaction = text or None
+        if text:
+            self._scene_player(f"[$success bold]You[/]  {escape(text)}")
+        self._busy(True, label="the fight plays out")
+        self._scene_thinking("the fight plays out")
+        self._combat_gate.set()
+
+    def _combat_submit_pc(self, text: str) -> None:
+        """UI-thread: the player's action for their combat slot — play it and resume the pump."""
+        self._combat_awaiting = None
+        self._scene_player(f"[$success bold]You[/]  {escape(text)}")
+        self._run_combat(lambda: self._combat.pc_action(text, self._on_combat_beat))
+
+    async def _combat_cancelled(self) -> None:
+        """A combat model call was cancelled (ctrl+x). Revert the runner session over the
+        abandoned beat; the engine's resume guard rolls the in-flight tracker action back,
+        so re-entering the pump re-resolves the interrupted combatant cleanly."""
+        await asyncio.to_thread(self.game.revert_last_turn)
+        self._clear_thinking()
+        self._scene_status("— combat action cancelled —", kind="rule")
+        if self._combat and self._combat.in_combat:
+            self._run_combat(lambda: self._combat.advance(self._on_combat_beat))
+        else:
+            self._combat = None
+            self._combat_awaiting = None
+            self._busy(False)
 
     # -- phase prompt (yes/no at phase boundaries) ----------------------------
 
@@ -621,6 +776,10 @@ class PlayApp(App):
         the next, then open it), or — when setup just finished — plan session 1.
         No-op while busy."""
         if self._working or self._wrapping:
+            return
+        if self._combat is not None:
+            self.notify("finish the fight first — the session can't wrap mid-combat",
+                        severity="warning", timeout=3)
             return
         self._prompt.dismiss()  # the prompt's action is being taken (or superseded)
         if self._pending == "finish_setup":

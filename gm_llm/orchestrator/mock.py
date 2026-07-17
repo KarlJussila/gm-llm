@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 from .backend import BackendCancelled
+from .combat import CombatStep
 from .gate import GateResult, Verdict
 from .loop import TurnResult
 from .setup import SetupTurn
@@ -46,6 +47,36 @@ _CLOSING = (
     "night takes the harbour quiet, for once.\n\n— a good place to rest —"
 )
 
+# A short scripted combat episode (COMBAT.md) so the offline TUI can demo the initiative
+# loop — enter on a normal turn (`combat_started`), a PC slot, two NPC beats each awaiting
+# confirm, then the fight ends and normal play resumes.
+_COMBAT_ENTER = (
+    "The door bangs open and two dockside toughs shoulder in, blades already out. One vaults "
+    "the bar toward Magren; the other comes straight at you. Steel scrapes free — roll for "
+    "initiative."
+)
+_COMBAT_PC = (
+    "You read the nearer thug's footing and strike as he closes — a clean opening. (Roll your "
+    "attack when you're ready.)"
+)
+_COMBAT_NPC1 = (
+    "The thug you cut staggers, then slashes back low — his blade skids off your guard, but the "
+    "force of it rocks you a step toward the hearth. He's 5 ft in front of you, breathing hard."
+)
+_COMBAT_NPC1_BLUNTED = (
+    "Your shield snaps up as the thug slashes low — the blade rings off the boss and skitters "
+    "wide. He's 5 ft in front of you, wrong-footed now, breathing hard."
+)
+_COMBAT_NPC2 = (
+    "Behind the bar, the second tough feints at Magren, then hurls a stool your way — it clips "
+    "your shoulder and clatters past. He's 15 ft NE, using the bar as cover."
+)
+_COMBAT_END = (
+    "The nearer thug sees his partner falter, spits a curse, and both of them break for the "
+    "door, boots pounding the wet boards into the dark. The commons lets out its held breath. "
+    "Magren sets a cudgel back under the bar. \"Friends of yours?\""
+)
+
 
 class _MockBackend:
     """Just enough backend surface for the TUI's unconditional wiring: a retry
@@ -67,6 +98,13 @@ class MockGame:
         self.on_step = None  # the TUI assigns this, same as on the real Game
         self._n = 0
         self._abort = False
+        self._in_combat = False
+        self._combat_phase = 0            # scripted position in the combat episode
+        self._combat_pending = None       # the NPC beat awaiting confirm
+
+    @property
+    def in_combat(self) -> bool:
+        return self._in_combat
 
     def _step(self, key: str) -> None:
         if self.on_step:
@@ -100,6 +138,7 @@ class MockGame:
         self._n += 1
         corrected = self._n % 3 == 0   # every third turn exercises the correction path
         ending = self._n % 6 == 0      # every sixth turn ends the session (the wrap prompt)
+        starting_combat = self._n == 2  # turn 2 kicks off the scripted combat episode
         try:
             self._step("draft")
             if self._n % 4 == 0 and self.backend.on_retry:  # turn 4 exercises the retry notice
@@ -115,12 +154,62 @@ class MockGame:
         except BackendCancelled:
             self._n -= 1  # a cancelled turn is reverted — it doesn't consume a script slot
             raise
+        if starting_combat:
+            self._in_combat = True
+            self._combat_phase = 0
+            return self._result(_COMBAT_ENTER, player_input, clean=True, combat_started=True)
         narration = _CLOSING if ending else (
             f"Magren's gaze flicks to you, then the satchel. \"That glow,\" he says. \"Not the first "
             f"I've seen.\" He slides a mug across the bar. (mock reply to: “{player_input[:60]}”)"
         )
         return self._result(narration, player_input, clean=not corrected,
                             corrected=corrected, session_complete=ending)
+
+    # -- combat surface (scripted; drives the offline CombatDriver demo) -------
+
+    def combat_step(self) -> CombatStep:
+        """Emit the next scripted combat beat. Mirrors the real Game's contract: a PC slot
+        (`await_pc`), an NPC beat awaiting confirm (`await_confirm`), or the fight's end
+        (`ended`, which drops out of combat)."""
+        phase = self._combat_phase
+        if phase == 0:
+            return CombatStep(kind="await_pc", combatant="pc", round=1)
+        if phase == 1:
+            self._sleep(0.7)
+            self._combat_pending = CombatStep(kind="await_confirm", combatant="thug-1",
+                                              round=1, narration=_COMBAT_NPC1)
+            return self._combat_pending
+        if phase == 2:
+            self._sleep(0.7)
+            self._combat_pending = CombatStep(kind="await_confirm", combatant="thug-2",
+                                              round=1, narration=_COMBAT_NPC2)
+            return self._combat_pending
+        self._in_combat = False
+        self._combat_pending = None
+        return CombatStep(kind="ended", narration=_COMBAT_END)
+
+    def combat_player_action(self, player_input: str) -> CombatStep:
+        self._step("draft")
+        self._sleep(0.6)
+        self._step("done")
+        self._combat_phase = 1
+        return CombatStep(kind="committed", combatant="pc", round=1, narration=_COMBAT_PC)
+
+    def combat_confirm(self) -> CombatStep | None:
+        step = self._combat_pending
+        self._combat_pending = None
+        self._combat_phase += 1
+        return step
+
+    def combat_interject(self, text: str) -> CombatStep:
+        """Replay the pending NPC beat with the reaction folded in — the same combatant,
+        blunted. Re-presented for confirm, like the real Game."""
+        self._step("draft")
+        self._sleep(0.5)
+        self._step("done")
+        self._combat_pending = CombatStep(kind="await_confirm", combatant="thug-1",
+                                          round=1, narration=_COMBAT_NPC1_BLUNTED)
+        return self._combat_pending
 
     def meta(self, question: str) -> str:
         self._sleep(1.5)
@@ -134,7 +223,7 @@ class MockGame:
         return False  # no backend session to roll back
 
     def _result(self, narration, player_msg, clean=True, corrected=False,
-                session_complete=False) -> TurnResult:
+                session_complete=False, combat_started=False) -> TurnResult:
         narrative = Verdict(
             "check-turn", clean,
             "" if clean else
@@ -144,7 +233,8 @@ class MockGame:
         conduct = Verdict("check-conduct", True, "")
         gate = GateResult(narrative, conduct, player_msg, canon_sections=9)
         draft = ("(pre-correction draft) " + narration) if corrected else narration
-        return TurnResult(player_msg, draft, narration, gate, corrected, session_complete)
+        return TurnResult(player_msg, draft, narration, gate, corrected, session_complete,
+                          combat_started=combat_started)
 
 
 class MockSetup:

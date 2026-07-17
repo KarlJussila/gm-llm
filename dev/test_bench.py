@@ -16,7 +16,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
+import copy  # noqa: E402
+
 from gm_llm.bench import runner  # noqa: E402
+from gm_llm.orchestrator.combat import CombatState  # noqa: E402
 from gm_llm.orchestrator.gate import GateResult, Verdict  # noqa: E402
 
 
@@ -80,6 +83,118 @@ class FakeGate:
         return GateResult(Verdict("check-turn", True, ""),
                           Verdict("check-conduct", True, ""),
                           player_msg, canon_sections=7)
+
+
+class CombatFakeBackend:
+    """A play backend that also drives a scripted COMBAT episode through run_once: its
+    dm-runner beats mutate the tracker state file the way the real plugin's tool calls
+    would, so the bench's combat handoff (`_play_combat`) runs end to end. The turn pointer
+    in the state file disambiguates a PC-slot draft (`combat_player_action`) from an NPC
+    beat (`combat_step`) — the same signal the real Game reads.
+
+    `end_after` ends the fight (an NPC beat calls `end_encounter`) once that many PC slots
+    have been played; None never ends it (to exercise a cap breach mid-fight)."""
+
+    def __init__(self, directory, *, end_after=1):
+        self.directory = str(directory)
+        self.base = "http://fake"
+        self.started = self.stopped = 0
+        self.on_retry = None
+        self._st = CombatState(directory)
+        self._calls = 0
+        self._end_after = end_after
+        self._pc_slots = 0
+
+    def start(self):
+        self.started += 1
+        return self
+
+    def stop(self):
+        self.stopped += 1
+
+    def create_session(self, title=None):
+        return f"sid-{title}"
+
+    def prompt(self, sid, agent, message, whole=False):
+        return "I strike the nearest foe and hold my ground."
+
+    def context_usage(self, sid):
+        class CU:
+            tokens, context_limit, threshold = 1000, 100_000, 80_000
+        return CU()
+
+    def ensure_tool(self, sid, agent, reply, **kw):
+        return reply
+
+    def _seed(self):
+        frame = {
+            "turn": "pc", "round": 1,
+            "combatants": {
+                "pc": {"id": "pc", "name": "PC", "hp": 30, "hp_max": 30, "dead": False,
+                       "conditions": [], "reaction": True, "x": 0, "y": 0, "z": 0},
+                "goblin-1": {"id": "goblin-1", "name": "goblin", "hp": 12, "hp_max": 12,
+                             "dead": False, "conditions": [], "reaction": True,
+                             "x": 15, "y": 0, "z": 0},
+            },
+            "initiative": ["pc", "goblin-1"], "timers": [],
+        }
+        self._st.save({"encounter": "ambush", "next_timer_id": 1,
+                       "committed": copy.deepcopy(frame), "pending": copy.deepcopy(frame)})
+
+    def _act(self, target, amount):
+        s = self._st.load()
+        c = s["pending"]["combatants"][target]
+        c["hp"] = max(0, c["hp"] - amount)
+        init = s["pending"]["initiative"]
+        ni = (init.index(s["pending"]["turn"]) + 1) % len(init)
+        if ni == 0:
+            s["pending"]["round"] += 1
+        s["pending"]["turn"] = init[ni]
+        # A confirmed turn commits; the bench auto-confirms every NPC beat, and the PC beat
+        # commits directly — so harden immediately, keeping committed == pending between beats.
+        s["committed"] = copy.deepcopy(s["pending"])
+        self._st.save(s)
+
+    def prompt_full(self, sid, agent, message, whole=False):
+        if whole:  # the handoff call
+            return _Reply("notes", tools={"task_complete"},
+                          tool_inputs={"task_complete": {"notes": "handoff notes"}})
+        self._calls += 1
+        if self._calls == 1:  # the opening scene
+            return _Reply("The tavern is warm and loud.")
+        if not self._st.exists():
+            if self._calls == 2:  # first turn: a fight breaks out
+                self._seed()
+                return _Reply("Steel rings free — roll initiative!", tools={"start_encounter"})
+            # a post-combat turn: wrap the session
+            return _Reply("You bind your wounds and rest.", tools={"task_complete"},
+                          tool_inputs={"task_complete": {"notes": "n"}})
+        # In combat: the turn pointer says whose beat this is.
+        if self._st.turn == "pc":
+            self._pc_slots += 1
+            self._act("goblin-1", 5)
+            return _Reply(f"You strike (slot {self._pc_slots}).",
+                          tools={"damage", "advance_turn"})
+        if self._end_after is not None and self._pc_slots >= self._end_after:
+            self._st.delete()
+            return _Reply("The foe breaks and flees into the night.", tools={"end_encounter"})
+        self._act("pc", 3)
+        return _Reply("The goblin lunges at you.", tools={"damage", "advance_turn"})
+
+
+def _combat_fakes(*, end_after=1, reconcile_calls=None):
+    def backend_factory(directory, **kw):
+        return CombatFakeBackend(directory, end_after=end_after)
+
+    def gate_factory(backend, directory, logs):
+        return FakeGate()
+
+    def reconcile_fn(backend, gate, logs, n):
+        if reconcile_calls is not None:
+            reconcile_calls.append(n)
+
+    return dict(backend_factory=backend_factory, gate_factory=gate_factory,
+                reconcile_fn=reconcile_fn, note=lambda m: None)
 
 
 AGENTS = {
@@ -218,6 +333,43 @@ def test_cap_breach_skips_reconcile(tmp):
     assert len(manifest) == 1 and manifest[0]["outcome"] == "cap"
 
 
+def test_combat_natural_close(tmp):
+    """A fight breaks out on turn 1, runs through the CombatDriver, and the session then
+    wraps — proving the bench loop enters combat, exits it, and resumes normal play. The
+    combat PC slot counts against the cap (turns: 1 entry + 1 PC slot + 1 wrap turn = 3)."""
+    template = _make_template(tmp / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    run_dir = tmp / "run"
+    runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test")
+
+    reconciled = []
+    rec = runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=30,
+                          **_combat_fakes(end_after=1, reconcile_calls=reconciled))
+    assert rec["outcome"] == "complete", rec
+    assert rec["turns"] == 3, f"1 entry + 1 combat PC slot + 1 wrap turn — got {rec['turns']}"
+    assert reconciled == [1], f"reconcile ran for session 1 — got {reconciled}"
+    assert not any(e["event"] == "cap" for e in _archive_events(run_dir)), "no cap breach"
+
+
+def test_combat_cap_breach(tmp):
+    """A fight that never ends must not make a run uncappable: each PC slot burns a turn,
+    the hard cap trips, and the run is a cap breach (reconcile skipped, `cap` event
+    stamped) — the same safety net as a non-combat run that never wraps."""
+    template = _make_template(tmp / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    run_dir = tmp / "run"
+    runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test")
+
+    reconciled = []
+    rec = runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=3,
+                          **_combat_fakes(end_after=None, reconcile_calls=reconciled))
+    assert rec["outcome"] == "cap", rec
+    assert rec["turns"] == 3, f"the fight ran into the cap — got {rec['turns']}"
+    assert reconciled == [], "reconcile must be skipped on a cap breach mid-combat"
+    cap = [e for e in _archive_events(run_dir) if e["event"] == "cap"]
+    assert cap and cap[0]["turn"] == 3, f"cap event with the turn number — got {cap}"
+
+
 def test_failed_run_survives_batch(tmp):
     from gm_llm.orchestrator import BackendError
     out = tmp / "out"
@@ -251,7 +403,8 @@ def test_failed_run_survives_batch(tmp):
 
 def main():
     tests = (test_assemble_run, test_conditions_event, test_natural_close,
-             test_cap_breach_skips_reconcile, test_failed_run_survives_batch)
+             test_cap_breach_skips_reconcile, test_combat_natural_close,
+             test_combat_cap_breach, test_failed_run_survives_batch)
     failures = 0
     for test in tests:
         with tempfile.TemporaryDirectory() as td:

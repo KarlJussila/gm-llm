@@ -16,6 +16,24 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   invented facts). One home (`orchestrator/prompts/player-reminder.md` + `prompts.player_turn`),
   used by both `dev/cli.py play` and the bench runner. Counters the observed long-session drift:
   echo spirals, world-narration, and perception loops.
+- **Combat driver** — `CombatDriver` (in `orchestrator/combat.py`): the combat *sequencing
+  policy* in the library, once. It pumps the initiative loop (NPC beats confirmed each; stops at
+  the PC's slot or the fight's end), threads interjections (a PC reaction returned from its
+  `on_beat` render hook → rollback + replay + re-present) and cancels, and drives a resume
+  straight into a live fight. All three interfaces now enter combat on `start_encounter` and stay
+  mechanical (render a beat, get input, call the next method): the **TUI** (an initiative mode
+  that streams NPC beats, solicits the PC's slot, and takes Enter-to-confirm / type-to-interject),
+  **`dev/cli.py play`**, and the **bench runner** (each PC slot counts as one turn against the cap,
+  so a fight can't make a run uncappable). Fixes the C0–C5 gap where a live `start_encounter`
+  degraded to free-prose combat in every interface. The offline `MockGame`/`MockLifecycle` gained
+  a scripted combat episode so the TUI demos a fight without a backend.
+- **Player combat brief** — `player-combat-reminder` + `prompts.player_combat_turn`, the combat
+  mirror of `player-reminder`/`player_turn`: declare ONE slot action with its target and any
+  movement, roll only when asked (report the total, nothing else), deferring to the normal turn's
+  hard rules. Used by the autoplay loops on a PC combat slot.
+- Tests: `dev/test_combat_driver.py` (pump, PC slot, interject, cancel, resume) and combat-episode
+  cases in `dev/test_bench.py` (enter/exit combat, turn-cap math).
+
 ### Changed
 - `dev/cli.py play` needs no hand-holding: it auto-resumes an in-progress session (`--fresh` is
   now the only way to overwrite a transcript), auto-discovers a `*.player.md` packet at the
