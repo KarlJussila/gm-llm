@@ -352,12 +352,13 @@ PC-rescue reflex (principle 8).
   coordinate is ever surfaced (exposing coords would push geometry onto the weak model — the exact
   thing principle 2 offloads). **One input shape per tool, no id-or-point overloading:** `burst`'s
   center is a placed point (`distance`/`direction`/`radius`, `distance 0` = on the PC), so nobody is
-  exempt; **`cone`/`line` emanate from the combatant whose turn it is** (origin read off the turn
-  pointer — no id arg) and never catch the caster. Pure reads: the model then applies `damage` per
-  hit. Built as `burst`/`cone`/`line` since this is an open, improvised system where any fight can
-  summon a breath weapon or lightning line. Verified in `test/combat-tracker.test.ts`. *(Cube/cylinder
-  fold onto `burst`; an off-turn AoE from a non-current combatant — vanishingly rare — is the one case
-  the implicit origin doesn't cover, deferred until it bites.)*
+  exempt; **`cone`/`line` emanate from an explicit `origin` combatant id — any combatant, whether or
+  not it is their turn** (a readied breath weapon, an off-turn effect, any caster) — and never catch
+  the origin. A combatant-id origin is a single clean arg, not the id-or-point overloading we rule out.
+  Pure reads: the model then applies `damage` per hit. Built as `burst`/`cone`/`line` since this is an
+  open, improvised system where any fight can summon a breath weapon or lightning line — and where a
+  mechanic that *can* arise *will*. Cube/cylinder fold onto `burst`. Verified in
+  `test/combat-tracker.test.ts`.
 - **Reaching back past a confirmed combatant.** By design, confirming combatant A closes A's reaction
   window, so a reaction referencing an already-committed combatant is handled going forward, not
   retconned. Confirm-as-consent is what makes granular commit sound; flagged as a deliberate scope

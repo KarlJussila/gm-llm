@@ -313,19 +313,19 @@ export function burst(
 }
 
 /**
- * cone(...): everyone in a cone spreading from the combatant whose turn it is, `length` ft toward
- * `direction`. The caster (the origin) is never caught. 5e cone geometry: a target is in if its bearing
- * from the origin is within the cone's half-angle of `direction` and it is within `length`.
+ * cone(...): everyone in a cone spreading from `origin` (any combatant — the caster — whether or not
+ * it is their turn), `length` ft toward `direction`. The origin is never caught. 5e cone geometry: a
+ * target is in if its bearing from the origin is within the cone's half-angle of `direction` and it is
+ * within `length`.
  */
-export function cone(state: TrackerState, direction: string, length: number): Combatant[] {
-  const frame = state.pending
-  const origin = requireCombatant(state, frame.turn)
+export function cone(state: TrackerState, origin: string, direction: string, length: number): Combatant[] {
+  const src = requireCombatant(state, origin)
   const [ax, ay] = DIRECTIONS[normalizeDirection(direction)]
   const alen = Math.hypot(ax, ay)
-  return livingCombatants(frame).filter((c) => {
-    if (c.id === origin.id) return false
-    const vx = c.x - origin.x
-    const vy = c.y - origin.y
+  return livingCombatants(state.pending).filter((c) => {
+    if (c.id === src.id) return false
+    const vx = c.x - src.x
+    const vy = c.y - src.y
     const d = Math.hypot(vx, vy)
     if (d === 0 || d > length) return false
     const angle = Math.acos(Math.max(-1, Math.min(1, (vx * ax + vy * ay) / (d * alen))))
@@ -334,22 +334,28 @@ export function cone(state: TrackerState, direction: string, length: number): Co
 }
 
 /**
- * line(...): everyone in a line from the combatant whose turn it is, `length` ft toward `direction`,
- * `width` ft wide (default 5). The caster (the origin) is never caught. A target is in if its projection
- * onto the axis falls within [0, length] and its perpendicular offset is within half the width.
+ * line(...): everyone in a line from `origin` (any combatant — the caster — whether or not it is their
+ * turn), `length` ft toward `direction`, `width` ft wide (default 5). The origin is never caught. A
+ * target is in if its projection onto the axis falls within [0, length] and its perpendicular offset is
+ * within half the width.
  */
-export function line(state: TrackerState, direction: string, length: number, width = 5): Combatant[] {
-  const frame = state.pending
-  const origin = requireCombatant(state, frame.turn)
+export function line(
+  state: TrackerState,
+  origin: string,
+  direction: string,
+  length: number,
+  width = 5,
+): Combatant[] {
+  const src = requireCombatant(state, origin)
   const [ax, ay] = DIRECTIONS[normalizeDirection(direction)]
   const alen = Math.hypot(ax, ay)
   const nx = ax / alen
   const ny = ay / alen
   const half = width / 2
-  return livingCombatants(frame).filter((c) => {
-    if (c.id === origin.id) return false
-    const vx = c.x - origin.x
-    const vy = c.y - origin.y
+  return livingCombatants(state.pending).filter((c) => {
+    if (c.id === src.id) return false
+    const vx = c.x - src.x
+    const vy = c.y - src.y
     const axial = vx * nx + vy * ny
     if (axial < 0 || axial > length) return false
     return Math.abs(vx * -ny + vy * nx) <= half + 1e-9

@@ -425,17 +425,18 @@ export const CombatTrackerPlugin: Plugin = async () => {
 
       cone: tool({
         description:
-          "Which combatants a cone catches (a breath weapon, burning hands). It spreads from the " +
-          "combatant whose turn it is, `length` ft toward `direction`. The caster is never caught. " +
-          "A read — then apply damage to each with `damage`.",
+          "Which combatants a cone catches (a breath weapon, burning hands). It spreads from `origin` " +
+          "(the caster — any combatant, whether or not it is their turn), `length` ft toward " +
+          "`direction`. The origin is never caught. A read — then apply damage to each with `damage`.",
         args: {
+          origin: tool.schema.string().describe("The combatant the cone spreads from (the caster's id)."),
           direction: tool.schema.string().describe("Bearing the cone points (n/ne/e/se/s/sw/w/nw)."),
           length: tool.schema.number().describe("How far the cone reaches, in feet."),
         },
         async execute(args, ctx) {
           try {
             const state = await loadState(ctx.directory)
-            return formatCaught(state, cone(state, args.direction, args.length))
+            return formatCaught(state, cone(state, args.origin, args.direction, args.length))
           } catch (e: any) {
             return `Error: ${e.message}`
           }
@@ -444,10 +445,11 @@ export const CombatTrackerPlugin: Plugin = async () => {
 
       line: tool({
         description:
-          "Which combatants a line catches (a lightning bolt). It runs from the combatant whose turn " +
-          "it is, `length` ft toward `direction`, `width` ft wide (default 5). The caster is never " +
-          "caught. A read — then apply damage to each with `damage`.",
+          "Which combatants a line catches (a lightning bolt). It runs from `origin` (the caster — any " +
+          "combatant, whether or not it is their turn), `length` ft toward `direction`, `width` ft " +
+          "wide (default 5). The origin is never caught. A read — then apply damage to each with `damage`.",
         args: {
+          origin: tool.schema.string().describe("The combatant the line runs from (the caster's id)."),
           direction: tool.schema.string().describe("Bearing the line runs (n/ne/e/se/s/sw/w/nw)."),
           length: tool.schema.number().describe("How far the line reaches, in feet."),
           width: tool.schema.number().optional().describe("Width of the line in feet; defaults to 5."),
@@ -455,7 +457,7 @@ export const CombatTrackerPlugin: Plugin = async () => {
         async execute(args, ctx) {
           try {
             const state = await loadState(ctx.directory)
-            return formatCaught(state, line(state, args.direction, args.length, args.width))
+            return formatCaught(state, line(state, args.origin, args.direction, args.length, args.width))
           } catch (e: any) {
             return `Error: ${e.message}`
           }

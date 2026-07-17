@@ -387,30 +387,33 @@ describe("burst", () => {
 })
 
 describe("cone", () => {
-  it("spreads from the acting combatant within its half-angle, excluding the caster", () => {
-    const s = aoeBoard() // pc's turn: origin is the PC
-    // Eastward cone reaches the two due-east foes; the northern and NE ones are outside the spread.
-    expect(ids(cone(s, "e", 60))).toEqual(["a", "c"])
-    expect(ids(cone(s, "e", 30))).toEqual(["a"]) // length bounds out the 60-ft `c`
+  it("spreads from the given origin within its half-angle, excluding the caster", () => {
+    const s = aoeBoard()
+    // From the PC, eastward: reaches the two due-east foes; the northern and NE ones are outside.
+    expect(ids(cone(s, "pc", "e", 60))).toEqual(["a", "c"])
+    expect(ids(cone(s, "pc", "e", 30))).toEqual(["a"]) // length bounds out the 60-ft `c`
   })
 
-  it("originates from whoever's turn it is", () => {
-    const s = aoeBoard()
-    s.pending.turn = "a" // `a` at (30,0) breathes east toward `c` (60,0)
-    expect(ids(cone(s, "e", 40))).toEqual(["c"]) // reaches c, not the PC behind it, never the caster
+  it("originates from ANY combatant, not just whoever's turn it is", () => {
+    const s = aoeBoard() // still the PC's turn — but an off-turn combatant can be the origin
+    // `a` at (30,0) breathes east toward `c` (60,0): reaches c, not the PC behind it, never the caster.
+    expect(ids(cone(s, "a", "e", 40))).toEqual(["c"])
+    expect(s.pending.turn).toBe("pc") // origin is independent of the turn pointer
   })
 })
 
 describe("line", () => {
   it("catches combatants along the axis within half-width, excluding the caster", () => {
-    const s = aoeBoard() // pc's turn
-    expect(ids(line(s, "e", 60))).toEqual(["a", "c"]) // due-east foes; `b`/`d` are off-axis
-    expect(ids(line(s, "e", 30))).toEqual(["a"]) // length bounds out `c`
+    const s = aoeBoard()
+    expect(ids(line(s, "pc", "e", 60))).toEqual(["a", "c"]) // due-east foes; `b`/`d` are off-axis
+    expect(ids(line(s, "pc", "e", 30))).toEqual(["a"]) // length bounds out `c`
   })
 
-  it("widens to catch off-axis combatants", () => {
+  it("originates from any combatant and widens to catch off-axis targets", () => {
     const s = aoeBoard()
-    expect(ids(line(s, "e", 60, 70))).toEqual(["a", "b", "c", "d"]) // 35 ft half-width reaches N/NE
+    expect(ids(line(s, "pc", "e", 60, 70))).toEqual(["a", "b", "c", "d"]) // 35 ft half-width reaches N/NE
+    // From `b` at (0,30) running south, 5 ft wide: down the y-axis through the PC, missing E-side foes.
+    expect(ids(line(s, "b", "s", 60))).toEqual(["pc"])
   })
 })
 
@@ -418,7 +421,7 @@ describe("formatCaught", () => {
   it("renders egocentric lines, and a clear miss", () => {
     const s = aoeBoard()
     expect(formatCaught(s, burst(s, { distance: 0, radius: 5 }))).toBe("pc (you)")
-    expect(formatCaught(s, cone(s, "s", 30))).toBe("No combatants caught.")
+    expect(formatCaught(s, cone(s, "pc", "s", 30))).toBe("No combatants caught.")
     expect(formatCaught(s, burst(s, { distance: 30, direction: "e", radius: 5 }))).toBe("a: 30 ft e")
   })
 })
