@@ -9,6 +9,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-17
+
+Benchmark harness — gm-llm doubles as a tiered scaffolding benchmark (design in `BENCHMARK.md`):
+fixture runner, grader, report, and golden-stream regression armor (B1/B2/B4).
+
 ### Added
 - `CHANGELOG.md` (this file).
 - **Benchmark runner (B1)** — `bench run` (dev-only, under `gm_llm/bench/`, wheel-excluded like
