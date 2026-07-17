@@ -32,7 +32,8 @@ class _Reply:
 
 class FakeBackend:
     """Just enough surface for Game/Planner: scripted draft replies, a scripted
-    correction, and a context-usage stub."""
+    correction, and a context-usage stub. A draft item may be a plain string (text only)
+    or a `_Reply` (to carry tool calls, e.g. task_complete)."""
 
     def __init__(self, directory, drafts):
         self.directory = str(directory)
@@ -44,11 +45,27 @@ class FakeBackend:
 
     def prompt_full(self, sid, agent, message, whole=False):
         self.prompts.append((agent, message))
-        return _Reply(self.drafts.pop(0))
+        item = self.drafts.pop(0)
+        return item if isinstance(item, _Reply) else _Reply(item)
 
     def prompt(self, sid, agent, message, whole=False):
         self.prompts.append((agent, message))
         return "corrected narration"
+
+    def ensure_tool(self, sid, agent, reply, *, tool, nudge, args=(), tries=1, whole=False):
+        # Same logic as the real Backend.ensure_tool: no-op if the tool call is present,
+        # else send the nudge and re-read, up to `tries` times.
+        def satisfied(r):
+            if tool not in r.tools:
+                return False
+            inp = r.tool_inputs.get(tool) or {}
+            return all(str(inp.get(a, "")).strip() for a in args)
+
+        for _ in range(tries):
+            if satisfied(reply):
+                break
+            reply = self.prompt_full(sid, agent, nudge, whole=whole)
+        return reply
 
     def context_usage(self, sid):
         class CU:
@@ -145,9 +162,61 @@ def test_planner_stage_event(tmp):
     assert stage["draft"] == "# Session 2 plan\n"  # the plan as gated, pre-correction
 
 
+def test_close_nudge(tmp):
+    """A draft that ends the session in PROSE (a 'Session complete.' trailer) but skips
+    task_complete gets one bounded nudge; when the call lands, the turn is session_complete
+    and the archive turn event records `close_nudged`."""
+    logs = Logs.under(base=tmp / "logs")
+    backend = FakeBackend(tmp, drafts=[
+        "The inn is warm.",                                          # opening
+        _Reply("You slip out into the night.\n\n---\n*Session complete.*"),  # prose close, no tool
+        _Reply("", tools=("task_complete",),                        # the nudge lands the call
+               tool_inputs={"task_complete": {}}),
+    ])
+    gate = FakeGate([
+        _gate_result("Let's begin the session.", clean=True),
+        _gate_result("I head out for the night.", clean=True),
+    ])
+    game = Game(backend, gate, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
+    game.start()
+    tr = game.turn("I head out for the night.")
+
+    assert tr.close_nudged, "the prose-ending draft triggered a close nudge"
+    assert tr.session_complete, "the nudge landed task_complete — the session is complete"
+    assert tr.final == "You slip out into the night.\n\n---\n*Session complete.*", \
+        "the original narration reaches the player, not the nudge reply"
+
+    turn = _read_events(logs.archive.path)[-1]
+    assert turn["event"] == "turn"
+    assert turn["close_nudged"] is True and turn["session_complete"] is True
+
+
+def test_no_nudge_on_ordinary_prose(tmp):
+    """An ordinary narration (no bare end-of-session trailer) never triggers the nudge —
+    if it did, the backend would be asked for a third reply and raise (only two scripted)."""
+    logs = Logs.under(base=tmp / "logs")
+    backend = FakeBackend(tmp, drafts=[
+        "The inn is warm.",                                    # opening
+        _Reply("Magren pours a drink and the session goes on, the night still young."),
+    ])
+    gate = FakeGate([
+        _gate_result("Let's begin the session.", clean=True),
+        _gate_result("I greet the barkeep.", clean=True),
+    ])
+    game = Game(backend, gate, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
+    game.start()
+    tr = game.turn("I greet the barkeep.")
+
+    assert not tr.close_nudged, "ordinary prose must not trigger the close nudge"
+    assert not tr.session_complete
+    assert not backend.drafts, "exactly the two scripted replies were consumed (no nudge)"
+    assert _read_events(logs.archive.path)[-1]["close_nudged"] is False
+
+
 def main():
     failures = 0
-    for test in (test_archive_lazy_header, test_game_turn_events, test_planner_stage_event):
+    for test in (test_archive_lazy_header, test_game_turn_events, test_planner_stage_event,
+                 test_close_nudge, test_no_nudge_on_ordinary_prose):
         with tempfile.TemporaryDirectory() as td:
             try:
                 test(Path(td))
@@ -155,7 +224,8 @@ def main():
             except AssertionError as e:
                 failures += 1
                 print(f"  ✗ {test.__name__}: {e}")
-    print(f"\n{'FAIL' if failures else 'OK'} — {3 - failures}/3 passed")
+    total = 5
+    print(f"\n{'FAIL' if failures else 'OK'} — {total - failures}/{total} passed")
     sys.exit(1 if failures else 0)
 
 

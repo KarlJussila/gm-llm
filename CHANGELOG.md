@@ -31,8 +31,17 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   mirror of `player-reminder`/`player_turn`: declare ONE slot action with its target and any
   movement, roll only when asked (report the total, nothing else), deferring to the normal turn's
   hard rules. Used by the autoplay loops on a PC combat slot.
-- Tests: `dev/test_combat_driver.py` (pump, PC slot, interject, cancel, resume) and combat-episode
-  cases in `dev/test_bench.py` (enter/exit combat, turn-cap math).
+- **Session-end recovery** — a conservative close-marker nudge in `loop.py`: when a non-opening
+  draft ends the session in *prose* (a bare "session complete / ends here" trailer) but never
+  calls `task_complete`, the orchestrator sends ONE bounded follow-up asking for the call. If it
+  lands, the turn is `session_complete`; if not, play continues unchanged (the match is tight
+  enough never to fire on ordinary narration). The recovery is recorded on the archive turn event
+  (`close_nudged`). `turn-reminder` step 5 now states outright that a session ends only via
+  `task_complete`, not narration. Fixes a live failure where the runner wrote `--- *Session
+  complete.*` three times and the session never closed.
+- Tests: `dev/test_combat_driver.py` (pump, PC slot, interject, cancel, resume), combat-episode
+  cases in `dev/test_bench.py` (enter/exit combat, turn-cap math), and close-nudge cases in
+  `dev/test_archive.py`.
 
 ### Changed
 - `dev/cli.py play` needs no hand-holding: it auto-resumes an in-progress session (`--fresh` is
@@ -40,6 +49,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   project root, stops when the runner ends the session (capturing the handoff notes and pointing
   at reconcile), refuses to play a session already marked complete, and treats `--turns`
   (default 30, up from 6) as a cap rather than a fixed count.
+- Golden prompt stream (`dev/golden/stream.jsonl`) re-recorded for the `turn-reminder` step-5
+  clause; the only byte change vs. the prior recording is that clause.
 
 ## [0.4.0] — 2026-07-17
 

@@ -50,6 +50,37 @@ _NUDGE_NOTES = (
     "captured. Call `task_complete` now with the complete notes in `notes`."
 )
 
+# Safety-hatch nudge: sent when a draft ends the session in *prose* (a "session complete"
+# trailer) but never calls `task_complete` — the only signal that actually closes a
+# session. One bounded follow-up (fail-safe: if it doesn't land, play continues unchanged).
+_NUDGE_CLOSE = (
+    "You wrote an ending but didn't signal it — an ending in narration closes nothing. "
+    "If the session is over, call `task_complete` now; if it isn't, keep playing."
+)
+
+# A bare end-of-session trailer: a line whose ONLY content is a "session complete/ends
+# here" marker, optionally wrapped in markdown emphasis or a horizontal rule. Matched
+# against the narration's last non-empty line, so it can't fire on ordinary prose (which
+# always carries real sentence content past the marker). Tuned to the observed failure —
+# a trailing `---` then `*Session complete.*`.
+_CLOSE_MARKER = re.compile(
+    r"^[\s>#*_~`-]*"
+    r"(?:the\s+)?(?:end\s+of\s+(?:the\s+)?session"
+    r"|session\s+(?:complete|over|ends?(?:\s+here)?)"
+    r"|end\s+of\s+session)"
+    r"[\s>#*_~`.!—-]*$",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_close(text: str) -> bool:
+    """Conservative close-marker detector: True only when the narration's TAIL is a bare
+    end-of-session trailer (its last non-empty line is nothing but a 'session complete /
+    ends here' marker). Ordinary narration never matches — its final line carries real
+    content, not a standalone marker."""
+    lines = [ln.strip() for ln in text.strip().splitlines() if ln.strip()]
+    return bool(lines) and _CLOSE_MARKER.match(lines[-1]) is not None
+
 # How many turns of wrap-nudge the runner gets once its session reaches opencode's
 # compaction threshold (see `Game._update_wrap_countdown`). The reserve between that
 # threshold and the model's hard context limit is many turns of headroom at the observed
@@ -66,6 +97,7 @@ class TurnResult:
     corrected: bool
     session_complete: bool = False  # the runner signalled the session's end via task_complete
     combat_started: bool = False    # the runner called start_encounter this turn — enter combat mode
+    close_nudged: bool = False      # the draft ended in prose; a close nudge was dispatched
 
 
 class Game(CombatMixin):
@@ -261,6 +293,18 @@ class Game(CombatMixin):
         # The runner ends a session by calling `task_complete` as its final act (after its
         # closing beats). We read that off the draft's tool calls — never the opening, which
         # is a scene-set, not an ending.
+        #
+        # Recovery for a draft that ends the session in *prose* (a "session complete"
+        # trailer) but forgot the call: one bounded nudge to make it. Fail-safe — if the
+        # tool still doesn't land, `session_complete` stays False and play continues
+        # unchanged; the marker match is conservative enough never to fire on ordinary
+        # narration. `draft` keeps the ORIGINAL narration (gated and shown); the nudge's
+        # reply only supplies the missing tool call, not new prose.
+        close_nudged = False
+        if not opening and "task_complete" not in reply.tools and _looks_like_close(draft):
+            reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
+                                             tool="task_complete", nudge=_NUDGE_CLOSE)
+            close_nudged = True
         session_complete = (not opening) and ("task_complete" in reply.tools)
         if session_complete:
             # A disk fact, not just this TurnResult — so a wrap the player never
@@ -273,7 +317,8 @@ class Game(CombatMixin):
         # this (player-driven) turn returns; end_encounter flips it back.
         self._combat_observe(reply)
         tr = TurnResult(player_msg, draft, final, result, corrected, session_complete,
-                        combat_started=("start_encounter" in reply.tools))
+                        combat_started=("start_encounter" in reply.tools),
+                        close_nudged=close_nudged)
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
         cu = self.backend.context_usage(self.runner_sid)  # one read, shared: countdown + archive
         self._update_wrap_countdown(session_complete, cu)
@@ -429,6 +474,7 @@ class Game(CombatMixin):
             "turn", session=self.session, turn=self._turn_no, opening=opening,
             player=tr.player_input, draft=tr.draft, final=tr.final,
             corrected=tr.corrected, session_complete=tr.session_complete,
+            close_nudged=tr.close_nudged,
             verdicts=[verdict_fields(g.narrative), verdict_fields(g.conduct)],
             canon_sections=g.canon_sections,
             context=({"tokens": cu.tokens, "limit": cu.context_limit,
