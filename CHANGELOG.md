@@ -24,6 +24,30 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   re-frozen from steady-state canon before the B3 baseline.
 - `dev/test_bench.py` — standalone checks for run-dir assembly, the conditions event, natural close,
   cap breach, and batch resilience (all over fakes; no network/npm/opencode).
+- **Benchmark grader + report (B2)** — `bench grade` and `bench report` (dev-only, under
+  `gm_llm/bench/`). `bench grade` scores every violation the in-loop checker flagged in a batch's
+  archives: it assembles a minimal throwaway grading workspace (`<out>/grade-ws/` — the pinned
+  `grader` agent + a bench-only `submit_grade` plugin), boots one backend over it, and grades each
+  finding in its own session against the versioned severity/category rubric (`rubric-v1.md`,
+  embedded verbatim in each brief). Grades are delivered as structured `submit_grade` tool calls —
+  never parsed from prose; a grader that won't call the tool after one nudge is recorded `ungraded`.
+  Output is `grades-<run_id>-v1.jsonl` beside each archive (header + one line per finding: severity,
+  category, rationale, `duplicate_of`), idempotent per rubric+model unless `--force`. `--model`
+  overrides the pinned grader for a V2 re-grade (grades are derived data); a short window of
+  already-graded findings rides in each brief so a violation persisting across consecutive turns is
+  marked `duplicate_of` and doesn't multiply the score; `--double [--sample N]` re-grades a sample in
+  independent sessions and reports severity/category agreement. `bench report` (no model calls)
+  aggregates archives + grades into a per-run and per-batch summary — violation counts by severity
+  (raw + dedup'd), correction rate, the prominent defaulted-verdict rate, ungraded count,
+  turns-to-wrap, session-close outcomes, stage gates, context growth — as distributions
+  (min/median/max), and flags a batch that mixes conditions loudly at the top. `--json` for machine
+  output. Grader assets live under `gm_llm/bench/assets/` (instrument, not product — never shipped in
+  the wheel).
+- `dev/test_grade.py` — standalone checks for brief construction, finding extraction, the grades-file
+  shape + idempotence, the ungraded-after-nudge path, dedup via `duplicate_of`, `--double` agreement
+  math, and report aggregation incl. the mixed-conditions warning (all over a fake grader backend;
+  no network/npm/opencode).
+
 ### Changed
 - Version is single-sourced from `gm_llm/__init__.py` `__version__`; `pyproject.toml` reads it
   dynamically, so the CLI, `gm-llm update`, and package metadata can no longer drift.

@@ -3,17 +3,19 @@ The `bench` CLI seam — mounted onto `dev/cli.py`'s subparsers.
 
 `dev/cli.py` calls `add_bench_parser(sub, common)` to graft the `bench` command (and its
 sub-subcommands) onto the dev control CLI, passing its shared `common` parent so the
-backend flags (`--port/--min-gap/--stream/--turn-timeout`) apply to `bench run`.
-`bench run` plays a fixture into archives (B1); `bench grade` and `bench report` follow
-in B2.
+backend flags (`--port/--min-gap/--stream/--turn-timeout`) apply to `bench run` and
+`bench grade`. `bench run` plays a fixture into archives (B1); `bench grade` scores the
+flagged violations in a batch's archives with the pinned grader model (B2); `bench report`
+aggregates archives + grades into a summary with no model calls (B2).
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
-from . import runner
+from . import grade, runner, scoring
 
 # The fixtures live under dev/, resolved from this file's location so the default holds
 # regardless of the invoker's cwd (bench/cli.py → gm_llm → repo root).
@@ -47,6 +49,28 @@ def add_bench_parser(subparsers, common) -> None:
     run.add_argument("--kickoff", default="Let's begin the session.")
     run.set_defaults(func=cmd_bench_run)
 
+    grade_p = bsub.add_parser("grade", parents=[common],
+                              help="grade the flagged violations in a batch's archives (B2)")
+    grade_p.add_argument("--out", default="bench-out",
+                         help="batch dir to grade (holds batch.jsonl + run dirs; default: bench-out)")
+    grade_p.add_argument("--model", default=None,
+                         help="override the pinned grader model (a V2 re-grade — grades are derived data)")
+    grade_p.add_argument("--force", action="store_true",
+                         help="re-grade runs already graded at this rubric+model")
+    grade_p.add_argument("--double", action="store_true",
+                         help="grade a sample twice in independent sessions and report agreement")
+    grade_p.add_argument("--sample", type=int, default=None,
+                         help="with --double: findings per run to re-grade (default: all)")
+    grade_p.set_defaults(func=cmd_bench_grade)
+
+    report_p = bsub.add_parser("report",
+                               help="aggregate a batch's archives + grades into a summary (B2; no model calls)")
+    report_p.add_argument("--out", default="bench-out",
+                          help="batch dir to report on (default: bench-out)")
+    report_p.add_argument("--json", action="store_true",
+                          help="emit the machine-readable summary instead of the text report")
+    report_p.set_defaults(func=cmd_bench_report)
+
 
 def cmd_bench_run(args) -> None:
     """Translate the parsed args into a `run_batch` call. Reconcile is a long between-
@@ -66,3 +90,34 @@ def cmd_bench_run(args) -> None:
     _note(f"batch done: {done} complete · {capped} capped · {failed} failed "
           f"→ {Path(args.out) / 'batch.jsonl'}")
     sys.exit(1 if failed and not done else 0)
+
+
+def cmd_bench_grade(args) -> None:
+    """Grade every archive in `--out` with the pinned grader (`--model` overrides for a V2
+    re-grade). The grader is a between-run scoring pass, not a play turn, so the per-call
+    timeout defaults generous (600s) unless the user overrode `--turn-timeout`."""
+    timeout = args.turn_timeout or 600
+    _note(f"grading out={args.out} model={args.model or '(pinned)'} "
+          f"force={args.force} double={args.double}")
+    result = grade.grade_batch(
+        args.out, model=args.model, force=args.force, double=args.double,
+        sample=args.sample, port=args.port, min_gap=args.min_gap, turn_timeout=timeout,
+        note=_note)
+    _note(f"graded {len(result['graded'])} run(s).")
+    if result.get("double"):
+        d = result["double"]
+        if d["n"]:
+            _note(f"agreement (n={d['n']}): severity {d['severity_match']:.0%}, "
+                  f"category {d['category_match']:.0%}")
+    sys.exit(0)
+
+
+def cmd_bench_report(args) -> None:
+    """Aggregate `--out`'s archives + grades and print the report (or `--json`). No model
+    calls — pure re-derivation from the raw archive and the derived grades."""
+    batch = scoring.summarize_batch(args.out)
+    if args.json:
+        print(json.dumps(batch, ensure_ascii=False, indent=2))
+    else:
+        print(scoring.format_report(batch))
+    sys.exit(0)
