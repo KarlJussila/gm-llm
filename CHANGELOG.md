@@ -47,6 +47,15 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   shape + idempotence, the ungraded-after-nudge path, dedup via `duplicate_of`, `--double` agreement
   math, and report aggregation incl. the mixed-conditions warning (all over a fake grader backend;
   no network/npm/opencode).
+- **Golden prompt-stream test (B4)** — `dev/test_golden_stream.py` + `dev/golden/stream.jsonl`:
+  records the exact model-facing prompt stream (one `{seq, agent, kind, message}` record per
+  backend call) the orchestrator emits for a scripted setup → session-1 prep → play → handoff →
+  reconcile pass, and diffs future streams against it byte-for-byte. Drives the real
+  Setup/Planner/Game/Reconciler + real Gate + real CanonPreloader over a synthetic on-disk campaign
+  and a scripted-by-agent fake backend (so the checker-bound briefs — canon excerpts, correction
+  passes, `task_complete`/`report_findings` handling — are all in the recorded surface). Free
+  regression armor for the B5 playbook refactor. `UPDATE_GOLDEN=1 python dev/test_golden_stream.py`
+  re-records.
 
 ### Changed
 - Version is single-sourced from `gm_llm/__init__.py` `__version__`; `pyproject.toml` reads it
