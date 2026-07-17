@@ -52,5 +52,27 @@ write for it.
 - To refine prompts as bloat builds up, use the **`/refine-prompts`** skill (the git-archaeology
   method).
 
+## Versioning & releases
+
+Pre-1.0, but keep the minor/patch line meaningful:
+
+- **Minor** (`0.N.0`) — a user-facing feature set or a new mode (combat was `0.3.0`).
+- **Patch** (`0.N.M`) — a fix, a prose/prompt tweak, small infra.
+
+Rules:
+
+- **Single source of truth: `__version__` in `gm_llm/__init__.py`.** Bump it *there and nowhere else* —
+  `pyproject.toml` reads it dynamically (`[tool.setuptools.dynamic]`), and `gm-llm --version` /
+  `gm-llm update` report it, so they can't drift. (Validate a version change resolves with
+  `python -m build --sdist` if you touch the build config.)
+- **Keep `CHANGELOG.md` in step** (Keep a Changelog format). Add notes under `[Unreleased]` *as you
+  go*; on a bump, rename `[Unreleased]` → `[x.y.z] — YYYY-MM-DD` and open a fresh `[Unreleased]`.
+- **Bump when the feature set lands, not in a big-bang later.** A whole play mode once accumulated
+  across ~29 commits on one version before anyone noticed — that's the anti-pattern. If a change is
+  worth a CHANGELOG line, it's heading toward a bump; flag it.
+- **"Release" here = the bump commit** (there's no PyPI publish): campaigns pick it up via the
+  `pipx reinstall` + `gm-llm update` flow above. The bump is its own commit; tagging `vX.Y.Z` is
+  encouraged.
+
 Commit style follows the global rule (short, descriptive, no attribution trailer; commit only when
 asked).

@@ -4,7 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gm-llm"
-version = "0.3.0"
+# Single source of truth: gm_llm/__init__.py `__version__` (read statically below).
+# Bump it there only; the CLI (`gm-llm --version`), `gm-llm update`, and this package's
+# metadata all resolve from it, so they can never drift.
+dynamic = ["version"]
 description = "An LLM game master for solo, long-form D&D campaigns — over opencode."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,6 +24,9 @@ gm-llm = "gm_llm.cli:main"
 # UI (gm_llm.tui) beneath it — nothing generic lands in site-packages. dev/ is
 # developer tooling and is not shipped.
 packages = ["gm_llm", "gm_llm.orchestrator", "gm_llm.tui"]
+
+[tool.setuptools.dynamic]
+version = { attr = "gm_llm.__version__" }
 
 [tool.setuptools.package-data]
 # Runtime data loaded by path, so it must ship in the wheel: the checker/turn prompts,
