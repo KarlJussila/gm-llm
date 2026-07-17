@@ -1,0 +1,8 @@
+{
+  "id": "hollowfell",
+  "frozen": "2026-07-17",
+  "provisional": true,
+  "description": "A gm-llm init-ed campaign at 'init + session-1 plan' state (world, canon, the dallid PC, one session plan) — the committed tree of Karl's BenchmarkCampaign, no play transcript. PROVISIONAL: the benchmark-epoch fixture gets re-frozen from steady-state canon before the B3 baseline (BENCHMARK.md); do not bank a baseline against this one.",
+  "source": "~/Desktop/BenchmarkCampaign @ b41d653",
+  "character_packet": "campaign/documents/dallid-portable.md"
+}

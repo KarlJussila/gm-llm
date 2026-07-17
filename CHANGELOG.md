@@ -11,7 +11,19 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ### Added
 - `CHANGELOG.md` (this file).
-
+- **Benchmark runner (B1)** — `bench run` (dev-only, under `gm_llm/bench/`, wheel-excluded like
+  `dev/`): plays a frozen fixture campaign through the product's gated loop N times and leaves one
+  condition-stamped score archive per run. Each run assembles a throwaway project (template +
+  fixture `campaign/` + fresh git repo), emits a `conditions` archive event (fixture id/frozen,
+  tier, turn cap, reconcile flag, per-agent model+temperature) ahead of play, runs to a natural
+  `task_complete` close or a hard turn cap (cap breaches stamped and skipped past reconcile), and
+  records outcomes to `<out>/batch.jsonl`. Batches are rate-limit-resilient (a failed run is
+  recorded and the batch continues) and resumable (re-invoking the same `--out` appends).
+- **Provisional fixture** `dev/fixtures/hollowfell/` — a frozen `init + session-1 plan` campaign
+  (world, canon, the `dallid` PC) with a `fixture.json` condition stamp. Marked provisional: it is
+  re-frozen from steady-state canon before the B3 baseline.
+- `dev/test_bench.py` — standalone checks for run-dir assembly, the conditions event, natural close,
+  cap breach, and batch resilience (all over fakes; no network/npm/opencode).
 ### Changed
 - Version is single-sourced from `gm_llm/__init__.py` `__version__`; `pyproject.toml` reads it
   dynamically, so the CLI, `gm-llm update`, and package metadata can no longer drift.

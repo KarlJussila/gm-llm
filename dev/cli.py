@@ -416,6 +416,9 @@ def main():
     p.add_argument("count", nargs="?", type=int, default=1, help="number of back-to-back probes")
     p.set_defaults(func=cmd_ping)
 
+    from gm_llm.bench.cli import add_bench_parser  # noqa: E402 — dev-only benchmark harness
+    add_bench_parser(sub, common)
+
     args = ap.parse_args()
     args.func(args)
 
