@@ -232,6 +232,12 @@ Author the extreme tier first — it's tiny, and it stress-tests the contract fr
   separate experiment, A/B'd against the archive to watch the defaulted-verdict rate.
 - Benchmarking the setup phase itself (fixtures sidestep it today).
 - Multiple fixtures / scenario diversity; per-scenario score normalization.
+- **Auto-runner player-digest regeneration**: after each session's reconcile, rebuild the
+  player-facing packet (the `dallid`-style digest injected into the scripted player) from the
+  updated player-known layer (`*.knowledge.md` / `*.state.md` / `*.repertoire.md`), so a
+  multi-session auto-run keeps the player's known-facts + prior-events digest current without a
+  hand-edit (done manually for the S2→S3 handoff in the fixture campaign). Generalizes to a product
+  feature — a real player wants the same "what you know / what's happened" digest.
 
 ## Measurement methodology (summary)
 
