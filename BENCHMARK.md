@@ -123,6 +123,13 @@ Promote the `dev/cli.py play` harness (the scripted `player` agent) to benchmark
   project's `campaign/` with world, canon, a character (the `dallid` packet exists),
   and a session-1 plan. Runs copy it to a temp dir; the fixture repo itself is never
   played in place.
+  - **The feedback files are part of the frozen instrument.** `check-conduct` reads
+    `campaign/feedback/session-run.md`, so whatever the fixture carries tunes what the
+    checker enforces (suppress-only since the fix — feedback can excuse a flag, never
+    raise one — but its *content still shifts the instrument*). When freezing or
+    **re-freezing from a played campaign, curate or empty the feedback files** so an
+    accumulated quirk doesn't silently bake into the rubric; any change forces a
+    re-baseline like other fixture drift.
 - `bench run`: pinned player model/temperature, pinned checker model, fixed turn
   budget, optional post-session reconcile (stage gates give post-session scores for
   free). Batch mode: N runs with rate-limit resilience (the `ping` machinery's

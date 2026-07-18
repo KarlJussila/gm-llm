@@ -14,7 +14,10 @@ are the focus. Lean on the warm context only where it sharpens a conduct call �
 leak that's also a ledger violation — otherwise stay on the conduct rails.
 
 Before checking, read `campaign/feedback/session-run.md` if it exists — accumulated player guidance
-on table conduct. Treat it as binding; it overrides the defaults below where they conflict.
+on table conduct. Use it **only to hold your fire**: where it explains or sanctions something you'd
+otherwise flag, let that pass. **Never treat it as a new rule to enforce** — guidance that the runner
+*do* something (offer X, vary Y) is craft advice for the runner, not grounds for you to flag its
+absence. Feedback can excuse a flag, never raise one.
 
 ## The checks
 

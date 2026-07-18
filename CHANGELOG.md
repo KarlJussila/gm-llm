@@ -15,6 +15,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   world fact, or un-echoed player dialogue/action — only a wholly-unacknowledged action, or narration
   that *contradicts* what the player declared. `check-turn` now distinguishes a draft *extending* the
   transcript with consistent detail (ordinary play) from *conflicting* with it (the real error).
+- **Checker feedback is suppress-only.** `check-conduct` no longer treats
+  `campaign/feedback/session-run.md` as a binding rule set — feedback can now only *excuse* a flag it
+  would otherwise raise, never create a new one. Stops soft runner-craft guidance ("offer X when
+  adrift") from silently becoming a hard checker gate, and keeps the benchmark's measurement
+  instrument from drifting as player feedback accumulates.
 
 ## [0.4.2] — 2026-07-18
 
