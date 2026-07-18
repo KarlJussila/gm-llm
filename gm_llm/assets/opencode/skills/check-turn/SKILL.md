@@ -18,7 +18,9 @@ session — you don't record it now.
 **Consistency, not obedience.** A turn that follows the player *off the plan* while staying
 consistent with established facts is fine — let it pass; the divergence is *logged*, not
 "corrected." **Played beats planned:** contradicting what's already been played (the transcript) is
-an error to flag; diverging from the arc is allowed and only recorded.
+an error to flag; diverging from the arc is allowed and only recorded. A draft that *adds* new detail
+consistent with the transcript is ordinary play — flag a **conflict** with what's been played, never
+mere addition.
 
 ## The checks
 

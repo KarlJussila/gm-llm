@@ -37,7 +37,7 @@ Flag any of:
 - **Double-volley** — demanded the PC re-verbalize or re-confirm a conclusion the player already
   gave.
 
-Two things that look like a dropped action but aren't — don't flag either:
+Things that look like a violation but aren't — don't flag any:
 - **A pending roll, not a drop.** The player often declares several things in one message, and the
   draft calls for a roll on the contested part while leaving the rest to land in the follow-up turn
   once the result is known — you're reading one turn in isolation and can't see whether the next one
@@ -48,6 +48,19 @@ Two things that look like a dropped action but aren't — don't flag either:
   kind of setup carries no stakes and nobody's waiting to hear it confirmed; only the consequential
   part (reading the scroll, the payment landing) has to actually appear. Don't flag the ambient half
   as dropped.
+- **An NPC deflecting or half-answering is the NPC's call, not a dropped beat.** A question put to an
+  NPC is answered by *that NPC's* judgment (see `social-play`) — a deflection, partial, or flat
+  non-answer is agency, not the runner dropping the player's action. Flag only when the player's
+  explicit question/action goes **wholly unacknowledged**, as if never made. A non-answer still
+  closes the loop.
+- **The player owns their character, not the world.** The decisions, words, feelings, and reactions
+  in their message are theirs — but their *description of a world fact* (a wall's texture, what a room
+  holds) is not; the runner may correct a mistaken perception. Overriding the **character's** choice
+  is a violation; overriding the **player's guess about reality** is not. (If it also contradicts the
+  transcript, that's a canon call for `check-turn`, not agency here.)
+- **Echoing isn't required — only consistency.** The draft needn't restate the player's dialogue or
+  narrate each action back; dropping the *restatement* is fine. Flag only when narration
+  **contradicts** what they declared.
 
 ### 3. Check dice & uncertainty
 Flag any of:

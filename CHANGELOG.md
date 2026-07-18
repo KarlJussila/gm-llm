@@ -9,6 +9,13 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Changed
+- **Checker false-positive narrowing.** `check-conduct`'s player-agency check no longer flags an NPC
+  deflecting or partly answering a question, the DM correcting a player's mistaken description of a
+  world fact, or un-echoed player dialogue/action — only a wholly-unacknowledged action, or narration
+  that *contradicts* what the player declared. `check-turn` now distinguishes a draft *extending* the
+  transcript with consistent detail (ordinary play) from *conflicting* with it (the real error).
+
 ## [0.4.2] — 2026-07-18
 
 ### Changed
