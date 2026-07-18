@@ -9,6 +9,15 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-07-18
+
+### Changed
+- **Post-wrap start gate** — after a session wraps (reconcile + prep the next), the TUI now stops
+  and asks `Session N+1 planned — start playing it now?` instead of auto-opening the next scene.
+  Answering N leaves N+1 prepped and unopened (start it later with ctrl+w or the esc menu), so you
+  can inspect the plan — or stop — before the opening turn is drafted, rather than having to wipe
+  an auto-generated first turn. Mirrors the existing setup→play and wrap-pending transition gates.
+
 ## [0.4.1] — 2026-07-17
 
 Combat wired into every interface (the C0–C5 engine finally has a driver), autoplayer hardening,
