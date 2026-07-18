@@ -59,18 +59,31 @@ problem, because he can't. The consortium is pressuring him for output and he's 
 
 - The deep tunnels have a magic-dead zone. Spells fail beyond the second crossing. *(known,
   firsthand)*
-- A worker named [[tarin]] disappeared last week. No body found. *(known, firsthand)*
+- The dead zone is **artificial** — the energy is being drained, not suppressed. Someone is
+  doing this to his mine. *(learned from [[dallid]] in S2, via Arcana check)*
+- A worker named [[tarin]] disappeared nine days ago. Experienced, knew the tunnels better
+  than anyone except Brennan. His lantern was found at the second crossing, still lit. He
+  went into the center tunnel. *(known, firsthand)*
 - The mineral seam is declining. Output is down. *(known)*
-- Workers report strange sounds from deeper in — groaning, like the mountain breathing.
-  *(known, firsthand)*
-- Why any of this is happening. *(doesn't know)*
+- Workers report strange sounds from deeper in — groaning, sometimes deep stone-grinding,
+  sometimes higher like wind through a crack but there's no wind; not from any one
+  direction. *(known, firsthand)*
+- The tunnel layout: ~200 ft to first crossing, ~100 ft more to second crossing; three
+  branches beyond (left = main lode, right = unstable, center = where Tarin went). *(known,
+  firsthand)*
+- Dallid is a scholar studying anomalous phenomena, not from the Concordance. *(learned in
+  S2)*
+- [hidden] The full source of the drainage and what lies beyond the second crossing.
+  *(doesn't know)*
 
 ## Disposition toward the PC
 
-Relieved and pragmatic. He doesn't care about the Concordance or Dallid's background — he
-cares about having someone who can help. If Dallid offers to investigate, Brennan is
-grateful and cooperative. He will share everything he knows without being asked, because
-holding back information has not helped and he's desperate.
+Relieved to have someone asking the right questions, grim at the news of deliberate sabotage.
+He shared everything he knew without being asked — Tarin's disappearance, the sounds, the
+tunnel layout, the dead zone's behavior. He guided Dallid as far as the second crossing and
+stopped there, as promised. He is waiting at the surface works for Dallid's return. He does
+not fully understand what Dallid found, but he knows it's bad: someone is doing this to his
+mine, and the person who might be able to stop it is now deep in the center tunnel alone.
 
 ## Secrets
 

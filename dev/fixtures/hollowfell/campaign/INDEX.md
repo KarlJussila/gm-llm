@@ -57,6 +57,7 @@
 ## Items
 | slug | name | status | info | state | one-line |
 |---|---|---|---|---|---|
+| briarwood-anomaly-map | Briarwood Anomaly Map | active | world/items/briarwood-anomaly-map.md | world/items/briarwood-anomaly-map.state.md | Hand-drawn map of three Briarwood anomaly sites; given to Dallid by Wren |
 
 ## Concepts
 | slug | name | status | info | state | one-line |
@@ -74,4 +75,4 @@
 | slug | name | tier | status | design | state | one-line |
 |---|---|---|---|---|---|---|
 | the-unraveling | The Unraveling | major | dormant | arcs/the-unraveling.md | arcs/the-unraveling.state.md | Dallid's search for Erasmus leads to the truth about the Lattice and the Unraveler |
-| the-hollowfell-investigation | The Hollowfell Investigation | minor | dormant | arcs/the-hollowfell-investigation.md | arcs/the-hollowfell-investigation.state.md | Investigating a mine where magic fails reveals the first evidence of deliberate Lattice manipulation |
+| the-hollowfell-investigation | The Hollowfell Investigation | minor | active | arcs/the-hollowfell-investigation.md | arcs/the-hollowfell-investigation.state.md | Investigating a mine where magic fails reveals the first evidence of deliberate Lattice manipulation |

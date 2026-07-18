@@ -40,6 +40,8 @@ who acts to stop it?
 - [[seraphine-duskward]] — Ally; the PC's primary contact. She wants to find the truth
   behind the anomalies. She can provide resources and information, but she is constrained
   by the Concordance's institutional caution.
+  - **S1:** Named by [[wren]] as the First Warden who sent her to Greyhaven. [[dallid]]
+    has not met her. She is now a known but unmet figure in the fiction.
 - [[thaleus-venn]] — Ally; the only person studying the Lattice. He can provide knowledge
   but is physically vulnerable and dismissed by his own institution.
 - [[vashra-keel]] — Antagonist; the Covenant's field commander. She will try to suppress
@@ -140,21 +142,22 @@ who acts to stop it?
 
 ## Level pacing
 
-- **L5 → L6** — due ~S2; after the Briarwood investigation (turning point 1)
-- **L6 → L7** — due ~S4; cadence (no beat near)
-- **L7 → L8** — due ~S6; after Erasmus found (turning point 2)
-- **L8 → L9** — due ~S8; cadence (no beat near)
-- **L9 → L10** — due ~S10; after the Lattice revealed (turning point 3)
-- **L10 → L11** — due ~S13; cadence (no beat near)
-- **L11 → L12** — due ~S15; cadence (no beat near)
-- **L12 → L13** — due ~S17; after the Unraveler's identity revealed (turning point 4)
-- **L13 → L14** — due ~S20; cadence (no beat near)
-- **L14 → L15** — due ~S23; cadence (no beat near)
-- **L15 → L16** — due ~S26; cadence (no beat near)
-- **L16 → L17** — due ~S29; cadence (no beat near)
-- **L17 → L18** — due ~S32; cadence (no beat near)
-- **L18 → L19** — due ~S35; cadence (no beat near)
-- **L19 → L20** — due ~S38; the final experiment (turning point 5)
+- **L5 → L6** — due ~S3; after [[the-hollowfell-investigation]] concludes (Dallid's first
+  investigation completes; the Briarwood investigation follows at L6)
+- **L6 → L7** — due ~S5; cadence (no beat near)
+- **L7 → L8** — due ~S7; after Erasmus found (turning point 2)
+- **L8 → L9** — due ~S9; cadence (no beat near)
+- **L9 → L10** — due ~S11; after the Lattice revealed (turning point 3)
+- **L10 → L11** — due ~S14; cadence (no beat near)
+- **L11 → L12** — due ~S16; cadence (no beat near)
+- **L12 → L13** — due ~S18; after the Unraveler's identity revealed (turning point 4)
+- **L13 → L14** — due ~S21; cadence (no beat near)
+- **L14 → L15** — due ~S24; cadence (no beat near)
+- **L15 → L16** — due ~S27; cadence (no beat near)
+- **L16 → L17** — due ~S30; cadence (no beat near)
+- **L17 → L18** — due ~S33; cadence (no beat near)
+- **L18 → L19** — due ~S36; cadence (no beat near)
+- **L19 → L20** — due ~S39; the final experiment (turning point 5)
 
 ## Engagement paths
 
@@ -184,3 +187,16 @@ who acts to stop it?
 ## Adjustment log
 
 - **S0:** Arc designed at campaign init.
+- **S1:** No turning points hit. Seraphine Duskward named by [[wren]] as the First Warden
+  who sent her — she is now a known but unmet figure. [[dallid]] revealed Erasmus as his
+  mentor to Wren (a stranger he'd just met) — the first sign his emotional isolation is
+  cracking, flagged for the arc pass. Erasmus trail remained cold. The Briarwood map was
+  given to Dallid by Wren but he is focused on [[hollowfell-mine]]. Level pacing
+  reconsidered: no level-up delivered; L5→L6 remains due ~S2.
+- **S2:** No turning points hit. No narrative changes to the major arc. The dead zone at
+  [[hollowfell-mine]] confirmed artificial (first concrete evidence of deliberate
+  [[primordial-lattice]] manipulation) — the implicit connection between anomalies is
+  advancing through the minor arc. Erasmus trail cold. [[seraphine-duskward]] not met.
+  Level pacing reconsidered: no level-up delivered in S2; Dallid remains L5. L5→L6
+  rescheduled to ~S3 (after [[the-hollowfell-investigation]] concludes; the Briarwood
+  investigation follows at L6).

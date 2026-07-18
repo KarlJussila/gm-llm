@@ -8,8 +8,8 @@ as-of: S1
 [[greyhaven]], behind the bar at the Rusty Anchor.
 
 ## Disposition
-Neutral. Going about her work. Not concerned about Dallid or the anomalies beyond the
-normal level of a tavern keeper who sees too much.
+Neutral. Dallid settled his tab and departed. She shared travel directions when asked.
+No concerns.
 
 ## Condition
 Healthy. No notable conditions.

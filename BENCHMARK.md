@@ -119,10 +119,13 @@ number the benchmark will ever report.*
 
 Promote the `dev/cli.py play` harness (the scripted `player` agent) to benchmark grade.
 
-- Check in one frozen fixture campaign under `dev/fixtures/`: a `gm-llm init`-ed
-  project's `campaign/` with world, canon, a character (the `dallid` packet exists),
-  and a session-1 plan. Runs copy it to a temp dir; the fixture repo itself is never
-  played in place.
+- A **provisional** fixture campaign under `dev/fixtures/hollowfell`: a `gm-llm` campaign's
+  `campaign/` (world, canon, the Dallid PC + play packet at `campaign/documents/`, sessions
+  1–2 played and the session-3 plan — so bench plays **session 3** fresh, with real prior
+  canon). Runs copy it to a temp dir; the source is never played in place. **We do not truly
+  "freeze" it until benchmark 1.0** — reproducible-input-across-time only pays off once we're
+  banking baselines (B3+). Until then it's *refreshed* from the live campaign (and `--fixture
+  <dir>` can point anywhere), so iteration doesn't fight a stale snapshot.
   - **The feedback files are part of the frozen instrument.** `check-conduct` reads
     `campaign/feedback/session-run.md`, so whatever the fixture carries tunes what the
     checker enforces (suppress-only since the fix — feedback can excuse a flag, never
@@ -137,6 +140,13 @@ Promote the `dev/cli.py play` harness (the scripted `player` agent) to benchmark
 - Every run records its conditions (models, temps, tier, fixture id, gm-llm version)
   into the archive header. A comparison across mismatched conditions should be
   impossible to make by accident.
+- **[Prereq to finalize] Standardize the player-end of the contract.** The player side has
+  been loose, and it needs tightening before the bench is finalized. Pin all three: **where**
+  the play packet lives (root vs. `campaign/documents/` — today's `character_packet` path is a
+  stopgap), **how** it's generated (hand-merged from the player-known layer right now — see the
+  auto-runner digest-regeneration item in B-later), and **how** it's loaded (`character_packet`
+  in `fixture.json` for bench; `--character` in `dev/cli.py play`). One canonical home, one
+  generation path, one load contract.
 
 *Exit: `bench run --runs 5` completes unattended and leaves 5 condition-stamped archives.*
 

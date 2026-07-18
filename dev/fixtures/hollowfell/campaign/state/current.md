@@ -1,41 +1,43 @@
 ---
 doc: current
+as-of: S2
 ---
 
 # Current Scene
 
 ## Where
 
-[[greyhaven]], [[thornmere-marches]]. The Rusty Anchor tavern — the main gathering place
-in town, a timber-framed building near the dock that smells of peat smoke and river mud.
+[[hollowfell-mine]], deep in the center tunnel, past the second crossing. The walls are
+rough, unworked, unmarked — "as if the tunnel was not carved but scooped out." The cold is
+an absence of something fundamental. Sound dies the moment it leaves your boots. The air is
+thin, hollow.
 
 ## When
 
-Early evening. Dallid has been in Greyhaven for three days, staying at the Rusty Anchor
-while he gets his bearings. He has been asking around about the anomalies and about
-[[erasmus-venn]].
+Night, continuing from S1. [[dallid]] has been underground for some time — long enough to
+investigate both crossings, meet [[brennan-cole]], sketch the scored marks, consult the
+spellbook, and descend deep into the center tunnel alone.
 
 ## Who's present
 
-- Dallid, at a corner table with his spellbook and a half-eaten meal.
-- The tavern keeper, a weathered woman named Maret, behind the bar.
-- A handful of locals: dockworkers, a few Marcher folk, a traveling merchant.
-- A Concordance investigator — a young human woman named Wren — sitting near the door,
-  watching the room with professional attention.
+- [[dallid]], alone in the center tunnel. His two-headed gecko companion sits on his
+  shoulder, both heads locked forward, tracking something invisible ahead.
+- [[brennan-cole]], at the surface works, waiting for [[dallid]] to return. He will not
+  enter the dead zone again.
+- Mining workers in the bunkhouses — unaware of what [[dallid]] has found.
 
 ## The situation
 
-Dallid has been in town long enough to learn the basics: the Concordance has an outpost
-here, the anomalies are getting worse, and the locals are scared. He has been asking about
-Erasmus Venn and getting nowhere — no one in Greyhaven has heard of him. The Briarwood is
-a day's travel east, and the Concordance is hiring investigators.
+The dead zone is confirmed artificial — energy is being drained deliberately. [[dallid]]
+investigated both crossings: scratches at the first following invisible lines, scored marks
+at the second mapping invisible pathways. The sketch was confirmed by the spellbook as
+mapping something real. Dancing Lights failed — the magic simply isn't there past the
+second crossing. [[dallid]] entered the center tunnel alone, following the spellbook's
+resonance to its source.
 
-## The opening hook
+## The cliffhanger
 
-Wren, the Concordance investigator, has been watching Dallid. She approaches his table and
-asks if he's the one who's been asking about anomalies and missing researchers. She has a
-job: the mining consortium at [[hollowfell-mine]] needs someone to find out why magic fails
-in the deeper tunnels. The Concordance is paying. Is he interested?
-
-This is the [[the-hollowfell-investigation]] arc's entry point. The job leads to the first
-evidence that the anomalies are deliberate.
+The spellbook's resonance is peaking — bone-deep, a frequency just below hearing. The
+gecko is rigid, both heads locked forward, watching something in the darkness ahead. The
+cold is unbearable. Something shifts ahead — not a sound, not a movement. An absence — a
+silence so complete it feels like the world is holding its breath. The source is close.

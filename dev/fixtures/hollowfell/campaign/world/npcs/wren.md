@@ -65,6 +65,11 @@ wants to succeed.
   won't volunteer this unless asked directly)*
 - The broader anomaly picture: the Briarwood disturbances are getting worse, Hollowfell
   has problems, scattered reports of planar bleed. *(surface knowledge)*
+- Erasmus Venn was Dallid's mentor, disappeared a year ago, last trail leads to the
+  Briarwood. *(newly told by Dallid in S1)*
+- The Concordance erased Erasmus's records after his disappearance. *(newly told by
+  Dallid in S1 — she said she doesn't have that kind of access)*
+- Dallid is searching for Erasmus. *(newly told by Dallid in S1)*
 - Why magic fails in the mine. *(doesn't know)*
 - The Lattice. *(doesn't know)*
 

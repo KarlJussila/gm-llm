@@ -19,31 +19,52 @@ status: active
 ## Description
 
 Hollowfell Mine was abandoned a century ago when the mineral seams ran thin. It was
-reopened two years ago when new veins were discovered deeper in the mountain. The mine
-is functional but uncomfortable — the deeper tunnels are cold, damp, and quiet in a way
-that unnerves the workers. The surface works are spartan: timber frames, ore carts, a
-few bunkhouses. The workers are hard people doing hard work.
+reopened two years ago when new veins were discovered deeper in. The mine is functional
+but uncomfortable — the deeper tunnels are cold, damp, and quiet in a way that unnerves
+the workers. The surface works are spartan: timber frames, ore carts, a few bunkhouses.
+The workers are hard people doing hard work.
+
+The dead zone is **artificial** — confirmed by [[dallid]] via Arcana check in S2. The
+magical energy is not suppressed; it is being *drained*, drawn down into the earth like
+water into a sinkhole. Someone is doing this deliberately.
 
 ## Significance
 
-Hollowfell Mine is the second anomaly the PC will encounter. Magic fails in the deeper
-tunnels — spells fizzle, magical items lose their power, and even cantrips produce nothing.
-The mining consortium is losing money and the workers are getting scared. This is a
-straightforward investigation with a clear hook: someone needs to find out why magic
-doesn't work.
+Hollowfell Mine is the site of the first concrete evidence of deliberate
+[[primordial-lattice]] manipulation. The dead zone being artificial — not natural
+suppression, not a dead magic zone, not a planar ward — changes the nature of the
+investigation from anomaly study to active sabotage. The mine sits on a Lattice node being
+siphoned by the [[unraveler]].
 
 ## Notable features
 
-- The Deep Tunnels — where magic fails. The further in, the worse it gets.
-- The Lode — the mineral seam the miners are working, which is unusually rich in
-  magical reagents.
-- The Surface Works — the functional centre of the operation, where the miners live
-  and work.
+- **The Surface Works** — the functional centre of the operation, where the miners live
+  and work. Timber frames, ore carts, bunkhouses.
+- **First Crossing** (~200 ft in) — side tunnels branch off, dead ends used for storage.
+  Has newer scratches following invisible lines in the stone — as if someone traced
+  pathways only they could see. Neither [[brennan-cole]] nor his workers made them.
+- **Second Crossing** (~300 ft in) — the threshold where the cold intensifies suddenly, "as
+  if you've passed through a membrane into a different place." Has scored marks: faint
+  lines carved with something sharp but not a tool. They mirror the scratches from the
+  first crossing but are clearer — curves, angles, intersections. The pattern looks like a
+  map of invisible pathways in the stone. The stone here is energetically hollow — the
+  magical field scooped out, leaving a void.
+- **The Center Tunnel** — straight back from the second crossing. Walls are rough, unworked,
+  unmarked — "as if the tunnel was not carved but scooped out." Goes deep into the
+  mountain. This is where [[tarin]] went, and where the source of the resonance lies.
+- **The Left Branch** — wider, newer timber. Leads to the main lode where ore is being
+  pulled.
+- **The Right Branch** — narrow, partially collapsed. Unstable.
+- **The Deep Dead Zone** — past the second crossing. The cold is different here: absence of
+  something fundamental. Sound dies the moment it leaves your boots. The air is thin,
+  hollow. Spells fail completely — not a fizzle, the magic simply isn't there.
 
 ## Who's here
 
 - Mining consortium workers — hard, practical folk.
-- A foreman who is over his head and knows it.
+- [[brennan-cole]] — foreman, at the surface works, waiting for [[dallid]]'s return.
+- [[dallid]] — deep in the center tunnel, past the second crossing, approaching the source
+  of the spellbook's resonance.
 - No Concordance presence — the consortium hasn't asked for help.
 
 ## Hooks

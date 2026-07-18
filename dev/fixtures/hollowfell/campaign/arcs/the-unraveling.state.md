@@ -1,12 +1,14 @@
 ---
 slug: the-unraveling
 layer: state
-as-of: S1
+as-of: S2
 ---
 
 ## Status
-dormant (not yet introduced — the PC is in Greyhaven, the arc begins when the first anomaly
-investigation starts)
+dormant — no turning points hit. Early setup beats seeded in S1. The implicit connection
+between anomalies is advancing through [[the-hollowfell-investigation]] (dead zone confirmed
+artificial in S2 — first concrete evidence of deliberate [[primordial-lattice]]
+manipulation).
 
 ## Turning points hit
 - The Briarwood Investigation — pending
@@ -16,5 +18,7 @@ investigation starts)
 - The Final Experiment — pending
 
 ## Position on the tension curve
-Build-up. The PC is in Greyhaven, the anomalies are spreading, and the Concordance is
-looking for investigators. The arc has not yet begun.
+Build-up. The anomalies are spreading, [[dallid]] is deep in [[hollowfell-mine]]
+investigating the source (minor arc hooking into this major arc). The Briarwood
+investigation is queued for after Hollowfell. [[seraphine-duskward]] was named but not met.
+Erasmus trail remains cold.
