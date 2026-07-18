@@ -104,7 +104,7 @@ class PlayApp(App):
         self._turn = 0
         self._working = False        # a worker owns the table; submits are held
         self._wrapping = False
-        self._pending = None         # phase action awaiting a yes: "wrap" | "finish_setup"
+        self._pending = None         # phase action awaiting a yes: "wrap" | "finish_setup" | "open"
         self._thinking = None        # the PendingBlock in the scene, while a call is in flight
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
         self._setup_stages_seen = set()  # spoiler-free setup stages already shown (each shows once)
@@ -255,12 +255,15 @@ class PlayApp(App):
             inp.border_title = "SETUP — talk to the DM"
         elif self._pending == "wrap":
             inp.border_title = "SESSION COMPLETE — reconcile or quit, nothing else"
+        elif self._pending == "open":
+            inp.border_title = "SESSION READY — start it, or quit"
         elif self.mode == "action":
             inp.border_title = "ACTION — gated"
         else:
             inp.border_title = "META — out-of-game, ungated"
         inp.placeholder = ("Answer the DM…" if self.lc.phase == "setup"
                            else "Y to wrap, N not yet, or /quit" if self._pending == "wrap"
+                           else "Y to start the session, N not yet, or /quit" if self._pending == "open"
                            else "What does your character do?" if self.mode == "action"
                            else "Ask the DM a logistical question…")
 
@@ -529,6 +532,12 @@ class PlayApp(App):
                                "/quit — nothing else reaches the table until then —",
                                kind="rule")
             return
+        # Next session planned but not yet opened — answer Y/N to start it. The opening
+        # scene is a model call (not a player turn), so a typed action can't begin it.
+        if self._pending == "open":
+            self._scene_status("— session ready — answer Y above to start it, or /quit —",
+                               kind="rule")
+            return
         # /meta — an out-of-game question without switching modes.
         if text.lower().startswith("/meta"):
             q = text[5:].strip()
@@ -721,6 +730,7 @@ class PlayApp(App):
             self.action_wrap()  # runs whichever phase action is pending
         else:
             what = ("start session 1" if self._pending == "finish_setup"
+                    else "start the session" if self._pending == "open"
                     else "wrap the session")
             self._scene_status(f"— not yet — {what} anytime with ctrl+w or the esc menu —")
 
@@ -786,6 +796,11 @@ class PlayApp(App):
             self._pending = None
             self.run_worker(self._finish_setup(), exclusive=True)
             return
+        if self._pending == "open":
+            # N+1 is prepped and waiting — open its scene now (the post-wrap start gate).
+            self._pending = None
+            self.run_worker(self._open(), exclusive=True)
+            return
         if self.lc.phase not in ("play", "wrap_pending"):  # nothing to wrap during setup
             return
         self._pending = None
@@ -809,10 +824,16 @@ class PlayApp(App):
             self._wrapping = False
             self._busy(False)
             return
-        self._scene_status(f"— session {new_n} ready · opening the scene —", kind="success")
         self._turn = 0
         self._wrapping = False
-        await self._open()  # opens the next session's scene and re-enables input
+        # Reconcile + prep are done; N+1 is planned but not opened. Gate the opening
+        # (its own model call) behind a yes/no, mirroring the other phase transitions —
+        # so the player can inspect the plan (or stop) before the next scene is drafted,
+        # instead of auto-burning its first turn.
+        self._pending = "open"
+        self._busy(False)
+        self._scene_status(f"— session {new_n} planned & ready to start —", kind="rule")
+        self._prompt.ask(f"Session {new_n} planned — start playing it now?")
 
     # -- stage ticker (one renderer for every phase's on_stage announcements) -
 
@@ -875,6 +896,8 @@ class PlayApp(App):
         idle = not self._working and not self._wrapping
         if self._pending == "finish_setup":
             wrap_label, wrap_ok = "Finish setup → session 1  (^w)", idle
+        elif self._pending == "open":
+            wrap_label, wrap_ok = "Start the planned session  (^w)", idle
         else:
             wrap_label, wrap_ok = "Wrap session  (^w)", idle and not in_setup
         items = [
