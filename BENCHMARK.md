@@ -136,7 +136,11 @@ Promote the `dev/cli.py play` harness (the scripted `player` agent) to benchmark
 - `bench run`: pinned player model/temperature, pinned checker model, fixed turn
   budget, optional post-session reconcile (stage gates give post-session scores for
   free). Batch mode: N runs with rate-limit resilience (the `ping` machinery's
-  lessons apply — expect overnight batches on the free tier).
+  lessons apply — expect overnight batches on the free tier). A run whose backend gives
+  up mid-play (a sustained rate limit) is recorded `incomplete`, not failed — its
+  transcript + archive persist — and `bench run --resume` continues every incomplete run
+  in `--out` in place (same archive, continuous turn ids), so a cap that trips overnight
+  doesn't burn the session's progress.
 - Every run records its conditions (models, temps, tier, fixture id, gm-llm version)
   into the archive header. A comparison across mismatched conditions should be
   impossible to make by accident.

@@ -401,10 +401,160 @@ def test_failed_run_survives_batch(tmp):
     assert len(manifest) == 2, "both runs recorded in the manifest"
 
 
+class ScriptedBackend:
+    """A play backend whose runner drafts are scripted by a *shared* state dict so behavior
+    spans the two backend instances a fail-then-resume run makes (a new backend is built per
+    run_once). `state["boom"]` is the set of global draft indices that raise `BackendError`
+    (a rate-limit give-up); `state["complete_on"]` the ones that emit `task_complete`.
+    `session_valid` returns False so resume takes the durable re-prime path."""
+
+    def __init__(self, directory, state):
+        self.directory = str(directory)
+        self.base = "http://fake"
+        self.state = state
+        self.started = self.stopped = 0
+        self.on_retry = None
+
+    def start(self):
+        self.started += 1
+        return self
+
+    def stop(self):
+        self.stopped += 1
+
+    def create_session(self, title=None):
+        return f"sid-{title}"
+
+    def session_valid(self, sid):
+        return False
+
+    def prompt_full(self, sid, agent, message, whole=False):
+        if whole:  # handoff — returns before counting a draft
+            return _Reply("notes", tools={"task_complete"},
+                          tool_inputs={"task_complete": {"notes": "handoff notes"}})
+        self.state["draft"] += 1
+        n = self.state["draft"]
+        if n in self.state.get("boom", ()):
+            from gm_llm.orchestrator import BackendError
+            raise BackendError("rate limited")
+        complete = n in self.state.get("complete_on", ())
+        return _Reply("The tavern is warm.", tools={"task_complete"} if complete else ())
+
+    def prompt(self, sid, agent, message, whole=False):
+        return "I look around."
+
+    def ensure_tool(self, sid, agent, reply, **kw):
+        return reply
+
+    def context_usage(self, sid):
+        class CU:
+            tokens, context_limit, threshold = 1000, 100_000, 80_000
+        return CU()
+
+
+def test_classify_archive(tmp):
+    def arc(events):
+        p = tmp / f"a-{len(list(tmp.glob('a-*')))}.jsonl"
+        p.write_text("\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8")
+        return p
+
+    assert runner.classify_archive(tmp / "nope.jsonl") == ("empty", 0)
+    assert runner.classify_archive(arc([{"event": "run"}, {"event": "conditions"}])) == ("empty", 0)
+    # turns, no wrap, no cap → resumable
+    assert runner.classify_archive(arc([
+        {"event": "turn", "session_complete": False},
+        {"event": "turn", "session_complete": False}])) == ("resumable", 2)
+    # last turn wraps → complete
+    assert runner.classify_archive(arc([
+        {"event": "turn", "session_complete": False},
+        {"event": "turn", "session_complete": True}])) == ("complete", 2)
+    # a cap event → capped, terminal
+    assert runner.classify_archive(arc([
+        {"event": "turn", "session_complete": False}, {"event": "cap", "turn": 1}])) == ("capped", 1)
+
+
+def test_rate_limit_is_incomplete_not_failed(tmp):
+    """A backend give-up *mid-play* (turns already landed) is recorded `incomplete`, not
+    `failed`, and leaves its archive on disk — the transcript is the resume point."""
+    out = tmp / "out"
+    _make_template(out / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    state = {"draft": 0, "boom": {3}}  # opening=1, turn1=2 land; turn2 draft=3 gives up
+
+    records = runner.run_batch(
+        fixture, out, runs=1, turn_cap=10,
+        init=lambda d: None, install=lambda d: (True, "noop"),
+        backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
+        gate_factory=lambda backend, directory, logs: FakeGate(),
+        reconcile_fn=lambda *a: None, note=lambda m: None)
+
+    assert records[0]["outcome"].startswith("incomplete:"), records[0]
+    assert records[0]["turns"] == 2, f"two turns landed before the give-up — got {records[0]}"
+    run_dir = out / records[0]["run_dir"]
+    ev = _archive_events(run_dir)
+    assert sum(1 for e in ev if e["event"] == "turn") == 2, "the two landed turns are archived"
+    assert not any(e["event"] == "cap" for e in ev), "an interrupt is not a cap breach"
+
+
+def test_resume_continues_incomplete_run(tmp):
+    """`run_batch(resume=True)` picks the incomplete run back up, continues in the SAME
+    archive (one file, one conditions event, a resume marker, continuous turn ids), wraps,
+    reconciles, and updates the manifest line in place (one line per run, outcome flipped)."""
+    out = tmp / "out"
+    _make_template(out / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    # opening=1, turn1=2 land; turn2 draft=3 gives up. On resume: draft 4 lands, draft 5 wraps.
+    state = {"draft": 0, "boom": {3}, "complete_on": {5}}
+    reconciled = []
+
+    def fakes(**over):
+        return dict(
+            init=lambda d: None, install=lambda d: (True, "noop"),
+            backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
+            gate_factory=lambda backend, directory, logs: FakeGate(),
+            reconcile_fn=lambda backend, gate, logs, n: reconciled.append(n),
+            note=lambda m: None, **over)
+
+    first = runner.run_batch(fixture, out, runs=1, turn_cap=10, **fakes())
+    assert first[0]["outcome"].startswith("incomplete:"), first[0]
+    run_dir = out / first[0]["run_dir"]
+
+    resumed = runner.run_batch(fixture, out, turn_cap=10, resume=True, **fakes())
+    assert len(resumed) == 1 and resumed[0]["outcome"] == "complete", resumed
+    assert resumed[0]["turns"] == 4, f"2 on disk + 2 more to the wrap — got {resumed[0]}"
+    assert reconciled == [1], f"reconcile ran once, for session 1 — got {reconciled}"
+
+    # one archive file, appended (not a fresh one): a single conditions event, a resume marker
+    hits = sorted((run_dir / ".opencode" / "logs").glob("archive-*.jsonl"))
+    assert len(hits) == 1, f"resume must append to the run's own archive — got {hits}"
+    ev = _archive_events(run_dir)
+    assert sum(1 for e in ev if e["event"] == "conditions") == 1, "conditions not re-emitted"
+    assert any(e["event"] == "resume" for e in ev), "a resume marker is stamped"
+    turns = [e for e in ev if e["event"] == "turn"]
+    assert len(turns) == 4 and turns[-1]["session_complete"], f"4 continuous turns, last wraps — {turns}"
+    assert [t["turn"] for t in turns] == [1, 2, 3, 4], f"turn ids continue past the break — {turns}"
+
+    # manifest collapsed to one line for the run, outcome flipped to complete
+    manifest = [json.loads(l) for l in (out / "batch.jsonl").read_text().splitlines() if l.strip()]
+    assert len(manifest) == 1 and manifest[0]["outcome"] == "complete", manifest
+
+
+def test_resume_noop_when_nothing_incomplete(tmp):
+    """Resume over a batch with no incompletes does nothing (and doesn't crash on a fresh out)."""
+    out = tmp / "out"
+    _make_template(out / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    records = runner.run_batch(fixture, out, resume=True, note=lambda m: None,
+                               init=lambda d: None, install=lambda d: (True, "noop"))
+    assert records == [], "nothing to resume over an empty/complete batch"
+
+
 def main():
     tests = (test_assemble_run, test_conditions_event, test_natural_close,
              test_cap_breach_skips_reconcile, test_combat_natural_close,
-             test_combat_cap_breach, test_failed_run_survives_batch)
+             test_combat_cap_breach, test_failed_run_survives_batch,
+             test_classify_archive, test_rate_limit_is_incomplete_not_failed,
+             test_resume_continues_incomplete_run, test_resume_noop_when_nothing_incomplete)
     failures = 0
     for test in tests:
         with tempfile.TemporaryDirectory() as td:

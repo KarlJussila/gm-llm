@@ -9,6 +9,15 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Added
+- **Resumable bench runs (`bench run --resume`).** A play that hits a sustained rate limit mid-session
+  is now recorded `incomplete` (not `failed`) with its turns intact — the transcript and score archive
+  stay on disk. `bench run --resume` picks every incomplete run in `--out` back up and continues it in
+  place: it re-opens the run's own archive (append, no new file — the grader still reads one coherent
+  turn stream), re-primes the runner from the transcript, continues turn ids past the break, skips a
+  second `conditions` event, and updates the run's manifest line in place. Rate limits no longer burn
+  progress on an overnight free-tier batch. (A give-up *before any turn lands* is still a real `failed`.)
+
 ### Changed
 - **Checker false-positive narrowing.** `check-conduct`'s player-agency check no longer flags an NPC
   deflecting or partly answering a question, the DM correcting a player's mistaken description of a

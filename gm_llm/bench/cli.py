@@ -44,6 +44,9 @@ def add_bench_parser(subparsers, common) -> None:
                      help="hard turn cap — the safety net past a natural wrap (default: 30)")
     run.add_argument("--play-only", action="store_true",
                      help="skip the post-session reconcile (cheap iteration)")
+    run.add_argument("--resume", action="store_true",
+                     help="continue incomplete runs in --out (rate-limited/crashed) in place, "
+                          "instead of starting fresh ones (ignores --runs)")
     run.add_argument("--out", default="bench-out",
                      help="output dir for template + run dirs + batch.jsonl (default: bench-out)")
     run.add_argument("--kickoff", default="Let's begin the session.")
@@ -77,18 +80,21 @@ def cmd_bench_run(args) -> None:
     session dm pass, so the per-call timeout defaults generous (1800s) unless the run is
     play-only or the user overrode `--turn-timeout`."""
     timeout = args.turn_timeout or (360 if args.play_only else 1800)
-    _note(f"fixture={args.fixture} runs={args.runs} out={args.out} "
+    mode = "resume" if args.resume else f"runs={args.runs}"
+    _note(f"fixture={args.fixture} {mode} out={args.out} "
           f"turn-cap={args.turn_cap} reconcile={not args.play_only}")
     records = runner.run_batch(
         args.fixture, args.out, runs=args.runs, turn_cap=args.turn_cap,
-        play_only=args.play_only, kickoff=args.kickoff, port=args.port,
+        play_only=args.play_only, kickoff=args.kickoff, resume=args.resume, port=args.port,
         min_gap=args.min_gap, turn_timeout=timeout, stream=args.stream, note=_note)
 
     done = sum(1 for r in records if r["outcome"] == "complete")
     capped = sum(1 for r in records if r["outcome"] == "cap")
+    incomplete = sum(1 for r in records if str(r["outcome"]).startswith("incomplete"))
     failed = sum(1 for r in records if str(r["outcome"]).startswith("failed"))
-    _note(f"batch done: {done} complete · {capped} capped · {failed} failed "
-          f"→ {Path(args.out) / 'batch.jsonl'}")
+    tail = " — resume with `bench run --resume`" if incomplete else ""
+    _note(f"batch done: {done} complete · {capped} capped · {incomplete} incomplete · "
+          f"{failed} failed → {Path(args.out) / 'batch.jsonl'}{tail}")
     sys.exit(1 if failed and not done else 0)
 
 
