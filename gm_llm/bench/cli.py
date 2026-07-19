@@ -40,8 +40,8 @@ def add_bench_parser(subparsers, common) -> None:
     run.add_argument("--fixture", default=str(DEFAULT_FIXTURE),
                      help=f"fixture dir (default: {DEFAULT_FIXTURE})")
     run.add_argument("--runs", type=int, default=1, help="how many plays (default: 1)")
-    run.add_argument("--turn-cap", type=int, default=30,
-                     help="hard turn cap — the safety net past a natural wrap (default: 30)")
+    run.add_argument("--turn-cap", type=int, default=50,
+                     help="hard turn cap — the safety net past a natural wrap (default: 50)")
     run.add_argument("--play-only", action="store_true",
                      help="skip the post-session reconcile (cheap iteration)")
     run.add_argument("--resume", action="store_true",

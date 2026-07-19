@@ -30,6 +30,7 @@ import os
 import shutil
 import sys
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -425,6 +426,10 @@ class FakeBackend:
     def create_session(self, title: str | None = None) -> str:
         self._sid += 1
         return f"sid-{self._sid}"
+
+    @contextmanager
+    def patient(self, stall_timeout, retries=None):  # real Backend widens budget & cuts retries; no-op here
+        yield
 
     def prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
         self._record(agent, "prompt", text)

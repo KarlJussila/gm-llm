@@ -229,7 +229,7 @@ def _play_combat(game, backend, player_sid, entry_scene, turns: int, turn_cap: i
     return event.narration, turns, False
 
 
-def run_once(run_dir, fixture: dict, *, turn_cap: int = 30, play_only: bool = False,
+def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = False,
              kickoff: str = "Let's begin the session.", port: int = 4181,
              min_gap: float = 1.0, turn_timeout: int = 360, stream: bool = False,
              resume: bool = False, backend_factory=_default_backend,
@@ -340,11 +340,22 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 30, play_only: bool = Fa
             record["outcome"] = f"incomplete: {interrupted}"
         elif outcome == "complete":
             note(f"session wrapped naturally after {turns} turn(s).")
-            game.handoff()
-            if reconcile:
-                note(f"reconciling session {game.session}…")
-                reconcile_fn(backend, gate_factory(backend, run_dir, logs), logs, game.session)
+            # Play wrapped — that's the measured subject and it's settled. Handoff and
+            # reconcile are best-effort post-play bookkeeping; a stall there (a rate limit,
+            # or a slow large-input call the retries gave up on) must NOT demote a wrapped
+            # run to incomplete/failed, or the archive would say "complete" while the
+            # manifest says otherwise — and `--resume` (which classifies from the archive)
+            # would then skip it forever, stranding the contradiction.
             record["outcome"] = "complete"
+            try:
+                game.handoff()
+                if reconcile:
+                    note(f"reconciling session {game.session}…")
+                    reconcile_fn(backend, gate_factory(backend, run_dir, logs), logs,
+                                 game.session)
+            except BackendError as e:
+                note(f"post-wrap step gave up ({e}) — session already wrapped; "
+                     f"leaving reconcile undone.")
         else:
             note(f"hit the turn cap ({turn_cap}) without a wrap — skipping reconcile.")
             if logs and logs.archive:
@@ -492,7 +503,7 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
     return records
 
 
-def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 30,
+def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
               play_only: bool = False, kickoff: str = "Let's begin the session.",
               port: int = 4181, min_gap: float = 1.0, turn_timeout: int = 360,
               stream: bool = False, resume: bool = False, init=init_project,

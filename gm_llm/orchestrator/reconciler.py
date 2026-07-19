@@ -32,6 +32,7 @@ from pathlib import Path
 
 from . import completeness
 from .archive import verdict_fields
+from .backend import HEAVY_RETRIES, HEAVY_STALL_TIMEOUT
 from .logs import append, banner, section
 from .phase import apply_one_correction, commit_campaign
 from .planner import Planner, PrepResult  # noqa: F401 — PrepResult used in annotations
@@ -109,6 +110,16 @@ class Reconciler:
 
     def reconcile_session(self, n: int, commit: bool = False, prep: bool = True,
                           fresh: bool = False) -> ReconcileResult:
+        # The whole pass is heavy calls (whole-transcript extraction, then apply) — widen
+        # the stall budget so a slow first token on a large input isn't aborted as a false
+        # hang; the ~30-min `turn_timeout` stays the hard backstop. Fewer retries too: a
+        # throttled call is a silent hang, so extra attempts just burn budget (a resume
+        # restarts the pipeline at the last unfinished stage when caps clear).
+        with self.backend.patient(HEAVY_STALL_TIMEOUT, retries=HEAVY_RETRIES):
+            return self._reconcile_session(n, commit=commit, prep=prep, fresh=fresh)
+
+    def _reconcile_session(self, n: int, commit: bool = False, prep: bool = True,
+                           fresh: bool = False) -> ReconcileResult:
         if fresh:
             self.clear_markers(n)
         rr = ReconcileResult(n)

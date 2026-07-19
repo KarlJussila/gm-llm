@@ -11,6 +11,7 @@ import json
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -54,6 +55,10 @@ class FakeBackend:
 
     def create_session(self, title=None):
         return f"sid-{title}"
+
+    @contextmanager
+    def patient(self, stall_timeout, retries=None):  # real Backend widens budget & cuts retries; no-op here
+        yield
 
     def prompt_full(self, sid, agent, message, whole=False):
         if whole:  # the handoff call — always closes with its notes
@@ -114,6 +119,10 @@ class CombatFakeBackend:
 
     def create_session(self, title=None):
         return f"sid-{title}"
+
+    @contextmanager
+    def patient(self, stall_timeout, retries=None):  # real Backend widens budget & cuts retries; no-op here
+        yield
 
     def prompt(self, sid, agent, message, whole=False):
         return "I strike the nearest foe and hold my ground."
@@ -312,6 +321,31 @@ def test_natural_close(tmp):
     assert not any(e["event"] == "cap" for e in _archive_events(run_dir))
 
 
+def test_post_wrap_reconcile_failure_stays_complete(tmp):
+    """A stall in the post-wrap reconcile (a rate limit, or a slow large-input call the
+    retries gave up on) must NOT demote a naturally-wrapped run: play is the measured
+    subject and it's settled. Otherwise the archive would say complete while the manifest
+    said incomplete, and `--resume` (which classifies from the archive) would strand it."""
+    from gm_llm.orchestrator import BackendError
+    template = _make_template(tmp / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    run_dir = tmp / "run"
+    runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test")
+
+    fakes = _fakes(complete_after=1)
+    def boom(backend, gate, logs, n):
+        raise BackendError("log-extractor failed after 4 retries")
+    fakes["reconcile_fn"] = boom
+
+    rec = runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=30, **fakes)
+    assert rec["outcome"] == "complete", f"wrapped run must stay complete — got {rec}"
+    assert rec["turns"] == 1, f"turn count must survive the reconcile failure — got {rec}"
+    # archive agrees: a resume sweep classifying it will see 'complete' and correctly skip
+    # it (rather than the manifest saying incomplete while the archive says complete).
+    state, _ = runner.classify_archive(rec["archive"])
+    assert state == "complete", f"archive must classify complete so resume skips it — {state}"
+
+
 def test_cap_breach_skips_reconcile(tmp):
     out = tmp / "out"
     _make_template(out / "template")  # pre-seed so prepare_template reuses (no init/install)
@@ -424,6 +458,10 @@ class ScriptedBackend:
 
     def create_session(self, title=None):
         return f"sid-{title}"
+
+    @contextmanager
+    def patient(self, stall_timeout, retries=None):  # real Backend widens budget & cuts retries; no-op here
+        yield
 
     def session_valid(self, sid):
         return False
@@ -551,6 +589,7 @@ def test_resume_noop_when_nothing_incomplete(tmp):
 
 def main():
     tests = (test_assemble_run, test_conditions_event, test_natural_close,
+             test_post_wrap_reconcile_failure_stays_complete,
              test_cap_breach_skips_reconcile, test_combat_natural_close,
              test_combat_cap_breach, test_failed_run_survives_batch,
              test_classify_archive, test_rate_limit_is_incomplete_not_failed,

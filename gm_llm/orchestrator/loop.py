@@ -35,7 +35,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .archive import verdict_fields
-from .backend import BackendCancelled, BackendError
+from .backend import HEAVY_RETRIES, HEAVY_STALL_TIMEOUT, BackendCancelled, BackendError
 from .canon import latest_session
 from .combat import CombatMixin, CombatState
 from .logs import append, banner, section
@@ -232,11 +232,12 @@ class Game(CombatMixin):
             return notes_path
         self._correcting = False
         try:
-            reply = self.backend.prompt_full(self.runner_sid, self.runner_agent,
-                                             load("handoff-brief"), whole=True)
-            reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
-                                             tool="task_complete", args=("notes",),
-                                             nudge=_NUDGE_NOTES, whole=True)
+            with self.backend.patient(HEAVY_STALL_TIMEOUT, retries=HEAVY_RETRIES):  # re-reads the whole session
+                reply = self.backend.prompt_full(self.runner_sid, self.runner_agent,
+                                                 load("handoff-brief"), whole=True)
+                reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
+                                                 tool="task_complete", args=("notes",),
+                                                 nudge=_NUDGE_NOTES, whole=True)
         except BackendCancelled:
             raise  # the player cancelled — unwind the wrap, don't paper over it
         except BackendError:

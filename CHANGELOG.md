@@ -18,7 +18,28 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   second `conditions` event, and updates the run's manifest line in place. Rate limits no longer burn
   progress on an overnight free-tier batch. (A give-up *before any turn lands* is still a real `failed`.)
 
+### Fixed
+- **A naturally-wrapped bench run is no longer demoted by a post-wrap stall.** Handoff and reconcile
+  run *after* the session wraps; a rate limit (or a slow large-input call the retries gave up on) there
+  used to propagate out and relabel the fully-played run `incomplete`/`failed` with a stale turn count
+  — while its archive still read `complete`, so `bench run --resume` (which classifies from the archive)
+  skipped it forever, stranding the contradiction. Play is the measured subject: once it wraps the run
+  is `complete`, and a failed post-wrap step just leaves reconcile undone.
+
 ### Changed
+- **Bench turn cap default 30 → 50.** The fixture's sessions were wrapping right at 30 (session 3's
+  transcript is the campaign's largest), leaving no headroom — a session a turn longer would trip the
+  cap and skip reconcile. 50 gives a natural wrap room to land before the safety net.
+- **Stall watchdog widened for heavy calls; default given headroom.** The per-call stall budget (abort
+  a call with no stream activity for this long) rises from 120s to 180s, and reconcile/handoff — which
+  read whole transcripts (their prefill emits no stream parts, so a working first token is minutes out)
+  — now run under a 900s budget (`Backend.patient()`), half reconcile's ~30-min hard `turn_timeout`.
+  Tool-call parts count as activity, so only a genuine silent gap trips it. Those heavy calls also
+  drop from 4 retries to 2: mimo-free throttling is a *silent hang*, so a throttled heavy call burns
+  the full 900s budget every attempt with nothing to show — 4× would dead-wait ~an hour, where 2 still
+  covers one genuinely-slow legit call, then gives up in ~30 min and lets a resume pick it up when the
+  caps clear. The give-up message no longer asserts "rate-limited hang" (it can't tell a rate limit
+  from a slow first token).
 - **Checker false-positive narrowing.** `check-conduct`'s player-agency check no longer flags an NPC
   deflecting or partly answering a question, the DM correcting a player's mistaken description of a
   world fact, or un-echoed player dialogue/action — only a wholly-unacknowledged action, or narration

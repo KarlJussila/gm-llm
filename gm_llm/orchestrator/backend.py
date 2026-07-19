@@ -31,6 +31,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -91,6 +92,20 @@ class BackendCancelled(BackendError):
     pass
 
 
+# The stall budget for reconcile/handoff calls (via `Backend.patient()`): they read whole
+# transcripts, so their prefill emits no stream parts for a long time and a working first
+# token can be many minutes out. Set at half reconcile's ~30-min hard `turn_timeout` — room
+# for a genuinely slow first token, while a call that's truly dead still gives up well
+# before the backstop. (A tighter budget was aborting live-but-slow extractions.)
+HEAVY_STALL_TIMEOUT = 900
+
+# …and fewer retries for those heavy calls. mimo-free throttling is a *silent hang*, so a
+# throttled heavy call burns the full stall budget every attempt with nothing to show —
+# 4 × 900s ≈ an hour of dead-waiting. Two attempts still give one genuinely-slow legit call
+# its long chance, then give up in ~30 min and let a resume pick it up when the caps clear.
+HEAVY_RETRIES = 2
+
+
 class Backend:
     def __init__(
         self,
@@ -99,7 +114,7 @@ class Backend:
         turn_timeout: int = 360,
         retries: int = 4,
         min_call_gap: float = 1.0,
-        stall_timeout: int = 120,
+        stall_timeout: int = 180,
         logs: Logs | None = None,
     ):
         self.directory = str(Path(directory).resolve())
@@ -109,10 +124,14 @@ class Backend:
         self.turn_timeout = turn_timeout
         self.retries = retries
         self.min_call_gap = min_call_gap
-        # A call that emits no stream activity for this long is a rate-limited hang, not
-        # a slow turn (a productive turn keeps streaming tokens/tool events) — abort and
-        # retry rather than block to the full `turn_timeout`.
+        # A call that emits no stream activity for this long has stalled — a rate limit, or
+        # a first token that never came — so abort and retry rather than block to the full
+        # `turn_timeout`. A productive call keeps streaming parts (text, reasoning, AND tool
+        # calls — each tool part update bumps the liveness clock), so this only fires on a
+        # genuine gap: a >budget silent prefill, or a single tool that itself runs that long.
         self.stall_timeout = stall_timeout
+        self._stall_override: int | None = None  # `patient()` raises the budget for heavy calls
+        self._retries_override: int | None = None  # …and can lower the retry count for them
         self._stall_poll = 5.0  # how often the watchdog checks the liveness clock
         self.logs = logs or Logs.under(project=self.directory)
         self._proc: subprocess.Popen | None = None
@@ -257,22 +276,52 @@ class Backend:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode())
 
+    def _effective_stall(self) -> int:
+        """The stall budget in force right now — the `patient()` override if one is set
+        (heavy reconcile/handoff calls, whose large-transcript inputs make a slow first
+        token normal), else the default `stall_timeout`."""
+        return self._stall_override or self.stall_timeout
+
+    def _effective_retries(self) -> int:
+        """The retry count in force right now — the `patient()` override if one is set, else
+        the default `retries`. Heavy calls lower this: a throttled heavy call is a silent
+        hang that burns the whole (wide) stall budget with nothing to show, so more attempts
+        just mean more dead-waiting; two is enough to cover one genuinely-slow legit call."""
+        return self._retries_override or self.retries
+
+    @contextmanager
+    def patient(self, stall_timeout: int, retries: int | None = None):
+        """Widen the stall budget for a block of heavy calls — reconcile and handoff read
+        whole transcripts, so their time-to-first-token dwarfs a play turn's, and the
+        default budget would abort a working-but-slow call as a false hang. Optionally also
+        lower the retry count (a throttled heavy call burns the full budget per attempt with
+        nothing to show — see `_effective_retries`). Prompts are serialized, so single
+        override attributes are safe; nested calls restore the outer values on exit."""
+        prev_stall, prev_retries = self._stall_override, self._retries_override
+        self._stall_override = stall_timeout
+        self._retries_override = retries
+        try:
+            yield
+        finally:
+            self._stall_override, self._retries_override = prev_stall, prev_retries
+
     def _post_watched(self, path: str, body: dict, session_id: str) -> dict:
         """A prompt POST guarded by the stall watchdog: while the (blocking) call is in
         flight, a helper thread checks the liveness clock; if no stream activity has
-        arrived for `stall_timeout`, it aborts the server-side generation — which
-        unwinds the POST — and sets `_stalled` so `_run_prompt` retries it as a
-        rate-limited hang rather than a real reply. The hard `turn_timeout` stays as a
-        backstop for the pathological case where the abort itself doesn't unblock."""
+        arrived for the effective stall budget, it aborts the server-side generation —
+        which unwinds the POST — and sets `_stalled` so `_run_prompt` retries it as a
+        stall rather than a real reply. The hard `turn_timeout` stays as a backstop for
+        the pathological case where the abort itself doesn't unblock."""
         self._stalled = False
         self._last_activity = time.time()
+        budget = self._effective_stall()
         done = threading.Event()
 
         def watch() -> None:
             while not done.wait(self._stall_poll):
                 if self._cancel.is_set():
                     return
-                if time.time() - self._last_activity > self.stall_timeout:
+                if time.time() - self._last_activity > budget:
                     self._stalled = True
                     try:
                         self._raw_post(f"/session/{session_id}/abort", {}, timeout=10)
@@ -545,15 +594,16 @@ class Backend:
         body = {"agent": agent, "parts": [{"type": "text", "text": text}]}
         self._cancel.clear()
         self._inflight_sid = session_id
+        retries = self._effective_retries()
         try:
-            for attempt in range(self.retries):
+            for attempt in range(retries):
                 self._pace()
                 try:
                     resp = self._post_watched(f"/session/{session_id}/message", body, session_id)
                     if self._cancel.is_set():
                         raise BackendCancelled(f"{agent} call cancelled")
                     if self._stalled:
-                        reason = f"no output for {self.stall_timeout}s (rate-limited hang)"
+                        reason = f"no output for {self._effective_stall()}s (stalled — rate limit or slow first token)"
                     else:
                         out = self._all_text(resp) if whole else self._last_text(resp)
                         if self.logs.debug:
@@ -579,13 +629,13 @@ class Backend:
                         raise BackendCancelled(f"{agent} call cancelled")
                     # A stall abort can surface here (aborted POST) rather than as a
                     # clean return — name it as the hang it is, not a raw socket error.
-                    reason = (f"no output for {self.stall_timeout}s (rate-limited hang)"
+                    reason = (f"no output for {self._effective_stall()}s (stalled — rate limit or slow first token)"
                               if self._stalled else str(e))
                 wait = min(15 * (2 ** attempt), 120)
                 if self.on_retry:
                     self.on_retry(agent, attempt + 1, wait, reason)
                 if self._cancel.wait(wait):  # interruptible backoff — abort breaks the wait
                     raise BackendCancelled(f"{agent} call cancelled")
-            raise BackendError(f"{agent} failed after {self.retries} retries")
+            raise BackendError(f"{agent} failed after {retries} retries")
         finally:
             self._inflight_sid = None
