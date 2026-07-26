@@ -10,6 +10,16 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Added
+- **`bench tokens` — what a run cost, retroactively.** opencode already aggregates
+  `tokens_input/output/reasoning/cache_read/cache_write` and `cost` per session, keyed on the
+  session's directory, and every bench run plays in its own dir — so a prefix match reports runs
+  that were never instrumented for it, including ones already on disk. Per-agent split, grading
+  (`grade-ws`) kept in its own column rather than folded into what play cost, and `--json`. Pass
+  `--price-in/--price-out/--price-cache-read` for a hypothetical cost table; without them no
+  dollar figures are shown, since the only cost opencode records on a free tier is `0.00`.
+  Reasoning tokens are reported as a separate surcharge line because whether a provider bills
+  them inside `output` or on top varies. The reader is read-only and fails soft — a missing store
+  or a renamed column yields a reason string, never an exception into a benchmark run.
 - **A benchmark score (`bench report`).** Dedup'd violations now roll up into a 0–100 *integrity
   score*: each violation costs penalty points by severity (trivial 0.25, minor 1, major 4,
   critical 12), the points normalize by graded units (turns + stage gates) into a rate, and the

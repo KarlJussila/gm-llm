@@ -15,7 +15,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import grade, runner, scoring
+from . import grade, runner, scoring, tokens
 
 # The fixtures live under dev/, resolved from this file's location so the default holds
 # regardless of the invoker's cwd (bench/cli.py → gm_llm → repo root).
@@ -74,6 +74,23 @@ def add_bench_parser(subparsers, common) -> None:
                           help="emit the machine-readable summary instead of the text report")
     report_p.set_defaults(func=cmd_bench_report)
 
+    tok = bsub.add_parser("tokens",
+                          help="what a batch cost in tokens, read back from opencode's store "
+                               "(retroactive; no model calls)")
+    tok.add_argument("--out", default="bench-out",
+                     help="batch dir to read (default: bench-out)")
+    tok.add_argument("--data-dir", default=None,
+                     help="opencode data dir (default: $OPENCODE_DATA or ~/.local/share/opencode)")
+    tok.add_argument("--price-in", type=float, default=None, metavar="USD",
+                     help="$ per million input tokens — enables the hypothetical cost table")
+    tok.add_argument("--price-out", type=float, default=None, metavar="USD",
+                     help="$ per million output tokens")
+    tok.add_argument("--price-cache-read", type=float, default=0.0, metavar="USD",
+                     help="$ per million cached-read tokens (default: 0)")
+    tok.add_argument("--json", action="store_true",
+                     help="emit the machine-readable reading instead of the text report")
+    tok.set_defaults(func=cmd_bench_tokens)
+
 
 def cmd_bench_run(args) -> None:
     """Translate the parsed args into a `run_batch` call. Reconcile is a long between-
@@ -126,4 +143,29 @@ def cmd_bench_report(args) -> None:
         print(json.dumps(batch, ensure_ascii=False, indent=2))
     else:
         print(scoring.format_report(batch))
+    sys.exit(0)
+
+
+def cmd_bench_tokens(args) -> None:
+    """Read `--out`'s token usage back out of opencode's own store. Retroactive and free:
+    opencode already aggregated this per session, so runs played before this command
+    existed report just the same. Prices are only ever the ones passed in."""
+    batch = tokens.usage_for_batch(args.out, data_dir=args.data_dir)
+    if args.json:
+        payload = {
+            "out_dir": batch["out_dir"],
+            "runs": {name: {"unavailable": r.unavailable, "total": vars(r.total),
+                            "by_agent": {a: vars(u) for a, u in r.by_agent.items()}}
+                     for name, r in batch["runs"].items()},
+            "grading": {"unavailable": batch["grading"].unavailable,
+                        "total": vars(batch["grading"].total)},
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        sys.exit(0)
+    prices = None
+    if args.price_in is not None and args.price_out is not None:
+        prices = (args.price_in, args.price_out, args.price_cache_read)
+    elif args.price_in is not None or args.price_out is not None:
+        _note("--price-in and --price-out must be given together — skipping the cost table.")
+    print(tokens.format_tokens(batch, prices=prices))
     sys.exit(0)
