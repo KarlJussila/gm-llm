@@ -21,34 +21,6 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   a rung is arithmetic and not a comment — with warnings against both inflating to `critical` and
   flattening everything to `major`. A test pins the rubric's table to the weights in code.
 
-### Changed
-- **Grading counts violations, not verdicts.** A checker report enumerating several distinct
-  problems on one turn used to grade as a single finding; it now splits on the report's numbered
-  list and grades each separately (refs gain a `#n` suffix). On the first scored run that turns
-  9 findings into 15. An unnumbered or single-item report is unchanged.
-
-### Fixed
-- **The turn cap is no longer treated as a condition.** A cap no run reached is inert — it reaches
-  no prompt (it lives entirely as a loop bound in `bench/runner.py`) and the wrap nudge keys off
-  opencode's context threshold, not the cap — so runs configured at 30 and at 50 pooled fine but
-  were flagged `MIXED CONDITIONS` and refused. Comparability now ignores the configured cap and
-  flags what actually matters: a run the cap *bound*, which is truncated, skipped reconcile, and
-  has no stage findings. The report banners those under instrument health.
-- **An archive the manifest doesn't point at can no longer vanish from the score.** `bench grade`
-  and `bench report` read `batch.jsonl` and nothing else, so a stray archive in a run dir
-  contributed no violations — scoring as clean play rather than as missing data. Both now scan the
-  run dirs and name any unmanifested archive loudly (the report banners it under instrument
-  health); `--resume` likewise warns instead of silently taking the newest when a run dir holds
-  more than one. Deliberate backup dirs are excluded. This is the split-archive incident, where
-  reconcile invoked as its own `bench run` wrote a second stream whose stage findings would have
-  been dropped without a word.
-- **Two checks flagging one draft are no longer double-counted.** The grader's dedup window
-  excluded same-turn findings entirely, so when `check-turn` and `check-conduct` both caught the
-  same mistake — the commonest double-count there is — the second was structurally unable to be
-  marked a duplicate. The window now spans the same turn, while siblings enumerated by the *same*
-  check stay out of it (those are distinct by construction). Rubric v1 gained the matching
-  guidance, plus a note that the check which flagged a violation constrains its category —
-  `record-integrity` covers the between-session record gates only.
 - **Resumable bench runs (`bench run --resume`).** A play that hits a sustained rate limit mid-session
   is now recorded `incomplete` (not `failed`) with its turns intact — the transcript and score archive
   stay on disk. `bench run --resume` picks every incomplete run in `--out` back up and continues it in
@@ -57,18 +29,16 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   second `conditions` event, and updates the run's manifest line in place. Rate limits no longer burn
   progress on an overnight free-tier batch. (A give-up *before any turn lands* is still a real `failed`.)
 
-### Fixed
-- **A naturally-wrapped bench run is no longer demoted by a post-wrap stall.** Handoff and reconcile
-  run *after* the session wraps; a rate limit (or a slow large-input call the retries gave up on) there
-  used to propagate out and relabel the fully-played run `incomplete`/`failed` with a stale turn count
-  — while its archive still read `complete`, so `bench run --resume` (which classifies from the archive)
-  skipped it forever, stranding the contradiction. Play is the measured subject: once it wraps the run
-  is `complete`, and a failed post-wrap step just leaves reconcile undone.
-
 ### Changed
+- **Grading counts violations, not verdicts.** A checker report enumerating several distinct
+  problems on one turn used to grade as a single finding; it now splits on the report's numbered
+  list and grades each separately (refs gain a `#n` suffix). On the first scored run that turns
+  9 findings into 15. An unnumbered or single-item report is unchanged.
+
 - **Bench turn cap default 30 → 50.** The fixture's sessions were wrapping right at 30 (session 3's
   transcript is the campaign's largest), leaving no headroom — a session a turn longer would trip the
   cap and skip reconcile. 50 gives a natural wrap room to land before the safety net.
+
 - **Stall watchdog widened for heavy calls; default given headroom.** The per-call stall budget (abort
   a call with no stream activity for this long) rises from 120s to 180s, and reconcile/handoff — which
   read whole transcripts (their prefill emits no stream parts, so a working first token is minutes out)
@@ -79,16 +49,50 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   covers one genuinely-slow legit call, then gives up in ~30 min and lets a resume pick it up when the
   caps clear. The give-up message no longer asserts "rate-limited hang" (it can't tell a rate limit
   from a slow first token).
+
 - **Checker false-positive narrowing.** `check-conduct`'s player-agency check no longer flags an NPC
   deflecting or partly answering a question, the DM correcting a player's mistaken description of a
   world fact, or un-echoed player dialogue/action — only a wholly-unacknowledged action, or narration
   that *contradicts* what the player declared. `check-turn` now distinguishes a draft *extending* the
   transcript with consistent detail (ordinary play) from *conflicting* with it (the real error).
+
 - **Checker feedback is suppress-only.** `check-conduct` no longer treats
   `campaign/feedback/session-run.md` as a binding rule set — feedback can now only *excuse* a flag it
   would otherwise raise, never create a new one. Stops soft runner-craft guidance ("offer X when
   adrift") from silently becoming a hard checker gate, and keeps the benchmark's measurement
   instrument from drifting as player feedback accumulates.
+
+### Fixed
+- **The turn cap is no longer treated as a condition.** A cap no run reached is inert — it reaches
+  no prompt (it lives entirely as a loop bound in `bench/runner.py`) and the wrap nudge keys off
+  opencode's context threshold, not the cap — so runs configured at 30 and at 50 pooled fine but
+  were flagged `MIXED CONDITIONS` and refused. Comparability now ignores the configured cap and
+  flags what actually matters: a run the cap *bound*, which is truncated, skipped reconcile, and
+  has no stage findings. The report banners those under instrument health.
+
+- **An archive the manifest doesn't point at can no longer vanish from the score.** `bench grade`
+  and `bench report` read `batch.jsonl` and nothing else, so a stray archive in a run dir
+  contributed no violations — scoring as clean play rather than as missing data. Both now scan the
+  run dirs and name any unmanifested archive loudly (the report banners it under instrument
+  health); `--resume` likewise warns instead of silently taking the newest when a run dir holds
+  more than one. Deliberate backup dirs are excluded. This is the split-archive incident, where
+  reconcile invoked as its own `bench run` wrote a second stream whose stage findings would have
+  been dropped without a word.
+
+- **Two checks flagging one draft are no longer double-counted.** The grader's dedup window
+  excluded same-turn findings entirely, so when `check-turn` and `check-conduct` both caught the
+  same mistake — the commonest double-count there is — the second was structurally unable to be
+  marked a duplicate. The window now spans the same turn, while siblings enumerated by the *same*
+  check stay out of it (those are distinct by construction). Rubric v1 gained the matching
+  guidance, plus a note that the check which flagged a violation constrains its category —
+  `record-integrity` covers the between-session record gates only.
+
+- **A naturally-wrapped bench run is no longer demoted by a post-wrap stall.** Handoff and reconcile
+  run *after* the session wraps; a rate limit (or a slow large-input call the retries gave up on) there
+  used to propagate out and relabel the fully-played run `incomplete`/`failed` with a stale turn count
+  — while its archive still read `complete`, so `bench run --resume` (which classifies from the archive)
+  skipped it forever, stranding the contradiction. Play is the measured subject: once it wraps the run
+  is `complete`, and a failed post-wrap step just leaves reconcile undone.
 
 ## [0.4.2] — 2026-07-18
 
