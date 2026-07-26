@@ -13,7 +13,7 @@ narrative-checker, which judges whether the committed values *cohere* with the r
 canon. Code catches "no surname"; the checker catches "surname contradicts the faction
 file."
 
-Used standalone (`cli.py lint`) and, from slice (ii), inside the reconcile/prep gate.
+Used standalone (`gm-llm dev lint`) and, from slice (ii), inside the reconcile/prep gate.
 """
 
 from __future__ import annotations

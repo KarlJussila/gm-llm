@@ -133,17 +133,28 @@ UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
 ### The CLI
 
-`gm-llm` is one dispatcher over the same orchestrator core. Every command targets
-a campaign project via `--dir` (default: the current directory):
+`gm-llm` is one dispatcher over the same orchestrator core. The top level is
+player-facing and takes the campaign as a path (default: the current directory):
 
 ```
-status                                 where the campaign stands (disk only, no model)
-play       [--turns 6] [--resume]      drive the gated loop with the scripted player agent
-prep       [--session N] [--no-commit]                     PRE: author + gate + commit the plan
-reconcile  [--session N] [--no-commit] [--no-prep] [--fresh]   POST: the staged pipeline
-tui        [--live] [--setup] [--theme …]                  the Textual app
-lint       [--dir …]                   entity-completeness lint, standalone
-ping       [N]                         probe the model's rate-limit state
+play    [dir] [--player human|auto] [--ui tui|console] [--mock] [--setup]
+status  [dir]                          where the campaign stands (disk only, no model)
+tokens  [dir] [--price-in …]           token + cost usage, from opencode's own store
+init | update | doctor  [dir]
+```
+
+The `dev` and `bench` groups are workshop surfaces and appear **only when running from
+a source checkout** (`bench` needs `dev/fixtures/`, which isn't packaged). From a
+checkout, reach them with `python -m gm_llm …`, which runs the checkout's code with no
+install step. They target a campaign via `--dir`:
+
+```
+dev autoplay   [--turn-cap 6] [--fresh] [--character …]   the scripted player agent plays
+dev prep       [--session N] [--no-commit]                PRE: author + gate + commit the plan
+dev reconcile  [--session N] [--no-commit] [--no-prep] [--fresh]   POST: the staged pipeline
+dev lint                               entity-completeness lint, standalone
+dev ping       [N]                     probe the model's rate-limit state
+bench run | grade | report             the benchmark harness (BENCHMARK.md)
 ```
 
 Defaults do the right thing: `prep` targets the next session and `reconcile` the latest
@@ -198,7 +209,7 @@ the required `## Vitals` completeness block per entity).
 | `narrative-checker` | subagent | The verification engine, one skill per role (`check-*`). Reads and reports only; submits verdicts via the `report_findings` tool. |
 | `campaign-analyst` | subagent | Post-session assessment (`session-review`) and player-feedback curation (`feedback-curation`). |
 | `log-extractor` | subagent | Transcript → structured session digest (`log-extract`), lossless. |
-| `player` | primary | Test harness only — a scripted autoplayer for `cli.py play`. |
+| `player` | primary | Test harness only — a scripted autoplayer for `gm-llm dev autoplay`. |
 
 Both primary agents hold **spoiler discipline**: the human is the player and hasn't read
 the planning files; secrets live in files, never in conversation. The boundary is data,

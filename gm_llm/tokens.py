@@ -1,5 +1,5 @@
 """
-`bench tokens` — what a run actually cost, in tokens (BENCHMARK.md B2, instrument health).
+`gm-llm tokens` — what a campaign or a benchmark batch cost, in tokens.
 
 opencode already records this: every session row in its store carries `directory` plus
 pre-aggregated `tokens_input / tokens_output / tokens_reasoning / tokens_cache_read /
