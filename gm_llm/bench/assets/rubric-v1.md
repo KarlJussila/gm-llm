@@ -37,6 +37,31 @@ egregious the mistake looks in the abstract.
 When a finding sits between two levels, choose the higher only if a real player would plausibly be
 affected; otherwise choose the lower.
 
+### What each rung costs
+
+Your label is not a comment — it is arithmetic. Each violation charges penalty points against the
+run's score, normalized by its length:
+
+| severity | points |
+|----------|--------|
+| trivial  | 0.25   |
+| minor    | 1      |
+| major    | 4      |
+| critical | 12     |
+
+The ladder is steep on purpose: one critical outweighs three majors, and a major outweighs four
+minors. So the rungs are not interchangeable shades of "bad" — moving a finding one rung changes
+the run's score several times more than the finding above or below it would. Two consequences:
+
+- **Don't inflate.** Reaching for `critical` to signal that something annoyed you costs the run as
+  much as three genuinely major failures. `critical` is for damage that cannot be walked back.
+- **Don't flatten.** Grading everything `major` because most things look roughly equally wrong
+  makes the score blind to the difference between a sloppy session and a broken one. If a slip is
+  genuinely invisible to this player, `trivial` and `minor` are the honest answers and they exist
+  to be used.
+
+Grade the consequence you actually see in the draft, and let the arithmetic do its own work.
+
 ## Categories — pick the one that fits
 
 These are the things the runtime and stage checks flag. Pick the single best-fitting label.
@@ -67,13 +92,27 @@ These are the things the runtime and stage checks flag. Pick the single best-fit
   entity file left missing required fields by the completeness lint. *(check-plan / check-digest /
   check-propagation / check-feedback / check-init / lint)*
 
-If a finding genuinely spans two categories, pick the one the checker's report leads with.
+The check named in parentheses is the one that emits that category — treat it as binding. A
+violation flagged by `check-turn` during play is not `record-integrity`, however much it reads like
+a bookkeeping slip; `record-integrity` covers only the between-session record gates. If a finding
+genuinely spans two categories your check does emit, pick the one the checker's report leads with.
 
 ## Duplicate marker
 
-You will be shown a short window of findings already graded on the previous turns, each with a
-one-line rationale and a ref id. If the finding you are grading is the **same underlying
-violation persisting** — the runner kept the same wrong NPC location for a third turn, the same
-invented name recurs — set `duplicate_of` to that earlier finding's ref id. A persisting
-violation must not multiply the score. If it is a fresh, distinct violation, leave `duplicate_of`
-an empty string. Grade its severity and category normally either way; the dedup is applied on top.
+You will be shown a short window of findings already graded on this turn and the few before it,
+each with a one-line rationale and a ref id. Set `duplicate_of` to an earlier finding's ref id
+when yours is **the same underlying violation counted again**. Two ways that happens:
+
+- **The same mistake persisting across turns** — the runner kept the same wrong NPC location for
+  a third turn; the same invented name recurs.
+- **Two checks flagging one draft.** `check-turn` and `check-conduct` gate the same narration, so
+  one mistake often trips both — an overridden failed roll read as a canon problem by one and a
+  dice problem by the other. Same mistake, one violation. Judge by *what the runner did wrong*,
+  not by how each report frames it: if fixing it once would clear both, it is a duplicate.
+
+If it is a genuinely distinct problem, leave `duplicate_of` an empty string — even on a turn that
+already has findings. A turn where the runner fabricated an NPC *and* skipped a mandatory check
+went wrong twice and scores twice. When the brief says your finding is one of several the same
+check enumerated, those siblings are distinct by construction and are never duplicates of it.
+
+Grade severity and category normally either way; the dedup is applied on top.

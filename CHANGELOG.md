@@ -10,6 +10,31 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Added
+- **A benchmark score (`bench report`).** Dedup'd violations now roll up into a 0–100 *integrity
+  score*: each violation costs penalty points by severity (trivial 0.25, minor 1, major 4,
+  critical 12), the points normalize by graded units (turns + stage gates) into a rate, and the
+  rate maps to the score (0 at 2 points/unit). Five dimension subscores — canon fidelity,
+  information discipline, player agency, mechanical integrity, record integrity — share the same
+  denominator, so the composite derives from the total penalty instead of averaging subscores,
+  and the per-dimension deficits sum to the total deficit. Reported beside the severity vector,
+  not in place of it. Rubric v1 now shows the grader the point table itself, so it grades knowing
+  a rung is arithmetic and not a comment — with warnings against both inflating to `critical` and
+  flattening everything to `major`. A test pins the rubric's table to the weights in code.
+
+### Changed
+- **Grading counts violations, not verdicts.** A checker report enumerating several distinct
+  problems on one turn used to grade as a single finding; it now splits on the report's numbered
+  list and grades each separately (refs gain a `#n` suffix). On the first scored run that turns
+  9 findings into 15. An unnumbered or single-item report is unchanged.
+
+### Fixed
+- **Two checks flagging one draft are no longer double-counted.** The grader's dedup window
+  excluded same-turn findings entirely, so when `check-turn` and `check-conduct` both caught the
+  same mistake — the commonest double-count there is — the second was structurally unable to be
+  marked a duplicate. The window now spans the same turn, while siblings enumerated by the *same*
+  check stay out of it (those are distinct by construction). Rubric v1 gained the matching
+  guidance, plus a note that the check which flagged a violation constrains its category —
+  `record-integrity` covers the between-session record gates only.
 - **Resumable bench runs (`bench run --resume`).** A play that hits a sustained rate limit mid-session
   is now recorded `incomplete` (not `failed`) with its turns intact — the transcript and score archive
   stay on disk. `bench run --resume` picks every incomplete run in `--out` back up and continues it in

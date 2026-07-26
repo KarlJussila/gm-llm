@@ -165,6 +165,121 @@ def test_findings_from_events(tmp):
     assert "2 entity file" in lint.report and lint.check == "lint"
 
 
+_MULTI = (
+    "1. **Fabricated NPC identity — Aldric Voss.** No canon entry.\n"
+    "   - **Source:** drafted turn.\n"
+    "   - **Fix:** defer the name. Two options:\n"
+    "     1. leave him unnamed\n"
+    "     2. use the papers' name only\n"
+    "2. **Gates bypassed — Investigation DC14 not rolled.** Plan line 44.\n"
+    "   - **Fix:** call for the roll.\n"
+)
+
+
+def test_split_report(tmp):
+    items = grade.split_report(_MULTI)
+    assert len(items) == 2, f"two top-level violations, got {len(items)}: {items}"
+    assert items[0].startswith("1. **Fabricated NPC")
+    assert "leave him unnamed" in items[0], "an indented sub-list belongs to its item, not a new one"
+    assert items[1].startswith("2. **Gates bypassed")
+    # a single-violation report stays whole; an unnumbered one degrades gracefully
+    assert grade.split_report("1. **Only one.** Sole problem.") == ["1. **Only one.** Sole problem."]
+    assert grade.split_report("no list at all") == ["no list at all"]
+    # nothing in the report is discarded
+    pre = grade.split_report("Preamble line.\n\n" + _MULTI)
+    assert len(pre) == 2 and pre[0].startswith("Preamble line."), "preamble rides with item 1"
+
+
+def test_multiple_violations_in_one_verdict_count_separately(tmp):
+    findings = grade.findings_from_events([
+        _turn(1, 4, [_verdict("check-turn", False, _MULTI), _verdict("check-conduct", True)]),
+    ])
+    assert [f.ref for f in findings] == ["s1t4:check-turn#1", "s1t4:check-turn#2"]
+    assert [(f.item, f.of) for f in findings] == [(1, 2), (2, 2)]
+    assert "Aldric" in findings[0].report and "Aldric" not in findings[1].report, \
+        "each finding carries only its own violation's prose"
+    assert all(f.draft == "The inn is warm." for f in findings), "both grade the same draft"
+    # the brief tells the grader these siblings are distinct by construction
+    brief = grade.build_brief(_RUBRIC, findings[0], [])
+    assert "one of 2 separate violations" in brief and "are not duplicates" in brief
+
+
+def test_window_spans_same_turn_but_not_same_verdict(tmp):
+    """The two checks gate one draft, so a same-turn sibling must be offerable for dedup —
+    while siblings the same check enumerated must not be."""
+    graded = [
+        {"ref": "s1t4:check-turn#1", "turn": 4, "severity": "major",
+         "category": "fabrication", "rationale": "invented Voss."},
+        {"ref": "s1t4:check-turn#2", "turn": 4, "severity": "major",
+         "category": "dice-and-uncertainty", "rationale": "skipped the DC14."},
+        {"ref": "s1t1:check-turn", "turn": 1, "severity": "minor",
+         "category": "pacing", "rationale": "way back."},
+    ]
+    sibling = Finding(ref="s1t4:check-conduct", kind="turn", check="check-conduct",
+                      report="same overridden roll", session=1, turn=4)
+    refs = [w["ref"] for w in grade._window(sibling, graded)]
+    assert "s1t4:check-turn#1" in refs, "a same-turn sibling from the OTHER check is dedup-able"
+
+    own = Finding(ref="s1t4:check-turn#3", kind="turn", check="check-turn",
+                  report="a third thing", session=1, turn=4, item=3, of=3)
+    refs = [w["ref"] for w in grade._window(own, graded)]
+    assert refs == ["s1t1:check-turn"], \
+        f"siblings of the same verdict are never offered as duplicates, got {refs}"
+
+    # ...and a violation further back than the window is out of range entirely
+    far = Finding(ref="s1t9:check-conduct", kind="turn", check="check-conduct",
+                  report="much later", session=1, turn=9)
+    assert [w["ref"] for w in grade._window(far, graded)] == [], \
+        "turn 9 is past the 3-turn window on every graded finding"
+    near = Finding(ref="s1t7:check-conduct", kind="turn", check="check-conduct",
+                   report="three turns on", session=1, turn=7)
+    assert [w["ref"] for w in grade._window(near, graded)] == ["s1t4:check-turn#1",
+                                                              "s1t4:check-turn#2"]
+
+
+def test_score_model(tmp):
+    units = 20
+    scored = [
+        {"ref": "a", "severity": "critical", "category": "spoiler-leak"},
+        {"ref": "b", "severity": "major", "category": "fabrication"},
+        {"ref": "c", "severity": "major", "category": "canon-contradiction"},
+        {"ref": "d", "severity": "minor", "category": "agency"},
+        {"ref": "e", "severity": "major", "category": "fabrication", "duplicate_of": "b"},
+        {"ref": "f", "severity": "major", "category": "agency", "ungraded": True},
+    ]
+    s = scoring.score_violations(scored, units)
+    assert s["penalty"] == 12 + 4 + 4 + 1, "dups and ungraded cost nothing"
+    assert s["rate"] == 21 / 20
+    assert abs(s["score"] - 100 * (1 - (21 / 20) / 2)) < 1e-6
+
+    dims = s["dimensions"]
+    assert dims["canon_fidelity"]["penalty"] == 8 and dims["canon_fidelity"]["violations"] == 2
+    assert dims["information_discipline"]["penalty"] == 12
+    assert dims["player_agency"]["penalty"] == 1
+    assert dims["mechanical_integrity"]["penalty"] == 0
+    assert dims["mechanical_integrity"]["score"] == 100, "a clean dimension scores 100"
+
+    # the headline is computed from the total, not averaged from the subscores — so the
+    # deficits decompose additively while every subscore is above its clamp
+    deficit = sum(100 - d["score"] for d in dims.values())
+    assert abs(deficit - (100 - s["score"])) < 1e-6
+
+    # a run with nothing to divide by scores None rather than a fake 100
+    assert scoring.score_violations([], 0)["score"] is None
+    # an off-rubric severity is counted, never silently free
+    odd = scoring.score_violations([{"ref": "x", "severity": "catastrophic", "category": "agency"}], 10)
+    assert odd["off_rubric_severities"] == 1 and odd["penalty"] == 0
+
+
+def test_rubric_penalty_table_matches_the_score_model(tmp):
+    """The rubric shows the grader what each rung costs, so the same numbers now live in
+    prose and in code. `_PENALTY` is the authority; this fails the moment they drift."""
+    rows = dict(re.findall(r"(?m)^\|\s*(\w+)\s*\|\s*([\d.]+)\s*\|\s*$", _RUBRIC))
+    assert rows, "the rubric's penalty table is gone or no longer parses"
+    parsed = {sev: float(pts) for sev, pts in rows.items()}
+    assert parsed == scoring._PENALTY, f"rubric says {parsed}, code says {scoring._PENALTY}"
+
+
 def test_grades_file_shape_and_idempotence(tmp):
     archive = _write_archive(tmp, "20260717T000000Z-aaaa", [
         _turn(1, 1, [_verdict("check-turn", False, "wrong hair"), _verdict("check-conduct", True)],
@@ -325,6 +440,9 @@ def test_grade_batch_double(tmp):
 
 def main():
     tests = (test_brief_carries_draft_report_rubric, test_findings_from_events,
+             test_split_report, test_multiple_violations_in_one_verdict_count_separately,
+             test_window_spans_same_turn_but_not_same_verdict, test_score_model,
+             test_rubric_penalty_table_matches_the_score_model,
              test_grades_file_shape_and_idempotence, test_ungraded_after_nudge,
              test_dedup_via_duplicate_of, test_double_agreement, test_report_aggregation,
              test_mixed_conditions_warning, test_grade_batch_double)

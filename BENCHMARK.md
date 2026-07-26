@@ -161,8 +161,18 @@ Promote the `dev/cli.py play` harness (the scripted `player` agent) to benchmark
   a structured tool call. Offline, decoupled from play — no rate coupling, one finding
   per brief if focus demands it.
 - A versioned severity rubric doc (the grader brief embeds it; the archive records the
-  rubric version used). Deduplication of a violation flagged across consecutive turns;
-  per-session calibration.
+  rubric version used). One grading unit per *violation* — a checker report enumerating
+  three problems on one turn grades as three. Deduplication of a violation counted twice:
+  the same mistake persisting across turns, or one draft tripping both `check-turn` and
+  `check-conduct`. Per-session calibration.
+- **The score model** (`scoring.score_violations`): each dedup'd violation costs penalty
+  points by severity (steep — a critical is worth three majors), normalized by graded units
+  into a rate, mapped to a 0–100 integrity score. Subscores on five dimensions (canon
+  fidelity, information discipline, player agency, mechanical integrity, record integrity)
+  use the same denominator, so the composite comes from the total penalty rather than an
+  average of subscores and the deficits decompose additively. Reported *beside* the severity
+  vector, never instead of it. The 0-point floor rate is a display calibration — retune it
+  once B3 shows where tier 0 lands.
 - Instrument reliability: `bench grade --double` grades a sample twice and reports
   agreement. Also surface the `defaulted`-verdict rate — a checker not doing its job
   must never read as the subject improving.

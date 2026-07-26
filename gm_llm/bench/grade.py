@@ -20,10 +20,12 @@ Three pieces:
     `gm_llm/bench/assets/`, never the shipped `gm_llm/assets/opencode/`.
 
   * **Finding extraction** — `findings_from_events` turns an archive into one grading
-    unit per flagged verdict (a failed, non-`defaulted` verdict on a turn or a stage
-    gate, plus the completeness lint). One brief per finding: focus beats batching. The
-    brief carries the rubric verbatim, the turn context, the DRAFT (grade the draft,
-    always — the methodology's rule), and the checker's full report.
+    unit per *violation*: a failed, non-`defaulted` verdict on a turn or a stage gate is
+    split on the numbered list the checker wrote (`split_report`), so a turn that both
+    fabricated an NPC and skipped a mandatory check counts twice. Plus the completeness
+    lint. One brief per finding: focus beats batching. The brief carries the rubric
+    verbatim, the turn context, the DRAFT (grade the draft, always — the methodology's
+    rule), and the checker's prose for that violation.
 
   * **The grade pass** — `grade_archive` walks a run's findings in order, grades each in
     its own fresh grader session, and writes `grades-<run_id>-<rubric>.jsonl` next to the
@@ -68,9 +70,16 @@ _NUDGE_SUBMIT_GRADE = (
 
 # The dedup window handed to the grader: the most recent already-graded findings, and —
 # when both carry a turn number — only those within this many turns (a violation ten turns
-# apart is not the same persisting one).
-_WINDOW_ITEMS = 8
+# apart is not the same persisting one). Same-turn siblings ARE in the window: two checks
+# firing on one draft is the commonest double-count there is.
+_WINDOW_ITEMS = 12
 _WINDOW_TURNS = 3
+
+# A checker's report enumerates its violations as a top-level markdown list ("1. **Title.**
+# …"). Each item is one violation and grades separately — a turn where the runner both
+# fabricated an NPC and skipped a mandatory check is two violations, not one. Column-0 only:
+# indented numbering belongs to a Fix's sub-list, not to a new finding.
+_ITEM_RE = re.compile(r"(?m)^(\d+)\.[ \t]+(?=\S)")
 
 
 def _now() -> str:
@@ -147,8 +156,9 @@ def grader_meta(ws) -> dict:
 @dataclass
 class Finding:
     """One violation to grade: the checker already flagged it; the grader only scores it.
-    `ref` is a stable id (session/turn/stage + check) the dedup window keys off; `draft` is
-    the artifact as gated (grade the draft, always); `report` is the checker's prose."""
+    `ref` is a stable id (session/turn/stage + check, suffixed `#n` when the check's report
+    enumerated several violations) the dedup window keys off; `draft` is the artifact as
+    gated (grade the draft, always); `report` is the checker's prose for this one item."""
     ref: str
     kind: str                       # "turn" | "stage"
     check: str                      # check-turn / check-conduct / check-combat / plan / … / lint
@@ -158,6 +168,28 @@ class Finding:
     session: int | None = None
     turn: int | None = None
     stage: str | None = None
+    item: int = 1                   # 1-based index within the check's report
+    of: int = 1                     # how many violations that report enumerated
+
+
+def split_report(report: str) -> list[str]:
+    """A checker's report → one string per violation it enumerated. Checkers write a
+    top-level numbered list, one entry per distinct problem (each with its own Source and
+    Fix); grading the report as a single unit under-counts a turn that went wrong in two
+    unrelated ways. Falls back to the whole report when there is no list to split on (a
+    single-violation report, or a checker that didn't number), so an unexpected format
+    degrades to the old behaviour instead of dropping content. Any preamble before the
+    first item rides with it — nothing in the report is discarded."""
+    text = (report or "").strip()
+    marks = list(_ITEM_RE.finditer(text))
+    if len(marks) < 2:
+        return [text]
+    items = []
+    for i, m in enumerate(marks):
+        start = 0 if i == 0 else m.start()       # preamble rides with item 1
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
+        items.append(text[start:end].strip())
+    return items
 
 
 def _flagged(verdict: dict) -> bool:
@@ -167,11 +199,22 @@ def _flagged(verdict: dict) -> bool:
     return verdict.get("passed") is False and not verdict.get("defaulted")
 
 
+def _explode(base_ref: str, report: str, **kw) -> list[Finding]:
+    """One Finding per violation enumerated in `report`, refs suffixed `#n` when there is
+    more than one. A single-violation report keeps the bare ref (and the `-v1` grades of a
+    run graded before the split stay ref-comparable)."""
+    items = split_report(report)
+    n = len(items)
+    return [Finding(ref=(f"{base_ref}#{i}" if n > 1 else base_ref), report=text,
+                    item=i, of=n, **kw)
+            for i, text in enumerate(items, 1)]
+
+
 def findings_from_events(events: list[dict]) -> list[Finding]:
-    """Every grading unit in one archive's event stream, in play order: one per flagged
-    turn verdict (check-turn / check-conduct / check-combat), one per flagged stage gate
-    (plan / digest / feedback / propagation / init), and one per completeness-lint miss.
-    A turn or stage whose verdicts all passed produces no work."""
+    """Every grading unit in one archive's event stream, in play order: one per violation
+    enumerated by a flagged turn verdict (check-turn / check-conduct / check-combat) or a
+    flagged stage gate (plan / digest / feedback / propagation / init), plus one per
+    completeness-lint miss. A turn or stage whose verdicts all passed produces no work."""
     findings: list[Finding] = []
     for e in events:
         ev = e.get("event")
@@ -181,10 +224,10 @@ def findings_from_events(events: list[dict]) -> list[Finding]:
             for v in e.get("verdicts", []):
                 if _flagged(v):
                     check = v.get("check", "check")
-                    findings.append(Finding(
-                        ref=f"s{session}t{turn}:{check}", kind="turn", check=check,
-                        report=v.get("report", ""), player=player, draft=draft,
-                        session=session, turn=turn))
+                    findings += _explode(
+                        f"s{session}t{turn}:{check}", v.get("report", ""),
+                        kind="turn", check=check, player=player, draft=draft,
+                        session=session, turn=turn)
         elif ev == "stage":
             stage = e.get("stage")
             session = e.get("session")
@@ -201,11 +244,11 @@ def findings_from_events(events: list[dict]) -> list[Finding]:
                 continue
             v = e.get("verdict")
             if v and _flagged(v):
-                findings.append(Finding(
-                    ref=f"{base}:{stage}", kind="stage", check=v.get("check", stage),
-                    report=v.get("report", ""),
+                findings += _explode(
+                    f"{base}:{stage}", v.get("report", ""),
+                    kind="stage", check=v.get("check", stage),
                     draft=e.get("draft") or e.get("plan") or "",
-                    session=session, stage=stage))
+                    session=session, stage=stage)
     return findings
 
 
@@ -243,10 +286,16 @@ def build_brief(rubric_text: str, finding: Finding, window: list[dict]) -> str:
         f"- flagged by: `{finding.check}`",
         f"- where: {_where(finding)}",
     ]
+    if finding.of > 1:
+        parts.append(f"- one of {finding.of} separate violations `{finding.check}` raised here; "
+                     f"this is #{finding.item}. Grade only this one — the others are graded "
+                     f"on their own and are not duplicates of it.")
     if finding.player:
         parts += ["", "### Player's message this turn", "", finding.player.strip() or "(none)"]
     parts += ["", f"### {draft_label}", "", finding.draft.strip() or "(the draft text was not captured — grade from the checker's report below)"]
-    parts += ["", "### The checker's report (why it was flagged)", "", finding.report.strip() or "(no report text)"]
+    label = ("### The checker's finding (why it was flagged)" if finding.of > 1
+             else "### The checker's report (why it was flagged)")
+    parts += ["", label, "", finding.report.strip() or "(no report text)"]
     parts += ["", "## Already-graded findings (for the duplicate check)", ""]
     if window:
         parts += [f"- `{w['ref']}` [{w['severity']}/{w['category']}]: {w['rationale']}" for w in window]
@@ -261,18 +310,30 @@ def build_brief(rubric_text: str, finding: Finding, window: list[dict]) -> str:
 
 # ── grading one finding ──────────────────────────────────────────────────────
 
+def _verdict_ref(ref: str) -> str:
+    """The `s3t7:check-conduct` part of a possibly `#n`-suffixed finding ref."""
+    return ref.split("#", 1)[0]
+
+
 def _window(finding: Finding, graded: list[dict]) -> list[dict]:
     """The dedup window for `finding`: the most recent already-graded findings, trimmed —
-    when both carry a turn — to those within `_WINDOW_TURNS` turns (a distant violation is
-    not the same persisting one)."""
-    recent = graded[-_WINDOW_ITEMS:]
-    if finding.turn is None:
-        return recent
+    when both carry a turn — to those from the same turn or within `_WINDOW_TURNS` before
+    it (a distant violation is not the same persisting one).
+
+    Same-turn siblings are deliberately IN: `check-turn` and `check-conduct` gate the same
+    draft, and each flagging the one overriden roll is one violation, not two — the window
+    is the only place that can be caught. Siblings from the *same* verdict are just as
+    deliberately OUT: the checker already enumerated those as distinct problems, so
+    offering them for dedup only invites the grader to collapse a genuine second finding."""
     out = []
-    for g in recent:
+    mine = _verdict_ref(finding.ref)
+    for g in graded[-_WINDOW_ITEMS:]:
+        if _verdict_ref(g["ref"]) == mine:
+            continue
         gt = g.get("turn")
-        if gt is None or 0 < finding.turn - gt <= _WINDOW_TURNS:
-            out.append(g)
+        if finding.turn is not None and gt is not None and not (0 <= finding.turn - gt <= _WINDOW_TURNS):
+            continue
+        out.append(g)
     return out
 
 
