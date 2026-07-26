@@ -34,7 +34,7 @@ import json
 import statistics
 from pathlib import Path
 
-from .grade import RUBRIC
+from .grade import RUBRIC, unmanifested_archives
 
 # Display order for the rubric's severity ladder; any off-rubric label the grader emitted
 # is appended after these so it can never be silently dropped from a count.
@@ -299,6 +299,9 @@ def summarize_batch(out_dir) -> dict:
         "out_dir": str(out_dir),
         "rubric": RUBRIC,
         "n_runs": len(runs),
+        # archives on disk the manifest doesn't point at: their violations are missing from
+        # every number below, and missing data must never render as a clean run
+        "unmanifested": [str(p.relative_to(out_dir)) for p in unmanifested_archives(out_dir)],
         "score": _dist([s["score"] for s in scores]),
         "penalty_rate": _dist([s["rate"] for s in scores]),
         "dimension_scores": dim_dists,
@@ -369,6 +372,13 @@ def format_report(batch: dict) -> str:
     L.append(f"  defaulted verdicts     : {batch['defaulted_total']} total across the batch")
     L.append(f"  ungraded findings      : {batch['ungraded_total']} total "
              f"({batch['n_graded']}/{batch['n_runs']} run(s) graded)")
+    if batch["unmanifested"]:
+        L.append(f"  !! UNMANIFESTED ARCHIVES: {len(batch['unmanifested'])} — scored as if they "
+                 f"never played:")
+        for rel in batch["unmanifested"]:
+            L.append(f"       {rel}")
+        L.append("     Fold them into their run's archive or add them to batch.jsonl; until")
+        L.append("     then every number below understates the violations.")
 
     L.append("")
     L.append("── Score ───────────────────────────────────────────────────────────────────")

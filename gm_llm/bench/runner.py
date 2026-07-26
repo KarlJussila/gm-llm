@@ -265,7 +265,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
     run_dir = Path(run_dir)
     logs = Logs.under(project=run_dir, debug=debug_enabled())
 
-    existing = _find_archive(run_dir) if resume else None
+    existing = _find_archive(run_dir, note=note) if resume else None
     resuming, turns_done = False, 0
     if existing is not None:
         _, turns_done = classify_archive(existing)
@@ -373,10 +373,21 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
 
 # ── batch ────────────────────────────────────────────────────────────────────
 
-def _find_archive(run_dir: Path):
+def _find_archive(run_dir: Path, note=None):
     """The archive a run left behind (glob — its name carries a random suffix), or None
-    if the run died before its first emit."""
+    if the run died before its first emit.
+
+    A run dir should hold exactly one. Two means something wrote a second stream into it
+    (historically: reconcile invoked as its own `bench run` instead of `--resume`), and the
+    loser is invisible to both the manifest and the grader — its stage findings score as if
+    they never happened. Resume takes the newest, which is nearly always the live one, but
+    says so loudly: a silent pick is how the split-archive bug went unnoticed for a week."""
     hits = sorted((Path(run_dir) / ".opencode" / "logs").glob("archive-*.jsonl"))
+    if len(hits) > 1 and note:
+        others = ", ".join(p.name for p in hits[:-1])
+        note(f"WARNING: {len(hits)} archives in {Path(run_dir).name} — resuming the newest "
+             f"({hits[-1].name}); NOT part of this run: {others}. Fold them in or delete "
+             f"them, or their findings never reach the grader.")
     return hits[-1] if hits else None
 
 

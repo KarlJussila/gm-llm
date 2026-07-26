@@ -469,6 +469,27 @@ def _batch_archives(out_dir: Path) -> list[Path]:
     return out
 
 
+def unmanifested_archives(out_dir) -> list[Path]:
+    """Archives sitting in a batch's run dirs that `batch.jsonl` doesn't point at.
+
+    The grader and the report read the manifest and nothing else, so an archive that isn't
+    on it contributes no violations — it scores as a clean stretch of play rather than as
+    missing data. That is the worst failure mode an instrument can have, and it is exactly
+    what the split-archive incident did (reconcile run as its own `bench run` wrote a second
+    stream whose stage findings would have been dropped without a word). Cheap to detect,
+    so detect it every time and say so. Backup dirs are excluded — `pre-fold-backup/` and
+    friends hold deliberately retired copies."""
+    out_dir = Path(out_dir)
+    known = {p.resolve() for p in _batch_archives(out_dir)}
+    stray = []
+    for path in sorted(out_dir.glob("run-*/.opencode/logs/**/archive-*.jsonl")):
+        if any(part.endswith("backup") or part.startswith("pre-") for part in path.parts):
+            continue
+        if path.resolve() not in known:
+            stray.append(path)
+    return stray
+
+
 def grade_batch(out_dir, *, model: str | None = None, force: bool = False,
                 double: bool = False, sample: int | None = None, port: int = 4181,
                 min_gap: float = 1.0, turn_timeout: int = 360,
@@ -482,6 +503,9 @@ def grade_batch(out_dir, *, model: str | None = None, force: bool = False,
     `grade_archive`)."""
     out_dir = Path(out_dir)
     archives = _batch_archives(out_dir)
+    for stray in unmanifested_archives(out_dir):
+        note(f"WARNING: {stray.relative_to(out_dir)} is not in batch.jsonl — NOT graded. "
+             f"Its violations are missing from the score, not zero.")
     if not archives:
         note(f"no archives found under {out_dir} (need a batch.jsonl with archives).")
         return {"graded": [], "double": None}

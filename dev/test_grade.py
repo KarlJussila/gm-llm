@@ -280,6 +280,30 @@ def test_rubric_penalty_table_matches_the_score_model(tmp):
     assert parsed == scoring._PENALTY, f"rubric says {parsed}, code says {scoring._PENALTY}"
 
 
+def test_unmanifested_archive_is_flagged_not_silently_dropped(tmp):
+    """The grader reads the manifest and nothing else, so an archive that isn't on it
+    scores as clean play rather than as missing data — the split-archive failure."""
+    archive = _write_archive(tmp, "run-ok", [
+        _turn(1, 1, [_verdict("check-turn", False, "wrong hair")], complete=True)])
+    assert grade.unmanifested_archives(tmp) == [], "the manifested archive is not stray"
+
+    # a second stream in the same run dir, never manifested (reconcile run standalone)
+    stray = archive.parent / "archive-20260724T000000Z-9999.jsonl"
+    stray.write_text(json.dumps({"event": "run", "run_id": "9999", "schema": 1}) + "\n",
+                     encoding="utf-8")
+    assert grade.unmanifested_archives(tmp) == [stray]
+
+    # a retired copy under a backup dir is deliberate, not a mistake
+    backup = archive.parent / "pre-fold-backup"
+    backup.mkdir()
+    (backup / "archive-20260701T000000Z-0000.jsonl").write_text("{}\n", encoding="utf-8")
+    assert grade.unmanifested_archives(tmp) == [stray], "backup dirs are excluded"
+
+    # and the report says so where a reader will see it
+    text = scoring.format_report(scoring.summarize_batch(tmp))
+    assert "UNMANIFESTED ARCHIVES" in text and stray.name in text
+
+
 def test_grades_file_shape_and_idempotence(tmp):
     archive = _write_archive(tmp, "20260717T000000Z-aaaa", [
         _turn(1, 1, [_verdict("check-turn", False, "wrong hair"), _verdict("check-conduct", True)],
@@ -443,6 +467,7 @@ def main():
              test_split_report, test_multiple_violations_in_one_verdict_count_separately,
              test_window_spans_same_turn_but_not_same_verdict, test_score_model,
              test_rubric_penalty_table_matches_the_score_model,
+             test_unmanifested_archive_is_flagged_not_silently_dropped,
              test_grades_file_shape_and_idempotence, test_ungraded_after_nudge,
              test_dedup_via_duplicate_of, test_double_agreement, test_report_aggregation,
              test_mixed_conditions_warning, test_grade_batch_double)

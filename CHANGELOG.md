@@ -28,6 +28,14 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   9 findings into 15. An unnumbered or single-item report is unchanged.
 
 ### Fixed
+- **An archive the manifest doesn't point at can no longer vanish from the score.** `bench grade`
+  and `bench report` read `batch.jsonl` and nothing else, so a stray archive in a run dir
+  contributed no violations — scoring as clean play rather than as missing data. Both now scan the
+  run dirs and name any unmanifested archive loudly (the report banners it under instrument
+  health); `--resume` likewise warns instead of silently taking the newest when a run dir holds
+  more than one. Deliberate backup dirs are excluded. This is the split-archive incident, where
+  reconcile invoked as its own `bench run` wrote a second stream whose stage findings would have
+  been dropped without a word.
 - **Two checks flagging one draft are no longer double-counted.** The grader's dedup window
   excluded same-turn findings entirely, so when `check-turn` and `check-conduct` both caught the
   same mistake — the commonest double-count there is — the second was structurally unable to be
