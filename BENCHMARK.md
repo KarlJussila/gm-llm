@@ -81,7 +81,8 @@ gm_llm/
     scoring.py           # archive + grades → report
 dev/
   fixtures/              # frozen campaign(s): world, character packet, session-1 plan
-  cli.py                 # grows a `bench` command (batch runs, grading, reports)
+                         # (the `bench` group lives in gm_llm/bench, wired into gm_llm/cli.py
+                         #  and registered only from a checkout)
 ```
 
 Skills stay flat under `assets/opencode/skills/` (opencode dictates that); a tier either
@@ -117,7 +118,7 @@ number the benchmark will ever report.*
 
 ### B1 — Fixture + bench runner
 
-Promote the `dev/cli.py play` harness (the scripted `player` agent) to benchmark grade.
+Promote the autoplay harness (the scripted `player` agent) to benchmark grade.
 
 - A **provisional** fixture campaign under `dev/fixtures/hollowfell`: a `gm-llm` campaign's
   `campaign/` (world, canon, the Dallid PC + play packet at `campaign/documents/`, sessions
@@ -149,7 +150,7 @@ Promote the `dev/cli.py play` harness (the scripted `player` agent) to benchmark
   the play packet lives (root vs. `campaign/documents/` — today's `character_packet` path is a
   stopgap), **how** it's generated (hand-merged from the player-known layer right now — see the
   auto-runner digest-regeneration item in B-later), and **how** it's loaded (`character_packet`
-  in `fixture.json` for bench; `--character` in `dev/cli.py play`). One canonical home, one
+  in `fixture.json` for bench; `--character` in `gm-llm dev autoplay`). One canonical home, one
   generation path, one load contract.
 
 *Exit: `bench run --runs 5` completes unattended and leaves 5 condition-stamped archives.*

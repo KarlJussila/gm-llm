@@ -1,10 +1,11 @@
 """
-The `bench` CLI seam — mounted onto `dev/cli.py`'s subparsers.
+The `bench` CLI seam — mounted onto the main CLI's subparsers.
 
-`dev/cli.py` calls `add_bench_parser(sub, common)` to graft the `bench` command (and its
-sub-subcommands) onto the dev control CLI, passing its shared `common` parent so the
-backend flags (`--port/--min-gap/--stream/--turn-timeout`) apply to `bench run` and
-`bench grade`. `bench run` plays a fixture into archives (B1); `bench grade` scores the
+`gm_llm/cli.py` calls `add_bench_parser(sub, engine)` to graft the `bench` group onto the
+CLI when it is running from a checkout (the fixtures under `dev/` aren't packaged, so an
+installed copy has nothing to run). `engine` is the shared parent carrying `--dir` plus the
+backend flags (`--port/--min-gap/--stream/--turn-timeout`), which `bench run` and
+`bench grade` need. `bench run` plays a fixture into archives (B1); `bench grade` scores the
 flagged violations in a batch's archives with the pinned grader model (B2); `bench report`
 aggregates archives + grades into a summary with no model calls (B2).
 """
@@ -15,7 +16,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import grade, runner, scoring, tokens
+from . import grade, runner, scoring
 
 # The fixtures live under dev/, resolved from this file's location so the default holds
 # regardless of the invoker's cwd (bench/cli.py → gm_llm → repo root).
@@ -29,13 +30,13 @@ def _note(msg: str) -> None:
     print(f"\033[2m{line}\033[0m" if tty else line, flush=True)
 
 
-def add_bench_parser(subparsers, common) -> None:
-    """Register the `bench` subcommand and its sub-subcommands on `subparsers`. `common`
-    is dev/cli.py's shared backend-flags parent parser."""
+def add_bench_parser(subparsers, engine) -> None:
+    """Register the `bench` group and its sub-subcommands on `subparsers`. `engine` is the
+    main CLI's shared parent parser (`--dir` + the backend flags)."""
     bench = subparsers.add_parser("bench", help="benchmark harness (BENCHMARK.md)")
     bsub = bench.add_subparsers(dest="bench_cmd", required=True)
 
-    run = bsub.add_parser("run", parents=[common],
+    run = bsub.add_parser("run", parents=[engine],
                           help="play a fixture N times, condition-stamped, into --out")
     run.add_argument("--fixture", default=str(DEFAULT_FIXTURE),
                      help=f"fixture dir (default: {DEFAULT_FIXTURE})")
@@ -52,7 +53,7 @@ def add_bench_parser(subparsers, common) -> None:
     run.add_argument("--kickoff", default="Let's begin the session.")
     run.set_defaults(func=cmd_bench_run)
 
-    grade_p = bsub.add_parser("grade", parents=[common],
+    grade_p = bsub.add_parser("grade", parents=[engine],
                               help="grade the flagged violations in a batch's archives (B2)")
     grade_p.add_argument("--out", default="bench-out",
                          help="batch dir to grade (holds batch.jsonl + run dirs; default: bench-out)")
@@ -74,22 +75,6 @@ def add_bench_parser(subparsers, common) -> None:
                           help="emit the machine-readable summary instead of the text report")
     report_p.set_defaults(func=cmd_bench_report)
 
-    tok = bsub.add_parser("tokens",
-                          help="what a batch cost in tokens, read back from opencode's store "
-                               "(retroactive; no model calls)")
-    tok.add_argument("--out", default="bench-out",
-                     help="batch dir to read (default: bench-out)")
-    tok.add_argument("--data-dir", default=None,
-                     help="opencode data dir (default: $OPENCODE_DATA or ~/.local/share/opencode)")
-    tok.add_argument("--price-in", type=float, default=None, metavar="USD",
-                     help="$ per million input tokens — enables the hypothetical cost table")
-    tok.add_argument("--price-out", type=float, default=None, metavar="USD",
-                     help="$ per million output tokens")
-    tok.add_argument("--price-cache-read", type=float, default=0.0, metavar="USD",
-                     help="$ per million cached-read tokens (default: 0)")
-    tok.add_argument("--json", action="store_true",
-                     help="emit the machine-readable reading instead of the text report")
-    tok.set_defaults(func=cmd_bench_tokens)
 
 
 def cmd_bench_run(args) -> None:
@@ -109,7 +94,7 @@ def cmd_bench_run(args) -> None:
     capped = sum(1 for r in records if r["outcome"] == "cap")
     incomplete = sum(1 for r in records if str(r["outcome"]).startswith("incomplete"))
     failed = sum(1 for r in records if str(r["outcome"]).startswith("failed"))
-    tail = " — resume with `bench run --resume`" if incomplete else ""
+    tail = " — resume with `python -m gm_llm bench run --resume`" if incomplete else ""
     _note(f"batch done: {done} complete · {capped} capped · {incomplete} incomplete · "
           f"{failed} failed → {Path(args.out) / 'batch.jsonl'}{tail}")
     sys.exit(1 if failed and not done else 0)
@@ -145,27 +130,3 @@ def cmd_bench_report(args) -> None:
         print(scoring.format_report(batch))
     sys.exit(0)
 
-
-def cmd_bench_tokens(args) -> None:
-    """Read `--out`'s token usage back out of opencode's own store. Retroactive and free:
-    opencode already aggregated this per session, so runs played before this command
-    existed report just the same. Prices are only ever the ones passed in."""
-    batch = tokens.usage_for_batch(args.out, data_dir=args.data_dir)
-    if args.json:
-        payload = {
-            "out_dir": batch["out_dir"],
-            "runs": {name: {"unavailable": r.unavailable, "total": vars(r.total),
-                            "by_agent": {a: vars(u) for a, u in r.by_agent.items()}}
-                     for name, r in batch["runs"].items()},
-            "grading": {"unavailable": batch["grading"].unavailable,
-                        "total": vars(batch["grading"].total)},
-        }
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
-        sys.exit(0)
-    prices = None
-    if args.price_in is not None and args.price_out is not None:
-        prices = (args.price_in, args.price_out, args.price_cache_read)
-    elif args.price_in is not None or args.price_out is not None:
-        _note("--price-in and --price-out must be given together — skipping the cost table.")
-    print(tokens.format_tokens(batch, prices=prices))
-    sys.exit(0)

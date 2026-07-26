@@ -3,9 +3,10 @@
 
 opencode already records this: every session row in its store carries `directory` plus
 pre-aggregated `tokens_input / tokens_output / tokens_reasoning / tokens_cache_read /
-tokens_cache_write` and `cost`. Every bench run plays in its own dir, so a prefix match on
-`directory` scopes a run exactly — which makes this **retroactive**: runs already on disk
-report without ever having been instrumented for it. Nothing here is emitted during play.
+tokens_cache_write` and `cost`. A prefix match on `directory` therefore scopes any tree —
+one campaign, or one bench run, which plays in its own dir. That makes this **retroactive**:
+work already on disk reports without ever having been instrumented. Nothing is emitted
+during play.
 
 Two things this module is careful about:
 

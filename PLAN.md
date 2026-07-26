@@ -26,7 +26,7 @@ which ships cross-platform.
 Standardize the **product/tool** name on `gm-llm`. Leave **domain nouns** alone — the generated
 `campaign/` data dir, "session", "arc" are the subject matter, not the product.
 
-- CLI `prog` + docstring (`dev/cli.py`), TUI titles (`tui/__main__.py`), doc titles
+- CLI `prog` + docstring (`gm_llm/cli.py`), TUI titles (`cli._launch_tui`), doc titles
   (`README.md`, `SPEC.md`). **[done in the first increment]**
 - **Decision (revised): the engine and UI live under the tool package** — `gm_llm.orchestrator`
   and `gm_llm.tui`. The earlier "keep top-level `orchestrator/`" call shipped generic
@@ -44,7 +44,7 @@ The source repo is no longer itself a drop-in `.opencode/` — dogfood via `gm-l
 ## 2. Phase 1 — native Windows portability  **[in progress]**
 
 - **`/tmp` → OS temp dir.** Logs default to `tempfile.gettempdir()/gm-llm` (was hardcoded `/tmp`
-  in `logs.py`, `tui/__main__.py`, `dev/cli.py`). **[done]**
+  in `logs.py`, `gm_llm/cli.py`). **[done]**
 - **opencode launch (`backend.py`).** Resolve via `shutil.which("opencode")` (native Windows may
   expose it as a `.cmd`/`.exe` shim), and create it in a new process group so it can be signalled.
   **[done]**
@@ -62,7 +62,7 @@ The source repo is no longer itself a drop-in `.opencode/` — dogfood via `gm-l
   (opencode / JS runtime / plugin installer / port / project-init checks). **[done]**
 - **README quickstart** rewritten to the install→init→doctor→play flow. **[done]**
 - **CLI surface (decided):** `gm-llm` carries `play`/`init`/`doctor`; the orchestrator
-  power-commands stay in `dev/cli.py` for now — this is where future player features
+  power-commands live in the checkout-only `dev` group — this is where future player features
   (talk to the DM to fix canon, roll a campaign back) will grow.
 
 ### Still to do in Phase 2 — **model configuration** *(deferred, by agreement)*
@@ -82,7 +82,7 @@ paths with spaces, ANSI.
 
 1. ~~Package rename?~~ **`gm_llm.orchestrator` / `gm_llm.tui`** (revised — see §0).
 2. ~~Packaging model?~~ **Option B (installable + `gm-llm init`).** Built.
-3. ~~CLI surface?~~ **`gm-llm` = play/init/doctor; power-commands stay in `dev/cli.py`.**
+3. ~~CLI surface?~~ **One `gm-llm`: play/status/tokens/init/update/doctor at the top level; `dev` + `bench` groups register only from a checkout (`python -m gm_llm`).**
 4. ~~Model config?~~ **Default `mimo`; configurable model deferred to its own increment (above).**
 
 ## Biggest external unknown

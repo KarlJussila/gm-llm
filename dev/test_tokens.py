@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standalone checks for `bench tokens` — no pytest; run me directly.
+"""Standalone checks for `gm-llm tokens` — no pytest; run me directly.
 
 Builds a throwaway SQLite store shaped like opencode's `session` table and reads it back,
 so the whole module is exercised with no opencode, no network, and no dependence on the
@@ -16,7 +16,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from gm_llm.bench import tokens  # noqa: E402
+from gm_llm import tokens  # noqa: E402
 
 _COLS = ("tokens_input", "tokens_output", "tokens_reasoning",
          "tokens_cache_read", "tokens_cache_write")

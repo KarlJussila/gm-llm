@@ -49,7 +49,7 @@ gm-llm play                   # launch the TUI — setup runs on first play
 `gm-llm init` installs the `.opencode` plugin deps for you with the first package manager it
 finds (npm / bun / pnpm / yarn); pass `--no-install` to skip and do it yourself.
 
-`gm-llm play` (or a bare `gm-llm`) is the everyday command. `dev/cli.py` still carries the
+`gm-llm play` (or a bare `gm-llm`) is the everyday command. The `dev` group carries the
 orchestrator power-commands (`status` / `prep` / `reconcile` / `lint`) for development.
 
 ### Updating
@@ -112,7 +112,7 @@ session 1, and rolls straight into play. Thereafter the same screen carries the 
 lifecycle: play a session, `ctrl+w` (or `/wrap`) to run the post-session pipeline and
 open the next one.
 
-No opencode / no model? From a source checkout, `python dev/cli.py tui` runs the same
+No opencode / no model? `gm-llm play --mock` runs the same
 UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
 ### The TUI
@@ -133,7 +133,7 @@ UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
 ### The CLI
 
-`dev/cli.py` is one dispatcher over the same orchestrator core. Every command targets
+`gm-llm` is one dispatcher over the same orchestrator core. Every command targets
 a campaign project via `--dir` (default: the current directory):
 
 ```
@@ -296,12 +296,12 @@ From a source checkout (`python -m venv .venv && .venv/bin/pip install -e .`):
 
 ```sh
 .venv/bin/python dev/test_completeness.py     # lint unit checks
-.venv/bin/python dev/cli.py tui               # offline TUI (mock play/wrap)
-.venv/bin/python dev/cli.py tui --setup       # offline TUI (mock new-campaign setup)
-.venv/bin/python dev/cli.py play --turns 6 --dir ../my-campaign   # scripted player vs. the real model
+gm-llm play --mock                    # offline TUI (mock play/wrap)
+gm-llm play --mock --setup            # offline TUI (mock new-campaign setup)
+python -m gm_llm dev autoplay --turn-cap 6 --dir ../my-campaign   # scripted player vs. the real model
 ```
 
-Model-facing `dev/cli.py` commands target a `gm-llm init`-ed campaign project via
+Model-facing `dev` commands target a `gm-llm init`-ed campaign project via
 `--dir` (default: the current directory).
 
 `SPEC.md` describes what the system is; `PLAN.md` is the active design doc (what's in

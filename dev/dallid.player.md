@@ -1,5 +1,5 @@
 <!--
-PLAYER PACKET (play harness fixture). Loaded by the CLI's `play` loop (dev/cli.py)
+PLAYER PACKET (play harness fixture). Loaded by autoplay (`gm-llm dev autoplay`)
 and injected into the player agent's first message, so it roleplays Dallid without file access.
 Not engine canon. Personality/knowledge are from the campaign's character files;
 the capability sketch is a trimmed read of the D&D Beyond sheet (`ddb-sheet

@@ -37,7 +37,7 @@ usually means they ran `gm-llm update` without reinstalling the tool.
 
 1. Bump the version in both files (see above).
 2. Update README.md if user-facing behavior or setup steps changed.
-3. `python -m compileall gm_llm && python dev/test_completeness.py`
+3. `python -m compileall gm_llm && for t in dev/test_*.py; do python $t || break; done`
 4. Commit, push to main. That's the release.
 
 ## Text I/O hygiene (Windows)

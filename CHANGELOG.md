@@ -40,6 +40,15 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   progress on an overnight free-tier batch. (A give-up *before any turn lands* is still a real `failed`.)
 
 ### Changed
+- **`dev/cli.py`, `dev/ping.sh`, and `gm_llm/tui/__main__.py` are gone.** Their commands moved
+  into the unified CLI: `dev/cli.py play` → `gm-llm dev autoplay` (and `--turns` → `--turn-cap`,
+  matching `bench run`), `dev/cli.py tui [--setup]` → `gm-llm play --mock [--setup]`, `status` and
+  the new `tokens` promoted to the top level, `prep`/`reconcile`/`lint`/`ping` into the `dev`
+  group. `ping` is now Python, so the CLI has no shell dependency.
+- **`reconcile` is dev-only, deliberately.** The lifecycle already decides from disk whether a
+  campaign should be playing or reconciling, and the TUI drives the post-session pipeline itself.
+  Running it by hand applies a non-idempotent canon pass plus two commits *outside* that state
+  machine — a repair tool, not a recovery button, so it doesn't sit on the player surface.
 - **Grading counts violations, not verdicts.** A checker report enumerating several distinct
   problems on one turn used to grade as a single finding; it now splits on the report's numbered
   list and grades each separately (refs gain a `#n` suffix). On the first scored run that turns

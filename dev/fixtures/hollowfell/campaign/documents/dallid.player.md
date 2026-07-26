@@ -1,5 +1,5 @@
 <!--
-PLAYER PACKET — BenchmarkCampaign. Loaded by the CLI's `play` loop (dev/cli.py --character)
+PLAYER PACKET — BenchmarkCampaign. Loaded by autoplay (`gm-llm dev autoplay --character`)
 and injected into the player agent's first message, so it roleplays Dallid without file access.
 Not engine canon. Merged from ~/Desktop/dallid-portable.md (sheet + personality) and the
 campaign's player-known layer as of session 2 (characters/dallid.knowledge.md, dallid.state.md,

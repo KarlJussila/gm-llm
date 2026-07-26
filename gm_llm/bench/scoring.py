@@ -405,6 +405,8 @@ def format_report(batch: dict) -> str:
             L.append(f"       {rel}")
         L.append("     Fold them into their run's archive or add them to batch.jsonl; until")
         L.append("     then every number below understates the violations.")
+        L.append("     (A run still in flight looks like this too — its manifest line is")
+        L.append("      written when it finishes.)")
 
     L.append("")
     L.append("── Score ───────────────────────────────────────────────────────────────────")

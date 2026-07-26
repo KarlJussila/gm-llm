@@ -1,5 +1,5 @@
 """
-The `bench run` engine — promote the `dev/cli.py play` harness to benchmark grade.
+The `bench run` engine — promote the autoplay harness to benchmark grade.
 
 A batch prepares one **template** project once (`gm-llm init` + plugin deps), then for
 each run stamps out a fresh project dir from that template plus the fixture's frozen
