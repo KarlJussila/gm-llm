@@ -28,6 +28,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   9 findings into 15. An unnumbered or single-item report is unchanged.
 
 ### Fixed
+- **The turn cap is no longer treated as a condition.** A cap no run reached is inert — it reaches
+  no prompt (it lives entirely as a loop bound in `bench/runner.py`) and the wrap nudge keys off
+  opencode's context threshold, not the cap — so runs configured at 30 and at 50 pooled fine but
+  were flagged `MIXED CONDITIONS` and refused. Comparability now ignores the configured cap and
+  flags what actually matters: a run the cap *bound*, which is truncated, skipped reconcile, and
+  has no stage findings. The report banners those under instrument health.
 - **An archive the manifest doesn't point at can no longer vanish from the score.** `bench grade`
   and `bench report` read `batch.jsonl` and nothing else, so a stray archive in a run dir
   contributed no violations — scoring as clean play rather than as missing data. Both now scan the

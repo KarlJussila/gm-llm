@@ -145,8 +145,9 @@ def _conditions(events: list[dict]) -> dict:
 
 
 def _condition_signature(cond: dict) -> dict:
-    """The axes a cross-run comparison must hold constant. Two runs are the same condition
-    iff these match; the report flags a batch that mixes them."""
+    """The axes a cross-run comparison must hold constant, plus `turn_cap` for display.
+    Two runs are the same condition iff their `_identity` matches; the report flags a batch
+    that mixes them."""
     fixture = cond.get("fixture") or {}
     agents = cond.get("agents") or {}
     return {
@@ -155,6 +156,19 @@ def _condition_signature(cond: dict) -> dict:
         "turn_cap": cond.get("turn_cap"),
         "agents": {name: (a.get("model"), a.get("temperature")) for name, a in sorted(agents.items())},
     }
+
+
+def _identity(sig: dict) -> dict:
+    """The comparable part of a signature — everything except `turn_cap`.
+
+    The cap is a safety net, not a condition: it reaches no prompt (it lives entirely as a
+    loop bound in `bench/runner.py`) and the wrap nudge keys off opencode's context
+    threshold, not the cap. A run that never reaches it played exactly as it would have
+    under any larger cap, so two such runs are the same condition however the caps were
+    configured. What *is* a different condition is a run the cap actually bound: truncated
+    session, reconcile skipped, no stage findings — and `outcome == "cap"` reports that
+    directly, which is the honest place to catch it."""
+    return {k: v for k, v in sig.items() if k != "turn_cap"}
 
 
 def summarize_run(events: list[dict], grades: list[dict]) -> dict:
@@ -275,11 +289,13 @@ def summarize_batch(out_dir) -> dict:
 
     # mixed-conditions check
     sigs = [_condition_signature(r.get("conditions") or {}) for r in runs if not r.get("no_archive")]
-    distinct = []
+    distinct, seen = [], []
     for s in sigs:
-        if s not in distinct:
+        if _identity(s) not in seen:      # one representative sig per distinct condition
+            seen.append(_identity(s))
             distinct.append(s)
     mixed = len(distinct) > 1
+    capped = [r.get("run_id") for r in runs if r.get("outcome") == "cap"]
 
     graded_runs = [r for r in runs if r.get("graded")]
     by_sev_raw: dict[str, int] = {}
@@ -309,6 +325,9 @@ def summarize_batch(out_dir) -> dict:
                                  for d in _DIMENSIONS},
         "mixed_conditions": mixed,
         "conditions": distinct,
+        # runs the cap actually bound — a truncated session with no reconcile is a different
+        # data point, and unlike the configured cap it is worth flagging
+        "capped_runs": capped,
         "outcomes": {o: sum(1 for r in runs if r.get("outcome") == o)
                      for o in sorted({r.get("outcome") for r in runs if r.get("outcome")})},
         "violations_raw": _dist([r["violations_raw"] for r in graded_runs]),
@@ -372,6 +391,13 @@ def format_report(batch: dict) -> str:
     L.append(f"  defaulted verdicts     : {batch['defaulted_total']} total across the batch")
     L.append(f"  ungraded findings      : {batch['ungraded_total']} total "
              f"({batch['n_graded']}/{batch['n_runs']} run(s) graded)")
+    if batch["capped_runs"]:
+        L.append(f"  !! TURN-CAP TRUNCATED   : {len(batch['capped_runs'])} run(s) hit the cap "
+                 f"without wrapping — no reconcile, no stage findings:")
+        for rid in batch["capped_runs"]:
+            L.append(f"       {rid}")
+        L.append("     These are not comparable to runs that closed naturally. Raise the cap")
+        L.append("     and re-run them, or read the batch without them.")
     if batch["unmanifested"]:
         L.append(f"  !! UNMANIFESTED ARCHIVES: {len(batch['unmanifested'])} — scored as if they "
                  f"never played:")

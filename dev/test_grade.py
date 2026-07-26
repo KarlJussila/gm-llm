@@ -440,6 +440,30 @@ def test_mixed_conditions_warning(tmp):
     assert "MIXED CONDITIONS" in text and "DO NOT COMPARE" in text
 
 
+def test_turn_cap_is_not_a_condition_but_hitting_it_is(tmp):
+    """A cap that no run reached is inert — it reaches no prompt and the wrap nudge keys off
+    the context threshold — so differing caps are the same condition. A run the cap actually
+    bound is a genuinely different data point, and that is what gets flagged."""
+    out = tmp / "out"
+    out.mkdir()
+    _write_archive(out, "runA", [_turn(1, 1, [_verdict("check-turn", True)], complete=True)])
+    _write_archive(out, "runB", [_turn(1, 1, [_verdict("check-turn", True)], complete=True)],
+                   conditions={**_COND, "turn_cap": 50})
+    batch = scoring.summarize_batch(out)
+    assert batch["mixed_conditions"] is False, "an unreached cap is not a condition"
+    assert len(batch["conditions"]) == 1
+    assert batch["capped_runs"] == []
+    assert "MIXED CONDITIONS" not in scoring.format_report(batch)
+
+    # a run the cap DID bind is called out
+    _write_archive(out, "runC", [_turn(1, 1, [_verdict("check-turn", True)]),
+                                 {"event": "cap", "ts": "t", "turns": 1}])
+    batch = scoring.summarize_batch(out)
+    assert batch["capped_runs"], "a run that hit the cap is flagged"
+    text = scoring.format_report(batch)
+    assert "TURN-CAP TRUNCATED" in text and "no reconcile" in text
+
+
 def test_grade_batch_double(tmp):
     out = tmp / "out"
     out.mkdir()
@@ -470,7 +494,8 @@ def main():
              test_unmanifested_archive_is_flagged_not_silently_dropped,
              test_grades_file_shape_and_idempotence, test_ungraded_after_nudge,
              test_dedup_via_duplicate_of, test_double_agreement, test_report_aggregation,
-             test_mixed_conditions_warning, test_grade_batch_double)
+             test_mixed_conditions_warning, test_turn_cap_is_not_a_condition_but_hitting_it_is,
+             test_grade_batch_double)
     failures = 0
     for test in tests:
         with tempfile.TemporaryDirectory() as td:
