@@ -47,7 +47,7 @@ _CLOSING = (
     "night takes the harbour quiet, for once.\n\n— a good place to rest —"
 )
 
-# A short scripted combat episode (COMBAT.md) so the offline TUI can demo the initiative
+# A short scripted combat episode (design/combat.md) so the offline TUI can demo the initiative
 # loop — enter on a normal turn (`combat_started`), a PC slot, two NPC beats each awaiting
 # confirm, then the fight ends and normal play resumes.
 _COMBAT_ENTER = (

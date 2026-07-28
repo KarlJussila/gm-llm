@@ -15,7 +15,10 @@ round-to-round lives in `HANDOFF.md`, not here.
 | `ROADMAP.md` | All remaining work, sequenced, with an effort level per task | When sequencing changes |
 | `design/findings.md` | Append-only **per-round record** (Parts 1–N); the reasoning archive | One Part per round |
 | `design/open-questions.md` | The live backlog of **unresolved** decisions and gaps | As items open; **delete** when resolved |
-| Plan-of-record docs | `SPEC.md` (what it is), `BENCHMARK.md`, `COMBAT.md`, `PLAN.md`, `design/frontends.md` | When the design changes |
+| `README.md` | The user-facing manual: install, quick start, the TUI and CLI | When user-facing behavior changes |
+| `design/README.md` | **What the system is** — the routing table for `design/`, plus the architecture, the runtime seams, and the constraints/non-goals | When the design changes |
+| Plan-of-record docs | `design/benchmark.md`, `design/combat.md`, `design/frontends.md` — one per workstream, linked from `design/README.md` | When that workstream's design changes |
+| `dev/MAINTAINING.md` | Dev-side conventions: what an update delivers, the Windows portability rules | When the dev-side process changes |
 
 ### Keeping the docs clean
 
@@ -92,12 +95,12 @@ write for it.
   Keep concrete failure-mode cues and examples.
 - **Examples teach — keep them correct.** A wrong rules example (e.g. conflating spell level with
   character level) teaches the model the wrong rule.
-- **Don't recompose or template tier-0 prose** (BENCHMARK.md principle 1): the interwoven
+- **Don't recompose or template tier-0 prose** (`design/benchmark.md` principle 1): the interwoven
   contract-and-craft texture is tuned as-is — trim in place.
 
 ## Operational
 
-- Prose changes should ideally be verified against a score baseline; none is banked yet (BENCHMARK.md
+- Prose changes should ideally be verified against a score baseline; none is banked yet (`design/benchmark.md`
   B3), so lean on the git-archaeology discipline in the meantime.
 - Changes reach a live campaign via `pipx reinstall` (package code + assets) + `gm-llm update` in the
   campaign (copies skills into its `.opencode/`). **Never while a TUI session is live** — quit at the

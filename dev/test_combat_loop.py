@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standalone check for the combat mode-switch loop (COMBAT.md C1) — no pytest, no
+"""Standalone check for the combat mode-switch loop (design/combat.md § The combat loop) — no pytest, no
 opencode, no model. Run me directly.
 
 Drives the real `Game` combat surface over a fake backend that simulates the tracker

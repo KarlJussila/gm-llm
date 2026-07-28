@@ -624,7 +624,7 @@ class PlayApp(App):
     # beats, gets input, and calls the next driver method — no combat policy here. The
     # pump runs off the UI thread; `_on_combat_beat` renders each beat and, for an NPC
     # beat, blocks on `_combat_gate` until the player confirms (Enter) or interjects (a
-    # typed reaction). See COMBAT.md "The combat loop".
+    # typed reaction). See design/combat.md "The combat loop".
 
     def _enter_combat(self) -> None:
         self._combat = CombatDriver(self.game)

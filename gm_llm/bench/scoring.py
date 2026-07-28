@@ -1,5 +1,5 @@
 """
-The `bench report` engine — archive + grades → summary (BENCHMARK.md B2).
+The `bench report` engine — archive + grades → summary (design/benchmark.md B2).
 
 Pure aggregation: no model calls, no network. It reads a batch out-dir (the `batch.jsonl`
 manifest B1 writes, each run's score archive, and the `grades-*.jsonl` B2 writes beside
@@ -21,7 +21,7 @@ Two things this module is opinionated about, both from the measurement methodolo
 The score model lives here too (`score_violations`): dedup'd violations cost penalty points
 by severity, the points normalize by run length into a rate, and the rate maps to a 0–100
 integrity score plus per-dimension subscores. It is reported *beside* the severity vector,
-never instead of it — BENCHMARK.md's "distributions, not single numbers" is the standing
+never instead of it — design/benchmark.md's "distributions, not single numbers" is the standing
 constraint, and a composite that hides which dimension moved is worse than no composite.
 
 Distributions, not points: scores, violation counts, turns-to-wrap, and the rates are

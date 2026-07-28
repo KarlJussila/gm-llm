@@ -37,7 +37,7 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 
 ## benchmark — the instrument
 
-Plan of record: [`BENCHMARK.md`](BENCHMARK.md) (B-numbers are its sections).
+Plan of record: [`design/benchmark.md`](design/benchmark.md) (B-numbers are its sections).
 
 | # | Task | Effort | Why |
 |---|---|---|---|
@@ -53,17 +53,17 @@ Plan of record: [`BENCHMARK.md`](BENCHMARK.md) (B-numbers are its sections).
 | # | Task | Effort | Why |
 |---|---|---|---|
 | 1 | New-campaign shakedown (setup + character import) | medium | Owed since the prior plan; exercises the per-arc apply briefs and slimmed checker skills |
-| 2 | Combat shakedown | medium | C0–C5, AoE and resume-hardening are all mock-verified only ([`COMBAT.md`](COMBAT.md)) |
+| 2 | Combat shakedown | medium | The whole tracker/loop/gate/craft stack is mock-verified only ([`design/combat.md`](design/combat.md)) |
 
 ## packaging — native Windows and easy setup
 
-Plan of record: [`PLAN.md`](PLAN.md).
+No plan-of-record doc: the design is settled and built. The portability rules that keep it
+working are `dev/MAINTAINING.md` § Portability; what remains is validation and one decision.
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 1 | Phase 1 — native Windows portability | medium | In progress per PLAN.md § 2 |
-| 2 | Phase 3 — validate on native Windows | medium | The biggest external unknown; needs a real Windows box |
-| 3 | Model configuration | high | Deferred by agreement; needs the campaign-vs-install ownership decision (`design/open-questions.md`) |
+| 1 | Validate on native Windows | medium | The biggest external unknown — opencode's own native-Windows maturity (clean server lifecycle, child-process teardown). Everything in our code is fixable; this needs a real Windows box. Probe `opencode.cmd` resolution, process-tree kill, paths with spaces, ANSI. Fallback if opencode itself is the problem (WSL is ruled out): pin a known-good opencode version and document it |
+| 2 | Model configuration | high | Deferred by agreement; needs the campaign-vs-install ownership decision (`design/open-questions.md`) |
 
 ## docs — keep the loop honest
 
@@ -71,12 +71,15 @@ Plan of record: [`PLAN.md`](PLAN.md).
 |---|---|---|---|
 | 1 | Generate `findings.md` § Contents | low | Hand-maintained indexes fall behind the archive they index; do it before the archive is long enough to matter |
 | 2 | Decide on pytest for `dev/test_*.py` | medium | Changes the gate, so it is its own round (`design/open-questions.md`) |
+| 3 | `sessions/` → per-session directories | high | A large cross-cutting path refactor (orchestrator modules, briefs, skills, `canon-conventions` §2, tests) with no behavior change to show for it — it must be its own round and never a rider (`design/open-questions.md`) |
 
 ## Landed
 
 | Track | Parts | Outcome |
 |---|---|---|
 | docs | 1 | The handoff-round loop stood up: five docs, `status.py`, `lint_docs.py`, `close-round`; `dev/MAINTAINING.md` reconciled |
+| docs | 2 | Planning consolidated onto the loop: `SPEC.md`/`PLAN.md` absorbed and deleted, plan-of-record docs moved into `design/`, private roadmaps and backlogs stripped, lint checks 10–12 |
+| packaging | 2 | Phase 1 (native-Windows portability) closed — its rules now live in `dev/MAINTAINING.md` § Portability |
 
 ## Standing sync rules
 

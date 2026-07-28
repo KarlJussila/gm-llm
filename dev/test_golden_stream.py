@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Golden prompt-stream test (BENCHMARK.md B4) — no pytest; run me directly.
+"""Golden prompt-stream test (design/benchmark.md B4) — no pytest; run me directly.
 
 Records the exact model-facing prompt stream the orchestrator emits for one
 scripted setup -> session-1 prep -> play -> handoff -> reconcile pass, driving the

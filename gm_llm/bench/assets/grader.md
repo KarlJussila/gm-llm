@@ -1,7 +1,7 @@
 ---
 description: >-
   The benchmark's severity/category grader — the instrument's post-hoc scoring pass
-  (BENCHMARK.md B2). Reads one violation the in-loop checker already flagged, plus the
+  (design/benchmark.md B2). Reads one violation the in-loop checker already flagged, plus the
   draft it was flagged on and the rubric, and submits a structured grade (severity,
   category, rationale, duplicate marker) via the submit_grade tool. Reads and grades
   only; never writes, never re-checks whether it was a violation.

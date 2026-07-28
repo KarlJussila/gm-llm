@@ -1,5 +1,5 @@
 """
-The score-event archive — the benchmark's capture layer (B0 in BENCHMARK.md).
+The score-event archive — the benchmark's capture layer (B0 in design/benchmark.md).
 
 Play and the between-session stages already summarize every gate outcome into
 `orchestrator-checks.log` for humans; this is the same data, structured: one JSONL

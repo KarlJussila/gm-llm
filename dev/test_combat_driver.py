@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standalone check for the combat DRIVER (COMBAT.md — the sequencing policy that wraps
+"""Standalone check for the combat DRIVER (design/combat.md — the sequencing policy that wraps
 `Game`'s initiative surface). No pytest, no opencode, no model — run me directly.
 
 Drives the real `CombatDriver` over the same fake tracker backend `dev/test_combat_loop.py`

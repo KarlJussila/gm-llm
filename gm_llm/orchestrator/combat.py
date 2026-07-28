@@ -1,6 +1,6 @@
 """
 Combat mode — the initiative-driven loop that replaces the player-driven `turn()`
-while a fight is on (COMBAT.md C1).
+while a fight is on (design/combat.md § The combat loop).
 
 Out of combat the *player* drives: one message → one gated DM response. In combat
 *initiative* drives: the orchestrator pumps the loop, soliciting the player on the
@@ -24,7 +24,7 @@ combatant. On confirm we commit. On interject we roll `pending` back to `committ
 double-fired timers, no wrong-combatant replay. (Because the turn pointer travels in
 the snapshot, the advance can safely live at the end of the action call; were it
 top-level and shared, a rollback couldn't rewind it and the replay would resolve the
-wrong combatant — see COMBAT.md "The combat loop".)
+wrong combatant — see design/combat.md "The combat loop".)
 
 The orchestrator owns only the two frame swaps (commit/rollback); every semantic
 mutation — damage, move, advance_turn — is the model calling a tracker tool, which
@@ -301,7 +301,7 @@ class CombatMixin:
 # *around* them: pump NPC beats, confirm each, stop at a PC slot or the fight's end, thread
 # interjections and cancels. Every interface (the TUI, the two autoplay loops) drives a fight
 # through this and stays mechanical — render a beat, get input, call the next method — so no
-# combat policy ever leaks into an interface. See COMBAT.md "The combat loop".
+# combat policy ever leaks into an interface. See design/combat.md "The combat loop".
 
 
 @dataclass

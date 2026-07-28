@@ -1,5 +1,5 @@
 """
-The `bench grade` engine — the benchmark's post-session scoring pass (BENCHMARK.md B2).
+The `bench grade` engine — the benchmark's post-session scoring pass (design/benchmark.md B2).
 
 Play CAPTURES; grading JUDGES, and it happens here, offline, decoupled from play — no
 rate coupling with the model doing the session, and a rubric revision re-grades history
@@ -266,7 +266,7 @@ def build_brief(rubric_text: str, finding: Finding, window: list[dict]) -> str:
     """The per-finding grading brief: the rubric verbatim, the flag's context (player
     message, the DRAFT to grade, which check flagged it, the checker's report), and the
     dedup window of already-graded findings. One finding per brief — focus beats
-    batching (BENCHMARK.md)."""
+    batching (design/benchmark.md)."""
     draft_label = ("DRAFT — the narration as flagged, grade THIS" if finding.kind == "turn"
                    else "DRAFT — the record as flagged, grade THIS")
     parts = [

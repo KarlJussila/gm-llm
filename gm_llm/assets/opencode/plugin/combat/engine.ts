@@ -1,5 +1,5 @@
 /**
- * combat-tracker engine — the pure, authoritative combat state machine (COMBAT.md C0).
+ * combat-tracker engine — the pure, authoritative combat state machine (design/combat.md § Tracker).
  *
  * This module is deliberately fs-free and tool-free: every function operates on an in-memory
  * `TrackerState`, which is what makes it directly unit-testable without a model or opencode in the
@@ -46,7 +46,7 @@ export type Timer = {
 export type Frame = {
   // turn/round live INSIDE the frame (not top-level) so a commit/rollback snapshots them
   // with everything else: rollback restores the turn pointer too, which is what lets the
-  // runner's turn end by advancing and still be cleanly replayed on an interject (COMBAT.md
+  // runner's turn end by advancing and still be cleanly replayed on an interject (design/combat.md
   // "The combat loop"). next_timer_id stays top-level — it must never rewind, or a rolled-back
   // timer's id could be reused.
   turn: string

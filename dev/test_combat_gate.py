@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standalone check for the check-combat gate branch (COMBAT.md C2) — no pytest, no
+"""Standalone check for the check-combat gate branch (design/combat.md § Implementation map, the gate) — no pytest, no
 opencode, no model. Run me directly.
 
 Drives the real `Gate.check` over a fake backend + preloader. The point is the C2

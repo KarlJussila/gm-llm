@@ -4,7 +4,7 @@ The `bench run` engine — promote the autoplay harness to benchmark grade.
 A batch prepares one **template** project once (`gm-llm init` + plugin deps), then for
 each run stamps out a fresh project dir from that template plus the fixture's frozen
 `campaign/`, plays it through the same gated loop the product uses, and leaves a
-condition-stamped score archive behind. The measurement contract (BENCHMARK.md) lives
+condition-stamped score archive behind. The measurement contract (design/benchmark.md) lives
 in the shape of what this writes, not in any judgement it makes: play CAPTURES, the
 post-hoc grader (B2) judges.
 
@@ -18,7 +18,7 @@ Two invariants this module owns:
     is impossible to make by accident.
 
   * **Turns-to-wrap stays meaningful.** Play runs to the runner's own `task_complete`
-    close (decision 3 in BENCHMARK.md), with a hard turn cap as the only safety net. A
+    close (decision 3 in design/benchmark.md), with a hard turn cap as the only safety net. A
     cap breach is stamped into the archive (a `cap` event) and skips reconcile — an
     unwrapped session has no clean transcript end — so a run that never learned to wrap
     can't masquerade as one that did.
@@ -54,7 +54,7 @@ from ..project import init_project, install_plugin_deps
 # between-session author the reconcile pass drives. Enough to reconstruct the condition.
 _CONDITION_AGENTS = ("dm-runner", "player", "narrative-checker", "dm")
 
-TIER = "low"  # the product IS the low tier (BENCHMARK.md); bench run only plays it today.
+TIER = "low"  # the product IS the low tier (design/benchmark.md); bench run only plays it today.
 
 
 def _now() -> str:

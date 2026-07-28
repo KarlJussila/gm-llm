@@ -1,5 +1,5 @@
 """
-The benchmark harness (BENCHMARK.md) — not shipped in the wheel.
+The benchmark harness (design/benchmark.md) — not shipped in the wheel.
 
 gm-llm doubles as a tiered scaffolding benchmark: an autoplayer runs a full session
 against a frozen fixture campaign and the gate's verdicts, captured in the score-event

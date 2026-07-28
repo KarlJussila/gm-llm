@@ -154,7 +154,7 @@ dev prep       [--session N] [--no-commit]                PRE: author + gate + c
 dev reconcile  [--session N] [--no-commit] [--no-prep] [--fresh]   POST: the staged pipeline
 dev lint                               entity-completeness lint, standalone
 dev ping       [N]                     probe the model's rate-limit state
-bench run | grade | report             the benchmark harness (BENCHMARK.md)
+bench run | grade | report             the benchmark harness (design/benchmark.md)
 ```
 
 Defaults do the right thing: `prep` targets the next session and `reconcile` the latest
@@ -183,7 +183,8 @@ dev/                   the developer CLI + test harness (not shipped)
 install.ps1            the native-Windows one-line installer
 ```
 
-**A campaign project** is what `gm-llm init` creates — a separate git repo:
+**A campaign project** is what `gm-llm init` creates — a **separate git repo**, so framework
+development and play history don't entangle:
 
 ```
 my-campaign/
@@ -193,7 +194,9 @@ my-campaign/
 
 The orchestrator commits to the campaign repo at each phase boundary (`campaign: init` /
 `campaign: session N plan` / `campaign: post-session N updates`). The `campaign/` data is
-created on first play (setup) from `gm_llm/assets/opencode/templates/campaign/`.
+created on first play (setup) from `gm_llm/assets/opencode/templates/campaign/`. The DM agents
+run with the project root as their working directory, so any plain `git` they do lands in the
+campaign repo rather than the framework's.
 
 All campaign state is human-readable markdown — see `templates/campaign/README.md` for the
 layout and the `canon-conventions` skill for the authoring contract (entity info/state file
@@ -315,6 +318,10 @@ python -m gm_llm dev autoplay --turn-cap 6 --dir ../my-campaign   # scripted pla
 Model-facing `dev` commands target a `gm-llm init`-ed campaign project via
 `--dir` (default: the current directory).
 
-`SPEC.md` describes what the system is; `PLAN.md` is the active design doc (what's in
-flight and why). The mock layer (`gm_llm/orchestrator/mock.py`) duck-types `Game`/
-`Setup`/`Lifecycle` so the whole TUI runs offline.
+The mock layer (`gm_llm/orchestrator/mock.py`) duck-types `Game`/`Setup`/`Lifecycle` so the
+whole TUI runs offline.
+
+Contributing or picking the work back up: **`CLAUDE.md`** has the orientation, the gate, and the
+standing rules; **`HANDOFF.md`** is the current state; **`ROADMAP.md`** is what remains, in
+order; **`design/`** is the design itself (start at `design/README.md`) plus the per-round
+archive.

@@ -33,7 +33,7 @@ def _note(msg: str) -> None:
 def add_bench_parser(subparsers, engine) -> None:
     """Register the `bench` group and its sub-subcommands on `subparsers`. `engine` is the
     main CLI's shared parent parser (`--dir` + the backend flags)."""
-    bench = subparsers.add_parser("bench", help="benchmark harness (BENCHMARK.md)")
+    bench = subparsers.add_parser("bench", help="benchmark harness (design/benchmark.md)")
     bsub = bench.add_subparsers(dest="bench_cmd", required=True)
 
     run = bsub.add_parser("run", parents=[engine],

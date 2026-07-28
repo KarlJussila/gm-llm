@@ -12,6 +12,7 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | Part | Round | What it's best read for |
 |---|---|---|
 | [1](#part-1--setup-standing-up-the-handoff-round-loop-2026-07-27) | setup | Why the gate is `python dev/test_*.py` and not pytest; why bench counts stay out of the generated block |
+| [2](#part-2--docs-consolidating-the-planning-docs-onto-the-loop-2026-07-27) | docs | Why `SPEC.md` and `PLAN.md` were deleted rather than moved; how a plan-of-record doc differs from a roadmap and a backlog |
 
 ## Recurring threads (the classes worth knowing)
 
@@ -19,6 +20,18 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
   the versioning rule; MAINTAINING's copy was stale by a whole build-config change. Whenever
   a rule gets restated, the restatement is the defect. `lint_docs.py` check 7 encodes the
   specific instance. (Part 1)
+  Part 2 found the same class three more times, all in docs wearing a "plan of record" label:
+  every workstream doc carried a private roadmap beside ROADMAP's, two carried private
+  backlogs beside open-questions', and `PLAN.md` claimed HANDOFF's job outright. Checks 10–12
+  encode those. The pattern to watch for is a doc whose *label* says design and whose *content*
+  says status.
+- **A doc nothing verifies is a doc that is already wrong.** `SPEC.md` had rotted in four
+  independent places — two stale top-level package paths, a "seven `check-*` skills" count that
+  was eight, and a "forthcoming `combat-run`" that had shipped a minor version earlier — while
+  being listed as a plan-of-record doc every session was told to trust. Nothing pointed at its
+  § Features, nothing checked it, and it had been dragged along as living documentation only
+  because sessions kept dutifully updating it. Deleting it was cheaper than maintaining it.
+  (Part 2)
 
 # Part 1 — Setup: standing up the handoff-round loop (2026-07-27)
 
@@ -102,3 +115,123 @@ effort table states this.
 
 `python -m compileall gm_llm` clean; all ten `dev/test_*.py` scripts pass;
 `tools/status.py --check` and `tools/lint_docs.py` pass.
+
+# Part 2 — Docs: consolidating the planning docs onto the loop (2026-07-27)
+
+## The gap
+
+Part 1 stood up the five-doc loop and **kept** `BENCHMARK.md`, `COMBAT.md`, `PLAN.md` and
+`SPEC.md` as plan-of-record docs ROADMAP would point at. It reconciled `dev/MAINTAINING.md` and
+stopped there — so the thing it had named as its own trigger survived it: *"each doc carried its
+own private roadmap — BENCHMARK's B0–B9, PLAN's phases."* One round later the repo ran two
+architectures at once, and a cold session picking up `HANDOFF.md` § Next task was one link away
+from a doc that answered the same question differently.
+
+Concretely, every track had two sequencers (ROADMAP's rows vs. B0–B9 / C0–C5 / PLAN's phases,
+the latter carrying fourteen `[done]` / `**done**` / `landed <date>` markers), two backlogs
+(`open-questions.md` vs. COMBAT § Open decisions and BENCHMARK § B-later — nine items, none on a
+track, so `lint_docs.py` check 6 could not see them), and two current-state docs (`HANDOFF.md`
+vs. `PLAN.md`, which opened by calling itself *"the active work-in-flight doc"*).
+
+## What the round does
+
+Deletes two docs, moves two, strips the rest back to design, and adds the three checks that stop
+it recurring.
+
+- **`SPEC.md` deleted, absorbed in three directions.** § Architecture / § Constraints /
+  § Non-Goals / the durable half of § External Integrations became `design/README.md`, which is
+  now both the routing table for `design/` and the "what the system is" doc — the shape the
+  reference project uses, where `design/README.md` carries the model overview and no SPEC exists
+  at all. § Repository Layout collapsed into README's existing § Layout (which was already more
+  accurate). **§ Features was deleted outright**, not rehomed.
+- **`PLAN.md` deleted, not relocated.** Roughly 70% `[done]` changelog; its live content was
+  already three ROADMAP rows plus one open-question. The residue was the Windows portability
+  scar tissue, and `dev/MAINTAINING.md` line 3 *already declared itself* the home for "the
+  portability rules that keep Windows working" — it held the encoding half while PLAN held the
+  process half. They merged into one § Portability with two subsections.
+- **`BENCHMARK.md` → `design/benchmark.md`, `COMBAT.md` → `design/combat.md`.** Root now holds
+  only the loop plus the user-facing manual; `design/` holds every plan of record. This also puts
+  them under lint checks 1 and 2 for free, which is most of why the split was worth closing.
+- **Private roadmaps and backlogs stripped.** benchmark.md's § Roadmap became § The stages
+  (same B-numbered content — ROADMAP links by number and relies on it — minus the ordering claim
+  and B0's landed-date). combat.md's C0–C5 became § Implementation map. § B-later became § Out of
+  scope, rephrased as decisions with the condition that would reopen each.
+- **Checks 10 (markers), 11 (backlog), 12 (statedoc)**, and `PLANNING` reworked so `design/*.md`
+  is covered by living there rather than by being listed.
+
+### Non-obvious calls
+
+**Deleting a doc beats moving it when its live content is already someone else's.** The tempting
+move was `PLAN.md` → `design/packaging.md`, keeping the set symmetrical. But a plan-of-record doc
+has to own *design*, and packaging's design is settled and built: what remained was one
+validation task, one deferred decision, and a set of rules that belong beside the installer.
+A `design/packaging.md` would have been a file whose only purpose was to have somewhere to point.
+ROADMAP's packaging track now says "no plan-of-record doc" explicitly, so the absence reads as a
+decision rather than an omission.
+
+**A design doc's status line is fine; its per-item markers are not.** combat.md still opens with
+"built and shipped (0.3.0), mock-verified only" — that is a durable design fact a reader needs in
+the first paragraph, and check 10 is written to allow it. What check 10 rejects is annotating
+*individual items* with completion state, because that is the form that duplicates ROADMAP and
+then drifts from it. The distinction is per-doc vs. per-item, not the word "done".
+
+**"Out of scope" is design; "deferred" is a backlog.** BENCHMARK's § B-later mixed both — four
+genuine scope boundaries and one piece of real work (regenerating the scripted player's digest)
+that B1's own prereq depended on. The four stayed, rewritten as decisions with a reopening
+condition; the fifth moved to `open-questions.md` on the benchmark track. Check 11 keys on
+backlog-shaped headings (`Open decisions`, `Deferred`, `TODO`, …) and deliberately permits
+"Out of scope", because a design doc *should* record what it refuses to do.
+
+**The C-numbers were load-bearing in ~12 source comments.** Deleting COMBAT's C-phases would
+have left `# ... (COMBAT.md C2)` pointing at nothing, which is the same defect in a new place.
+They were mapped onto sections that exist (`C0` → § Tracker, `C1` → § The combat loop, `C2` →
+§ Implementation map) rather than blanket-renamed.
+
+**The B3 freeze was respected in substance, not just letter.** The reroute touched four files
+that are technically model-facing assets, so it is worth recording *where*: a YAML comment inside
+`dm-runner.md`'s `permission:` block (parsed config, never sent to the model), two TypeScript
+header comments, and the `description:` frontmatter of `bench/assets/grader.md`. No craft prose
+was altered and the golden-stream test is unchanged. A future round that wants to be strict about
+the instrument should know the grader's description line moved.
+
+**`findings.md` and `CHANGELOG.md` keep their dangling names on purpose.** Part 1's text still
+says planning lives in four root docs, and the changelog still points at `BENCHMARK.md` for
+0.4.0's design. Both are point-in-time records and retro-editing them is the failure the archive
+exists to prevent — Part 1's header says so outright. Check 12 skips the two narrative docs for
+the same reason: Part 1's *description* of a missing current-state doc is not a doc claiming to
+be one, and the first version of the check flagged it.
+
+## Declared lossiness / deferrals
+
+- **COMBAT's C-phase "key resolutions" were compressed, not copied.** § Implementation map keeps
+  the durable facts (advance-at-end and why opencode's missing execute-a-tool endpoint forces it;
+  the `dm-runner` permission blocker that mock verification structurally could not catch; the
+  repertoire living in apply-canon because it is capability-lineage; the bestiary-vs-NPC
+  stat-block split) and drops the phase scaffolding, the per-phase Exit criteria, the
+  "deferred to C5" pointers that C5 had already picked up, and the repeated
+  "verified by dev/test_x.py" lines, consolidated into one. Git holds the originals.
+- **`sessions/` → per-session directories is now on a track.** It sat in COMBAT § Open decisions
+  as a real cross-cutting refactor nothing owned. It is `open-questions.md` § Canon layout plus
+  ROADMAP docs 3, at high effort, explicitly never a rider on adjacent work.
+- **Two COMBAT open-decisions were resolved, not moved.** Tracker serialization and HP
+  roll-vs-average: the shipped engine serializes the documented shape and takes `hp` as a
+  model-supplied param, so the question is answered in code — per CLAUDE.md's source-of-truth
+  rule the doc got fixed (the state sketch is no longer labelled "serialization not locked").
+  The AoE-queries and reaching-back-past-a-confirmed-combatant items were already marked settled
+  inline, i.e. tombstones; they became plain design prose in § Tracker and § The combat loop.
+- **Packaging Phase 1 closed as part of this round.** Every sub-item was already `[done]` except
+  "document the terminal requirement, don't code it" — which this round did, in MAINTAINING
+  § Portability. ROADMAP's "Phase 1 — in progress" row was inherited from a stale marker rather
+  than from any outstanding work; it is deleted and § Landed carries it.
+- **README/SPEC architecture overlap was resolved by SPEC's deletion**, so the question of
+  deduplicating them does not need to be filed. README stays the 320-line user manual on
+  purpose: the reference project's 60-line routing README works because that project ships
+  nothing, and gm-llm ships a command people install.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all ten `dev/test_*.py` scripts pass; `tools/status.py
+--check` and `tools/lint_docs.py` both clean. Checks 10–12 were verified against the
+pre-surgery docs restored from `HEAD` into `design/`: **25 errors**, falling to 0 on the
+consolidated set. A check that has never fired is decoration.
+

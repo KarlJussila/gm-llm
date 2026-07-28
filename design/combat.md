@@ -1,8 +1,12 @@
-# COMBAT — combat as a runner play-mode
+# Combat — a runner play-mode
 
-The design doc for the combat workstream. `SPEC.md` describes what the system *is*; `PLAN.md`
-carries packaging/Windows; `BENCHMARK.md` carries the benchmark; this carries combat. **Pre-
-implementation** — captured from design discussion, nothing here is built yet.
+Plan of record for combat. What the system is → [README.md](README.md); the benchmark →
+[benchmark.md](benchmark.md).
+
+**Status: built and shipped (0.3.0), mock-verified only** — every part of this has been exercised
+under the mock backend and the `dev/` suites, and none of it has ever run against a live model.
+The shakedown is `ROADMAP.md` track **live**. Sequencing lives in ROADMAP; this doc describes the
+design and where it lives in the tree.
 
 ## Goal
 
@@ -28,7 +32,7 @@ model owns judgment.** Arithmetic, turn order, condition effect-text, duration c
 geometry → tracker. Whether an attack hits, how far a creature can actually move, whether an enemy
 retreats, whether a reaction applies → model. The tracker is never a rules engine.
 
-## Principles (settled in design discussion)
+## Principles
 
 1. **State is authoritative in a tracker, not in the model's head.** A stateful, file-backed opencode
    plugin (the pattern is `plugin/dice-roller.ts`, but persistent) owns HP, conditions, initiative
@@ -37,7 +41,7 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
    state would desync — and a file the orchestrator can also read is inspectable and preload-able.
 
 2. **Positioning is egocentric, and movement *reasoning* stays with the model.** No grid exposed to
-   the model (SPEC is text-only/no-VTT), no pairwise zones. **The model-facing frame is egocentric —
+   the model (text-only, no VTT — [README.md](README.md) § Constraints), no pairwise zones. **The model-facing frame is egocentric —
    every position is spoken as distance/height/direction against the PC as origin** — but *storage is
    world-absolute Cartesian* (each combatant an `x/y/z` in feet, the PC seeded at the origin), and the
    egocentric view is a *projection* rendered on demand. This is the load-bearing split: Cartesian is
@@ -104,7 +108,7 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
    nothing is rolled back. The confirm gate exists so a *missed* pause stays cheap and recoverable — it
    is not a license to bulldoze. `combat-run` must make that discipline explicit.
    - **Which reactions stop is the *player's* choice, not a runner heuristic — a per-reaction `Stop:
-     yes/no` toggle in the repertoire (C3).** Whether pausing for a given reaction is worth the
+     yes/no` toggle in the repertoire.** Whether pausing for a given reaction is worth the
      interruption is a taste call only the player can make: a broad, fires-every-turn trigger (Shield
      on any hit; Hellish Rebuke on any hit that damages the PC) is exactly the kind most players would
      rather call themselves than have the fight stop for several times a round — but that's *their*
@@ -142,7 +146,8 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
   `turn-reminder`: the strict per-combatant algorithm (whose turn → declare/resolve via tracker+dice →
   narrate → confirm/advance), the proactive-pause discipline, the repertoire-ledger consult.
 - **`combat-run` skill** — `assets/opencode/skills/combat-run/SKILL.md` (the reserved `*-run` play-mode
-  slot SPEC already names). Loaded on entry; `session-run`'s universal craft still holds.
+  slot the skill-naming convention reserves).
+  Loaded on entry; `session-run`'s universal craft still holds.
 - **`check-combat` skill** — `assets/opencode/skills/check-combat/SKILL.md`, wired into `gate.check()`
   under `_in_combat`. Validates the transition against the preloaded tracker state.
 - **`combat-balance` skill** — `assets/opencode/skills/combat-balance/SKILL.md`. DM-facing at planning,
@@ -178,6 +183,20 @@ reads:  state()   ·   describe(id)   ·   distance_between(a, b) -> feet   # Ch
 (No `in_range` tool: every mutator's roster echo already prints each foe's projected distance, so a
 range check is a comparison the model reads off the board rather than a round-trip — one fewer tool on
 a surface a weak model has to choose from.)
+
+**Area-of-effect is three shape reads, and the tracker does the geometry.** `burst` (a radius effect —
+sphere, cylinder, or cube; its LLM-facing description says so), `cone`, and `line` are each an exact
+filter over the stored Cartesian coords, returning the caught combatants in egocentric terms. The
+model places the aim *in the egocentric frame it already speaks* and never sees a coordinate —
+exposing coords would push the geometry back onto the weak model, the exact thing principle 2
+offloads. **One input shape per tool, no id-or-point overloading:** `burst`'s center is a placed point
+(`distance`/`direction`/`radius`, with `distance 0` = on the PC, so nobody is exempt); `cone` and
+`line` emanate from an explicit `origin` combatant id — **any** combatant, whether or not it is their
+turn (a readied breath weapon, an off-turn effect, any caster) — and never catch the origin. A
+combatant-id origin is a single clean arg, not the overloading we rule out. All three are pure reads:
+the model then applies `damage` per hit. Cube and cylinder fold onto `burst`. Built as all three
+rather than on demand because this is an open, improvised system where any fight can summon a breath
+weapon or a lightning line — a mechanic that *can* arise *will*.
 
 Every mutator echoes the **full compact roster with ids**, so the current id list, positions, and HP
 are always in front of the model — the echo after `move("pc", ...)` *is* the position report-back.
@@ -249,7 +268,7 @@ remind_each_turn(combatant, note, {owner?}) -> id   # fires EVERY time `combatan
   id the tracker auto-culls on that combatant's death — is a plain foreign-key cleanup (tag the caster
   as owner → concentration-ends-on-death for free), not a rules engine.
 
-**Tracker state (sketch — serialization not locked):**
+**Tracker state:**
 
 ```jsonc
 {
@@ -297,7 +316,13 @@ Player turns are symmetric to NPC turns for commit purposes — a DM error on th
 equally retconnable within its window. The wrap/`session-length` machinery should not interrupt a
 fight mid-round (detail TBD).
 
-**The turn pointer travels in the snapshot, so the advance can end the turn (C1).** `turn`/`round` live
+**Confirming a combatant closes their reaction window — by design.** A reaction that references an
+already-committed combatant is handled going forward, not retconned. Confirm-as-consent is what makes
+granular commit sound: if a confirmed beat could still be reopened, `pending` would stop being one
+combatant deep and the replay guarantee would go with it. This is a deliberate scope boundary, not a
+gap.
+
+**The turn pointer travels in the snapshot, so the advance can end the turn.** `turn`/`round` live
 inside the `committed`/`pending` frames, so a `rollback` (committed→pending) restores the turn pointer
 along with HP/conditions/timers. That is what lets each combatant's turn *end* by calling `advance_turn`
 (seating the next combatant, firing their timers) rather than needing a separate orchestrator-driven
@@ -307,7 +332,7 @@ advances its pointer, and an interject's `rollback` rewinds `pending` — pointe
 resolve the wrong combatant; that constraint (and the extra advance model call it forced) is why the
 pointer moved into the frame. A combatant's timers therefore fire on the *previous* turn's closing
 advance — one beat early in the transcript, resolved on the turn they belong to (a `combat-reminder`
-matter, C5). `next_timer_id` stays top-level so a rolled-back timer id is never reused.
+matter). `next_timer_id` stays top-level so a rolled-back timer id is never reused.
 
 ## Balance — a skill, not a mechanism
 
@@ -341,205 +366,108 @@ an out?* — and if it's lethal, that's allowed, just intentional and telegraphe
 "escape valve" idea survives only reframed: **design-time levers + emergent NPC behavior**, never a
 PC-rescue reflex (principle 8).
 
-## Open decisions
+## Implementation map
 
-- **Tracker serialization + HP roll-vs-average** on instantiation (fixed average is one fewer roll;
-  rolled gives variance). The `state()`/mutator echo format.
-- **AoE queries (settled + built, post-C5).** Three shape reads — **`burst`** (a radius effect: sphere,
-  cylinder, or cube; its LLM-facing description says so), **`cone`**, **`line`** — each an exact filter
-  over the stored Cartesian coords, returning the caught combatants in egocentric lines. The model
-  places the aim *in the egocentric frame it already speaks* and the tracker does the geometry, so no
-  coordinate is ever surfaced (exposing coords would push geometry onto the weak model — the exact
-  thing principle 2 offloads). **One input shape per tool, no id-or-point overloading:** `burst`'s
-  center is a placed point (`distance`/`direction`/`radius`, `distance 0` = on the PC), so nobody is
-  exempt; **`cone`/`line` emanate from an explicit `origin` combatant id — any combatant, whether or
-  not it is their turn** (a readied breath weapon, an off-turn effect, any caster) — and never catch
-  the origin. A combatant-id origin is a single clean arg, not the id-or-point overloading we rule out.
-  Pure reads: the model then applies `damage` per hit. Built as `burst`/`cone`/`line` since this is an
-  open, improvised system where any fight can summon a breath weapon or lightning line — and where a
-  mechanic that *can* arise *will*. Cube/cylinder fold onto `burst`. Verified in
-  `test/combat-tracker.test.ts`.
-- **Reaching back past a confirmed combatant.** By design, confirming combatant A closes A's reaction
-  window, so a reaction referencing an already-committed combatant is handled going forward, not
-  retconned. Confirm-as-consent is what makes granular commit sound; flagged as a deliberate scope
-  boundary, not a gap.
-- **`sessions/` per-session directories (deferred cleanup, non-combat).** The flat
-  `sessions/session-N-{plan,transcript,notes}.md` + `session-N.md` digest + `assessment/` convention
-  would read more cleanly as per-session folders (`sessions/session-N/…`). Surfaced during C4 (the
-  bestiary decision made it moot for stat blocks); it's a large cross-cutting refactor — the
-  `session-{n}-*` path convention is woven through ~7 orchestrator modules (planner, status, canon,
-  setup, reconciler, loop, mock), ~10 prompt briefs, several skills, canon-conventions §2, and the
-  tests — so it's its own task, not bundled into the combat workstream.
+Where the design above lives in the tree, and the calls that are not recoverable from reading the
+code. This is not a sequence — ROADMAP owns sequencing, and nothing here is outstanding.
 
-## Roadmap (design-stage; phases ordered so each is useful alone)
+**The tracker** — `plugin/combat-tracker.ts`, a thin file-backed adapter over a pure engine in
+`plugin/combat/engine.ts`, state under `.opencode/.orchestrator/`. The engine sits one directory
+down because opencode auto-loads every direct child of `plugin/` as a plugin
+(`Glob.scan("{plugin,plugins}/*.{ts,js}")`), so the unit-tested engine functions can be exported
+freely without the loader mistaking them for plugins.
 
-The mechanical spine is **deterministic and unit-testable without the benchmark**; the narrative craft
-is what the benchmark later tunes. Build and verify the spine on its own terms; treat `combat-run`
-prose and `combat-balance` as what B3's baseline (see `BENCHMARK.md`) refines. This resolves the
-chicken-and-egg where combat is a prerequisite for realistic higher-tier scenarios but the benchmark is
-what would validate its prompts.
+**The loop** — `gm_llm/orchestrator/combat.py`: a `CombatState` file-wrapper (the two frame swaps —
+`commit` = pending→committed, `rollback` = committed→pending, both carrying the in-frame turn
+pointer) plus a `CombatMixin` on `Game` exposing `combat_step()`, `combat_confirm()`,
+`combat_interject(text)`, `combat_player_action(input)`, and `in_combat`.
 
-### C0 — Tracker plugin + schema *(code only, unit-tested)*
-The `combat-tracker` plugin and state file: combatants, egocentric position, the bounded condition
-library (tag-in, effect-text-out), the single tracked `reaction` resource, the `dead` boolean +
-death-save tally, initiative, the timer/obligation channel (`remind_in` + `remind_each_turn`,
-turn-slot-anchored, auto-ids echoed on fire, elapsed-round surfacing, owner-cull), `committed`/
-`pending`, forward mutators, world-Cartesian position with `move` on the PC as an origin shift
-(Chebyshev projection), `rollback`, `state`/`describe`/`distance_between` reads,
-`start_encounter`/`end_encounter`. Verified by direct plugin tests — no model in the loop. *Exit: the
-tracker is provably correct as a state machine.*
-
-### C1 — Mode-switch plumbing in `loop.py` *(code only)* — **done**
-`_in_combat`, the initiative-driven loop surface, orchestrator-owned commit/rollback bracketing,
-`start`/`end` signal observation off `reply.tools`. Verified under the mock backend. *Exit: a scripted
-combat drives through the loop with correct commit/rollback boundaries and no model.*
-
-Built as `orchestrator/combat.py` — a `CombatState` file-wrapper (the two frame swaps: `commit` =
-pending→committed, `rollback` = committed→pending, both carrying the in-frame turn pointer) plus a
-`CombatMixin` on `Game` with the surface: `combat_step()`, `combat_confirm()`, `combat_interject(text)`,
-`combat_player_action(input)`, and an `in_combat` property. Key resolutions:
 - **Every turn ends by advancing (advance-at-end).** The runner resolves its action and calls
   `advance_turn` as its closing act; the orchestrator owns *only* the two frame swaps, never the
-  tracker's advance semantics (which stay in the TS engine — opencode exposes no execute-a-tool
-  endpoint, so the orchestrator can't run the advance itself anyway). One model call per combatant, no
-  separate advance step, no first-step special-case; a forgotten advance is caught by the pointer not
-  moving and nudged once (`_ensure_advanced`).
-- **This works only because the turn pointer moved into the frame** (see the state sketch): a rollback
-  now rewinds it, so an interject replays the interrupted combatant, not the next one.
-- **The PC's turn commits directly** (no confirm gate — a player doesn't confirm their own beat);
-  **an NPC turn awaits confirm**, and an **interject re-presents for confirm** (re-confirmable, so a
-  reaction to a reaction stays cheap). Verified by `dev/test_combat_loop.py`.
-- *Resume-mid-combat recovery (done, post-C5).* `_in_combat` already recovered off the persisted
-  tracker file, but the in-memory `_combat_pending` (an NPC action awaiting confirm) did not — a crash
-  between drafting an action and confirming it left `pending` in-flight, and a naive resume would skip
-  the confirm gate and lose the un-appended narration. Fixed with a `CombatState.in_flight()`
-  (`committed != pending`) guard at the top of `combat_step`: on re-entry with no in-memory pending
-  step, roll the uncommitted action back to `committed` and re-resolve the interrupted combatant — the
-  same retcon-is-replay move an interject makes (works uniformly for a PC mid-draft crash too). Covered
-  by `dev/test_combat_loop.py`'s `resume_recovery` scenario.
+  tracker's advance semantics. This is forced as well as preferred — opencode exposes no
+  execute-a-tool endpoint, so the orchestrator cannot run the advance itself. One model call per
+  combatant, no separate advance step, no first-step special case; a forgotten advance shows up as
+  the pointer not moving and is nudged once (`_ensure_advanced`).
+- **The PC's turn commits directly** (a player doesn't confirm their own beat); an NPC turn awaits
+  confirm; an interject re-presents for confirm, so a reaction to a reaction stays cheap.
+- **Resume rolls an uncommitted action back and replays it.** `_in_combat` recovers off the
+  persisted tracker file, but an in-flight NPC action awaiting confirm lives only in memory — so a
+  crash between drafting and confirming would otherwise skip the confirm gate and lose the
+  un-appended narration. A `CombatState.in_flight()` (`committed != pending`) guard at the top of
+  `combat_step` rolls back to `committed` and re-resolves the interrupted combatant: the same
+  retcon-is-replay move an interject makes, and it covers a PC mid-draft crash identically.
 
-### C2 — Gate: `check-combat` — **done**
-The role skill + `gate.check()` branch + state-file preload into the check brief. *Exit: a drafted
-combat action is validated against the `committed → pending` transition.*
+**The gate** — `check-combat` is a narrative-checker role warm-chained **between** `check-turn` and
+`check-conduct`, so it inherits the canon/ledger context and stays sequenced in the correction brief.
 
-Built as a third narrative-checker role, warm-chained **between** `check-turn` and `check-conduct`
-(not merely before conduct) so it inherits the canon/ledger context and stays sequenced in the
-correction brief. Key resolutions:
-- **The check runs only on the combat *action* beats.** `gate.check(narration, player_msg,
-  in_combat)` gained the flag; `loop.py:_run_gate` threads it, and combat.py passes `in_combat=True`
-  from `combat_step`/`combat_interject`/`combat_player_action` only. The play-driven entry turn and
-  the `end_encounter` exit beat stay `False` — the entry seeds `committed == pending` (empty delta)
-  and the exit's state file is already deleted, so neither has a transition to validate.
-- **Read-only preload, defensively guarded.** `gate._combat_blobs` reads the state file's two frames
-  as pretty JSON into the brief; if the file is absent (the closing beat raced the delete) the check
-  is skipped and `GateResult.combat` is `None`. The gate never touches the mutators (principle 6).
-- **`GateResult` gained an optional `combat: Verdict | None`.** It feeds `violations` and gets its own
-  `— Combat —` section in the correction brief (order: canon, combat, conduct). `None` out of combat.
-- **The skill validates the delta, not the frame.** It diffs `committed → pending` on the action
-  fields (hp/dead/conditions/reaction/position) in both directions — narrated-but-unapplied and
-  fabricated/misapplied damage, plus reaction double-spend — and explicitly ignores the closing
-  advance's turn-pointer/round/timer-countdown noise (the advance-at-end wrinkle). Canon/spoiler/
-  agency are left to the sibling checks. Verified by `dev/test_combat_gate.py` (branch/preload/
-  correction wiring) and the extended `dev/test_combat_loop.py` (the beats it chains on).
+- **It runs only on the action beats.** `gate.check(narration, player_msg, in_combat)` carries the
+  flag; `combat.py` passes `in_combat=True` from `combat_step`/`combat_interject`/
+  `combat_player_action` only. The play-driven entry turn and the `end_encounter` exit beat stay
+  `False` — the entry seeds `committed == pending` (an empty delta) and the exit's state file is
+  already deleted, so neither has a transition to validate.
+- **Read-only preload, defensively guarded.** `gate._combat_blobs` reads the two frames as pretty
+  JSON into the brief; if the file is absent (the closing beat racing the delete) the check is
+  skipped and `GateResult.combat` is `None`. The gate never touches the mutators (principle 6).
+- **It validates the delta, not the frame** — diffing `committed → pending` on hp/dead/conditions/
+  reaction/position in both directions, catching narrated-but-unapplied and fabricated damage plus
+  reaction double-spend, and explicitly ignoring the closing advance's turn-pointer/round/timer
+  noise. Canon, spoiler and agency are the sibling checks' business.
 
-### C3 — Repertoire ledger — **done**
-Template + seed at character-create/level-up + reconcile capture of showcased reactions. *Exit: a PC
-accrues a combat-facing reaction repertoire the runner and checker read.*
+**The repertoire ledger** — the PC's fourth file, `characters/{slug}.repertoire.md`, from
+`pc-repertoire.template.md`; documented in `canon-conventions` §2 and §3.
 
-Built as the PC's **fourth file**, `characters/{slug}.repertoire.md` — the "third ledger" (knowledge =
-what the PC knows; repertoire = how the PC fights), a distilled `WHEN <trigger> THEN <reaction>` list —
-each entry carrying a **player-owned `Stop: yes/no` toggle** (whether the runner pauses to offer it;
-default `Stop: no`, tuned by the player in play — see principle 7) — plus signature tactics and build
-wrinkles. Key resolutions:
-- **Template** `pc-repertoire.template.md` under `canon-conventions/templates/`; documented in
-  `canon-conventions` §2 (layout) and §3 (the PC's two ledgers).
-- **Seeded at create** — `character-create` writes it as the fourth PC file from the sheet's
-  reactions (opportunity attack always; plus any reaction spell/feature the sheet shows), distilling
-  only what's explicit and leaving the rest to grow.
-- **Grown in the *capability* pass, not the state pass.** The repertoire is capability-lineage (fed by
-  reactions/tactics shown in play), so it lives with the sheet in **apply-canon** — keeping the whole
-  PC-capability signal in one pass — while the **knowledge** ledger stays apply-state's. `log-extract`
-  gained taxonomy item 13 (*Combat reactions & tactics*, capturing the WHEN→THEN trigger, not just the
-  ability name); apply-canon reads it into the repertoire (new step 4); `check-propagation` audits
-  that it landed.
-- **Lint** (`completeness.py`) now skips the `.repertoire.md` companion — only the sheet carries the
-  Vitals contract. Verified by the lint-skip check and the existing suites (all green).
-- *Deferred to C5 (by design — the roadmap assigns "repertoire consult" there):* the **runtime
-  consult**. The runner reading each reaction's `Stop:` toggle to decide whether to pause, the
-  one-time "make this stopping?" ask on a reaction's first use, and never nagging the player about
-  reactions they hold — all `combat-reminder`/`combat-run` craft. The combat checker's
-  repertoire-aware verification (was the offered reaction available/appropriate) rides with it. All
-  want the benchmark baseline C5 tunes against. C3 delivers the ledger, its toggle, and its accrual;
-  C5 wires the reads.
+- **Seeded at character-create** from the sheet's explicit reactions (opportunity attack always,
+  plus any reaction spell or feature the sheet shows), leaving the rest to grow from play.
+- **Grown in the *capability* pass, not the state pass.** The repertoire is capability-lineage, so
+  it lives with the sheet in **apply-canon**, keeping the whole PC-capability signal in one pass,
+  while the *knowledge* ledger stays apply-state's. `log-extract` taxonomy item 13 (*Combat
+  reactions & tactics*) captures the WHEN→THEN trigger rather than just an ability name; apply-canon
+  reads it in; `check-propagation` audits that it landed.
+- `completeness.py` skips the `.repertoire.md` companion — only the sheet carries the Vitals
+  contract.
 
-### C4 — Planning: stat blocks, encounter prep, `combat-balance` — **done**
-Stat-block template, `encounter-plan` extension (design levers + objective, not PC-rescue rails),
-`start_encounter` instantiation from prepared blocks, and the `combat-balance` skill (planning face +
-runtime gut-check). *Exit: a planned encounter arrives at the table as loadable combatants at an
-intended, un-fudged difficulty.*
+**Planning data** — one stat-block format, two homes, both file-backed.
+`stat-block.template.md` (HP·AC·speed / all six abilities as score-check-save / attacks / defenses &
+senses / special-incl-reactions / tactics & nature) is the sole format. Named and recurring creatures
+carry it as an optional `## Stat block` in their existing NPC file; **generic reusable creature types
+get their own stateless bestiary file** — `world/bestiary/{slug}.md`, `type: creature`, registered in
+INDEX's `## Bestiary` table and referenced by `[[slug]]`. Every combatant is therefore a
+slug-addressed file, so `start_encounter` loads uniformly and a reused creature is not re-authored
+per session. (The first sketch inlined mook blocks in the session plan; this replaced it.) The
+intrinsic block holds HP; the *encounter seed* supplies count and starting position.
 
-All prose/template — no code (`start_encounter` shipped in C0). Key resolutions:
-- **One stat-block format, two homes — both file-backed.** New
-  `canon-conventions/templates/stat-block.template.md` (HP·AC·speed / all six abilities as
-  score-check-save / attacks / defenses & senses / special-incl-reactions / tactics & nature) is the
-  sole format. Named/recurring creatures carry it as an **optional `## Stat block`** section in their
-  NPC file (`type: npc`, already registered). **Generic, reusable creature types get their own
-  bestiary file** — `world/bestiary/{slug}.md`, `type: creature`, new `bestiary.template.md` — a
-  single **stateless** file (essentially just the stat block), registered in a new **`## Bestiary`**
-  INDEX table and referenced by `[[slug]]`. *(Revised from the first sketch, which inlined mook blocks
-  in the session plan: every combatant is now a slug-addressed file, so `start_encounter` loads
-  uniformly and reused creatures aren't re-authored per session.)* The intrinsic block holds HP; the
-  *encounter seed* supplies count + starting position, matching `start_encounter`'s roster entry.
-  Bestiary files are lint-exempt for free (`type: creature` isn't in `completeness.py`'s map and
-  `world/bestiary/` isn't a scanned dir); `scaffold.py` creates the dir.
-- **Distinct from the rough-sketch gauge, and not lint-gated.** The existing required
-  `## Stats (rough sketch)` stays a social/exploration capability gauge; the combat `## Stat block` is
-  the mechanical block the tracker runs from. It's optional (combatants only), so `completeness.py`
-  leaves it alone — and its heading doesn't prefix-collide with the required "Stats". Wired into
-  `entity-npc.template.md` (pointer to the format) and documented in `canon-conventions` §3.
-- **`encounter-plan` gains a combat layer over the situations stance**, not instead of it: a combat
+- **The combat `## Stat block` is distinct from the required `## Stats (rough sketch)`**, which stays
+  a social/exploration capability gauge. The stat block is optional (combatants only), so
+  `completeness.py` leaves it alone, and its heading doesn't prefix-collide with the required
+  "Stats". Bestiary files are lint-exempt for free — `type: creature` isn't in `completeness.py`'s
+  map and `world/bestiary/` isn't a scanned dir.
+- **`encounter-plan` gained a combat layer over its situations stance**, not instead of it: a combat
   seed still leads with situation/lever/complication, and additionally commits combatants, starting
-  positions (egocentric distance/direction/height — starting distance is a difficulty lever), and the
-  **objective** (not always kill-them-all). It points at the stat-block template and at
-  `combat-balance`. `session-plan` step 3 reconciled to match.
-- **`combat-balance` is craft prose, two faces.** Planning face (shape to an intended feel, quantify
-  two-way rounds-to-kill, telegraph danger, bake outs into design) + runtime gut-check (count enemies /
-  action economy / is there an out). Why-not-CR (single-PC action economy dominates) and real lethality
-  (intentional + telegraphed, never rescued) carried verbatim from the Balance section. SRD-only
-  examples throughout. The runtime consult is loadable now; C5 wires `combat-run` to it.
-- *Deferred to C5 (by roadmap):* `start_encounter` *instantiation flow* as runtime craft (the runner
-  reading a prepared block into a roster call) lives with `combat-run`; C4 delivers the loadable data
-  and the mapping note, C5 drives it. Verified by the existing suites (completeness + combat gate/loop
-  all green); the example NPC still lints with the section absent.
+  positions (egocentric — starting distance is a difficulty lever), and the objective, which is not
+  always kill-them-all.
 
-### C5 — `combat-run` + `combat-reminder` craft *(prose; benchmark-tuned)* — **done**
-The play-craft: the per-combatant algorithm, proactive-pause discipline, repertoire consult, the
-confirm/retcon contract, NPC-nature morale, real lethality. Tuned against the benchmark once a baseline
-exists. *Exit: a full combat runs end-to-end at the table.*
+**The craft — two homes, mirroring `session-run`/`turn-reminder`.** The durable craft is the
+**`combat-run` skill** (loaded on entry, held in the runner session); the terse per-turn algorithm is
+**`combat-reminder`** (`gm_llm/orchestrator/prompts/combat-reminder.md`, self-fenced), re-sent in
+front of every combat step so it cannot decay. They don't restate each other: the algorithm lives in
+the reminder, the judgment (pause discipline, morale, lethality, instantiation) in the skill.
 
-Prose plus the wiring that lets the prose actually drive a fight. Key resolutions:
-- **Two homes, mirroring `session-run`/`turn-reminder`.** The durable craft is the **`combat-run`
-  skill** (loaded on entry, held in the runner session); the terse per-turn algorithm is
-  **`combat-reminder`** (`orchestrator/prompts/combat-reminder.md`, self-fenced `<combat-reminder>`),
-  re-sent in front of every combat step so it can't decay — exactly the `turn-reminder` pattern. They
-  don't restate each other: the algorithm lives in the reminder, the judgment (pause discipline,
-  morale, lethality, instantiation) in the skill.
-- **`combat.py` step briefs now prepend `combat-reminder`** (via `prompts.load`) over a minimal
-  runtime context block (`<combat-turn>` / `<combat-reaction>`), replacing the C1 placeholder briefs.
-  `_ADVANCE_NUDGE` stays as the terse corrective.
-- **The permission blocker (would have failed at the table).** `dm-runner` is `'*': deny`, so plugin
-  tools need explicit allow — the runner literally couldn't call the tracker. Added the **17
-  tracker tools** to its allow-list; **`rollback` deliberately excluded** — the orchestrator owns the
-  frame swaps and does rollback itself in Python, so the model must never rewind state underneath it.
-  (Invisible under C1's mock backend, which doesn't enforce permissions — a real gap for real play.)
-- **Entry/exit triggers wired.** `dm-runner` gains a **Combat** section (load `combat-run` +
-  `start_encounter` to enter; orchestrator drives via the fenced steps; `end_encounter` to leave);
-  `session-run`'s companion list and `turn-reminder` step 4 name `combat-run` as the fight-entry mode.
-- **Repertoire consult (C3's deferred runtime read) landed** in `combat-run`: the `Stop: yes/no`
-  toggle drives proactive pause vs. play-on, the one-time first-use "make this stopping?" ask, and the
-  never-nag rule. **`check-combat` gained repertoire-aware PC-reaction fidelity** — a PC reaction must
-  be in the repertoire or a universal (opportunity attack); soft, since the repertoire accretes.
-- **`start_encounter` instantiation flow** (C4's deferred runtime craft) documented in `combat-run`:
-  name+HP from the stat block / bestiary entry, count+position from the encounter seed; unplanned
-  fights load `combat-balance` first. Verified by the existing suites (combat gate/loop, completeness
-  all green under the mock backend).
+- **The permission blocker, which would have failed at the table.** `dm-runner` is `'*': deny`, so
+  plugin tools need an explicit allow — the runner literally could not call the tracker. Its
+  allow-list now names the tracker tools, with **`rollback` deliberately excluded**: the
+  orchestrator owns the frame swaps and does rollback itself in Python, so the model must never
+  rewind state underneath it. This was invisible under the mock backend, which doesn't enforce
+  permissions — the standing lesson being that a permission gap is exactly the class of bug mock
+  verification cannot see.
+- **Entry and exit are wired at both ends.** `dm-runner` has a Combat section (load `combat-run` +
+  `start_encounter` to enter, `end_encounter` to leave, orchestrator drives the fenced steps
+  between); `session-run`'s companion list and `turn-reminder` name `combat-run` as the fight-entry
+  mode.
+- A combatant's timers fire on the *previous* turn's closing advance — one beat early in the
+  transcript, resolved on the turn they belong to. That is a `combat-reminder` matter, and it is the
+  cost of advance-at-end.
+
+**Verified by** `dev/test_combat_driver.py`, `dev/test_combat_loop.py` (including its
+`resume_recovery` scenario), `dev/test_combat_gate.py`, `dev/test_completeness.py`, and the tracker's
+own `test/combat-tracker.test.ts` — all under the mock backend, which is the limit named at the top
+of this doc.

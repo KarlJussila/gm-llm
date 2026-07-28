@@ -1,7 +1,11 @@
-# BENCHMARK — gm-llm as a tiered scaffolding benchmark
+# Benchmark — gm-llm as a tiered scaffolding instrument
 
-The design doc and roadmap for the benchmark workstream. `SPEC.md` describes what the
-system *is*; `PLAN.md` carries the packaging/Windows work; this doc carries the benchmark.
+Plan of record for the benchmark. What the system is → [README.md](README.md); combat →
+[combat.md](combat.md).
+
+**Sequencing and status live in `ROADMAP.md` track benchmark**, which points at the B-numbered
+stages below by number. This doc defines what each stage *is* and the contract it has to meet; it
+does not say what is next or what has landed.
 
 ## Goal
 
@@ -16,7 +20,7 @@ The benchmark measures how much of the product's quality comes from structure
 (orchestration, reminders, corrections) versus craft prose (skills, guardrails) versus
 the model itself — and how gracefully a given model degrades as scaffolding is removed.
 
-## Principles (settled in design discussion)
+## Principles
 
 1. **Tier 0 is the product, byte-for-byte.** The current prompts, agents, and skills
    *are* tier 0. They are never recomposed, templated, or routed through includes — the
@@ -89,12 +93,13 @@ Skills stay flat under `assets/opencode/skills/` (opencode dictates that); a tie
 ships a skill or doesn't — skills are only ever tier-0 content. If the benchmark ever
 needs a parallel prompt tree, the design has gone wrong.
 
-## Roadmap
+## The stages
 
-Phases are ordered so every step is useful even if the workstream pauses, and so the
-expensive step (the baseline batch) happens exactly once, on the final instrument.
+Each stage is defined so it is useful even if the workstream pauses, and so the expensive step
+(the baseline batch) happens exactly once, on the final instrument. The order they are *worked* in
+is ROADMAP's business.
 
-### B0 — Capture layer *(code only, no model-facing change)* — **landed 2026-07-15**
+### B0 — Capture layer *(code only, no model-facing change)*
 
 Emit a structured score-event archive from the existing gate paths.
 Implementation: `gm_llm/orchestrator/archive.py`, riding on `Logs` (an `archive`
@@ -255,21 +260,22 @@ Author the extreme tier first — it's tiny, and it stress-tests the contract fr
 - The two-axis config enables ablations ("corrections on, craft prose off") — more
   interesting than a single blended score per tier.
 
-### B-later (explicitly deferred)
+## Out of scope — and the condition that would bring each one in
 
-- **Independent audit pass**: a strong model re-sweeps archived *drafts* for
-  violations the in-loop checker missed (detection recall). The archive already
-  supports it; build when cross-model claims need it.
-- In-loop severity for the *product* (e.g., correct only above a threshold) — a
-  separate experiment, A/B'd against the archive to watch the defaulted-verdict rate.
-- Benchmarking the setup phase itself (fixtures sidestep it today).
-- Multiple fixtures / scenario diversity; per-scenario score normalization.
-- **Auto-runner player-digest regeneration**: after each session's reconcile, rebuild the
-  player-facing packet (the `dallid`-style digest injected into the scripted player) from the
-  updated player-known layer (`*.knowledge.md` / `*.state.md` / `*.repertoire.md`), so a
-  multi-session auto-run keeps the player's known-facts + prior-events digest current without a
-  hand-edit (done manually for the S2→S3 handoff in the fixture campaign). Generalizes to a product
-  feature — a real player wants the same "what you know / what's happened" digest.
+Decisions, not a backlog: each of these is deliberately *not* part of the benchmark, with the
+trigger that would change that. Unresolved questions live in
+[open-questions.md](open-questions.md) instead.
+
+- **Independent audit pass** — a strong model re-sweeps archived *drafts* for violations the
+  in-loop checker missed (detection recall). The archive already supports it. **In when** a
+  cross-model claim needs defending.
+- **In-loop severity for the *product*** (e.g. correct only above a threshold) — a separate
+  experiment, A/B'd against the archive to watch the defaulted-verdict rate. **In when** the
+  correction rate itself becomes the thing under study.
+- **Benchmarking the setup phase** — fixtures sidestep it. **In when** setup quality is a claim
+  the benchmark wants to make.
+- **Multiple fixtures / scenario diversity**, with per-scenario score normalization. **In when** a
+  single fixture's idiosyncrasies are shown to move a tier comparison.
 
 ## Measurement methodology (summary)
 

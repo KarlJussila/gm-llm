@@ -15,7 +15,7 @@ permission:
   skill: allow
   dice: allow
   task_complete: allow
-  # combat-tracker tools — the authoritative combat state (COMBAT.md). `rollback` is
+  # combat-tracker tools — the authoritative combat state (design/combat.md). `rollback` is
   # deliberately absent: the orchestrator owns the frame swaps, the runner never rewinds.
   start_encounter: allow
   end_encounter: allow

@@ -123,7 +123,7 @@ class Game(CombatMixin):
         self._turn_no = 0
         self.logs = logs
         self.runner_sid = backend.create_session("dm-runner game")
-        # Combat mode (COMBAT.md C1). `_in_combat` reflects a live tracker state file, so a
+        # Combat mode (design/combat.md § The combat loop). `_in_combat` reflects a live tracker state file, so a
         # resume into a fight picks it up; the loop's cursor is the tracker's own turn
         # pointer, advanced by each turn's closing advance_turn. See combat.py.
         self._in_combat = CombatState(backend.directory).exists()
@@ -333,7 +333,7 @@ class Game(CombatMixin):
         """Gate a draft and apply at most one bounded correction pass. Shared by the
         play-driven turn and the combat loop. Returns (final, GateResult, corrected).
 
-        `in_combat` chains `check-combat` into the gate (COMBAT.md C2) — the combat
+        `in_combat` chains `check-combat` into the gate (design/combat.md § Implementation map, the gate) — the combat
         action paths pass True so the committed→pending delta is validated against the
         narrated action; the play-driven turn and the combat *exit* beat leave it False.
 

@@ -62,7 +62,7 @@ class GateResult:
     player_msg: str
     canon_sections: int
     # The combat-fidelity verdict, present only on a turn gated while `_in_combat`
-    # (COMBAT.md C2): the committed→pending delta matched against the narrated action.
+    # (design/combat.md § Implementation map, the gate): the committed→pending delta matched against the narrated action.
     # None out of combat — the check doesn't run then. Runs warm between the canon and
     # conduct checks, so it stays sequenced with them in the correction brief.
     combat: Verdict | None = None
@@ -156,7 +156,7 @@ def _combat_blobs(directory: str) -> tuple[str, str] | None:
     """The tracker's `committed`/`pending` frames as pretty JSON for the check-combat
     brief, or None when there's no live state file (e.g. the closing beat raced
     `end_encounter`'s delete). READ-only — the checker never touches the mutators
-    (COMBAT.md principle 6)."""
+    (design/combat.md principle 6)."""
     st = CombatState(directory)
     if not st.exists():
         return None
@@ -285,7 +285,7 @@ class Gate:
 
     def check(self, narration: str, player_msg: str, in_combat: bool = False) -> GateResult:
         """The RUNTIME gate. One narrative-checker session, warm across its checks:
-        first `check-turn` (canon coherence), then — while `in_combat` (COMBAT.md C2)
+        first `check-turn` (canon coherence), then — while `in_combat` (design/combat.md § Implementation map, the gate)
         — `check-combat` (the committed→pending delta vs. the narrated action), then
         `check-conduct` (table-craft conduct), all on the same session so each check
         benefits from the canon/ledger context `check-turn` loaded. The verdicts stay

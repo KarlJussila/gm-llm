@@ -44,7 +44,7 @@ dropped.
 
 ## Guardrails
 
-- **No score baseline is banked yet** (BENCHMARK.md B3): prose changes aren't measured, so git
+- **No score baseline is banked yet** (`design/benchmark.md` B3): prose changes aren't measured, so git
   archaeology is the only safety net — bias toward preserving every constraint.
 - **Trim in place; never recompose or template tier-0 prose.**
 - **Propagation:** committed changes reach a live campaign via `pipx reinstall` + `gm-llm update`;

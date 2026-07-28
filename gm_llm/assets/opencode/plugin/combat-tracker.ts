@@ -30,7 +30,7 @@ import {
 
 /**
  * `combat-tracker` — the file-backed adapter around the pure engine in `combat/engine.ts`
- * (COMBAT.md C0). This file is the one opencode auto-discovers and loads, so it exports **only**
+ * (design/combat.md § Tracker). This file is the one opencode auto-discovers and loads, so it exports **only**
  * the plugin: opencode's loader (`Glob.scan("{plugin,plugins}/*.{ts,js}")` → iterate every export)
  * treats each named export as a plugin, so the engine's helpers live one directory down, out of the
  * scan. This adapter is a thin ring: load state → call the engine → save state → echo the roster.

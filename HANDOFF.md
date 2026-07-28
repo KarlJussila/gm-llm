@@ -48,27 +48,32 @@ its counts here. `CLAUDE.md` § How to run things has the commands.
 
 ## Where things stand
 
-- **Gate** — green as of Part 1. Note it is *not* pytest; see CLAUDE.md.
+- **Gate** — green as of Part 2, including the two new lint checks. Note it is *not* pytest;
+  see CLAUDE.md.
+- **Working tree** — clean as of Part 2. The bench `--resume` work that Part 1 found
+  uncommitted landed in `5afd87c`; nothing is in flight.
+- **docs** — the planning docs are now one architecture (Part 2). Root holds the loop
+  (`CLAUDE.md`, `HANDOFF.md`, `ROADMAP.md`) plus `README.md` and `CHANGELOG.md`; every plan of
+  record lives in `design/`, routed from `design/README.md`, which is also where "what the
+  system is" now lives. `SPEC.md` and `PLAN.md` are gone.
 - **frontends** — nothing landed. `6b4246f` made `play`'s axes expressible but deliberately
   left two cells stubbed and never put `bench` on the axes; `design/frontends.md` is the
   expansion. Track starts at step 1.
 - **benchmark** — B0 landed. B1/B2 are substantially built (`bench run`, `grade`, `report`,
   `tokens`, `--resume`) but B1 is not final until the player-end contract is pinned. **B3 is
   not banked**, which is what blocks all model-facing work.
-- **combat** — feature-complete per `COMBAT.md`, mock-verified only; never run against a live
-  model.
-- **packaging** — Phase 1 in progress, Phase 2 built, Phase 3 (validate on real Windows)
-  untouched. See `PLAN.md`.
-- **Working tree carries in-flight bench work** — `gm_llm/bench/runner.py`, `scoring.py`,
-  `dev/test_bench.py`, `CHANGELOG.md`, uncommitted. It is the reconcile-half of `--resume`
-  (a wrapped run whose between-session pass never reached its gate). Not owned by any round
-  yet; **do not commit it as part of an unrelated round**.
+- **combat** — feature-complete per `design/combat.md`, mock-verified only; never run against
+  a live model.
+- **packaging** — Phase 1 closed in Part 2 (its portability rules now live in
+  `dev/MAINTAINING.md` § Portability) and Phase 2 was already built. What remains is validating
+  on a real Windows box, plus the model-configuration decision.
 
 ## Pointers
 
-- What the system is → `SPEC.md`
+- What the system is → `design/README.md` (also the routing table for `design/`)
+- How to use it → `README.md`
 - Writing prompts, versioning, the gate → `CLAUDE.md`
-- Benchmark design and B-numbers → `BENCHMARK.md`
-- Combat → `COMBAT.md` · Packaging → `PLAN.md`
-- Frontend modularity → `design/frontends.md`
+- Benchmark design and B-numbers → `design/benchmark.md`
+- Combat → `design/combat.md` · Frontend modularity → `design/frontends.md`
+- Dev conventions, Windows portability → `dev/MAINTAINING.md`
 - Why a past call was made → `design/findings.md`
