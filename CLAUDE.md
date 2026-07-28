@@ -38,10 +38,13 @@ round-to-round lives in `HANDOFF.md`, not here.
 
 - **Rounds:** one ROADMAP task per session. The effort level is in `HANDOFF.md` § Next task;
   closing the round includes rewriting that block. A round that lands code but doesn't close
-  the docs has not been handed off.
+  the docs — or doesn't commit — has not been handed off.
 - **Source of truth:** where a doc and the code disagree, **the code wins and the doc gets
   fixed in that round** — not filed as a question.
-- **Git:** short, plain, descriptive messages; no attribution trailers. Commit only when asked.
+- **Git:** short, plain, descriptive messages; no attribution trailers. Commit only when asked —
+  **except when closing a round, which always commits without asking.** If something needs
+  Karl's decision, raise it and *don't* close the round; close it once that's settled.
+  `/close-round` § 6 owns the detail.
 
 ## How to run things
 

@@ -5,8 +5,8 @@ description: Close a round of work in gm-llm — run the full gate, append the f
 
 # Close a round
 
-One session = one ROADMAP task. A round that lands work but doesn't close the docs **has not
-been handed off** — the next session starts cold and re-derives what you knew, badly. This is
+One session = one ROADMAP task. A round that lands work but doesn't close the docs and commit
+**has not been handed off** — the next session starts cold and re-derives what you knew, badly. This is
 the procedure. Work top to bottom.
 
 ## 1 — Pass the gate
@@ -94,12 +94,29 @@ task — what is done, what is not, and what the next session should read first.
 
 ## 6 — Commit
 
-Only if Karl asked. gm-llm's rule is short, plain, descriptive messages with **no attribution
-trailer** — see `CLAUDE.md` § Standing rules and the global git guidance.
+**Closing a round commits it. Don't ask.** An uncommitted round is not closed — the docs say
+work landed and the tree says otherwise, and the next session inherits the discrepancy (Part 3
+found exactly that). This is gm-llm's carve-out from the standing "commit only when asked" rule,
+and it is the only one: `CLAUDE.md` § Standing rules states it.
 
-One round, one commit, subject naming what landed. If the round is worth a `CHANGELOG.md` line,
-add it under `[Unreleased]` — and if it completes a feature set, say so, because that is a
-version bump heading toward you (`CLAUDE.md` § Versioning & releases).
+Messages are short, plain, descriptive, with **no attribution trailer**. One round, one commit,
+subject naming what landed. If the round is worth a `CHANGELOG.md` line, add it under
+`[Unreleased]` — and if it completes a feature set, say so, because that is a version bump
+heading toward you (`CLAUDE.md` § Versioning & releases).
+
+**If something needs Karl's attention, raise it *instead of* closing — not after.** A round that
+ends with "here are the results, and also a question you have to answer" has handed him a choice
+he can no longer make cleanly, because the docs and the commit already assume an answer. Stop at
+the point of doubt, say what you found and what it forks on, and close the round once it's
+settled. Things that fork a round: a design call the plan of record doesn't cover, a gate failure
+whose right fix is arguable, work that turns out to belong to a different track, or a tree that
+isn't what HANDOFF says it is.
+
+**Before you stage, check what else is in the tree.** `git status --porcelain` — if it carries a
+previous round's work (HANDOFF claiming "clean" is not evidence; check), do **not** sweep it into
+this round's commit. Reconstruct the earlier state by reverse-applying this round's hunks, verify
+*that* tree against the gate, commit it under its own message, then restore this round's work on
+top. Snapshot your final files first; a bad reverse-apply is otherwise unrecoverable. (Part 3.)
 
 ## When a cleanup round is needed
 

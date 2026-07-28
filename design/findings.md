@@ -314,6 +314,13 @@ catches a regression — consumes no further player prompt).
   which was verified green on its own and committed first, then this round's work was restored
   on top. **The lesson is Part 2's, not this round's** — "green gate" and "committed" are
   different claims, and only one of them the gate can check.
+- **The loop was then changed to stop it recurring**, per the method's own rule that a cleanup
+  is a missing check rather than a chore. `/close-round` § 6 said "commit only if Karl asked",
+  which is exactly how a closed round could sit uncommitted; it now says that closing a round
+  *is* committing, that anything needing Karl's decision is raised **instead of** closing rather
+  than alongside it, and how to untangle a tree carrying a previous round's work. `CLAUDE.md`
+  § Standing rules carries the carve-out from the standing commit-only-when-asked rule, because
+  that is where that rule lives — the skill points at it rather than restating it.
 
 ## Green bar
 
