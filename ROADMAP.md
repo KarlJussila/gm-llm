@@ -30,8 +30,7 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 1 | Unify the two `_play_combat` implementations | medium | `autoplay.py:41` and `runner.py:279` are near-duplicates that differ in turn accounting; bench's PC-slot-counts-as-a-turn semantics are load-bearing for the cap and must survive |
-| 2 | `PlayerSource` — one turn loop, keyboard or agent | high | The fork between pull-driven TUI and push-driven autoplay is the actual blocker; first-of-kind, no oracle |
+| 2 | `PlayerSource` — one turn loop, keyboard or agent | high | The fork between pull-driven TUI and push-driven autoplay is the actual blocker; first-of-kind, no oracle. Build on `orchestrator.play_combat` (step 1) — its `backend.prompt` is the seam |
 | 3 | Route bench through `Lifecycle` | medium | Bench constructs `Game` directly and reaches the reconciler via `reconcile_fn`, bypassing the interface the TUI is written against |
 | 4 | Batch chrome in the TUI (run *k* of *N*) | medium | `PlayApp` assumes one campaign dir for the app's life; needs the cancel-semantics decision first (`design/open-questions.md`) |
 
@@ -80,6 +79,7 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
 | docs | 1 | The handoff-round loop stood up: five docs, `status.py`, `lint_docs.py`, `close-round`; `dev/MAINTAINING.md` reconciled |
 | docs | 2 | Planning consolidated onto the loop: `SPEC.md`/`PLAN.md` absorbed and deleted, plan-of-record docs moved into `design/`, private roadmaps and backlogs stripped, lint checks 10–12 |
 | packaging | 2 | Phase 1 (native-Windows portability) closed — its rules now live in `dev/MAINTAINING.md` § Portability |
+| frontends | 3 | Step 1: the two `_play_combat`s unified into `orchestrator.play_combat`, bench's cap accounting preserved as the base and tested directly |
 
 ## Standing sync rules
 

@@ -13,6 +13,7 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 |---|---|---|
 | [1](#part-1--setup-standing-up-the-handoff-round-loop-2026-07-27) | setup | Why the gate is `python dev/test_*.py` and not pytest; why bench counts stay out of the generated block |
 | [2](#part-2--docs-consolidating-the-planning-docs-onto-the-loop-2026-07-27) | docs | Why `SPEC.md` and `PLAN.md` were deleted rather than moved; how a plan-of-record doc differs from a roadmap and a backlog |
+| [3](#part-3--frontends-one-agent-driven-fight-loop-2026-07-27) | frontends | Why the *safer* of two duplicate loops becomes the shared implementation; where the agent-player seam sits for `PlayerSource` |
 
 ## Recurring threads (the classes worth knowing)
 
@@ -32,6 +33,11 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
   § Features, nothing checked it, and it had been dragged along as living documentation only
   because sessions kept dutifully updating it. Deleting it was cheaper than maintaining it.
   (Part 2)
+- **When two copies of a loop differ, the difference is usually a safety property — unify
+  toward it, not away from it.** autoplay's and bench's fight drivers differed only in whether
+  a PC slot burned a turn against the cap; the shared `play_combat` took the counting version as
+  the implementation and made "no cap" the argument. The general form: whichever copy holds the
+  invariant is the base, and the laxer copy is a call site that opts out explicitly. (Part 3)
 
 # Part 1 — Setup: standing up the handoff-round loop (2026-07-27)
 
@@ -235,3 +241,82 @@ be one, and the first version of the check flagged it.
 pre-surgery docs restored from `HEAD` into `design/`: **25 errors**, falling to 0 on the
 consolidated set. A check that has never fired is decoration.
 
+# Part 3 — Frontends: one agent-driven fight loop (2026-07-27)
+
+## The gap
+
+`autoplay.py` and `bench/runner.py` each carried a private `_play_combat`: same shape (build a
+`CombatDriver`, pump to a PC slot, prompt the `player` agent with `player_combat_turn` over the
+latest beat, repeat until the fight ends), different in exactly one respect that mattered —
+bench counted each PC slot against `turn_cap` so a fight could not make a run uncappable, and
+autoplay counted nothing at all. Two copies of a loop that differ in a safety property is the
+worst version of the duplication class: a fix to one is invisible in the other, and the *fact*
+that they differ deliberately was recorded only in one of the two docstrings.
+
+It is also the thing frontends 2 has to build on. `PlayerSource` collapses the out-of-combat
+turn loop; if the in-combat loop is still forked at that point, the fork just moves.
+
+## What the round does
+
+Hoists both into `play_combat` in `orchestrator/combat.py`, immediately below `CombatDriver`, and
+rewrites the two callers to be dialects of it. **The name is the old one minus its underscore**,
+deliberately: a hoist that also renames costs grep continuity for no gain, and `combat.play_combat`
+stuttering at a qualified call site nobody writes is not a reason. autoplay's surviving console
+wrapper is `_console_combat`, so the two never sit an underscore apart.
+
+- **`turn_cap=None` disables accounting; a number enables it.** Bench's semantics are the
+  implementation, not a variant of it — the cap check, the pre-increment, the cap-return of the
+  *last beat* rather than an exit narration, and the `(scene, turns, hit_cap)` triple all came
+  over verbatim. Autoplay passes `turn_cap=None` and ignores the other two return values, which
+  is honest about what it is: a mode that caps normal turns only. Doing it the other way round
+  — autoplay's shape as the base, bench's counting as an add-on — would have made the
+  load-bearing behavior the special case.
+- **Three optional hooks carry the output dialect**, which is the whole of what differed
+  besides accounting: `on_beat(narration, who)` (already the driver's own hook, so `play_combat`
+  wraps it only to keep the "latest beat" cursor), `on_slot(event, turns)`, `on_player(text)`.
+  Bench passes one, autoplay all three, and the hookless default is a silent fight. The cursor
+  wrapping is why `on_beat` stays a pass-through rather than being folded away: an interface
+  that returns a reaction from it still interjects, which is what makes this shareable with the
+  TUI later rather than being an autoplay-only helper.
+- **Placed in `combat.py`, not in either caller.** The module header already claimed to be the
+  one home for combat sequencing policy while two interfaces kept their own copy of the loop
+  around it; that header now says which layer each interface drives (the TUI drives
+  `CombatDriver` directly because the human *is* the input source; the agent-player interfaces
+  share `play_combat`).
+
+**The armor was thin where the risk was.** `dev/test_bench.py` covered bench's path end to end
+(natural close and cap breach, both through `run_once`), but nothing tested the function itself
+and nothing at all tested autoplay's. Two scenarios were added to `dev/test_combat_driver.py`,
+driving `play_combat` directly over the existing fake tracker backend: the uncapped call (hook
+ordering, exit narration, one slot counted even with no cap) and the capped one (a fight still
+live when the cap trips returns `hit_cap` with the last beat, and — the assertion that actually
+catches a regression — consumes no further player prompt).
+
+## Declared lossiness / deferrals
+
+- **Autoplay now counts combat turns it does not use.** `play_combat` increments `turns` even
+  when `turn_cap is None`, and autoplay discards the count. That is deliberate: one code path,
+  no `if` around the accounting. If autoplay ever wants a combat-aware cap, the number is
+  already there.
+- **The console dialect is unchanged but no longer verified by a test.** Autoplay's `speaker`
+  and `note` lines were preserved by inspection; the new tests assert hook *ordering* and
+  payloads, not the console formatting. Nothing tests `gm_llm/autoplay.py`'s output today and
+  this round did not open that.
+- **`play_combat` is exported from `orchestrator/__init__.py`** on the same footing as
+  `CombatDriver`. It is library surface now, so frontends 2 should extend it rather than wrap
+  it — in particular, when `PlayerSource` lands, the `backend.prompt(...)` call inside it is the
+  seam that becomes a source call.
+- **The working tree carried Part 2's uncommitted reroute** when this round opened, though
+  HANDOFF § Where things stand called it clean. Three of the files this round touched
+  (`combat.py`, `runner.py`, `test_combat_driver.py`) already had unstaged edits, so this round's
+  work could not simply be committed on its own as `design/frontends.md` § Sequence asked. It
+  was untangled instead: this round's hunks were reverse-applied to reconstruct Part 2's tree,
+  which was verified green on its own and committed first, then this round's work was restored
+  on top. **The lesson is Part 2's, not this round's** — "green gate" and "committed" are
+  different claims, and only one of them the gate can check.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all ten `dev/test_*.py` scripts pass, including the two new
+`play_combat` scenarios; `tools/status.py --check` and `tools/lint_docs.py` both clean (0 errors,
+0 warnings). No model-facing prose changed, so the B3 freeze is untouched.

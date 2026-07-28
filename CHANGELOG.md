@@ -61,6 +61,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   before it carry no fingerprint, report as `prompts=unstamped`, and still pool with each other.
 
 ### Changed
+- **One agent-driven fight loop, `orchestrator.play_combat`.** `gm-llm dev autoplay` and
+  `bench run` had near-duplicate combat drivers that differed in turn accounting; they now share
+  one, with bench's "each PC slot burns a turn against the cap" as the implementation and
+  `turn_cap=None` as autoplay's explicit opt-out. No behavior change to either command.
 - **`dev/cli.py`, `dev/ping.sh`, and `gm_llm/tui/__main__.py` are gone.** Their commands moved
   into the unified CLI: `dev/cli.py play` → `gm-llm dev autoplay` (and `--turns` → `--turn-cap`,
   matching `bench run`), `dev/cli.py tui [--setup]` → `gm-llm play --mock [--setup]`, `status` and

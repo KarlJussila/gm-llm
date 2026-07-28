@@ -18,6 +18,11 @@ TUI passes `write=stream_write, markup=True` and gets the behind-the-screen pane
 (`lifecycle.py:55`). Routing a bench run's stream into a Textual pane is a constructor
 argument, not a redesign.
 
+**Combat driving.** One loop, `orchestrator.play_combat` — the agent-player wrapper over
+`CombatDriver`: prompt the `player` agent on each PC slot, count each slot against `turn_cap`
+(`None` disables), render through three optional hooks. autoplay and `bench run` are dialects
+of it (findings Part 3). The `backend.prompt` inside it is where a `PlayerSource` attaches.
+
 **Progress.** Already callback-shaped: `on_stage(key)` for reconcile stages, `Game.on_step`
 for per-turn steps (`tui/app.py:91`), `on_tool` for setup. The TUI renders all three today
 via `Lifecycle.wrap(on_stage=…)`.
@@ -31,18 +36,15 @@ The `--player auto --ui tui` stub is not a missing flag; it is two independent l
 
 **The auto modes bypass `Lifecycle`.** `Lifecycle` is the interface the TUI is written
 against (`tui/app.py:36`), but `autoplay.run()` and `bench.runner.run_once()` both construct
-`Game` directly (`autoplay.py` `body()`, `runner.py:369`) and reach the reconciler their own
+`Game` directly (`autoplay.py` `body()`, `runner.py:343`) and reach the reconciler their own
 way (`reconcile_fn`). The abstraction that would make them renderable is the one they skip.
 
 ## Sequence
 
-Contracts before consumers — the driver unification lands before anything renders it.
+Contracts before consumers — the driver unification lands before anything renders it. Step 1
+landed (§ What is already in place, "Combat driving"); the numbering is stable, so ROADMAP's
+rows keep pointing at the same steps.
 
-1. **Unify the two `_play_combat`s** (`autoplay.py:41`, `runner.py:279`). Near-duplicates
-   that differ in turn accounting: bench counts each PC slot against `turn_cap` so a fight
-   can't make a run uncappable; autoplay doesn't count at all. Preserve bench's semantics —
-   they are load-bearing for the cap and documented at `runner.py:279`. Own commit; this is
-   the one step with real regression risk.
 2. **`PlayerSource`** — one turn loop, two implementations of "where does the next player
    message come from": keyboard (awaits the frontend) and agent (`backend.prompt` with the
    packet/story intro). `--player` selects. This is what collapses the fork.

@@ -39,7 +39,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .prompts import load
+from .prompts import load, player_combat_turn
 
 
 def combat_state_path(directory: str) -> Path:
@@ -299,9 +299,11 @@ class CombatMixin:
 # The one home for combat's *sequencing policy*. The engine above (`CombatMixin`) owns
 # the per-combatant mechanics — resolve, gate, commit/rollback; the driver owns the loop
 # *around* them: pump NPC beats, confirm each, stop at a PC slot or the fight's end, thread
-# interjections and cancels. Every interface (the TUI, the two autoplay loops) drives a fight
-# through this and stays mechanical — render a beat, get input, call the next method — so no
-# combat policy ever leaks into an interface. See design/combat.md "The combat loop".
+# interjections and cancels. Every interface drives a fight through this and stays mechanical —
+# render a beat, get input, call the next method — so no combat policy ever leaks into an
+# interface. The TUI drives the driver directly (the human is the input); the agent-player
+# interfaces (autoplay, `bench run`) share `play_combat` below, which adds the prompting and
+# the turn accounting they both need. See design/combat.md "The combat loop".
 
 
 @dataclass
@@ -388,3 +390,45 @@ class CombatDriver:
             step = self.game.combat_interject(reaction)
             reaction = on_beat(step.narration, step.combatant) if on_beat else None
         self.game.combat_confirm()
+
+
+def play_combat(game, backend, player_sid, entry_scene, *, on_beat=None, on_slot=None,
+               on_player=None, turns: int = 0, turn_cap: int | None = None):
+    """Drive a whole fight with an **agent** player — the one home for what autoplay and
+    `bench run` both do once a turn reports `combat_started`. The sequencing policy is the
+    driver's; this adds only the two things an unattended player needs: prompting the
+    `player` agent on each PC slot, and turn accounting.
+
+    **Each PC slot counts as one turn against `turn_cap`** — a fight must not make a run
+    uncappable, and a PC slot is the combat analogue of a normal player turn (the beat the
+    autoplayer acts on). NPC beats are pumped and confirmed by the driver at no turn cost.
+    `turn_cap=None` disables accounting entirely (autoplay caps only normal turns).
+
+    Returns `(scene, turns, hit_cap)`: the narration to resume normal play from — the exit
+    beat, or the last beat seen if the cap cut the fight short — the updated turn count, and
+    whether the cap was reached mid-fight. A cap breach mid-fight is a cap breach like any
+    other: an unfinished fight has no clean wrap.
+
+    The three hooks are the interface's: `on_beat(narration, who)` renders each resolved
+    beat and may return a reaction to interject (see `CombatDriver`); `on_slot(event, turns)`
+    announces a PC slot before the player is asked; `on_player(text)` renders the reply.
+    All optional — bench passes only `on_slot`, autoplay all three."""
+    driver = CombatDriver(game)
+    state = {"scene": entry_scene}
+
+    def beat(narration, who):
+        state["scene"] = narration
+        return on_beat(narration, who) if on_beat else None
+
+    event = driver.advance(beat)
+    while event.kind == "pc_slot":
+        if turn_cap is not None and turns >= turn_cap:
+            return state["scene"], turns, True
+        turns += 1
+        if on_slot:
+            on_slot(event, turns)
+        player = backend.prompt(player_sid, "player", player_combat_turn(state["scene"]))
+        if on_player:
+            on_player(player)
+        event = driver.pc_action(player, beat)
+    return event.narration, turns, False

@@ -42,11 +42,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..orchestrator import (
-    Archive, Backend, BackendError, CanonPreloader, CombatDriver, Gate, Game, Logs,
-    Reconciler,
+    Archive, Backend, BackendError, CanonPreloader, Gate, Game, Logs, Reconciler,
+    play_combat,
 )
 from ..orchestrator.logs import debug_enabled
-from ..orchestrator.prompts import player_combat_turn, player_turn
+from ..orchestrator.prompts import player_turn
 from ..project import init_project, install_plugin_deps
 
 # Which agents' model/temperature get stamped into the conditions event. dm-runner and
@@ -276,32 +276,6 @@ def _character(run_dir: Path, fixture: dict, note) -> str:
     return text
 
 
-def _play_combat(game, backend, player_sid, entry_scene, turns: int, turn_cap: int, note):
-    """Drive a fight through the library's `CombatDriver`, minimal output. **Each PC slot
-    counts as one turn against `turn_cap`** — a fight must not make a run uncappable, and a
-    PC slot is the combat analogue of a normal player turn (the beat the autoplayer acts
-    on). NPC beats are pumped and confirmed by the driver (no per-beat turn cost). Returns
-    `(exit_scene, turns, hit_cap)`: the narration to resume from, the updated turn count,
-    and whether the cap was reached mid-fight — a cap breach the caller treats like any
-    other (an unfinished fight has no clean wrap, so reconcile is skipped)."""
-    driver = CombatDriver(game)
-    state = {"scene": entry_scene}
-
-    def on_beat(narration, who):
-        state["scene"] = narration
-        return None  # autoplay never interjects
-
-    event = driver.advance(on_beat)
-    while event.kind == "pc_slot":
-        if turns >= turn_cap:
-            return state["scene"], turns, True
-        turns += 1
-        note(f"turn {turns}/{turn_cap}: combat PC slot…")
-        player = backend.prompt(player_sid, "player", player_combat_turn(state["scene"]))
-        event = driver.pc_action(player, on_beat)
-    return event.narration, turns, False
-
-
 def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = False,
              kickoff: str = "Let's begin the session.", port: int = 4181,
              min_gap: float = 1.0, turn_timeout: int = 360, stream: bool = False,
@@ -335,10 +309,10 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
     — the turn loop never opens, because a wrapped session must not grow turns. That's how
     a reconcile the rate limits ate gets finished (see `reconcile_pending`).
 
-    Combat (a turn that calls `start_encounter`) hands off to `_play_combat`, which drives
-    the fight through the `CombatDriver` and counts **each PC slot as one turn** against
-    `turn_cap` — so a fight can't make a run uncappable. A fight that runs into the cap is a
-    cap breach like any other (reconcile skipped)."""
+    Combat (a turn that calls `start_encounter`) hands off to the library's `play_combat`,
+    which drives the fight through the `CombatDriver` and counts **each PC slot as one turn**
+    against `turn_cap` — so a fight can't make a run uncappable. A fight that runs into the
+    cap is a cap breach like any other (reconcile skipped)."""
     run_dir = Path(run_dir)
     logs = Logs.under(project=run_dir, debug=debug_enabled())
 
@@ -411,8 +385,11 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
                     tr = game.turn(player)
                     scene = tr.final
                     if tr.combat_started:
-                        scene, turns, hit_cap = _play_combat(
-                            game, backend, player_sid, scene, turns, turn_cap, note)
+                        # Silent but for the slot line: no rendering hooks, so the run's
+                        # output stays the same shape in a fight as out of one.
+                        scene, turns, hit_cap = play_combat(
+                            game, backend, player_sid, scene, turns=turns, turn_cap=turn_cap,
+                            on_slot=lambda _ev, t: note(f"turn {t}/{turn_cap}: combat PC slot…"))
                         if hit_cap:
                             break  # unfinished fight — a cap breach; outcome stays "cap"
                         continue

@@ -27,7 +27,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
-from gm_llm.orchestrator import CombatDriver, Game  # noqa: E402
+from gm_llm.orchestrator import CombatDriver, Game, play_combat  # noqa: E402
 from gm_llm.orchestrator.backend import BackendCancelled  # noqa: E402
 from gm_llm.orchestrator.combat import CombatState  # noqa: E402
 from gm_llm.orchestrator.gate import GateResult, Verdict  # noqa: E402
@@ -274,9 +274,75 @@ def resume_into_combat():
     print("resume_into_combat: a crash-recovered fight drives cleanly through the driver.\n")
 
 
+def play_combat_uncapped():
+    """`play_combat` with autoplay's settings: no cap, all three hooks. Drives the whole
+    fight — prompting the player agent on each slot — and hands back the exit narration."""
+    tmp = tempfile.mkdtemp()
+    script = [
+        ("Blades out — initiative!", {"start_encounter"}, m_start),
+        ("I attack the nearer goblin.", (), None),              # the player agent's reply
+        ("You lunge; your blade bites deep.", {"damage", "advance_turn"}, m_act("goblin-1", 5)),
+        ("The goblin's blade rakes your side.", {"damage", "advance_turn"}, m_act("pc", 6)),
+        ("The last goblin breaks and flees into the dark.", {"end_encounter"}, m_end),
+    ]
+    backend = FakeBackend(tmp, script)
+    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    _enter(game, backend)  # play_combat builds its own driver over the same game
+    beats, slots, players = [], [], []
+
+    scene, turns, hit_cap = play_combat(
+        game, backend, "sid-player", "Blades out — initiative!",
+        on_beat=lambda n, w: beats.append(w),
+        on_slot=lambda ev, t: slots.append((ev.round, t)),
+        on_player=players.append)
+
+    check(scene.startswith("The last goblin"), "the exit narration comes back as the scene")
+    check(hit_cap is False, "no cap breach when turn_cap is None")
+    check(turns == 1, f"one PC slot counted even uncapped — got {turns}")
+    check(slots == [(1, 1)], f"on_slot saw round 1, turn 1 — got {slots}")
+    check(players == ["I attack the nearer goblin."], "on_player rendered the agent's reply")
+    check(beats == ["pc", "goblin-1"], f"on_beat saw the PC beat then the NPC beat — got {beats}")
+    check(not game.in_combat, "in_combat False after the fight")
+    check(backend.i == len(script), "every scripted call consumed, in order")
+    print("play_combat_uncapped: hooks fire in order and the fight drives to its end.\n")
+
+
+def play_combat_hits_cap():
+    """The load-bearing bench semantics: each PC slot burns one turn against `turn_cap`, and
+    a fight still running when the cap trips returns `hit_cap` with the last beat as the
+    scene — no further player prompt, so a fight can't make a run uncappable."""
+    tmp = tempfile.mkdtemp()
+    script = [
+        ("Blades out — initiative!", {"start_encounter"}, m_start),
+        ("I attack the nearer goblin.", (), None),
+        ("You lunge; your blade bites deep.", {"damage", "advance_turn"}, m_act("goblin-1", 5)),
+        ("The goblin's blade rakes your side.", {"damage", "advance_turn"}, m_act("pc", 6)),
+        ("The second goblin's arrow grazes you.", {"damage", "advance_turn"}, m_act("pc", 2)),
+        # initiative is back on the PC and the fight is still on — the cap must trip here.
+    ]
+    backend = FakeBackend(tmp, script)
+    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    _enter(game, backend)
+    slots = []
+
+    scene, turns, hit_cap = play_combat(
+        game, backend, "sid-player", "Blades out — initiative!",
+        turns=2, turn_cap=3, on_slot=lambda ev, t: slots.append(t))
+
+    check(hit_cap is True, "the second PC slot trips the cap")
+    check(turns == 3, f"the one played slot burned one turn (2 → 3) — got {turns}")
+    check(slots == [3], f"only the played slot announced — got {slots}")
+    check(scene.startswith("The second goblin"), "the last beat is the scene to resume from")
+    check(game.in_combat, "the fight is still live — the cap cut it short, it didn't end")
+    check(backend.i == len(script), "no player prompt after the cap — nothing extra consumed")
+    print("play_combat_hits_cap: PC slots count against the cap and a fight can't outrun it.\n")
+
+
 if __name__ == "__main__":
     pump_and_end()
     interject_via_callback()
     cancel_unwind()
     resume_into_combat()
-    print("OK — combat driver: pump, PC slot, interject, cancel, resume all correct.")
+    play_combat_uncapped()
+    play_combat_hits_cap()
+    print("OK — combat driver: pump, PC slot, interject, cancel, resume, play_combat all correct.")

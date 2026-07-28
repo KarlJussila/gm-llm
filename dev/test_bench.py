@@ -93,7 +93,7 @@ class FakeGate:
 class CombatFakeBackend:
     """A play backend that also drives a scripted COMBAT episode through run_once: its
     dm-runner beats mutate the tracker state file the way the real plugin's tool calls
-    would, so the bench's combat handoff (`_play_combat`) runs end to end. The turn pointer
+    would, so the bench's combat handoff (`play_combat`) runs end to end. The turn pointer
     in the state file disambiguates a PC-slot draft (`combat_player_action`) from an NPC
     beat (`combat_step`) — the same signal the real Game reads.
 

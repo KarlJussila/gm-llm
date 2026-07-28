@@ -21,10 +21,10 @@ from pathlib import Path
 
 from .console import (banner, fail, note, sessions_dir, show_turn, speaker, warn,
                       with_engine)
-from .orchestrator import CombatDriver, Game
+from .orchestrator import Game, play_combat
 from .orchestrator.canon import latest_session
 from .orchestrator.loop import session_is_complete
-from .orchestrator.prompts import player_combat_turn, player_turn
+from .orchestrator.prompts import player_turn
 
 
 def find_character(directory, override) -> str:
@@ -40,27 +40,23 @@ def find_character(directory, override) -> str:
     return ""
 
 
-def _play_combat(game, backend, player_sid, entry_scene):
-    """Drive a fight through the library's `CombatDriver` — the sequencing policy lives
-    there; this is mechanical. NPC beats print as the driver resolves them; each PC slot
-    prompts the `player` agent with the combat brief over the latest beat. Returns the exit
-    narration, which the caller resumes normal play from as the next scene."""
-    driver = CombatDriver(game)
-    state = {"scene": entry_scene}
-
+def _console_combat(game, backend, player_sid, entry_scene):
+    """Print a fight to the console as `play_combat` drives it. The loop — driver pumping,
+    PC-slot prompting, turn accounting — is the library's; this is only the console dialect
+    of its three hooks. No cap: autoplay caps normal turns only, so `hit_cap` can't fire.
+    Returns the exit narration, which the caller resumes normal play from."""
     def on_beat(narration, who):
         speaker(f"COMBAT · {who}", "1;35", narration)
-        state["scene"] = narration
         return None  # autoplay never interjects
 
-    event = driver.advance(on_beat)
-    while event.kind == "pc_slot":
-        note(f"combat: PC slot (round {event.round}) — waiting on the player…")
-        player = backend.prompt(player_sid, "player", player_combat_turn(state["scene"]))
-        speaker("PLAYER · combat", "1;32", player)
-        event = driver.pc_action(player, on_beat)
-    speaker("DM · combat ends", "1;36", event.narration)
-    return event.narration
+    scene, _turns, _hit_cap = play_combat(
+        game, backend, player_sid, entry_scene,
+        on_beat=on_beat,
+        on_slot=lambda ev, _t: note(f"combat: PC slot (round {ev.round}) — "
+                                    f"waiting on the player…"),
+        on_player=lambda text: speaker("PLAYER · combat", "1;32", text))
+    speaker("DM · combat ends", "1;36", scene)
+    return scene
 
 
 def run(args) -> None:
@@ -127,7 +123,7 @@ def run(args) -> None:
             show_turn(tr)
             if tr.combat_started:
                 note(f"turn {i}: combat — initiative takes over…")
-                scene = _play_combat(game, backend, player_sid, scene)
+                scene = _console_combat(game, backend, player_sid, scene)
                 continue
             if tr.session_complete:
                 banner(f"session {game.session} ended by the runner (turn {i})")
