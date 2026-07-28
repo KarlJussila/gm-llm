@@ -39,6 +39,27 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   second `conditions` event, and updates the run's manifest line in place. Rate limits no longer burn
   progress on an overnight free-tier batch. (A give-up *before any turn lands* is still a real `failed`.)
 
+- **`--resume` also finishes a reconcile the rate limits ate.** A stall in the post-wrap pass leaves a
+  run that is genuinely `complete` as play — so a play-only sweep skipped it forever, while the grader
+  read the stages that never ran as clean play rather than as missing data. `reconcile_pending` now
+  asks the second, orthogonal question off the archive (the `propagation` stage event, reconcile's last
+  gate, absent under a `reconcile: true` condition), and `--resume` picks those runs up too. Such a
+  resume runs the post-wrap tail and nothing else: the turn loop never opens, so a wrapped session
+  can't grow turns, and both halves of the tail are idempotent — handoff no-ops on existing notes, and
+  the reconciler's stage markers restart it at the stage it died on, so it pays only for what's left.
+  This is also the *only* correct repair route: `dev reconcile` mints a fresh archive per invocation,
+  which would strand the recovered findings in a file `batch.jsonl` doesn't point at — the
+  split-archive failure `unmanifested_archives` exists to catch.
+
+- **The `conditions` event fingerprints the prompts.** A sha256 over every `.md` under the run's
+  `.opencode/agent` + `.opencode/skills` and the package's `orchestrator/prompts` (relative path and
+  content both in the digest, so a rename counts), read from the *run dir* — the copy that actually
+  reached the model, not whatever the checkout says now. The prompts are the tier-0 subject, so two
+  batches could previously share a condition signature while running materially different prose and
+  get pooled and averaged; the hash joins `_identity`, so the mixed-conditions banner fires instead.
+  Also makes "did this batch include change X?" answerable from the archive alone. Archives written
+  before it carry no fingerprint, report as `prompts=unstamped`, and still pool with each other.
+
 ### Changed
 - **`dev/cli.py`, `dev/ping.sh`, and `gm_llm/tui/__main__.py` are gone.** Their commands moved
   into the unified CLI: `dev/cli.py play` → `gm-llm dev autoplay` (and `--turns` → `--turn-cap`,

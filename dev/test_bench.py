@@ -303,6 +303,50 @@ def test_conditions_event(tmp):
     dmr = cond["agents"]["dm-runner"]
     assert dmr["model"] == "opencode/mimo-v2.5-free" and dmr["temperature"] == 0.3
     assert cond["agents"]["player"]["temperature"] == 0.8
+    assert cond["prompts"]["sha256"] and cond["prompts"]["files"] >= len(AGENTS), \
+        f"the prose the run played under is fingerprinted — got {cond['prompts']}"
+
+
+def test_prompt_fingerprint(tmp):
+    """The fingerprint covers the prose a run actually played under, is stable across calls,
+    and moves on any content or path change — otherwise a prompt edit would silently pool
+    with the batch that preceded it."""
+    run_dir = _make_template(tmp / "run")
+    (run_dir / ".opencode" / "skills" / "session-close").mkdir(parents=True)
+    skill = run_dir / ".opencode" / "skills" / "session-close" / "SKILL.md"
+    skill.write_text("# close\nstep 5\n", encoding="utf-8")
+
+    base = runner.prompt_fingerprint(run_dir)
+    assert base["sha256"] and base["files"] > len(AGENTS), base
+    assert runner.prompt_fingerprint(run_dir) == base, "stable across calls"
+
+    skill.write_text("# close\nstep 5, reworded\n", encoding="utf-8")
+    edited = runner.prompt_fingerprint(run_dir)
+    assert edited["sha256"] != base["sha256"], "a prose edit must move the hash"
+    assert edited["files"] == base["files"], "same file count, different content"
+
+    # a rename is a different prompt even at identical bytes (skills load by name)
+    skill.write_text("# close\nstep 5\n", encoding="utf-8")
+    assert runner.prompt_fingerprint(run_dir) == base, "reverting the text reverts the hash"
+    skill.rename(skill.parent / "SKILL-renamed.md")
+    assert runner.prompt_fingerprint(run_dir)["sha256"] != base["sha256"], "path feeds the digest"
+
+
+def test_prompt_change_is_a_mixed_condition(tmp):
+    """Two runs that agree on fixture/tier/models but disagree on prose are NOT one batch —
+    the report must refuse to pool them, since the prose is what tier 0 measures."""
+    from gm_llm.bench import scoring
+    cond = {"event": "conditions", "fixture": {"id": "hollowfell"}, "tier": "low",
+            "turn_cap": 50, "agents": {"dm": {"model": "m", "temperature": 0.2}}}
+    a = scoring._condition_signature({**cond, "prompts": {"sha256": "aaaa", "files": 9}})
+    b = scoring._condition_signature({**cond, "prompts": {"sha256": "bbbb", "files": 9}})
+    assert scoring._identity(a) != scoring._identity(b), "different prose = different condition"
+    assert scoring._identity(a) == scoring._identity(
+        scoring._condition_signature({**cond, "prompts": {"sha256": "aaaa", "files": 9}}))
+    # archives written before the fingerprint existed carry nothing and still pool together
+    old = scoring._condition_signature(cond)
+    assert old["prompts"] is None and scoring._identity(old) == scoring._identity(
+        scoring._condition_signature(dict(cond))), "unstamped archives stay comparable"
 
 
 def test_natural_close(tmp):
@@ -340,10 +384,79 @@ def test_post_wrap_reconcile_failure_stays_complete(tmp):
     rec = runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=30, **fakes)
     assert rec["outcome"] == "complete", f"wrapped run must stay complete — got {rec}"
     assert rec["turns"] == 1, f"turn count must survive the reconcile failure — got {rec}"
-    # archive agrees: a resume sweep classifying it will see 'complete' and correctly skip
-    # it (rather than the manifest saying incomplete while the archive says complete).
+    # archive agrees on play, and flags the tail: complete (so no turn is ever replayed)
+    # but reconcile-pending (so the sweep comes back to finish it).
     state, _ = runner.classify_archive(rec["archive"])
-    assert state == "complete", f"archive must classify complete so resume skips it — {state}"
+    assert state == "complete", f"archive must classify complete — {state}"
+    assert runner.reconcile_pending(rec["archive"]), \
+        "a reconcile that never gated must stay visible to --resume, not be stranded"
+
+
+def test_reconcile_pending(tmp):
+    """The post-wrap gap is read off the `propagation` stage event — reconcile's last gate —
+    and only under a condition that asked for reconcile at all."""
+    def arc(events):
+        p = tmp / f"rp-{len(list(tmp.glob('rp-*')))}.jsonl"
+        p.write_text("\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8")
+        return p
+
+    assert runner.reconcile_pending(tmp / "nope.jsonl") is False
+    wrap = {"event": "turn", "session_complete": True}
+    # asked for reconcile, never reached the gate → pending
+    assert runner.reconcile_pending(arc([{"event": "conditions", "reconcile": True}, wrap]))
+    # died mid-pipeline: earlier stages archived, propagation never did → still pending
+    assert runner.reconcile_pending(arc([
+        {"event": "conditions", "reconcile": True}, wrap,
+        {"event": "stage", "stage": "digest"}, {"event": "stage", "stage": "lint"}]))
+    # propagation gated → the pass got through its apply; nothing owed
+    assert not runner.reconcile_pending(arc([
+        {"event": "conditions", "reconcile": True}, wrap,
+        {"event": "stage", "stage": "propagation"}]))
+    # --play-only never wanted a reconcile; its absence is not a gap
+    assert not runner.reconcile_pending(arc([{"event": "conditions", "reconcile": False}, wrap]))
+
+
+def test_resume_finishes_reconcile_only(tmp):
+    """A wrapped run whose reconcile the rate limits ate is picked up by `--resume` and
+    finished WITHOUT replaying a turn — play is settled, only the tail re-runs."""
+    from gm_llm.orchestrator import BackendError
+    out = tmp / "out"
+    _make_template(out / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    state = {"draft": 0, "complete_on": {2}}  # opening=1, turn1 draft=2 wraps
+    calls = []
+
+    def fakes(reconcile_fn):
+        return dict(
+            init=lambda d: None, install=lambda d: (True, "noop"),
+            backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
+            gate_factory=lambda backend, directory, logs: FakeGate(),
+            reconcile_fn=reconcile_fn, note=lambda m: None)
+
+    def boom(backend, gate, logs, n):
+        calls.append(("boom", n))
+        raise BackendError("narrative-checker failed after 2 retries")
+
+    first = runner.run_batch(fixture, out, runs=1, turn_cap=10, **fakes(boom))
+    assert first[0]["outcome"] == "complete" and first[0]["turns"] == 1, first
+    run_dir = out / first[0]["run_dir"]
+    played = sum(1 for e in _archive_events(run_dir) if e["event"] == "turn")
+
+    def ok(backend, gate, logs, n):
+        calls.append(("ok", n))
+
+    resumed = runner.run_batch(fixture, out, turn_cap=10, resume=True, **fakes(ok))
+    assert len(resumed) == 1, f"the wrapped-but-unreconciled run is resumable — got {resumed}"
+    assert resumed[0]["outcome"] == "complete", resumed
+    assert resumed[0]["turns"] == 1, f"a wrapped session must not grow turns — got {resumed[0]}"
+    assert calls == [("boom", 1), ("ok", 1)], f"reconcile retried once, no replay — {calls}"
+
+    # still one archive, still one turn: the resume added no play and no second stream
+    hits = sorted((run_dir / ".opencode" / "logs").glob("archive-*.jsonl"))
+    assert len(hits) == 1, f"resume appends to the run's own archive — got {hits}"
+    ev = _archive_events(run_dir)
+    assert sum(1 for e in ev if e["event"] == "turn") == played, "no turn replayed or added"
+    assert sum(1 for e in ev if e["event"] == "conditions") == 1, "conditions not re-emitted"
 
 
 def test_cap_breach_skips_reconcile(tmp):
@@ -588,12 +701,15 @@ def test_resume_noop_when_nothing_incomplete(tmp):
 
 
 def main():
-    tests = (test_assemble_run, test_conditions_event, test_natural_close,
+    tests = (test_assemble_run, test_conditions_event, test_prompt_fingerprint,
+             test_prompt_change_is_a_mixed_condition, test_natural_close,
              test_post_wrap_reconcile_failure_stays_complete,
              test_cap_breach_skips_reconcile, test_combat_natural_close,
              test_combat_cap_breach, test_failed_run_survives_batch,
-             test_classify_archive, test_rate_limit_is_incomplete_not_failed,
-             test_resume_continues_incomplete_run, test_resume_noop_when_nothing_incomplete)
+             test_classify_archive, test_reconcile_pending,
+             test_rate_limit_is_incomplete_not_failed,
+             test_resume_continues_incomplete_run, test_resume_finishes_reconcile_only,
+             test_resume_noop_when_nothing_incomplete)
     failures = 0
     for test in tests:
         with tempfile.TemporaryDirectory() as td:

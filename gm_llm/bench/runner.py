@@ -32,6 +32,7 @@ network, no npm, and no opencode. The defaults wire up the real orchestrator.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
 import re
 import secrets
@@ -108,6 +109,47 @@ def agent_conditions(run_dir, agents=_CONDITION_AGENTS) -> dict:
     return out
 
 
+# The model-facing prose, as three roots (see CLAUDE.md "The prompts"). The first two are
+# read from the run dir — a run plays the copy stamped into it, which is what actually
+# reached the model, not whatever the checkout says now. The third is orchestrator-injected,
+# so it comes from the running package.
+def _prompt_roots(run_dir: Path) -> list[tuple[str, Path]]:
+    from ..orchestrator import prompts as _prompts
+    return [("agent", run_dir / ".opencode" / "agent"),
+            ("skills", run_dir / ".opencode" / "skills"),
+            ("orchestrator", Path(_prompts.__file__).resolve().parent / "prompts")]
+
+
+def prompt_fingerprint(run_dir) -> dict:
+    """A content hash over every prompt a run played under — the tier-0 subject itself.
+
+    The rest of the condition (fixture, tier, models, temperatures) can be identical across
+    two batches that ran materially different prose, because the prompts ARE the thing being
+    measured at tier `low`. Without this, `_identity` would pool a pre-edit and a post-edit
+    batch as one condition and average their scores; with it, the report's mixed-conditions
+    banner fires. It also makes "did this batch include change X?" answerable from the
+    archive alone, months later, with no repo state to cross-reference.
+
+    Relative path and content both feed the digest (a renamed skill is a different prompt),
+    walked in sorted order so the hash is stable across filesystems. Best-effort: a missing
+    root contributes nothing and an unreadable tree yields `{"error": ...}` rather than
+    raising into a run — a fingerprint is instrumentation, never a reason to lose play."""
+    run_dir = Path(run_dir)
+    h, files = hashlib.sha256(), 0
+    try:
+        for label, root in _prompt_roots(run_dir):
+            if not root.is_dir():
+                continue
+            for path in sorted(root.rglob("*.md"), key=lambda p: p.relative_to(root).as_posix()):
+                h.update(f"{label}/{path.relative_to(root).as_posix()}\0".encode())
+                h.update(path.read_bytes())
+                h.update(b"\0")
+                files += 1
+    except OSError as e:
+        return {"error": str(e)}
+    return {"sha256": h.hexdigest()[:16], "files": files}
+
+
 def _emit_conditions(logs, fixture: dict, *, turn_cap: int, reconcile: bool,
                      run_dir: Path) -> None:
     """The `conditions` event — the first emit on the archive, so it rides right behind
@@ -120,6 +162,7 @@ def _emit_conditions(logs, fixture: dict, *, turn_cap: int, reconcile: bool,
                  "provisional": fixture.get("provisional")},
         tier=TIER, turn_cap=turn_cap, reconcile=reconcile,
         agents=agent_conditions(run_dir),
+        prompts=prompt_fingerprint(run_dir),
     )
 
 
@@ -184,6 +227,36 @@ def _default_gate(backend, directory, logs):
 
 def _default_reconcile(backend, gate, logs, n: int) -> None:
     Reconciler(backend, gate, logs=logs).reconcile_session(n, commit=True, prep=True)
+
+
+def _handoff_done(game) -> bool:
+    """Whether the wrap's handoff notes are already on disk. Lets a finish-only resume skip
+    `Game.resume()` — re-priming a cold runner costs a whole-transcript call, and the only
+    thing that needs the warm context is the notes."""
+    if not game.session:
+        return True
+    return (game.campaign / "sessions" / f"session-{game.session}-notes.md").is_file()
+
+
+def _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn, *,
+               reconcile: bool, note) -> None:
+    """The post-wrap tail: handoff notes, then the reconcile pass. Both are idempotent —
+    handoff no-ops on existing notes, and the reconciler's stage markers restart it at the
+    stage it died on — so a finish-only resume re-enters here and pays only for what's left.
+
+    Play wrapped, and that's the measured subject: a stall here (a rate limit, or a slow
+    large-input call the retries gave up on) must NOT demote a wrapped run to
+    incomplete/failed, or the archive would say "complete" while the manifest says
+    otherwise. The run stays `complete` and `reconcile_pending` marks the gap instead, so
+    `--resume` comes back for it rather than stranding the contradiction."""
+    try:
+        game.handoff()
+        if reconcile:
+            note(f"reconciling session {game.session}…")
+            reconcile_fn(backend, gate_factory(backend, run_dir, logs), logs, game.session)
+    except BackendError as e:
+        note(f"post-wrap step gave up ({e}) — session already wrapped; leaving reconcile "
+             f"undone. Pick it up with `bench run --resume`.")
 
 
 # ── one run ──────────────────────────────────────────────────────────────────
@@ -258,6 +331,10 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
     current scene — fine for the measured subject (runner + checker), which do get full
     context back.
 
+    A resume of an archive that already *wrapped* runs the post-wrap tail and nothing else
+    — the turn loop never opens, because a wrapped session must not grow turns. That's how
+    a reconcile the rate limits ate gets finished (see `reconcile_pending`).
+
     Combat (a turn that calls `start_encounter`) hands off to `_play_combat`, which drives
     the fight through the `CombatDriver` and counts **each PC slot as one turn** against
     `turn_cap` — so a fight can't make a run uncappable. A fight that runs into the cap is a
@@ -266,14 +343,16 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
     logs = Logs.under(project=run_dir, debug=debug_enabled())
 
     existing = _find_archive(run_dir, note=note) if resume else None
-    resuming, turns_done = False, 0
+    resuming, turns_done, finish_only = False, 0, False
     if existing is not None:
-        _, turns_done = classify_archive(existing)
+        state, turns_done = classify_archive(existing)
         # Continue the run's own archive so turns 1..k and k+1.. are one stream the grader
         # reads whole (Archive re-heads only a fresh file). Logs is frozen — swap via replace.
         run_id = existing.stem.replace("archive-", "", 1)
         logs = dataclasses.replace(logs, archive=Archive(existing, run_id))
         resuming = True
+        # Play is settled — this resume is only here to finish the post-wrap tail.
+        finish_only = state == "complete"
 
     backend = backend_factory(run_dir, port=port, min_gap=min_gap,
                               turn_timeout=turn_timeout, logs=logs, note=note)
@@ -292,7 +371,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
         note(f"runner={game.runner_sid} player={player_sid} session={game.session}")
 
         scene = None
-        if resuming:
+        if resuming and not finish_only:
             game._turn_no = turns_done  # continue archive turn ids past what's on disk
             note(f"resuming from {turns_done} turn(s) on disk…")
             scene = game.resume()  # None if the transcript is gone → fall through to a clean open
@@ -303,64 +382,63 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
                              run_dir=run_dir)
             scene = game.start(kickoff).final
 
-        turns, outcome, interrupted = turns_done, "cap", None
-        primed = False  # the fresh player session gets its packet on the first turn we run
-        try:
-            while turns < turn_cap:
-                turns += 1
-                if not primed and character:
-                    msg = ("[YOUR CHARACTER — read this, then stay in character for the rest "
-                           f"of the session]\n\n{character}\n\n" + player_turn(scene))
-                else:
-                    msg = player_turn(scene)
-                primed = True
-                note(f"turn {turns}/{turn_cap}: player…")
-                player = backend.prompt(player_sid, "player", msg)
-                note(f"turn {turns}/{turn_cap}: dm (draft + gate)…")
-                tr = game.turn(player)
-                scene = tr.final
-                if tr.combat_started:
-                    scene, turns, hit_cap = _play_combat(
-                        game, backend, player_sid, scene, turns, turn_cap, note)
-                    if hit_cap:
-                        break  # unfinished fight — a cap breach; outcome stays "cap"
-                    continue
-                if tr.session_complete:
-                    outcome = "complete"
-                    break
-        except BackendError as e:
-            if turns <= 0:
-                raise  # gave up before any play landed — a genuine failure, nothing to resume
-            interrupted = e
-
-        record["turns"] = turns
-        if interrupted is not None:
-            note(f"interrupted after {turns} turn(s): {interrupted} — "
-                 f"resumable with `bench run --resume`.")
-            record["outcome"] = f"incomplete: {interrupted}"
-        elif outcome == "complete":
-            note(f"session wrapped naturally after {turns} turn(s).")
-            # Play wrapped — that's the measured subject and it's settled. Handoff and
-            # reconcile are best-effort post-play bookkeeping; a stall there (a rate limit,
-            # or a slow large-input call the retries gave up on) must NOT demote a wrapped
-            # run to incomplete/failed, or the archive would say "complete" while the
-            # manifest says otherwise — and `--resume` (which classifies from the archive)
-            # would then skip it forever, stranding the contradiction.
-            record["outcome"] = "complete"
-            try:
-                game.handoff()
-                if reconcile:
-                    note(f"reconciling session {game.session}…")
-                    reconcile_fn(backend, gate_factory(backend, run_dir, logs), logs,
-                                 game.session)
-            except BackendError as e:
-                note(f"post-wrap step gave up ({e}) — session already wrapped; "
-                     f"leaving reconcile undone.")
+        if finish_only:
+            # Play is on disk and wrapped; only the post-wrap tail is missing. Don't touch
+            # the turn loop — a wrapped session must not grow turns on a resume.
+            # No turn count in the message: the archive's turn-event count includes the
+            # opening beat, so it would contradict the manifest's played-turn number.
+            note("already wrapped — finishing the post-wrap step.")
+            record["turns"], record["outcome"] = turns_done, "complete"
+            if not _handoff_done(game):
+                game.resume()  # cold runner: rebuild its context before asking for notes
+            _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn,
+                       reconcile=reconcile, note=note)
         else:
-            note(f"hit the turn cap ({turn_cap}) without a wrap — skipping reconcile.")
-            if logs and logs.archive:
-                logs.archive.emit("cap", turn=turns)
-            record["outcome"] = "cap"
+            turns, outcome, interrupted = turns_done, "cap", None
+            primed = False  # the fresh player session gets its packet on the first turn we run
+            try:
+                while turns < turn_cap:
+                    turns += 1
+                    if not primed and character:
+                        msg = ("[YOUR CHARACTER — read this, then stay in character for the rest "
+                               f"of the session]\n\n{character}\n\n" + player_turn(scene))
+                    else:
+                        msg = player_turn(scene)
+                    primed = True
+                    note(f"turn {turns}/{turn_cap}: player…")
+                    player = backend.prompt(player_sid, "player", msg)
+                    note(f"turn {turns}/{turn_cap}: dm (draft + gate)…")
+                    tr = game.turn(player)
+                    scene = tr.final
+                    if tr.combat_started:
+                        scene, turns, hit_cap = _play_combat(
+                            game, backend, player_sid, scene, turns, turn_cap, note)
+                        if hit_cap:
+                            break  # unfinished fight — a cap breach; outcome stays "cap"
+                        continue
+                    if tr.session_complete:
+                        outcome = "complete"
+                        break
+            except BackendError as e:
+                if turns <= 0:
+                    raise  # gave up before any play landed — a genuine failure, nothing to resume
+                interrupted = e
+
+            record["turns"] = turns
+            if interrupted is not None:
+                note(f"interrupted after {turns} turn(s): {interrupted} — "
+                     f"resumable with `bench run --resume`.")
+                record["outcome"] = f"incomplete: {interrupted}"
+            elif outcome == "complete":
+                note(f"session wrapped naturally after {turns} turn(s).")
+                record["outcome"] = "complete"
+                _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn,
+                           reconcile=reconcile, note=note)
+            else:
+                note(f"hit the turn cap ({turn_cap}) without a wrap — skipping reconcile.")
+                if logs and logs.archive:
+                    logs.archive.emit("cap", turn=turns)
+                record["outcome"] = "cap"
     finally:
         if tap:
             tap.stop()
@@ -428,6 +506,38 @@ def classify_archive(archive_path) -> tuple[str, int]:
     return ("resumable", turns) if turns else ("empty", 0)
 
 
+def reconcile_pending(archive_path) -> bool:
+    """True when a run's archive says the between-session pass was asked for but never
+    finished — the state a post-wrap rate-limit give-up leaves behind.
+
+    Deliberately NOT folded into `classify_archive`, which answers about *play* and shares
+    its signals with scoring.py: a wrapped run is `complete` whatever happened afterwards.
+    This is the second, orthogonal question `--resume` asks.
+
+    The signal is the `propagation` stage event — the reconcile pipeline's last gate, so an
+    archive carrying it saw the whole apply (D1–D3) gated. Its absence under a
+    `reconcile: true` condition means the pass died somewhere in the middle, and the
+    stages that never ran contribute no findings — which the grader would read as clean
+    play rather than as missing data (the same failure `unmanifested_archives` guards).
+    Pure archive read, no backend."""
+    path = Path(archive_path) if archive_path else None
+    if not path or not path.is_file():
+        return False
+    wanted, gated = False, False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get("event") == "conditions":
+            wanted = bool(e.get("reconcile"))
+        elif e.get("event") == "stage" and e.get("stage") == "propagation":
+            gated = True
+    return wanted and not gated
+
+
 def _rewrite_manifest(manifest: Path, record: dict) -> None:
     """Replace the `batch.jsonl` line for `record["run_dir"]` with `record` (append if
     absent), collapsing to one line per run dir. A resumed run continues the same archive,
@@ -460,10 +570,19 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
                   play_only: bool, kickoff: str, port: float, min_gap: float,
                   turn_timeout: int, stream: bool, backend_factory, gate_factory,
                   reconcile_fn, note) -> list[dict]:
-    """`--resume`: pick every *incomplete* run in `out_dir` (rate-limited / crashed / Ctrl-C'd
-    — an archive with turns but neither a wrap nor a cap) back up and continue it in place,
-    updating its manifest line. Complete and capped runs are terminal and skipped; runs with
-    no turns have nothing to resume. Does NOT start fresh runs — resume tops up what's there."""
+    """`--resume`: pick every *unfinished* run in `out_dir` back up and continue it in place,
+    updating its manifest line. Two kinds of unfinished, and they resume differently:
+
+      * **play** — an archive with turns but neither a wrap nor a cap (rate-limited /
+        crashed / Ctrl-C'd): continue the session from the transcript.
+      * **reconcile** — a wrapped run whose between-session pass never reached its gate
+        (`reconcile_pending`). Play is settled and stays untouched; only the post-wrap tail
+        re-runs, from the reconciler's own stage markers. Without this the run is stranded:
+        its outcome is `complete`, so a play-only sweep skips it forever while the grader
+        reads its missing stages as clean play.
+
+    Capped runs are terminal, and runs with no turns have nothing to resume. Does NOT start
+    fresh runs — resume tops up what's there."""
     records: list[dict] = []
     if not manifest.is_file():
         note(f"no batch.jsonl under {out_dir} — nothing to resume.")
@@ -482,15 +601,17 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
         arc = out_dir / rec["archive"] if rec.get("archive") else None
         state, done = classify_archive(arc)
         if state == "resumable":
-            pending.append((rd, rec, done))
+            pending.append((rd, rec, done, "play"))
+        elif state == "complete" and not play_only and reconcile_pending(arc):
+            pending.append((rd, rec, done, "reconcile"))
     if not pending:
-        note("no resumable (incomplete) runs found — nothing to resume.")
+        note("no unfinished runs found — nothing to resume.")
         return records
 
-    note(f"resuming {len(pending)} incomplete run(s)…")
-    for rd, rec, done in pending:
+    note(f"resuming {len(pending)} unfinished run(s)…")
+    for rd, rec, done, kind in pending:
         run_dir = out_dir / rd
-        note(f"── resume {rd} (from {done} turn(s)) ──")
+        note(f"── resume {rd} ({'reconcile only' if kind == 'reconcile' else f'from {done} turn(s)'}) ──")
         try:
             result = run_once(
                 run_dir, fixture, turn_cap=turn_cap, play_only=play_only, kickoff=kickoff,
@@ -504,8 +625,11 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
             note(f"resume failed: {e}")
             result = {"outcome": f"incomplete: {e}", "turns": done}
 
-        record = {**rec, "finished": _now(), "outcome": result["outcome"],
-                  "turns": result.get("turns", done)}
+        # A reconcile-only resume played nothing, so the manifest's own count stands. Its
+        # `turns` and the archive's turn-event count differ by the opening beat (archived as
+        # a turn, not counted as one), and only the play paths reconcile that difference.
+        turns = rec.get("turns", done) if kind == "reconcile" else result.get("turns", done)
+        record = {**rec, "finished": _now(), "outcome": result["outcome"], "turns": turns}
         if result.get("archive"):
             record["archive"] = _rel(result["archive"], out_dir)
         _rewrite_manifest(manifest, record)

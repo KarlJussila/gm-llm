@@ -155,6 +155,10 @@ def _condition_signature(cond: dict) -> dict:
         "tier": cond.get("tier"),
         "turn_cap": cond.get("turn_cap"),
         "agents": {name: (a.get("model"), a.get("temperature")) for name, a in sorted(agents.items())},
+        # The prompts are the tier-0 subject, so a batch that mixes prose versions is mixing
+        # conditions however well the models and fixture match. Archives written before the
+        # fingerprint existed carry None and still pool with each other.
+        "prompts": (cond.get("prompts") or {}).get("sha256"),
     }
 
 
@@ -363,7 +367,7 @@ def _fmt_dist(d: dict | None, pct: bool = False, dp: int | None = None) -> str:
 def _fmt_sig(sig: dict) -> str:
     agents = "; ".join(f"{name}={model}@{temp}" for name, (model, temp) in sig.get("agents", {}).items())
     return (f"fixture={sig.get('fixture')} tier={sig.get('tier')} "
-            f"turn_cap={sig.get('turn_cap')} · {agents}")
+            f"turn_cap={sig.get('turn_cap')} prompts={sig.get('prompts') or 'unstamped'} · {agents}")
 
 
 def format_report(batch: dict) -> str:
