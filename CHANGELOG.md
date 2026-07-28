@@ -10,6 +10,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Added
+- **Watch the scripted player in the TUI (`gm-llm play --player auto --ui tui`).** The last
+  unbuilt cell of the play grid. An unattended run now renders in the full TUI — scene pane,
+  behind-the-screen stream, gate verdicts, combat beats — with the turn cap (`--turn-cap`) and
+  the character packet (`--character`, else a `*.player.md` at the project root) working as they
+  do on the console. `ctrl+x` cancels whichever call is in flight and the loop re-asks; the
+  session survives it. `ctrl+w` wraps a watched run once the turn in flight finishes.
 - **`bench tokens` — what a run cost, retroactively.** opencode already aggregates
   `tokens_input/output/reasoning/cache_read/cache_write` and `cost` per session, keyed on the
   session's directory, and every bench run plays in its own dir — so a prefix match reports runs
@@ -61,10 +67,18 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   before it carry no fingerprint, report as `prompts=unstamped`, and still pool with each other.
 
 ### Changed
+- **One session loop, `orchestrator.play_session`.** The TUI, `dev autoplay` and `bench run`
+  each carried their own turn loop; there is now one, and the axis between them is a
+  `PlayerSource` — `KeyboardPlayer` (a frontend hands lines in) or `AgentPlayer` (the scripted
+  `player` agent, character packet and story-so-far included). Rendering is a set of hooks.
+  Three knock-on fixes fall out of the unification: a session **resumed into a live fight** now
+  fights instead of sending a normal turn into a live tracker (autoplay and bench both got this
+  wrong), console autoplay's turn cap now covers **combat slots** as bench's already did, and a
+  cancelled turn no longer burns a turn against the cap.
 - **One agent-driven fight loop, `orchestrator.play_combat`.** `gm-llm dev autoplay` and
   `bench run` had near-duplicate combat drivers that differed in turn accounting; they now share
   one, with bench's "each PC slot burns a turn against the cap" as the implementation and
-  `turn_cap=None` as autoplay's explicit opt-out. No behavior change to either command.
+  `turn_cap=None` as the human frontend's explicit opt-out.
 - **`dev/cli.py`, `dev/ping.sh`, and `gm_llm/tui/__main__.py` are gone.** Their commands moved
   into the unified CLI: `dev/cli.py play` → `gm-llm dev autoplay` (and `--turns` → `--turn-cap`,
   matching `bench run`), `dev/cli.py tui [--setup]` → `gm-llm play --mock [--setup]`, `status` and
@@ -107,6 +121,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   instrument from drifting as player feedback accumulates.
 
 ### Fixed
+- **Quitting the TUI can no longer hang the process.** The play worker runs on a thread and
+  waits on the app's event loop to render; on the way out Textual cancels the worker's coroutine
+  while its thread keeps running, so a thread parked on the player (or on combat's confirm gate)
+  kept the interpreter's thread pool from joining at exit. Everything the worker can park on is
+  now released on unmount, and a hook that fires after the app has stopped is a no-op.
+
 - **The turn cap is no longer treated as a condition.** A cap no run reached is inert — it reaches
   no prompt (it lives entirely as a loop bound in `bench/runner.py`) and the wrap nudge keys off
   opencode's context threshold, not the cap — so runs configured at 30 and at 50 pooled fine but

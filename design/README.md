@@ -134,6 +134,11 @@ The parts of the design that are neither agent nor skill, and are easy to lose:
 - **Per-turn craft reminder.** The orchestrator prepends the runner's per-turn DM *craft* loop
   (agency, ask-for-a-roll, narrate-the-response) to each player message, so the craft stays
   salient and resists decay over a long session.
+- **One session loop, whoever is playing.** `play_session` (`orchestrator/play.py`) is the turn
+  loop for every frontend and every player; who supplies the next message is a `PlayerSource`
+  (keyboard or the scripted `player` agent) and what renders it is a set of hooks. It blocks, so
+  an async frontend runs it on a worker thread and feeds the source from its own — which is how
+  the TUI can render an unattended run ([frontends.md](frontends.md)).
 - **Automatic transcript capture.** The orchestrator writes
   `campaign/sessions/session-{N}-transcript.md` from each turn's final messages (player +
   corrected DM narration). Note-taking never depends on the model.

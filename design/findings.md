@@ -14,6 +14,7 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [1](#part-1--setup-standing-up-the-handoff-round-loop-2026-07-27) | setup | Why the gate is `python dev/test_*.py` and not pytest; why bench counts stay out of the generated block |
 | [2](#part-2--docs-consolidating-the-planning-docs-onto-the-loop-2026-07-27) | docs | Why `SPEC.md` and `PLAN.md` were deleted rather than moved; how a plan-of-record doc differs from a roadmap and a backlog |
 | [3](#part-3--frontends-one-agent-driven-fight-loop-2026-07-27) | frontends | Why the *safer* of two duplicate loops becomes the shared implementation; where the agent-player seam sits for `PlayerSource` |
+| [4](#part-4--frontends-one-session-loop-keyboard-or-agent-2026-07-27) | frontends | How a blocking loop and an async frontend are reconciled (and what must be released at shutdown); why a failed call is the frontend's call to answer, not the loop's |
 
 ## Recurring threads (the classes worth knowing)
 
@@ -38,6 +39,16 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
   a PC slot burned a turn against the cap; the shared `play_combat` took the counting version as
   the implementation and made "no cap" the argument. The general form: whichever copy holds the
   invariant is the base, and the laxer copy is a call site that opts out explicitly. (Part 3)
+  Part 4 applied it once more and found the corollary: when the copies also disagree about a
+  *case* neither documents — resuming into a live fight, which both agent-player loops got wrong
+  — unifying is what surfaces it, because the merged loop has to answer the question once.
+- **A thread parked on a UI is a thread that will not exit.** The blocking session loop runs on a
+  worker thread and waits on the app's event loop to render; on shutdown Textual cancels the
+  worker's *coroutine* while its thread keeps running, so any wait the thread is sitting on
+  (the player source, combat's confirm gate) has to be released explicitly, and any hop back to
+  the UI has to no-op once the app has stopped. Otherwise `asyncio.run` hangs joining its
+  executor and the app never quits. The rule generalizes to every blocking-worker/async-frontend
+  seam this repo adds. (Part 4)
 
 # Part 1 — Setup: standing up the handoff-round loop (2026-07-27)
 
@@ -327,3 +338,107 @@ catches a regression — consumes no further player prompt).
 `python -m compileall gm_llm` clean; all ten `dev/test_*.py` scripts pass, including the two new
 `play_combat` scenarios; `tools/status.py --check` and `tools/lint_docs.py` both clean (0 errors,
 0 warnings). No model-facing prose changed, so the B3 freeze is untouched.
+
+# Part 4 — Frontends: one session loop, keyboard or agent (2026-07-27)
+
+## The gap
+
+Three interfaces, three turn loops. `bench/runner.py` and `autoplay.py` each ran a push-driven
+`for`/`while` around `backend.prompt(player_sid, …)` → `game.turn(…)` → render; `tui/app.py` ran
+the same sequence inside out, idling in `on_input_submitted` and spawning a worker per turn. The
+grid's empty cell followed from that: `--player auto --ui tui` exited with a message saying so,
+because feeding the TUI a player agent meant giving a pull-driven frontend a push-driven loop.
+
+The duplication was not only structural. The bracketed heading that hands the player agent its
+character packet was spelled out in both agent-driven callers, verbatim, one edit away from
+drifting — and the *cases* differed silently: bench counted combat slots against the cap and
+autoplay did not; neither could resume into a live fight (both would send a normal turn into a
+live tracker); a cancelled turn in the TUI was handled by one code path per call site.
+
+## What the round does
+
+Adds `orchestrator/play.py` — `PlayerSource`, `PlayHooks`, `PlayResult`, `play_session` — and
+rewrites all three interfaces as dialects of it. `play_combat` (Part 3) takes the same source and
+hooks, so a fight is the same code whether a human or an agent answers the PC slot.
+
+- **The axis is where the next message comes from, and nothing else.** `AgentPlayer` prompts the
+  `player` agent (and owns the packet/story priming, now stated once); `KeyboardPlayer` parks the
+  loop's thread until a frontend calls `submit(text)`. `human` on the source is a *rendering*
+  flag — the TUI frees its input box for one and shows "the player is thinking" for the other —
+  never a policy fork inside the loop.
+- **The loop keeps only what is genuinely shared.** Opening a session (resume-or-start, with
+  bench's archive continuation and the TUI's phases) and the post-session tail (handoff notes,
+  reconcile) stay with the callers, because that is where they really differ. What moved in is
+  what was being copied: cap accounting, the combat handoff, the wrap signal, the priming.
+- **A fight is entered from the top of the loop**, not from the turn that started it. That one
+  placement is what fixes resume-into-combat for every interface at once: any pass that finds
+  `game.in_combat` fights. Both agent-player callers were previously wrong here and neither had
+  a test that could have noticed.
+- **`on_interrupt(stage, exc, message) -> bool` is the frontend's answer to a call that raised.**
+  With no hook (autoplay, bench) a `BackendError` propagates untouched, which is exactly what an
+  unattended run needs to record a rate-limit give-up. The TUI's hook reverts the runner session,
+  hands the message back and returns True — so a cancel or a give-up costs a turn, not a session.
+  The one exception is a hard failure *inside a fight*: re-entering combat goes straight back to
+  the model with no human gate, so that ends the loop rather than grinding against a dead backend.
+- **An interrupted turn costs no turn against the cap.** The loop restores the turn count it
+  entered the iteration with. A cancelled turn leaves no trace in the transcript, canon or the
+  archive; a cap it silently burned would have been the only trace it left.
+- **`--player auto --ui tui` is now a source swap**, wired end to end: `Lifecycle.player_source()`
+  resolves the axis (one fresh source per session — a stopped `KeyboardPlayer` never wakes, and a
+  new `AgentPlayer` session re-primes the packet), `--turn-cap` bounds the run, and the character
+  packet is resolved by the same `autoplay.read_character` the console mode uses.
+- **`stop()` is on the source base class, and it is graceful.** It was nearly a `KeyboardPlayer`
+  detail, which would have left a watched run with no way to end: the TUI is *always* busy during
+  one, so `ctrl+w` would have had nothing to act on. Stopping lands at the next ask, so the turn
+  in flight finishes and is kept — throwing away a half-played turn is never what a wrap wants —
+  and `action_wrap` gains its one carve-out from "no-op while busy" for exactly that case.
+
+**The TUI was the risk, so it got an oracle.** `dev/test_tui_loop.py` drives the real `PlayApp`
+headlessly through Textual's own pilot over `MockLifecycle` — a whole session (typed turns, a
+fight with its confirm gate and an interjection, the runner's close, the wrap, the next session on
+a fresh loop) and a cancel-and-carry-on. It paid for itself immediately: it caught a shutdown
+deadlock (below). `dev/test_play_session.py` covers the loop headlessly — priming, hook order and
+numbering, the cap, a threaded `KeyboardPlayer`, the combat handoff, resume-into-combat, and both
+interrupt policies. The mock grew a `pace` multiplier so the scripted delays that make it watchable
+cost the suite nothing.
+
+**The bench suite is the regression armor that mattered most** and it needed no changes: all
+sixteen cases — natural close, cap breach, combat entry and mid-fight cap, the rate-limit turn
+count, both resume paths — pass against the shared loop unmodified. Bench keeps its exact turn
+accounting through `on_player`, which fires with the number of the turn about to be drafted, since
+an exception carries no return value.
+
+## Declared lossiness / deferrals
+
+- **Console autoplay's cap now covers combat slots.** Part 3 recorded the old behavior as
+  deliberate ("caps normal turns only"); one loop cannot hold two cap policies, and the choice
+  between them is not close — an endless fight in an unattended run is precisely what a safety net
+  is for. This is the Part 3 rule applied again: unify toward the invariant.
+- **A cancel inside a fight forgets the slots played since the fight began**, for cap purposes:
+  `play_combat`'s count rides on its return value, which an exception skips. Inert where cancel
+  exists (the human frontend is uncapped) and documented at the loop.
+- **A turn that both wraps the session and starts a fight is read as a wrap.** No runner should
+  produce that draft; of the two readings, opening a fight into a session that has just ended is
+  the worse one.
+- **The shutdown deadlock was real, and predated the round in miniature.** On the way out Textual
+  cancels a worker's coroutine while its thread keeps running, so the TUI's `_loop_live` flag went
+  False with the thread still parked on the player source — and a parked pool thread keeps
+  `asyncio.run` from joining the executor, hanging the process at exit. The fix is a rule, not a
+  patch: `_stop_session` releases *everything* the worker can park on (source and confirm gate)
+  regardless of how live the loop looks, and every hook hops to the UI through `_ui`, which
+  no-ops once the app has stopped. The old per-turn workers had the same hazard in a smaller
+  window; nothing would have found it without the pilot test.
+- **The TUI's own `--player auto` cell has never run against a live model.** It is mock-verified
+  like everything else here, and it inherits the live shakedown debt already parked on ROADMAP
+  track **live**.
+- **`_character` (bench) and `read_character` (autoplay) are still two resolvers.** They agree on
+  handling and now feed one `AgentPlayer`, but where the packet lives and how it is generated is
+  benchmark B1's open player-end contract, not this round's to settle.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all twelve `dev/test_*.py` scripts pass, including the two
+new ones (`test_play_session.py`, `test_tui_loop.py` — the TUI pilot runs in ~7s at `pace=0`);
+`tools/status.py --check` and `tools/lint_docs.py` both clean. No model-facing prose changed: the
+packet framing moved home byte-for-byte and the prompt fingerprint over the run dirs is unaffected,
+so the B3 freeze is untouched.

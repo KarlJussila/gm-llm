@@ -14,6 +14,12 @@ behind-the-screen pane is a `RichLog` — append-efficient, but not
 text-selectable; the full gate log is on disk under the project's log dir
 (`.opencode/logs/orchestrator-checks.log`).
 
+Play is `orchestrator.play_session`, run once per session on a worker thread
+(`_session_worker`) with a `PlayerSource` from the lifecycle. The keyboard source
+parks that thread until `on_input_submitted` hands it a line, so this app is a set
+of `PlayHooks` over the same loop `bench run` uses — which is what lets
+`--player auto` be watched here (the source changes, nothing else does).
+
 Model calls block, so they run off the UI thread (`asyncio.to_thread`). While
 the table works, the input stays live for drafting (submits are held with a
 notice), and three signals keep the app from going silent for minutes:
@@ -53,7 +59,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, Input, RichLog
 
 from gm_llm.orchestrator.backend import BackendCancelled
-from gm_llm.orchestrator.combat import CombatDriver
+from gm_llm.orchestrator.play import PlayHooks, play_session
 from gm_llm.orchestrator.textmarkup import inline
 
 from .screens import MenuScreen, RollScreen, StatusScreen
@@ -95,7 +101,8 @@ class PlayApp(App):
         "done": "finishing up",
     }
 
-    def __init__(self, lifecycle, cleanup=None, theme: str = "dracula"):
+    def __init__(self, lifecycle, cleanup=None, theme: str = "dracula",
+                 turn_cap: int | None = None):
         super().__init__()
         self.lc = lifecycle
         self.cleanup = cleanup
@@ -109,13 +116,22 @@ class PlayApp(App):
         self._setup_tap = None       # EventTap streaming setup authoring behind the screen
         self._setup_stages_seen = set()  # spoiler-free setup stages already shown (each shows once)
         self._ctx_note = ""          # " · ctx 39% (78k/200k)" — refreshed after each turn
-        # Combat mode: a CombatDriver wrapping the live game while a fight is on (None
-        # otherwise). The driver owns ALL sequencing policy; the app only renders beats,
-        # gets input, and calls the next method. `_combat_awaiting` is what the input box
-        # is currently for ("pc" = the PC's slot, "confirm" = an NPC beat awaiting the
-        # player's Enter-or-react); `_combat_gate`/`_combat_reaction` hand the confirm-gate
-        # answer from the UI thread back to the pump worker blocked in `_on_combat_beat`.
-        self._combat = None
+        # The session loop (orchestrator.play_session), run on a worker thread for the life
+        # of one session: `_source` is where it takes player messages from (a KeyboardPlayer
+        # fed by on_input_submitted, or an AgentPlayer for `--player auto`), `_loop_live` says
+        # whether a submit has anywhere to go, and `_after_session` is a phase action queued
+        # behind the loop's exit (a wrap can't run while the loop still owns the game).
+        self._source = None
+        self._loop_live = False
+        self._after_session = None
+        self._turn_cap = turn_cap    # only `--player auto` caps; a human plays uncapped
+        self._session_tap = None     # EventTap streaming the whole session behind the screen
+        # Combat: the loop hands fights to `play_combat`, which drives them through the
+        # CombatDriver — the app only renders beats and answers the confirm gate.
+        # `_combat_awaiting` is what the input box is currently for ("pc" = the PC's slot,
+        # "confirm" = an NPC beat awaiting the player's Enter-or-react); `_combat_gate` /
+        # `_combat_reaction` hand the confirm-gate answer from the UI thread back to the
+        # loop worker blocked in `_on_combat_beat`.
         self._combat_awaiting = None
         self._combat_gate = threading.Event()
         self._combat_reaction = None
@@ -358,13 +374,111 @@ class PlayApp(App):
             self._scene_status("— resuming the session in progress —")
         self._scene_dm(inline(scene))
         if self.game.in_combat:
-            # Resumed straight into a live fight (the tracker state file survived) — the
-            # driver picks up where the initiative loop left off.
+            # Resumed straight into a live fight (the tracker state file survived): the loop
+            # enters combat on its first pass, so this is only the sign-post.
             self._scene_status("— resuming mid-fight — initiative —", kind="rule")
-            self._enter_combat()
-            return
-        self._busy(False)
         self._spawn_context_refresh()
+        self._start_session(scene)
+
+    # -- the session loop (one per session, on a worker thread) --------------
+    #
+    # `play_session` is the one turn loop (orchestrator/play.py); this app is a set of
+    # hooks over it. The loop blocks — on a model call, or on the keyboard source waiting
+    # for the player — so it lives on a worker thread and every hook that touches the
+    # screen hops back with `call_from_thread`. The two hooks that DON'T are deliberate:
+    # `on_beat` blocks the worker on the combat confirm gate, and `on_interrupt` reverts
+    # the runner session (a backend call) before touching the UI.
+
+    def _start_session(self, scene: str) -> None:
+        """Open the session loop over the current game, with a fresh player source."""
+        self._source = self.lc.player_source()
+        self._loop_live = True
+        # Its own worker group: the ad-hoc `exclusive=True` workers (a meta question, the
+        # status modal) must not cancel the loop that owns the session.
+        self.run_worker(self._session_worker(scene), group="session", exclusive=True)
+
+    def _ui(self, fn, *args) -> None:
+        """Hop to the UI thread from the loop's worker — and no-op once the app has stopped.
+        `call_from_thread` parks the calling thread until the app's event loop runs the
+        callback, so a hook that fires during shutdown would park a pool thread forever, and
+        a parked pool thread keeps the interpreter from exiting."""
+        if not self.is_running:
+            return
+        try:
+            self.call_from_thread(fn, *args)
+        except RuntimeError:
+            pass  # the app stopped between the check and the call
+
+    def _session_hooks(self) -> PlayHooks:
+        ui = self._ui
+        return PlayHooks(
+            on_prompt=lambda turns: ui(self._await_player),
+            on_player=lambda text, turns: ui(self._player_said, text),
+            on_turn=lambda tr: ui(self._render_turn, tr),
+            on_slot=lambda event, turns: ui(self._await_pc_slot, event),
+            on_beat=self._on_combat_beat,       # worker thread: renders, then blocks for confirm
+            on_combat_end=lambda narration: ui(self._combat_ended, narration),
+            on_interrupt=self._on_interrupt,    # worker thread: reverts, then renders
+        )
+
+    async def _session_worker(self, scene: str) -> None:
+        # One tap for the whole session (the same shape `bench run --stream` uses), so the
+        # pane keeps streaming across turns, fights and meta questions without restarting.
+        self._session_tap = self._start_stream()
+        try:
+            result = await asyncio.to_thread(
+                play_session, self.game, self._source, scene,
+                hooks=self._session_hooks(), turn_cap=self._turn_cap)
+        except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._phase_failed("the session", e)
+            return
+        finally:
+            self._loop_live = False
+            if self._session_tap:
+                # stop() flushes buffered stream content through the write callback
+                # (which uses call_from_thread) — must run off the app thread.
+                await asyncio.to_thread(self._session_tap.stop)
+                self._session_tap = None
+        self._session_done(result)
+
+    def _session_done(self, result) -> None:
+        """The loop returned. `complete` offers the wrap; `stopped` means the app took the
+        loop down itself and may have queued the action it took it down *for*; `cap` can only
+        happen under `--player auto`, which is watched, not driven."""
+        self._combat_awaiting = None
+        self._busy(False)
+        if result.outcome == "complete":
+            # The runner signalled the session's end — offer the wrap (reconcile + prep
+            # N+1) instead of auto-running minutes of pipeline.
+            self._scene_status("— the session has reached its end —", kind="rule")
+            self._pending = "wrap"
+            self._prompt.ask(f"Session {self.lc.session} complete — "
+                             f"reconcile & prep session {self.lc.session + 1}?")
+            return
+        if result.outcome == "cap":
+            self._scene_status(f"— turn cap ({self._turn_cap}) reached — the session is "
+                               f"still open —", kind="rule")
+            return
+        queued, self._after_session = self._after_session, None
+        if queued == "wrap":
+            self.run_worker(self._do_wrap(), exclusive=True)
+
+    def _stop_session(self, then: str | None = None) -> bool:
+        """Take the loop down (queueing `then` for when it lands) and say whether it was
+        still running. Nothing that reaches for the game — a wrap, quitting — may run while
+        the loop still owns it.
+
+        Both places the worker can *park* are released, not just the live-looking one: the
+        player source, and combat's confirm gate. On the way out Textual cancels the worker's
+        coroutine while its thread keeps running, so `_loop_live` can already be False with a
+        thread still parked — and a parked pool thread keeps the interpreter from exiting."""
+        live = self._loop_live
+        self._after_session = then if live else None
+        if self._source is not None:
+            self._source.stop()
+        self._combat_reaction = None
+        self._combat_gate.set()
+        return live
 
     # -- setup: the new-campaign conversation (phase == "setup") ------------
 
@@ -492,7 +606,7 @@ class PlayApp(App):
             if self._combat_awaiting == "confirm":
                 self._combat_resolve_confirm(text)  # empty = confirm; text = interject
             elif text:
-                self._combat_submit_pc(text)
+                self._submit_player(text)
             return
         if not text:
             event.input.value = ""
@@ -549,29 +663,46 @@ class PlayApp(App):
 
         self._prompt.dismiss()  # playing on past a phase prompt — it stays in the menu
         if self.mode == "action":
-            self._scene_player(f"[$success bold]You[/]  {escape(text)}")
-            self.run_worker(self._do_turn(text), exclusive=True)
+            self._submit_player(text)
         else:
             self._scene_player(f"You (out-of-game)  {escape(text)}", meta=True)
             self.run_worker(self._do_meta(text), exclusive=True)
 
-    async def _do_turn(self, text: str) -> None:
+    def _submit_player(self, text: str) -> None:
+        """Hand a typed line to the session loop, which is parked on the keyboard source.
+        The echo isn't here: `on_player` does it for both player kinds a beat later, which
+        is also what closes the window on a second submit racing the first."""
+        if not self._loop_live:
+            self._scene_status("— the session loop has stopped — ctrl+w to wrap, or /quit —",
+                               kind="rule")
+            return
+        self._combat_awaiting = None
+        self._busy(True)
+        self._source.submit(text)
+
+    # -- the loop's hooks, on the UI thread ---------------------------------
+
+    def _await_player(self) -> None:
+        """The loop wants the next player message. A human gets the input box back; an agent
+        player is a call in flight like any other, so the table stays busy."""
+        self._combat_awaiting = None
+        if self._source.human:
+            self._clear_thinking()
+            self._busy(False)
+        else:
+            self._busy(True, label="the player is thinking")
+            self._scene_thinking("the player is thinking")
+
+    def _player_said(self, text: str) -> None:
+        """The player's message — echoed here for both sources, so a watched `--player auto`
+        run reads exactly like a played one."""
+        self._clear_thinking()
+        label = "You" if self._source.human else "Player"
+        self._scene_player(f"[$success bold]{label}[/]  {escape(text)}")
         self._busy(True)
         self._scene_thinking()
-        tap = self._start_stream()
-        try:
-            tr = await asyncio.to_thread(self.game.turn, text)
-        except BackendCancelled:
-            await self._cancel_cleanup(text)
-            return
-        except Exception as e:  # noqa: BLE001 — surface any failure to the player
-            self._phase_failed("the turn", e)
-            return
-        finally:
-            # stop() flushes buffered stream content through the write callback
-            # (which uses call_from_thread) — must run off the app thread.
-            if tap:
-                await asyncio.to_thread(tap.stop)
+
+    def _render_turn(self, tr) -> None:
         self._clear_thinking()
         block = self._scene_dm(inline(tr.final))
         g = tr.gate
@@ -580,39 +711,25 @@ class PlayApp(App):
         self._render_gate(tr)
         self._spawn_context_refresh()
         if tr.combat_started:
-            # The runner called start_encounter this turn — initiative takes over. Hand
-            # off to the combat driver; the normal turn loop resumes when the fight ends.
+            # The runner called start_encounter — the loop hands the fight to play_combat
+            # on its next pass, and normal turns resume when it ends.
             self._scene_status("— initiative! the fight begins —", kind="rule")
-            self._enter_combat()
-            return
-        if tr.session_complete:
-            # The runner signalled the session's end — offer the wrap (reconcile +
-            # prep N+1) instead of auto-running minutes of pipeline.
-            self._scene_status("— the session has reached its end —", kind="rule")
-            self._pending = "wrap"
-            self._busy(False)
-            self._prompt.ask(f"Session {self.lc.session} complete — "
-                             f"reconcile & prep session {self.lc.session + 1}?")
-            return
-        self._busy(False)
 
     async def _do_meta(self, question: str) -> None:
+        """An out-of-game question, asked while the loop idles on the player. No tap of its
+        own: the session tap is already streaming this call behind the screen."""
         self._busy(True)
         self._scene_thinking("the DM is answering")
-        tap = self._start_stream()
         try:
             answer = await asyncio.to_thread(self.game.meta, question)
         except BackendCancelled:
-            await self._cancel_cleanup(question)
+            await asyncio.to_thread(self.game.revert_last_turn)
+            self._hand_back(question)
+            self._busy(False)
             return
         except Exception as e:  # noqa: BLE001 — surface any failure to the player
             self._phase_failed("the question", e)
             return
-        finally:
-            # stop() flushes buffered stream content through the write callback
-            # (which uses call_from_thread) — must run off the app thread.
-            if tap:
-                await asyncio.to_thread(tap.stop)
         self._clear_thinking()
         self._scene_dm(inline(answer), meta=True)
         self._busy(False)
@@ -620,62 +737,44 @@ class PlayApp(App):
 
     # -- combat mode (initiative-driven; the driver owns the policy) ----------
     #
-    # A fight is driven entirely by the library's `CombatDriver`: this app only renders
-    # beats, gets input, and calls the next driver method — no combat policy here. The
-    # pump runs off the UI thread; `_on_combat_beat` renders each beat and, for an NPC
-    # beat, blocks on `_combat_gate` until the player confirms (Enter) or interjects (a
-    # typed reaction). See design/combat.md "The combat loop".
+    # A fight is `play_combat` inside the session loop, driven by the library's
+    # `CombatDriver`: this app only renders beats, gets input, and answers the confirm
+    # gate — no combat policy here. `_on_combat_beat` runs on the loop's worker thread; it
+    # renders each beat and, for an NPC beat, blocks on `_combat_gate` until the player
+    # confirms (Enter) or interjects (a typed reaction). See design/combat.md "The combat
+    # loop".
 
-    def _enter_combat(self) -> None:
-        self._combat = CombatDriver(self.game)
-        self._run_combat(lambda: self._combat.advance(self._on_combat_beat))
-
-    def _run_combat(self, action) -> None:
-        """Run one driver pump (`advance` or `pc_action`) off the UI thread, then act on
-        the event it returns. `action` is a zero-arg callable that returns a CombatEvent."""
-        self.run_worker(self._combat_pump(action), exclusive=True)
-
-    async def _combat_pump(self, action) -> None:
-        self._busy(True, label="the fight plays out")
-        self._scene_thinking("the fight plays out")
-        tap = self._start_stream()
-        try:
-            event = await asyncio.to_thread(action)
-        except BackendCancelled:
-            await self._combat_cancelled()
-            return
-        except Exception as e:  # noqa: BLE001 — surface any failure to the player
-            self._combat = None
-            self._combat_awaiting = None
-            self._phase_failed("the fight", e)
-            return
-        finally:
-            if tap:
-                await asyncio.to_thread(tap.stop)
+    def _await_pc_slot(self, event) -> None:
+        """The loop reached the PC's slot (`on_slot`). For a human that's the input box; an
+        agent player's action is a call in flight, so the table stays busy."""
         self._clear_thinking()
-        if event.kind == "ended":
-            self._combat = None
-            self._combat_awaiting = None
-            self._scene_status("— the fight is over — back to the table —", kind="rule")
-            self._scene_dm(inline(event.narration))
-            self._busy(False)
-            self._spawn_context_refresh()
-        else:  # pc_slot — solicit the player's action
+        self._scene_status(f"— your turn (round {event.round}) —", kind="rule")
+        if self._source.human:
             self._combat_awaiting = "pc"
-            self._scene_status(f"— your turn (round {event.round}) —", kind="rule")
             self._busy(False)
+        else:
+            self._busy(True, label="the player is thinking")
+            self._scene_thinking("the player is thinking")
+
+    def _combat_ended(self, narration: str) -> None:
+        self._clear_thinking()
+        self._combat_awaiting = None
+        self._scene_status("— the fight is over — back to the table —", kind="rule")
+        self._scene_dm(inline(narration))
+        self._spawn_context_refresh()
 
     def _on_combat_beat(self, narration: str, who: str):
-        """Driver callback, run on the pump worker thread. Renders a beat; for an NPC beat
+        """Driver callback, run on the loop's worker thread. Renders a beat; for an NPC beat
         it then blocks for the player's confirm-or-react and returns the reaction (or None
-        to confirm). A PC beat is committed directly — render and return None."""
-        self.call_from_thread(self._scene_combat_beat, narration, who)
-        if who == "pc":
+        to confirm). A PC beat is committed directly, and an agent player has no confirm to
+        give — both render and return None (which confirms)."""
+        self._ui(self._scene_combat_beat, narration, who)
+        if who == "pc" or not self._source.human or not self.is_running:
             return None
         self._combat_reaction = None
         self._combat_gate.clear()
-        self.call_from_thread(self._combat_await_confirm, who)
-        self._combat_gate.wait()
+        self._ui(self._combat_await_confirm, who)
+        self._combat_gate.wait()  # released by the answer, or by `_stop_session` on the way out
         return self._combat_reaction
 
     def _scene_combat_beat(self, narration: str, who: str) -> None:
@@ -694,7 +793,7 @@ class PlayApp(App):
 
     def _combat_resolve_confirm(self, text: str) -> None:
         """UI-thread: the player answered the confirm gate. Hand the answer (a reaction,
-        or None for a bare-Enter confirm) to the blocked pump worker and let it resume."""
+        or None for a bare-Enter confirm) to the blocked loop worker and let it resume."""
         self._combat_awaiting = None
         self._combat_reaction = text or None
         if text:
@@ -703,25 +802,55 @@ class PlayApp(App):
         self._scene_thinking("the fight plays out")
         self._combat_gate.set()
 
-    def _combat_submit_pc(self, text: str) -> None:
-        """UI-thread: the player's action for their combat slot — play it and resume the pump."""
-        self._combat_awaiting = None
-        self._scene_player(f"[$success bold]You[/]  {escape(text)}")
-        self._run_combat(lambda: self._combat.pc_action(text, self._on_combat_beat))
+    # -- interrupts (ctrl+x, and a call the retries gave up on) ---------------
 
-    async def _combat_cancelled(self) -> None:
-        """A combat model call was cancelled (ctrl+x). Revert the runner session over the
-        abandoned beat; the engine's resume guard rolls the in-flight tracker action back,
-        so re-entering the pump re-resolves the interrupted combatant cleanly."""
-        await asyncio.to_thread(self.game.revert_last_turn)
+    def _on_interrupt(self, stage: str, exc: Exception, message: str) -> bool:
+        """The loop's `on_interrupt`, on the worker thread: a model call raised instead of
+        returning. Reverting the runner session is a backend call, so it happens here before
+        the UI is touched — and only for the stages that left a message in the runner's
+        context (a cancelled *player-agent* call left nothing to roll back).
+
+        The session survives everything except a hard failure inside a fight. Out of combat
+        that is safe — the loop's next act is to ask the player, so nothing is retried until
+        a human types — but re-entering a fight goes straight back to the model, so a failure
+        there ends the loop rather than grinding against a dead backend."""
+        cancelled = isinstance(exc, BackendCancelled)
+        if stage == "combat" and not cancelled:
+            return False
+        if stage in ("turn", "combat"):
+            self.game.revert_last_turn()
+        self._ui(self._interrupt_ui, stage, exc, message, cancelled)
+        return self.is_running  # quitting mid-turn: let the loop end instead of re-asking
+
+    def _interrupt_ui(self, stage: str, exc: Exception, message: str, cancelled: bool) -> None:
+        """UI-thread half of `_on_interrupt`: say what happened and hand the message back."""
         self._clear_thinking()
-        self._scene_status("— combat action cancelled —", kind="rule")
-        if self._combat and self._combat.in_combat:
-            self._run_combat(lambda: self._combat.advance(self._on_combat_beat))
-        else:
-            self._combat = None
-            self._combat_awaiting = None
+        if not cancelled:
+            self._scene_status(f"— the turn failed: {escape(str(exc))} —", kind="error")
             self._busy(False)
+        elif stage == "combat":
+            # The engine's resume guard rolled the in-flight tracker action back, so the
+            # loop re-enters the fight and re-resolves the interrupted combatant cleanly.
+            self._scene_status("— combat action cancelled —", kind="rule")
+            self._busy(True, label="the fight plays out")
+            self._scene_thinking("the fight plays out")
+        elif stage == "turn":
+            self._hand_back(message)
+            self._busy(False)
+        else:  # "player" — the player agent's own call was cancelled; it'll be asked again
+            self._scene_status("— cancelled —", kind="rule")
+            self._busy(False)
+
+    def _hand_back(self, text: str) -> None:
+        """Give a cancelled message back — into the box if it's empty, or as a scene note if
+        a new draft is already in progress."""
+        inp = self.query_one("#cmd", Input)
+        if inp.value.strip():
+            self._scene_status(f'— cancelled — your message was: "{escape(text)}" —', kind="rule")
+        else:
+            inp.value = text
+            inp.cursor_position = len(text)
+            self._scene_status("— cancelled — your message is back in the box —", kind="rule")
 
     # -- phase prompt (yes/no at phase boundaries) ----------------------------
 
@@ -751,21 +880,6 @@ class PlayApp(App):
         # The abort POST is quick but still blocks — off the UI thread it goes.
         await asyncio.to_thread(self.game.abort)
 
-    async def _cancel_cleanup(self, text: str) -> None:
-        """After a cancelled turn/meta: drop the abandoned exchange from the runner's
-        context, free the input, and give the cancelled message back — into the box
-        if it's empty, or as a scene note if a new draft is already in progress."""
-        await asyncio.to_thread(self.game.revert_last_turn)
-        self._clear_thinking()
-        self._busy(False)
-        inp = self.query_one("#cmd", Input)
-        if inp.value.strip():
-            self._scene_status(f'— cancelled — your message was: "{escape(text)}" —', kind="rule")
-        else:
-            inp.value = text
-            inp.cursor_position = len(text)
-            self._scene_status("— cancelled — your message is back in the box —", kind="rule")
-
     def _cancelled_note(self, msg: str = "— cancelled —") -> None:
         self._clear_thinking()
         self._scene_status(msg, kind="rule")
@@ -784,10 +898,13 @@ class PlayApp(App):
     def action_wrap(self) -> None:
         """Run the pending phase action: wrap the played session (reconcile + prep
         the next, then open it), or — when setup just finished — plan session 1.
-        No-op while busy."""
-        if self._working or self._wrapping:
+        No-op while busy — except during a watched `--player auto` run, which is *always*
+        busy: there the wrap is the only way to stop it, and the source's `stop()` is graceful
+        (the turn in flight finishes and is kept)."""
+        watched = self._loop_live and self._source is not None and not self._source.human
+        if self._wrapping or (self._working and not watched):
             return
-        if self._combat is not None:
+        if self.game is not None and self.game.in_combat:
             self.notify("finish the fight first — the session can't wrap mid-combat",
                         severity="warning", timeout=3)
             return
@@ -804,7 +921,12 @@ class PlayApp(App):
         if self.lc.phase not in ("play", "wrap_pending"):  # nothing to wrap during setup
             return
         self._pending = None
-        self.run_worker(self._do_wrap(), exclusive=True)
+        # The loop still owns the game while it idles on the player — take it down first
+        # and let its exit run the wrap (`_session_done`).
+        if not self._stop_session(then="wrap"):
+            self.run_worker(self._do_wrap(), exclusive=True)
+        elif self._working:
+            self._scene_status("— wrapping once this turn finishes —", kind="rule")
 
     async def _do_wrap(self) -> None:
         self._wrapping = True
@@ -957,6 +1079,9 @@ class PlayApp(App):
         self._refresh_subtitle()
 
     async def on_unmount(self) -> None:
+        # Release the loop's worker thread before anything else: it is parked on the player
+        # source, and a thread left parked there keeps the interpreter from exiting.
+        self._stop_session()
         if self.cleanup:
             self.cleanup()
 

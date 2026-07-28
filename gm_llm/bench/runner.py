@@ -42,11 +42,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..orchestrator import (
-    Archive, Backend, BackendError, CanonPreloader, Gate, Game, Logs, Reconciler,
-    play_combat,
+    AgentPlayer, Archive, Backend, BackendError, CanonPreloader, Gate, Game, Logs, PlayHooks,
+    Reconciler, play_session,
 )
 from ..orchestrator.logs import debug_enabled
-from ..orchestrator.prompts import player_turn
 from ..project import init_project, install_plugin_deps
 
 # Which agents' model/temperature get stamped into the conditions event. dm-runner and
@@ -263,7 +262,9 @@ def _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn, *,
 
 def _character(run_dir: Path, fixture: dict, note) -> str:
     """The player's character packet, read from the fixture path inside the run dir with
-    HTML comments stripped — same handling as `cmd_play`."""
+    HTML comments stripped — the same handling `autoplay.read_character` gives a campaign's
+    own `*.player.md`. Two resolvers, one packet contract: unifying them is benchmark B1's
+    open player-end question, not this module's to settle."""
     rel = fixture.get("character_packet")
     if not rel:
         return ""
@@ -309,10 +310,13 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
     — the turn loop never opens, because a wrapped session must not grow turns. That's how
     a reconcile the rate limits ate gets finished (see `reconcile_pending`).
 
-    Combat (a turn that calls `start_encounter`) hands off to the library's `play_combat`,
-    which drives the fight through the `CombatDriver` and counts **each PC slot as one turn**
-    against `turn_cap` — so a fight can't make a run uncappable. A fight that runs into the
-    cap is a cap breach like any other (reconcile skipped)."""
+    Play itself is `orchestrator.play_session` over an `AgentPlayer` — the same loop the TUI
+    drives with a human on the other end (design/frontends.md). What stays here is what is
+    actually bench's: the run dir, the conditions event, the archive continuation, and how an
+    outcome is recorded. Combat (a turn that calls `start_encounter`) is the loop's handoff to
+    `play_combat`, which counts **each PC slot as one turn** against `turn_cap` — so a fight
+    can't make a run uncappable, and one that runs into the cap is a cap breach like any other
+    (reconcile skipped)."""
     run_dir = Path(run_dir)
     logs = Logs.under(project=run_dir, debug=debug_enabled())
 
@@ -368,35 +372,29 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn,
                        reconcile=reconcile, note=note)
         else:
+            # The played turn count has to survive a give-up mid-play (it is the resume
+            # point), and an exception carries no return value — so the loop reports it
+            # through `on_player`, which fires with the number of the turn about to be
+            # drafted. Silent otherwise: no rendering hooks, so a run's output is the same
+            # shape in a fight as out of one.
+            progress = {"turns": turns_done}
+
+            def _mark(_text, t):
+                progress["turns"] = t
+                note(f"turn {t}/{turn_cap}: dm (draft + gate)…")
+
+            hooks = PlayHooks(
+                on_prompt=lambda t: note(f"turn {t}/{turn_cap}: player…"),
+                on_player=_mark,
+                on_slot=lambda _ev, t: note(f"turn {t}/{turn_cap}: combat PC slot…"))
+            source = AgentPlayer(backend, player_sid, character=character)
             turns, outcome, interrupted = turns_done, "cap", None
-            primed = False  # the fresh player session gets its packet on the first turn we run
             try:
-                while turns < turn_cap:
-                    turns += 1
-                    if not primed and character:
-                        msg = ("[YOUR CHARACTER — read this, then stay in character for the rest "
-                               f"of the session]\n\n{character}\n\n" + player_turn(scene))
-                    else:
-                        msg = player_turn(scene)
-                    primed = True
-                    note(f"turn {turns}/{turn_cap}: player…")
-                    player = backend.prompt(player_sid, "player", msg)
-                    note(f"turn {turns}/{turn_cap}: dm (draft + gate)…")
-                    tr = game.turn(player)
-                    scene = tr.final
-                    if tr.combat_started:
-                        # Silent but for the slot line: no rendering hooks, so the run's
-                        # output stays the same shape in a fight as out of one.
-                        scene, turns, hit_cap = play_combat(
-                            game, backend, player_sid, scene, turns=turns, turn_cap=turn_cap,
-                            on_slot=lambda _ev, t: note(f"turn {t}/{turn_cap}: combat PC slot…"))
-                        if hit_cap:
-                            break  # unfinished fight — a cap breach; outcome stays "cap"
-                        continue
-                    if tr.session_complete:
-                        outcome = "complete"
-                        break
+                result = play_session(game, source, scene, hooks=hooks, turns=turns_done,
+                                      turn_cap=turn_cap)
+                turns, outcome = result.turns, result.outcome
             except BackendError as e:
+                turns = progress["turns"]
                 if turns <= 0:
                     raise  # gave up before any play landed — a genuine failure, nothing to resume
                 interrupted = e

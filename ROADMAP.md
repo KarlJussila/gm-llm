@@ -30,8 +30,7 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 2 | `PlayerSource` — one turn loop, keyboard or agent | high | The fork between pull-driven TUI and push-driven autoplay is the actual blocker; first-of-kind, no oracle. Build on `orchestrator.play_combat` (step 1) — its `backend.prompt` is the seam |
-| 3 | Route bench through `Lifecycle` | medium | Bench constructs `Game` directly and reaches the reconciler via `reconcile_fn`, bypassing the interface the TUI is written against |
+| 3 | Route bench through `Lifecycle` | medium | Bench constructs `Game` directly and reaches the reconciler via `reconcile_fn`, bypassing the interface the TUI is written against. `Lifecycle.player_source()` is already across |
 | 4 | Batch chrome in the TUI (run *k* of *N*) | medium | `PlayApp` assumes one campaign dir for the app's life; needs the cancel-semantics decision first (`design/open-questions.md`) |
 
 ## benchmark — the instrument
@@ -80,6 +79,7 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
 | docs | 2 | Planning consolidated onto the loop: `SPEC.md`/`PLAN.md` absorbed and deleted, plan-of-record docs moved into `design/`, private roadmaps and backlogs stripped, lint checks 10–12 |
 | packaging | 2 | Phase 1 (native-Windows portability) closed — its rules now live in `dev/MAINTAINING.md` § Portability |
 | frontends | 3 | Step 1: the two `_play_combat`s unified into `orchestrator.play_combat`, bench's cap accounting preserved as the base and tested directly |
+| frontends | 4 | Step 2: `PlayerSource` + `play_session` — one turn loop for the TUI, autoplay and bench; `--player auto --ui tui` filled in, and the TUI given a headless test |
 
 ## Standing sync rules
 

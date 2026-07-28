@@ -92,10 +92,14 @@ class _MockBackend:
 
 
 class MockGame:
-    def __init__(self, backend=None, *args, **kwargs):
+    def __init__(self, backend=None, *args, pace: float = 1.0, **kwargs):
         self.runner_sid = "mock-runner"
         self.backend = backend or _MockBackend()
         self.on_step = None  # the TUI assigns this, same as on the real Game
+        # Every sleep below is scaled by `pace`: 1.0 is the watchable demo the offline TUI
+        # is for, 0 runs the same script as fast as the machine will go (dev/test_tui_loop.py
+        # drives the real app over it — a scripted delay is scenery, not behavior).
+        self.pace = pace
         self._n = 0
         self._abort = False
         self._in_combat = False
@@ -116,7 +120,10 @@ class MockGame:
     def _sleep(self, seconds: float) -> None:
         """A cancellable sleep: abort() flips the flag and the in-flight call raises
         BackendCancelled, mirroring the real Backend's cancel semantics."""
-        deadline = time.monotonic() + seconds
+        if self._abort:  # cancelled before the call even settled in
+            self._abort = False
+            raise BackendCancelled("mock call cancelled")
+        deadline = time.monotonic() + seconds * self.pace
         while time.monotonic() < deadline:
             if self._abort:
                 self._abort = False
@@ -280,16 +287,17 @@ class MockLifecycle:
     """Stand-in for Lifecycle: a MockGame plus a simulated wrap() (and an optional
     setup phase) so the TUI's full flow can be driven offline."""
 
-    def __init__(self, start_in_setup: bool = False, *args, **kwargs):
+    def __init__(self, start_in_setup: bool = False, *args, pace: float = 1.0, **kwargs):
         self._session = 1
         self.backend = _MockBackend()
+        self.pace = pace  # see MockGame — 0 for tests, 1 for the watchable demo
         if start_in_setup:
             self.phase = "setup"
             self.game = None
             self.setup = MockSetup()
         else:
             self.phase = "play"
-            self.game = MockGame(self.backend)
+            self.game = MockGame(self.backend, pace=pace)
             self.setup = None
 
     @property
@@ -310,6 +318,12 @@ class MockLifecycle:
             git_state="clean", last_commit=f"session {n or 1} plan",
         )
 
+    def player_source(self):
+        """The mock is a UI harness — the player is always the keyboard (`--player auto`
+        needs a real backend to prompt, and refuses the mock at the CLI)."""
+        from .play import KeyboardPlayer
+        return KeyboardPlayer()
+
     def setup_stream(self, stream_write, on_tool=None):
         return _NoTap()
 
@@ -324,9 +338,9 @@ class MockLifecycle:
         if stream_write:
             stream_write("[bold cyan]\n──── planning session 1 ────\n[/]")
             stream_write("  (mock) writing the session-1 plan…\n")
-        time.sleep(0.6)
+        time.sleep(0.6 * self.pace)
         self.phase = "play"
-        self.game = MockGame(self.backend)
+        self.game = MockGame(self.backend, pace=self.pace)
         self.setup = None
         return self._session
 
@@ -340,7 +354,7 @@ class MockLifecycle:
                 stream_write(f"[bold cyan]\n──── {key} ────\n[/]")
                 stream_write(f"  (mock) working {key}…\n")
                 stream_write(f"[yellow]  ⚙ {key}: write  world/notes/{key}.md[/]\n")
-            time.sleep(0.6)  # let the ticker breathe so the flow is visible
+            time.sleep(0.6 * self.pace)  # let the ticker breathe so the flow is visible
         self._session += 1
-        self.game = MockGame(self.backend)
+        self.game = MockGame(self.backend, pace=self.pace)
         return self._session

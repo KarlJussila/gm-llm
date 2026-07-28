@@ -82,11 +82,35 @@ def test_dev_autoplay_and_play_auto_are_one_driver(tmp):
     assert calls == [("auto", False, "console")], calls
 
 
+def test_player_axis_selects_a_source_not_a_command(tmp):
+    """Both TUI cells are the same app over one session loop — `--player` picks the
+    `PlayerSource` the lifecycle hands it (design/frontends.md step 2). Only the *console*
+    frontend is still a separate entry point, and only for the agent player."""
+    routed = []
+    real_tui, real_autoplay = cli._launch_tui, None
+    cli._launch_tui = lambda args, *, mock, player="human": routed.append(("tui", player, mock))
+    try:
+        cli.run_play(_parse("play"))
+        cli.run_play(_parse("play", "--player", "auto", "--ui", "tui"))
+        cli.run_play(_parse("play", "--mock"))
+    finally:
+        cli._launch_tui = real_tui
+    assert routed == [("tui", "human", False), ("tui", "auto", False), ("tui", "human", True)], routed
+
+    from gm_llm import autoplay
+    real_autoplay = autoplay.run
+    autoplay.run = lambda args: routed.append(("console", args.player, args.mock))
+    try:
+        cli.run_play(_parse("play", "--player", "auto", "--ui", "console"))
+    finally:
+        autoplay.run = real_autoplay
+    assert routed[-1] == ("console", "auto", False), routed
+
+
 def test_unsupported_axis_combinations_refuse_by_name(tmp):
     """A harness that quietly ran a different mode than asked for would be worse than an
     error, so each missing cell names itself and exits non-zero."""
     cases = [
-        (("play", "--player", "auto", "--ui", "tui"), "isn't wired up yet"),
         (("play", "--ui", "console"), "console frontend isn't implemented"),
         (("play", "--player", "auto", "--mock"), "needs a real backend"),
     ]
@@ -112,6 +136,7 @@ def test_backend_flags_are_declared_once(tmp):
 def main():
     tests = (test_checkout_gates_the_workshop_groups, test_play_axes_parse_independently,
              test_bare_invocation_plays_here, test_dev_autoplay_and_play_auto_are_one_driver,
+             test_player_axis_selects_a_source_not_a_command,
              test_unsupported_axis_combinations_refuse_by_name,
              test_backend_flags_are_declared_once)
     failures = 0

@@ -55,11 +55,14 @@ Parked on ROADMAP track **benchmark**.
 
 ## Frontends
 
-### What does cancel mean for an unattended run?
+### What does cancel mean for a *batch* in the TUI?
 
-`ctrl+x` cancels a turn in the TUI. If a bench batch renders in the TUI, cancel has no obvious
-semantics — abandon the turn, the run, or the batch? Needs deciding before batch chrome lands,
-not after. Parked on ROADMAP track **frontends** (step 4).
+Settled for one unattended session (Part 4): `ctrl+x` aborts whichever call is in flight — the
+player agent's or the DM's — and the loop asks again from the same scene, so cancel means "redo
+this call", not "end anything". A batch has no such reading: abandon the run and move to the
+next, or stop the batch? `run_batch` also owns per-run backends and the manifest, neither of
+which the session loop can see. Needs deciding before batch chrome lands, not after. Parked on
+ROADMAP track **frontends** (step 4).
 
 ### Should `ui` be a recorded condition?
 

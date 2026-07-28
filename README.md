@@ -115,6 +115,11 @@ open the next one.
 No opencode / no model? `gm-llm play --mock` runs the same
 UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
+Want to watch instead of play? `gm-llm play --player auto` hands the player's turns to a
+scripted agent and renders the session in the same TUI — the character packet comes from
+`--character` (or a `*.player.md` beside the campaign), and `--turn-cap` bounds the run.
+Add `--ui console` for the same thing as plain text.
+
 ### The TUI
 
 - **Header** — the current phase/mode (`SETUP`, `ACTION mode`, `META mode`) plus a live

@@ -152,16 +152,11 @@ def run_play(args) -> int:
     ui = getattr(args, "ui", "tui")
     mock = getattr(args, "mock", False)
 
-    if player == "auto":
-        if mock:
-            from .devcmds import unavailable
-            unavailable("--player auto needs a real backend (the mock has no gate to score).")
-        if ui == "tui":
-            from .devcmds import unavailable
-            unavailable(
-                "watching autoplay in the TUI isn't wired up yet — the TUI takes player "
-                "turns from the keyboard, and feeding it the player agent is a frontend "
-                "change, not a CLI one. Use `--ui console` for now.")
+    if player == "auto" and mock:
+        from .devcmds import unavailable
+        unavailable("--player auto needs a real backend (the mock has no gate to score).")
+
+    if player == "auto" and ui == "console":
         from . import autoplay
         return autoplay.run(args)          # exits via with_engine
 
@@ -170,10 +165,12 @@ def run_play(args) -> int:
         unavailable("a human-facing console frontend isn't implemented — the human "
                     "frontend is the TUI. Use `--ui tui` (the default).")
 
-    return _launch_tui(args, mock=mock)
+    # Both TUI cells, human and auto, are the same app over one session loop — the axis
+    # is which `PlayerSource` the lifecycle hands it (design/frontends.md, step 2).
+    return _launch_tui(args, mock=mock, player=player)
 
 
-def _launch_tui(args, *, mock: bool) -> int:
+def _launch_tui(args, *, mock: bool, player: str = "human") -> int:
     """The Textual app, in-process. Live boots a real backend rooted at `dir`; mock runs
     against `MockLifecycle` so the UI can be worked on with no opencode and no rate limit."""
     from .tui.app import PlayApp
@@ -194,13 +191,22 @@ def _launch_tui(args, *, mock: bool) -> int:
     from .orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
     from .orchestrator.logs import debug_enabled
 
+    auto = player == "auto"
+    # Read the packet before the screen is taken over — the resolver reports to stdout.
+    character = ""
+    if auto:
+        from .autoplay import read_character
+        character = read_character(str(directory), args.character)
+
     logs = Logs.under(project=directory, debug=debug_enabled())
     backend = Backend(str(directory), port=args.port, logs=logs).start()
     try:
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)
-        lifecycle = Lifecycle(backend, gate, str(directory), logs=logs)
-        app = PlayApp(lifecycle, cleanup=backend.stop, theme=args.theme)
-        app.title = "gm-llm (live)"
+        lifecycle = Lifecycle(backend, gate, str(directory), logs=logs,
+                              player=player, character=character)
+        app = PlayApp(lifecycle, cleanup=backend.stop, theme=args.theme,
+                      turn_cap=args.turn_cap if auto else None)
+        app.title = "gm-llm (live · autoplay)" if auto else "gm-llm (live)"
         app.run()
     finally:
         backend.stop()

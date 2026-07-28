@@ -3,8 +3,9 @@ Campaign lifecycle — set up a new campaign, play a session, wrap it (reconcile
 the next), play the next, all from one front-end. Backend-agnostic: the caller (the TUI)
 supplies callbacks for the between-phases progress ticker and the live model stream.
 
-`Setup` (setup.py) owns init, `Game` (loop.py) owns live play, `Reconciler` owns the
-post-session pipeline. This ties them into one moving object the UI can drive:
+`Setup` (setup.py) owns init, `Game` (loop.py) owns live play, `play_session` (play.py) owns
+the turn loop over it, `Reconciler` owns the post-session pipeline. This ties them into one
+moving object the UI can drive:
   - an empty directory opens in the **setup** phase; `finish_setup()` plans session 1 and
     rolls into play(1);
   - `wrap()` reconciles the just-played session and rolls `self.game` to the next.
@@ -17,6 +18,7 @@ from pathlib import Path
 
 from .canon import latest_session
 from .loop import Game, session_is_complete
+from .play import AgentPlayer, KeyboardPlayer, PlayerSource
 from .reconciler import Reconciler
 from .setup import Setup
 from .status import CampaignStatus, campaign_status
@@ -24,11 +26,16 @@ from .stream import EventTap
 
 
 class Lifecycle:
-    def __init__(self, backend, gate, directory: str, logs=None):
+    def __init__(self, backend, gate, directory: str, logs=None,
+                 player: str = "human", character: str = ""):
         self.backend = backend
         self.gate = gate
         self.directory = directory
         self.logs = logs
+        # Who supplies player turns (`--player`). The frontend asks for a source per session
+        # and drives one loop either way — see `player_source`.
+        self.player = player
+        self.character = character
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
         # that needs setup; a session whose runner already signalled the end (even in
         # a prior run the player never confirmed the wrap on) ⇒ show that choice again,
@@ -46,6 +53,18 @@ class Lifecycle:
     @property
     def session(self) -> int:
         return self.game.session if self.game else 0
+
+    def player_source(self) -> PlayerSource:
+        """A fresh `PlayerSource` for the session about to be played — the axis `--player`
+        selects, resolved here so a frontend never builds backend sessions of its own.
+
+        **One per session loop, never reused.** A `KeyboardPlayer`'s `stop()` latches, and an
+        `AgentPlayer` gets its own opencode session so the packet is re-handed (and the
+        previous session's play isn't carried into the next one's context)."""
+        if self.player != "auto":
+            return KeyboardPlayer()
+        return AgentPlayer(self.backend, self.backend.create_session("play-player"),
+                           character=self.character)
 
     def status(self) -> CampaignStatus:
         """Where the campaign stands — disk only (lint + git), no model calls.

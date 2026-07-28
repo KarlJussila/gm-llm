@@ -39,7 +39,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .prompts import load, player_combat_turn
+from .prompts import load
 
 
 def combat_state_path(directory: str) -> Path:
@@ -301,9 +301,10 @@ class CombatMixin:
 # *around* them: pump NPC beats, confirm each, stop at a PC slot or the fight's end, thread
 # interjections and cancels. Every interface drives a fight through this and stays mechanical —
 # render a beat, get input, call the next method — so no combat policy ever leaks into an
-# interface. The TUI drives the driver directly (the human is the input); the agent-player
-# interfaces (autoplay, `bench run`) share `play_combat` below, which adds the prompting and
-# the turn accounting they both need. See design/combat.md "The combat loop".
+# interface. `play_combat` below wraps the driver with the player prompting and turn
+# accounting, and is what `play.play_session` hands a fight to — so a human at the TUI and an
+# unattended `bench run` fight through the same code, differing only in their `PlayerSource`.
+# See design/combat.md "The combat loop".
 
 
 @dataclass
@@ -331,10 +332,10 @@ class CombatDriver:
     the hook's RETURN value is also its confirm channel — return an interjection (a PC
     reaction) to fold it in before the beat commits (the tracker rolls back, the turn
     replays, and the new beat is re-presented — a reaction to a reaction stays cheap), or
-    return None/'' to confirm and advance. Autoplay passes a render-only hook (always None);
-    the TUI's blocks for the human's Enter-or-react. A PC beat and the exit beat are rendered
-    with the hook too, but their return is ignored (a PC beat commits directly; the exit beat
-    is handed back on the event).
+    return None/'' to confirm and advance. An agent player passes a render-only hook (always
+    None); the TUI's blocks for the human's Enter-or-react. A PC beat is rendered through the
+    hook too, with its return ignored (it commits directly). The **exit** beat is not: it
+    rides back on the `ended` event, for the caller to hand to normal play.
 
     Cancel survives: a `BackendCancelled` raised while a beat is drafting propagates straight
     out — the engine's in-flight rollback / resume guard (`CombatState.in_flight`) keeps the
@@ -392,43 +393,58 @@ class CombatDriver:
         self.game.combat_confirm()
 
 
-def play_combat(game, backend, player_sid, entry_scene, *, on_beat=None, on_slot=None,
-               on_player=None, turns: int = 0, turn_cap: int | None = None):
-    """Drive a whole fight with an **agent** player — the one home for what autoplay and
-    `bench run` both do once a turn reports `combat_started`. The sequencing policy is the
-    driver's; this adds only the two things an unattended player needs: prompting the
-    `player` agent on each PC slot, and turn accounting.
+@dataclass
+class CombatRun:
+    """How a fight left the loop, and what normal play resumes from.
+
+      scene   — the narration to carry forward: the exit beat, or the last beat seen if the
+                fight was cut short.
+      turns   — the running turn count, one per PC slot played.
+      hit_cap — the cap tripped mid-fight. A cap breach like any other: an unfinished fight
+                has no clean wrap.
+      stopped — the source ended the session on a PC slot (a human frontend taking the loop
+                down). The fight is still live; nothing about it is settled.
+    """
+    scene: str
+    turns: int
+    hit_cap: bool = False
+    stopped: bool = False
+
+
+def play_combat(game, source, entry_scene, hooks, *, turns: int = 0,
+                turn_cap: int | None = None) -> CombatRun:
+    """Drive a whole fight to its end — the one home for what every interface does once a turn
+    reports `combat_started`. The sequencing policy is the driver's; this adds the two things
+    around it that belong to no single interface: soliciting the player on each PC slot, and
+    turn accounting.
 
     **Each PC slot counts as one turn against `turn_cap`** — a fight must not make a run
     uncappable, and a PC slot is the combat analogue of a normal player turn (the beat the
-    autoplayer acts on). NPC beats are pumped and confirmed by the driver at no turn cost.
-    `turn_cap=None` disables accounting entirely (autoplay caps only normal turns).
+    player acts on). NPC beats are pumped and confirmed by the driver at no turn cost.
+    `turn_cap=None` disables accounting entirely (the human frontend caps nothing).
 
-    Returns `(scene, turns, hit_cap)`: the narration to resume normal play from — the exit
-    beat, or the last beat seen if the cap cut the fight short — the updated turn count, and
-    whether the cap was reached mid-fight. A cap breach mid-fight is a cap breach like any
-    other: an unfinished fight has no clean wrap.
-
-    The three hooks are the interface's: `on_beat(narration, who)` renders each resolved
-    beat and may return a reaction to interject (see `CombatDriver`); `on_slot(event, turns)`
-    announces a PC slot before the player is asked; `on_player(text)` renders the reply.
-    All optional — bench passes only `on_slot`, autoplay all three."""
+    `source` and `hooks` are the play layer's contracts (`orchestrator/play.py`), duck-typed
+    here so combat stays legible on its own: `source.next_message(scene, combat=True)` is the
+    PC's action, and rendering rides on `hooks.on_slot` (a slot is up), `hooks.on_beat` (each
+    resolved beat — its return interjects, see `CombatDriver`), `hooks.on_player` (the action
+    that came back) and `hooks.on_combat_end` (the exit beat, which no other hook carries)."""
     driver = CombatDriver(game)
     state = {"scene": entry_scene}
 
     def beat(narration, who):
         state["scene"] = narration
-        return on_beat(narration, who) if on_beat else None
+        return hooks.on_beat(narration, who)
 
     event = driver.advance(beat)
     while event.kind == "pc_slot":
         if turn_cap is not None and turns >= turn_cap:
-            return state["scene"], turns, True
+            return CombatRun(state["scene"], turns, hit_cap=True)
         turns += 1
-        if on_slot:
-            on_slot(event, turns)
-        player = backend.prompt(player_sid, "player", player_combat_turn(state["scene"]))
-        if on_player:
-            on_player(player)
+        hooks.on_slot(event, turns)
+        player = source.next_message(state["scene"], combat=True)
+        if player is None:  # the player is done driving the loop — leave the fight standing
+            return CombatRun(state["scene"], turns - 1, stopped=True)
+        hooks.on_player(player, turns)
         event = driver.pc_action(player, beat)
-    return event.narration, turns, False
+    hooks.on_combat_end(event.narration)
+    return CombatRun(event.narration, turns)

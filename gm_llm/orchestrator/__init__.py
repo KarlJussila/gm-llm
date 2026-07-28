@@ -8,12 +8,17 @@ on `Game`; nothing here depends on the interface.
 from .archive import Archive
 from .backend import Backend, BackendError
 from .canon import CanonPreloader
-from .combat import CombatDriver, CombatEvent, CombatState, CombatStep, play_combat
+from .combat import (
+    CombatDriver, CombatEvent, CombatRun, CombatState, CombatStep, play_combat,
+)
 from .gate import Gate, GateResult, StageGateResult, Verdict
 from .lifecycle import Lifecycle
 from .logs import Logs
 from .loop import Game, TurnResult
 from .planner import Planner, PlannerError, PrepResult
+from .play import (
+    AgentPlayer, KeyboardPlayer, PlayerSource, PlayHooks, PlayResult, play_session,
+)
 from .reconciler import Reconciler, ReconcileResult
 from .setup import Setup, SetupTurn
 from .status import CampaignStatus, campaign_status
@@ -21,9 +26,11 @@ from .status import CampaignStatus, campaign_status
 __all__ = [
     "Archive", "Backend", "BackendError", "CanonPreloader",
     "CampaignStatus", "campaign_status",
-    "CombatDriver", "CombatEvent", "CombatState", "CombatStep", "play_combat",
+    "CombatDriver", "CombatEvent", "CombatRun", "CombatState", "CombatStep", "play_combat",
     "Gate", "GateResult", "StageGateResult", "Verdict",
     "Game", "TurnResult", "Lifecycle", "Logs",
+    "AgentPlayer", "KeyboardPlayer", "PlayerSource", "PlayHooks", "PlayResult",
+    "play_session",
     "Planner", "PlannerError", "PrepResult",
     "Reconciler", "ReconcileResult",
     "Setup", "SetupTurn",
