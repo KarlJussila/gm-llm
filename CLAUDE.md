@@ -1,9 +1,62 @@
 # CLAUDE.md — gm-llm
 
 gm-llm is an opencode-driven D&D game-master system: the orchestrator (`gm_llm/orchestrator/`)
-drives headless `opencode serve` agents through setup → play → reconcile. Background reading:
-`SPEC.md` (what it is), `PLAN.md` (packaging/Windows), `BENCHMARK.md` (the benchmark workstream and
-its design principles).
+drives headless `opencode serve` agents through setup → play → reconcile.
+
+This file holds the **stable** facts worth loading every session. Anything that changes
+round-to-round lives in `HANDOFF.md`, not here.
+
+## Documentation routing
+
+| File | Purpose | Cadence |
+|---|---|---|
+| `CLAUDE.md` (this file) | Stable orientation, routing, standing rules, the gate | Rarely — only when a *durable* fact changes |
+| `HANDOFF.md` | **Current state only**: live numbers, the next task, where things stand | Rewritten after **every** round |
+| `ROADMAP.md` | All remaining work, sequenced, with an effort level per task | When sequencing changes |
+| `design/findings.md` | Append-only **per-round record** (Parts 1–N); the reasoning archive | One Part per round |
+| `design/open-questions.md` | The live backlog of **unresolved** decisions and gaps | As items open; **delete** when resolved |
+| Plan-of-record docs | `SPEC.md` (what it is), `BENCHMARK.md`, `COMBAT.md`, `PLAN.md`, `design/frontends.md` | When the design changes |
+
+### Keeping the docs clean
+
+- **One fact, one home.** Don't copy; point. A restated rule is a rule that will rot — this
+  repo has already lost `dev/MAINTAINING.md`'s versioning section that way.
+- **HANDOFF.md is current-state only, never a changelog.** "The prior round did X" belongs in
+  a Part. It has a hard line budget the lint enforces.
+- **Never type a count into prose.** Numbers live in a ratchet, in HANDOFF's generated block
+  (`tools/status.py`), or nowhere. HANDOFF is rewritten each round, and a session rewriting a
+  doc carries numbers forward from context instead of re-deriving them.
+- **Resolved open-questions are deleted, not tombstoned.**
+- **Park deferrals on a ROADMAP track, never on a round.** A round closes; a track persists.
+- **After every round:** append the Part, rewrite `HANDOFF.md`, update whatever doc the round
+  changed. Use `/close-round`.
+
+## Standing rules
+
+- **Rounds:** one ROADMAP task per session. The effort level is in `HANDOFF.md` § Next task;
+  closing the round includes rewriting that block. A round that lands code but doesn't close
+  the docs has not been handed off.
+- **Source of truth:** where a doc and the code disagree, **the code wins and the doc gets
+  fixed in that round** — not filed as a question.
+- **Git:** short, plain, descriptive messages; no attribution trailers. Commit only when asked.
+
+## How to run things
+
+### The gate — every one of these green, every round
+
+```sh
+python -m compileall gm_llm                        # syntax across the package
+for t in dev/test_*.py; do python "$t" || break; done   # the suite
+python3 tools/status.py --check                    # HANDOFF's numbers are current
+python3 tools/lint_docs.py                         # planning docs agree with the repo
+```
+
+**The suite is not pytest.** `dev/test_*.py` are standalone scripts with a homegrown `tmp`
+helper — running them under `pytest` produces a wall of `fixture 'tmp' not found` collection
+errors that look like breakage and are not. Run each as a script. (`lint_docs.py` check 8
+fails any doc that says otherwise.)
+
+**A red suite is this round's problem even if this round didn't break it.**
 
 ## The prompts
 

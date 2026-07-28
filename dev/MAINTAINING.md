@@ -5,10 +5,9 @@ portability rules that keep Windows working. Not shipped; lives beside the dev C
 
 ## Versioning
 
-The version lives in **two places** and they must always match:
-
-- `pyproject.toml` → `version = "..."`
-- `gm_llm/__init__.py` → `__version__ = "..."` (what `gm-llm --version` prints)
+**The rule lives in `CLAUDE.md` § Versioning & releases** — single source of truth is
+`__version__` in `gm_llm/__init__.py`, which `pyproject.toml` reads dynamically. Don't
+restate it here; this section covers only the dev-side *cadence*.
 
 **Bump the patch version on every push to main that changes shipped behavior** —
 code fix, asset change, installer change. Main *is* the release channel: the Windows
@@ -35,9 +34,9 @@ usually means they ran `gm-llm update` without reinstalling the tool.
 
 ## Release checklist
 
-1. Bump the version in both files (see above).
+1. Bump `__version__` in `gm_llm/__init__.py` (the only home — see above).
 2. Update README.md if user-facing behavior or setup steps changed.
-3. `python -m compileall gm_llm && for t in dev/test_*.py; do python $t || break; done`
+3. Run the gate — `CLAUDE.md` § How to run things.
 4. Commit, push to main. That's the release.
 
 ## Text I/O hygiene (Windows)
