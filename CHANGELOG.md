@@ -9,6 +9,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-29
+
 ### Added
 - **Watch a benchmark batch in the TUI (`bench run --ui tui`).** A batch header tracks run *k*
   of *N* and the outcomes so far, and each run's play — turns, gate verdicts, fights, the
