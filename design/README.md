@@ -14,6 +14,7 @@ For *how to use* gm-llm, read the root `README.md`. For the current state of the
 | [benchmark.md](benchmark.md) | Plan of record for the benchmark workstream — the tiered instrument, the B-numbered stages ROADMAP sequences, measurement methodology, risks. |
 | [combat.md](combat.md) | Plan of record for combat as a runner play-mode — the tracker contract, the obligation channel, the loop, balance-as-a-skill. |
 | [frontends.md](frontends.md) | Plan of record for frontend/mode modularity — watching autoplay and bench runs in the TUI. |
+| [runner-authority.md](runner-authority.md) | Plan of record for prompt recalibration — what `dm-runner` may and may not author, and where the current prompts disagree with it. |
 
 ### Working docs (not the design — the project's own state)
 

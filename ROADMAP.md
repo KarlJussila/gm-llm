@@ -32,6 +32,19 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 |---|---|---|---|
 | 5 | Route console autoplay through `Lifecycle` | low | The last direct `Game` construction. Blocks nothing — duplication to retire, not a gap; needs `player_source()` to carry the resume story |
 
+## recalibration — align the prompts with the runner-authority model
+
+Plan of record: [`design/runner-authority.md`](design/runner-authority.md), which holds the model
+and the numbered gaps these rows close.
+
+| # | Task | Effort | Why |
+|---|---|---|---|
+| 0 | Settle the ruleset with Karl, then audit the prompts against it section by section | high | The model was transcribed from one conversation, not worked through; and the gap table is what one pilot exposed, not an audit. Both passes are owed **before** any row below authors prose |
+| 1 | Narrow `check-turn`'s divergence licence to player-initiated (gap 1) | high | Prompt prose against a hard-won guardrail: the existing line exists to stop false positives on improv and must keep doing that while ceasing to license runner-initiated divergence |
+| 2 | Close the "mere addition" hole for arc-touching lore (gap 2) | high | Rule 6 is an absolute and currently passes both the preamble and check 4's entity triage; unnamed lore is the case to catch |
+| 3 | Enforce revelation against the plan, not just canon flags (gaps 3, 4) | high | Rule 7 is the other absolute. Needs the plan's revealable list on the checker side — decide preloaded revealable-block vs. on-demand read |
+| 4 | Decide whether DCs stay in session plans | medium | The model makes them advisory; open whether `dm` keeps authoring them |
+
 ## benchmark — the instrument
 
 Plan of record: [`design/benchmark.md`](design/benchmark.md) (B-numbers are its sections).
@@ -39,7 +52,7 @@ Plan of record: [`design/benchmark.md`](design/benchmark.md) (B-numbers are its 
 | # | Task | Effort | Why |
 |---|---|---|---|
 | 1 | B1 prereq — pin the player-end contract | high | One home, one generation path, one load contract for the play packet; BENCHMARK calls it a prereq to finalizing the bench |
-| 2 | B3 — bank the baseline batch | medium | 5–10 identical-condition tier-0 runs on untouched prompts. Everything after it is anchored to it; **nothing model-facing changes until it lands** |
+| 2 | B3 — bank the baseline batch | medium | Identical-condition tier-0 runs; **sized from the pilot, not from BENCHMARK's "5–10"** ([`dev/fixtures/hollowfell/pilot-2026-07-29.md`](dev/fixtures/hollowfell/pilot-2026-07-29.md)). Waits on track **recalibration** — a baseline of prompts about to be rewritten measures nothing |
 | 3 | `bench status` — batch state without a throwaway script | low | Runs by outcome (complete / capped / reconcile-pending) is a number this repo keeps hand-deriving; `bench-out/` is gitignored so it can't live in `status.py` (Part 1) |
 | 4 | B4 — golden prompt-stream test | medium | Free regression armor; B5 must diff clean against it |
 | 5 | B5 — playbook extraction | high | Extract the invariant engine; verified twice (golden diff mandatory, confirmation batch optional) |
@@ -81,13 +94,21 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
 | frontends | 4 | Step 2: `PlayerSource` + `play_session` — one turn loop for the TUI, autoplay and bench; `--player auto --ui tui` filled in, and the TUI given a headless test |
 | frontends | 5 | Step 3: `bench run` plays a `Lifecycle` — its own `Game`/player-session/reconciler wiring gone, the post-wrap tail now `wrap(on_stage=…)`, the test seam moved to `lifecycle_factory` |
 | frontends | 6 | Step 4: `bench run --ui tui` — `BatchHooks`, a lifecycle attached per run, `BatchHeader`; watching made read-only and the comparability invariant asserted against a headless batch |
+| benchmark | 7 | The five-run pilot read (**B3 itself is not banked** — the pilot is what says how to bank it): the grading instrument content-hashed, an error bar and a resolution figure on the score, thin subscores flagged. Its findings opened track **recalibration** and parked B3 behind it |
 
 ## Standing sync rules
 
-- **Nothing model-facing changes before B3 banks the baseline.** That is BENCHMARK's own
-  rule and it constrains every other track: prompt edits, tier work, and any refactor that
-  could move the prompts wait behind it. Harness-only work (frontends, packaging, docs) runs
-  alongside freely.
+- **Recalibration runs before B3, and suspends the freeze while it does.** The standing rule was
+  "nothing model-facing changes before B3 banks the baseline" — sound while the prompts were
+  believed correct, and inverted once they are not: baselining prompts that are about to be
+  rewritten measures a system that will not exist. Track **recalibration** is therefore the one
+  model-facing exception, and it closes before B3 opens. The freeze still binds every *other*
+  model-facing change, and B3 is sized from the pilot, not from BENCHMARK's "5–10".
+- **The pilot's scores do not survive recalibration.** The prompt fingerprint is part of a run's
+  condition, so recalibrated runs cannot pool with pre-recalibration ones. What survives is the
+  pilot's methodology (variance structure, grader reliability, the thin-dimension limit); the
+  numbers describe a superseded subject. Harness-only work (frontends, packaging, docs) runs
+  alongside freely throughout.
 - **B4 lands before B5.** The golden stream is the only thing that makes the playbook
   extraction verifiable as behavior-preserving.
 - **The live shakedowns can run at any time** and should run before, not after, a release that

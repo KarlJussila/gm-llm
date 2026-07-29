@@ -13,20 +13,25 @@
 > The loop: a session reads this block, does the one named task at the named effort, closes
 > the round with `/close-round`, and **rewrites this block** to name the next task.
 
-- **Task now: docs 1 — generate `findings.md` § Contents (effort: low).** The index has now
-  been hand-added to for three rounds running (Parts 4, 5, 6), which is exactly the rot the
-  task predicts; the § Recurring threads list is hand-maintained too but is prose, not an
-  index, so leave it alone. The heading form is house-standard and stated at the top of
-  `design/findings.md` (`# Part N — Subject: what it's about (YYYY-MM-DD)`), and the anchor
-  form is already visible in the existing rows. Generator belongs beside the others in
-  `tools/`; whether it writes into `findings.md` between markers (like `status.py` does to
-  HANDOFF) or is a `lint_docs.py` check that fails a stale index is the one call to make —
-  prefer the one that can't be forgotten. Whatever lands must be in the gate.
-- **Blocked:** anything model-facing, behind benchmark B3 (`ROADMAP.md` § Standing sync rules).
-- **Needs Karl:** the live-model shakedowns; model configuration ownership; whether
-  `dev/test_*.py` should become pytest. All in `design/open-questions.md`.
-- **Also open (unblocked):** frontends 5 (low) — console autoplay through `Lifecycle`, the last
-  direct `Game` construction; and benchmark 3 (low), `bench status`.
+- **Task now: recalibration 0 — settle the ruleset, then audit the prompts against it
+  (effort: high).** Two passes, in order, and **neither is a solo job**: the first is an
+  extended back-and-forth with Karl to settle the runner-authority rules' scope and wording;
+  the second reads the existing agents, skills and briefs against the settled ruleset,
+  section by section, recording every divergence. `design/runner-authority.md` § The model is
+  provisional names what the transcription left open — whether rules 4 and 5 are one rule,
+  whether rule 8 is a rule or a corollary, how hard "DCs are advisory" is, and rule 7's "or an
+  NPC the plan staged", which as written can be read as licensing whatever a staged NPC says.
+- **Read first:** `design/runner-authority.md` end to end — the model, the gap table, the
+  geologist case, and § Delivery, which is why the fix is not "add prose to a skill".
+- **The trap:** this round writes *findings*, not prompt prose. Rows 1–4 author the changes;
+  row 0 establishes what they should say. A session that starts editing `check-turn` has
+  skipped the pass that tells it what to write.
+- **Blocked:** benchmark 2 (B3) now waits on this whole track — see § Standing sync rules.
+- **Needs Karl:** the ruleset conversation above; the live-model shakedowns; model
+  configuration ownership; whether `dev/test_*.py` should become pytest.
+- **Also open (unblocked):** docs 1 (low) — generate `findings.md` § Contents; the lint caught
+  a missing row again this round, which is the third time. frontends 5 (low), benchmark 3
+  (low, `bench status`).
 
 ## Live totals
 
@@ -48,38 +53,41 @@ its counts here. `CLAUDE.md` § How to run things has the commands.
 
 ## Where things stand
 
-- **Gate** — green as of Part 6. Thirteen scripts, including `dev/test_play_session.py` (the
-  loop, headless), `dev/test_tui_loop.py` (the real `PlayApp` over Textual's pilot) and
-  `dev/test_bench_tui.py` (a real batch, watched and headless, archives diffed). Note it is
-  *not* pytest; see CLAUDE.md.
+- **Gate** — green as of Part 7. Thirteen scripts; `dev/test_grade.py` grew this round
+  (instrument fingerprint, the t-interval, thin dimensions). Note it is *not* pytest; see
+  CLAUDE.md.
 - **Working tree** — clean, this round committed.
-- **docs** — the planning docs are now one architecture (Part 2). Root holds the loop
-  (`CLAUDE.md`, `HANDOFF.md`, `ROADMAP.md`) plus `README.md` and `CHANGELOG.md`; every plan of
-  record lives in `design/`, routed from `design/README.md`, which is also where "what the
-  system is" now lives. `SPEC.md` and `PLAN.md` are gone.
-- **frontends** — steps 1–4 landed (Parts 3–6). One turn loop (`orchestrator.play_session`) with
-  one fight loop under it; the player axis is a `PlayerSource`, rendering is `PlayHooks`, a bench
-  run is a `Lifecycle` like every other mode, and `PlayApp` now attaches one *per run* so
-  `bench run --ui tui` watches a whole batch. Watching is read-only by construction and the
-  comparability invariant is asserted, not argued. Left: console autoplay still builds its own
-  `Game` (step 5, blocks nothing).
-- **version** — the frontends track is at its resting point, so the round closed on the minor
-  bump: `0.5.0`, tagged. `CHANGELOG.md`'s `[Unreleased]` is freshly opened and empty.
-- **benchmark** — B0 landed. B1/B2 are substantially built (`bench run`, `grade`, `report`,
-  `tokens`, `--resume`, and now `--ui tui`) but B1 is not final until the player-end contract is
-  pinned. **B3 is not banked**, which is what blocks all model-facing work.
+- **recalibration** — **the new priority track, and the reason B3 is parked.** A benchmark
+  pilot found the prompts disagreeing with Karl's runner-authority model in four places
+  (`design/runner-authority.md`), the sharpest being a checker that blocks an invented *named*
+  antagonist while an invented *unnamed* one carrying the same plot weight passes untouched.
+  Nothing has been authored yet — the model itself is provisional and owes the two passes
+  above.
+- **benchmark** — B0 landed; B1/B2 substantially built. **B3 is deliberately not banked**, and
+  the reason changed this round: not "we lack runs" but "the subject is about to be rewritten".
+  The five-run pilot is written up at `dev/fixtures/hollowfell/pilot-2026-07-29.md` — its
+  methodology survives recalibration, its scores do not. **Read its finding 1 before sizing any
+  batch** — and size from that table, not from the range `design/benchmark.md` § B3 suggests,
+  which the pilot shows is too small. `bench report` now prints the confidence interval, the
+  difference a batch that size could resolve, and a warning on subscores too thin to mean
+  anything — so the honest numbers come from the tool, not from here.
+- **frontends** — steps 1–4 landed (Parts 3–6); the track is at its resting point. Left:
+  console autoplay still builds its own `Game` (step 5, blocks nothing).
 - **combat** — feature-complete per `design/combat.md`, mock-verified only; never run against
   a live model.
-- **packaging** — Phase 1 closed in Part 2 (its portability rules now live in
-  `dev/MAINTAINING.md` § Portability) and Phase 2 was already built. What remains is validating
+- **packaging** — Phase 1 closed in Part 2, Phase 2 already built. What remains is validating
   on a real Windows box, plus the model-configuration decision.
+- **version** — `0.5.0`, tagged. `CHANGELOG.md`'s `[Unreleased]` carries this round's bench
+  entries.
 
 ## Pointers
 
 - What the system is → `design/README.md` (also the routing table for `design/`)
 - How to use it → `README.md`
 - Writing prompts, versioning, the gate → `CLAUDE.md`
-- Benchmark design and B-numbers → `design/benchmark.md`
+- What the runner may author → `design/runner-authority.md`
+- Benchmark design and B-numbers → `design/benchmark.md` · the pilot →
+  `dev/fixtures/hollowfell/pilot-2026-07-29.md`
 - Combat → `design/combat.md` · Frontend modularity → `design/frontends.md`
 - Dev conventions, Windows portability → `dev/MAINTAINING.md`
 - Why a past call was made → `design/findings.md`

@@ -9,12 +9,14 @@ style (the same _Reply fake, tempdirs, hand-rolled runner over asserts).
 Covers: brief construction (draft + report + rubric + window), finding extraction, the
 grades-file shape + idempotence, the instrument fingerprint (an in-place rubric rewrite
 re-grades; a pre-fingerprint header is grandfathered; a mixed-instrument batch is flagged),
-the ungraded-after-nudge path, dedup via duplicate_of, --double agreement math, and report
-aggregation (defaulted rate + the mixed-conditions warning).
+the ungraded-after-nudge path, dedup via duplicate_of, --double agreement math, the t-based
+confidence interval and thin-dimension warning, and report aggregation (defaulted rate + the
+mixed-conditions warning).
 """
 
 import json
 import re
+import statistics
 import sys
 import tempfile
 from pathlib import Path
@@ -427,6 +429,56 @@ def test_mixed_grading_instruments_are_flagged(tmp):
     assert "MIXED GRADING" not in scoring.format_report(batch)
 
 
+def test_mean_ci_uses_t_not_z(tmp):
+    """A batch estimates its own spread from the same few runs it averages, so the error bar
+    pays a surcharge for not knowing that spread. Using the normal 1.96 understates the
+    interval by 42% at n=5 — precision the batch does not have."""
+    vals = [31.25, 32.24, 38.0, 49.64, 63.46]          # the pilot batch
+    ci = scoring.mean_ci95(vals)
+    sd = statistics.stdev(vals)
+    assert abs(ci - 2.776 * sd / 5 ** 0.5) < 0.01, "t(4)=2.776, not z=1.96"
+    assert ci > 1.96 * sd / 5 ** 0.5, "the t interval is strictly wider than the normal one"
+
+    # it narrows as √n, and the t surcharge fades as the estimate of spread firms up
+    wide, narrow = scoring.mean_ci95(vals), scoring.mean_ci95(vals * 4)
+    assert narrow < wide, "more runs, tighter interval"
+    assert scoring._t95(4) > scoring._t95(19) > scoring._t95(10_000), "t decays toward z"
+    assert scoring._t95(10_000) == 1.960
+
+    # no spread to estimate below n=2: no error bar, rather than an error bar of zero
+    assert scoring.mean_ci95([42.0]) is None
+    assert scoring.mean_ci95([]) is None
+    # an unlisted df takes the next row down — wider, never narrower than the truth
+    assert scoring._t95(35) == scoring._t95(30)
+
+    # resolution is the question a baseline actually answers, and it is coarser than the CI
+    res = scoring.resolution95(vals)
+    assert res > ci, "telling two batches apart is harder than pinning one batch's mean"
+    assert scoring.resolution95([42.0]) is None
+
+
+def test_thin_dimensions_are_flagged_not_silently_precise(tmp):
+    """A subscore over one or two severity labels inherits the grader's full per-label
+    disagreement with nothing to average it against. The report must not print it as a
+    measurement."""
+    out = tmp / "out"
+    out.mkdir()
+    a = _write_archive(out, "runT", [
+        _turn(1, 1, [_verdict("check-turn", False, "wrong hair"), _verdict("check-conduct", True)],
+              complete=True)])
+    b = FakeGraderBackend(grades={
+        "s1t1:check-turn": {"severity": "major", "category": "dice-and-uncertainty",
+                            "rationale": "one lonely finding.", "duplicate_of": ""}})
+    grade.grade_archive(b, a, rubric_text=_RUBRIC, meta=_META, note=lambda m: None)
+
+    batch = scoring.summarize_batch(out)
+    assert batch["dimension_violations"]["mechanical_integrity"] == 1
+    text = scoring.format_report(batch)
+    assert "mechanical integrity" in text
+    assert f"under {scoring._THIN_DIMENSION} violations" in text, "a thin subscore is called out"
+    assert "never as a number to track" in text
+
+
 def test_ungraded_after_nudge(tmp):
     archive = _write_archive(tmp, "run-ung", [
         _turn(1, 1, [_verdict("check-turn", False, "wrong hair"), _verdict("check-conduct", True)]),
@@ -591,7 +643,8 @@ def main():
              test_grades_file_shape_and_idempotence,
              test_instrument_fingerprint_catches_an_in_place_rubric_rewrite,
              test_a_changed_instrument_regrades_and_a_legacy_one_is_grandfathered,
-             test_mixed_grading_instruments_are_flagged, test_ungraded_after_nudge,
+             test_mixed_grading_instruments_are_flagged, test_mean_ci_uses_t_not_z,
+             test_thin_dimensions_are_flagged_not_silently_precise, test_ungraded_after_nudge,
              test_dedup_via_duplicate_of, test_double_agreement, test_report_aggregation,
              test_mixed_conditions_warning, test_turn_cap_is_not_a_condition_but_hitting_it_is,
              test_grade_batch_double)

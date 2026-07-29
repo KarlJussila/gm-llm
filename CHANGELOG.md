@@ -10,6 +10,14 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Added
+- **`bench report` states its own precision.** The integrity score now carries a 95% confidence
+  interval on the batch mean and a *resolution* figure — the smallest difference a batch that size
+  could tell apart. The multiplier is Student's t rather than the normal 1.96, because a batch
+  estimates its spread from the same few runs it averages; at five runs that surcharge is 42% of
+  the interval, so the old hand-computed figures were optimistic. Dimension subscores built on
+  fewer than ten violations batch-wide are now flagged rather than printed as measurements: a
+  subscore over one or two severity labels inherits the grader's full per-label disagreement with
+  nothing to average it against.
 - **The grading instrument is fingerprinted (`bench grade`, `bench report`).** A grades file's
   rubric version was a hand-typed label, and a label does not move when the prose under it is
   rewritten in place — `rubric-v1.md` has already been reworked once (penalty table, binding

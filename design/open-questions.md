@@ -28,6 +28,18 @@ decision on whether the campaign or the install owns the choice. Parked on ROADM
 
 ## Benchmark
 
+### Nothing measures whether a session delivered its plan
+
+A pilot run spent 29 turns on the session plan's secondary discovery tracks and never reached the
+centrepiece the plan names, with every thread runner-introduced rather than player-introduced
+(Part 7). That breaks no rule in `runner-authority.md` — all the content it played was planned —
+and no check sees it, so the run scored *well*: fewer turns covering less ground still means fewer
+graded units to divide violations by. Open on two axes: whether plan coverage becomes a check at
+all, and whether it belongs at runtime (where the checker sees one turn) or in a post-session stage
+gate (where the whole transcript is available, which is where it naturally fits). Coupled to the
+denominator question — a coverage measure and a per-word denominator attack the same distortion
+from opposite ends. Parked on ROADMAP track **recalibration**.
+
 ### Is the score model's 0-point floor calibrated anywhere real?
 
 `scoring.score_violations` maps a penalty *rate* to 0–100 with 0 at 2 points/unit. `benchmark.md`

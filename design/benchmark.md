@@ -20,6 +20,13 @@ The benchmark measures how much of the product's quality comes from structure
 (orchestration, reminders, corrections) versus craft prose (skills, guardrails) versus
 the model itself — and how gracefully a given model degrades as scaffolding is removed.
 
+Stated as the question each end of the ladder asks: at the bottom (`low`, the product),
+**how small a model can we make run a clean game?** — at the top (`high`, bare),
+**how much framework does a stronger model need to run one?** The subject is the runner
+playing well, never the checker catching it failing: a violation the gate corrects is still
+a violation the runner committed, and it costs a real game a turn. See
+[runner-authority.md](runner-authority.md) § Delivery.
+
 ## Principles
 
 1. **Tier 0 is the product, byte-for-byte.** The current prompts, agents, and skills
@@ -196,6 +203,11 @@ Promote the autoplay harness (the scripted `player` agent) to benchmark grade.
   instrument before proceeding); grader agreement; defaulted rate.
 - This baseline anchors everything after it. Nothing model-facing changes until it's
   banked.
+- **Size the batch from the pilot, not from this doc's "5–10".** A five-run pilot on
+  `hollowfell` is written up at
+  [`dev/fixtures/hollowfell/pilot-2026-07-29.md`](../dev/fixtures/hollowfell/pilot-2026-07-29.md):
+  it measures the run-to-run variance, and the sample size that variance implies is larger than
+  the range above. Read it before scheduling the batch.
 
 *Exit: a written baseline report checked into `dev/fixtures/` or alongside this doc.*
 

@@ -53,6 +53,14 @@ _PENALTY = {"trivial": 0.25, "minor": 1.0, "major": 4.0, "critical": 12.0}
 # distribution and we know where tier 0 actually lands.
 _FLOOR_RATE = 2.0
 
+# Below this many violations batch-wide, a dimension subscore is built on so few severity
+# labels that grader noise dominates it. Measured, not guessed: severity labels reproduce at
+# roughly 80% across independent grading passes, and disagreement averages out as 1/√(findings)
+# — ~20% of the subtotal over 5 findings against ~6% over 15. A composite pooling 13–22
+# findings survives that; a subscore over one or two does not, and the report says so rather
+# than printing a decimal point that means nothing.
+_THIN_DIMENSION = 10
+
 # The rubric's 9 categories, collapsed into the dimensions a subscore is reported on. Every
 # category maps to exactly one; an off-rubric label falls through to "other" so it stays
 # visible in the total instead of scoring free.
@@ -119,14 +127,73 @@ def _read_events(path) -> list[dict]:
     return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+# Two-sided 95% critical values of Student's t by degrees of freedom (n-1). A batch estimates
+# its own spread from the same handful of runs it is averaging, so the interval has to pay for
+# not knowing the true spread — that surcharge is what t is, and it is *large* at the batch
+# sizes this benchmark can afford: 2.776 at n=5 against the 1.960 a normal would use, a 42%
+# wider interval. Using 1.960 here would report a precision the batch does not have.
+# Table rather than a dependency: the repo is stdlib-only and this is nine significant rows.
+_T95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306,
+        9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179, 13: 2.160, 14: 2.145, 15: 2.131,
+        16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093, 20: 2.086, 21: 2.080, 22: 2.074,
+        23: 2.069, 24: 2.064, 25: 2.060, 26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045,
+        30: 2.042, 40: 2.021, 60: 2.000, 120: 1.980}
+_T95_INF = 1.960
+
+
+def _t95(df: int) -> float:
+    """The 95% two-sided t multiplier for `df` degrees of freedom — the exact row when the
+    table has it, otherwise the next row down (conservative: a wider interval, never a
+    narrower one than the truth)."""
+    if df in _T95:
+        return _T95[df]
+    below = [k for k in _T95 if k < df]
+    return _T95[max(below)] if below and df < 120 else _T95_INF
+
+
+def mean_ci95(values) -> float | None:
+    """Half-width of the 95% confidence interval on the mean: `t(n-1) · sd / √n`.
+
+    Read it as "if this batch were re-run, the mean would land within ±this of the reported
+    one 19 times out of 20" — the honest error bar on a batch score. `None` below n=2, where
+    there is no spread to estimate and therefore no interval; a single run reports a number
+    with no error bar rather than an error bar of zero.
+
+    Assumes the runs are independent and roughly normal. Independence holds by construction
+    (each run is a fresh project from the template). Normality is the shakier half at n=5 and
+    the interval is approximate because of it — but the failure mode is a slightly wrong
+    width, not a wrong conclusion, and the alternative at this n is no error bar at all."""
+    vals = [v for v in values if v is not None]
+    if len(vals) < 2:
+        return None
+    return _t95(len(vals) - 1) * statistics.stdev(vals) / len(vals) ** 0.5
+
+
+def resolution95(values) -> float | None:
+    """The smallest difference in means two batches *this size* could tell apart — the
+    question a baseline actually has to answer, since its job is to catch a change.
+
+    `(t(2n-2) + 0.84) · sd · √(2/n)`, the standard two-sample size formula at 95% confidence
+    and 80% power (0.84 is the one-sided normal quantile for 80%). Approximate, and worth
+    reading as an order of magnitude: a change smaller than this is invisible to a comparison
+    of two batches, however carefully the prose was edited."""
+    vals = [v for v in values if v is not None]
+    if len(vals) < 2:
+        return None
+    n = len(vals)
+    return (_t95(2 * n - 2) + 0.84) * statistics.stdev(vals) * (2 / n) ** 0.5
+
+
 def _dist(values) -> dict | None:
-    """min / median / max / mean over the non-None values, with the count. None if empty —
-    a distribution of nothing is not a distribution."""
+    """min / median / max / mean over the non-None values, with the count, plus the 95%
+    confidence interval on that mean and the difference a batch this size could resolve.
+    None if empty — a distribution of nothing is not a distribution."""
     vals = [v for v in values if v is not None]
     if not vals:
         return None
     return {"min": min(vals), "median": statistics.median(vals), "max": max(vals),
-            "mean": statistics.mean(vals), "n": len(vals)}
+            "mean": statistics.mean(vals), "n": len(vals),
+            "ci95": mean_ci95(vals), "resolution95": resolution95(vals)}
 
 
 def _sev_sorted(labels) -> list[str]:
@@ -471,15 +538,33 @@ def format_report(batch: dict) -> str:
     L.append("")
     L.append("── Score ───────────────────────────────────────────────────────────────────")
     if batch["score"]:
-        L.append(f"  INTEGRITY SCORE        : {_fmt_dist(batch['score'], dp=1)}")
+        s = batch["score"]
+        L.append(f"  INTEGRITY SCORE        : {_fmt_dist(s, dp=1)}")
+        if s.get("ci95") is not None:
+            L.append(f"    95% CI on the mean   : {s['mean']:.1f} ± {s['ci95']:.1f} "
+                     f"({s['mean'] - s['ci95']:.1f} – {s['mean'] + s['ci95']:.1f}, n={s['n']})")
+            L.append(f"    resolution           : a second batch of {s['n']} would have to differ "
+                     f"by ~{s['resolution95']:.0f} pts to be")
+            L.append(f"                           distinguishable from this one. Smaller changes "
+                     f"are invisible at this n.")
         L.append(f"  penalty rate (pts/unit): {_fmt_dist(batch['penalty_rate'], dp=2)}")
         L.append("  by dimension (score · violations across the batch):")
+        thin = []
         for d in _DIMENSIONS:
             dist = batch["dimension_scores"].get(d)
             n = batch["dimension_violations"].get(d, 0)
-            L.append(f"    {_DIM_LABEL[d]:<24} {_fmt_dist(dist, dp=1):<62} {n:>3} viol")
+            mark = " !" if n < _THIN_DIMENSION else "  "
+            if n < _THIN_DIMENSION:
+                thin.append(_DIM_LABEL[d])
+            L.append(f"    {_DIM_LABEL[d]:<24} {_fmt_dist(dist, dp=1):<62} {n:>3} viol{mark}")
         L.append(f"  (weights {', '.join(f'{s}={p:g}' for s, p in _PENALTY.items())}; "
                  f"0 at {_FLOOR_RATE:g} pts/unit)")
+        if thin:
+            L.append(f"  ! under {_THIN_DIMENSION} violations batch-wide — that subscore is a "
+                     f"handful of severity labels, and")
+            L.append(f"    a label is only ~80% reproducible. Read these as a pointer to go read "
+                     f"transcripts,")
+            L.append(f"    never as a number to track: {', '.join(thin)}.")
     else:
         L.append("  (no graded runs — score needs `bench grade` first)")
 

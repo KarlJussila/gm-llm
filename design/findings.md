@@ -17,9 +17,23 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [4](#part-4--frontends-one-session-loop-keyboard-or-agent-2026-07-27) | frontends | How a blocking loop and an async frontend are reconciled (and what must be released at shutdown); why a failed call is the frontend's call to answer, not the loop's |
 | [5](#part-5--frontends-a-bench-run-is-a-lifecycle-2026-07-28) | frontends | Where to put a test seam so a harness fakes one step instead of a whole interface; why a green-across-the-board refactor still owes new tests |
 | [6](#part-6--frontends-batch-chrome-and-an-inert-frontend-2026-07-29) | frontends | How a frontend attaches to something it must not perturb, and how that gets asserted rather than argued; why a parked question was the wrong question |
+| [7](#part-7--benchmark-the-pilot-that-redirected-the-roadmap-2026-07-29) | benchmark | Why an instrument needs a content hash and not a version label; how to read a small batch honestly (t, not z; which subscores are noise); three claims that died to their own evidence |
 
 ## Recurring threads (the classes worth knowing)
 
+- **Whatever measures needs an identity as much as whatever is measured.** A run's prompts were
+  content-hashed; the rubric that scored it carried a hand-typed `v1` that did not move when the
+  prose under it was rewritten in place, so two materially different instruments were
+  indistinguishable and "which one scored this?" became git forensics. The class: any artifact that
+  can be edited in place while keeping its label will eventually be, and a version string is a
+  promise rather than a fact. `_FLOOR_RATE`, the dimension mapping and the dedup window are the
+  same shape and still unversioned. (Part 7)
+- **A gate that catches the flagrant case can be structurally blind to the worse one.** check-turn
+  blocked an invented *named* antagonist and never saw an invented *unnamed* one that supplied the
+  antagonist's cover identity — because the triage keys on "newly-named things" and the preamble
+  waves through "mere addition". The blind spot is not a weaker version of the caught case; it is
+  its complement, and a benchmark reading that instrument scores the blindness as quality. Ask what
+  shape of violation a check *cannot* express, not just how well it does what it does. (Part 7)
 - **One fact, two homes — the copy rots.** CLAUDE.md and `dev/MAINTAINING.md` both stated
   the versioning rule; MAINTAINING's copy was stale by a whole build-config change. Whenever
   a rule gets restated, the restatement is the defect. `lint_docs.py` check 7 encodes the
@@ -614,3 +628,114 @@ neither frontend can reach.
 
 `python -m compileall gm_llm` clean; all thirteen `dev/test_*.py` scripts pass;
 `tools/status.py --check` and `tools/lint_docs.py` both clean. No model-facing prose changed.
+
+# Part 7 — Benchmark: the pilot that redirected the roadmap (2026-07-29)
+
+## The gap
+
+Five identical-condition tier-`low` runs sat in `bench-out/` ungraded-in-part and unread. The
+round set out to answer one question — is five runs enough to bank as B3's baseline? — and the
+answer turned out to invalidate the question. Three separate things were wrong underneath it:
+
+- **The grading instrument had no identity.** A grades file recorded `rubric: v1`, a hand-typed
+  label. `rubric-v1.md` had already been rewritten in place (penalty table, binding categories,
+  wider dedup window) with every grades file on both sides still reading `v1`. Establishing which
+  instrument had scored a given run took wall-clock timestamps cross-referenced against `git log`.
+  The prompts a *run* played were content-hashed; the instrument that *scored* it was not.
+- **The report claimed precision it did not have.** No error bar at all, and the sample-size
+  arithmetic done by hand in-session used the normal `1.96` — right when the spread is known,
+  wrong when it is estimated from the same five runs being averaged. It understated the interval
+  by 42%.
+- **The prompts disagreed with the design intent** in ways no run could surface, because the
+  checker cannot see what it is not told to look for.
+
+## What the round does
+
+**Fingerprints the grading instrument** (`grade.instrument_fingerprint`, committed `ddcb3d6`): a
+content hash over `bench/assets/` stamped into every grades header, mirroring
+`runner.prompt_fingerprint`. The idempotence check compares it, so sharpening a rubric under the
+same label now re-grades instead of silently skipping; `bench report` flags a batch scored by more
+than one instrument the way it already flags mixed play conditions. Pre-fingerprint headers are
+**grandfathered**, not invalidated — the same call `_condition_signature` makes for pre-fingerprint
+archives, and re-scoring a banked batch is worse than leaving history readable.
+
+**Puts an error bar on the score.** `mean_ci95` and `resolution95` in `scoring.py`, rendered under
+the INTEGRITY SCORE line. Student's t, from a table, because the batch estimates its own spread
+from the runs it is averaging: `t(4)=2.776`, not `1.960`. The batch reads **42.8 ± 16.9 (n=5)**,
+and two batches of five could only separate a ~27-point difference.
+
+**Marks thin dimensions instead of printing false precision.** Under ten violations batch-wide, a
+dimension subscore is a handful of severity labels — and labels reproduce at ~80% across passes,
+with disagreement averaging out only as 1/√(findings): ~20% of the subtotal over 5 findings, ~6%
+over 15. The composite pools 13–22 and survives; "mechanical integrity 98.9" over *one* violation
+does not.
+
+**Writes the pilot up** (`dev/fixtures/hollowfell/pilot-2026-07-29.md`) as a variance pilot, never
+a baseline — the fixture's own `fixture.json` says not to bank against it.
+
+**Opens track `recalibration`** and `design/runner-authority.md` with it: a runner-authority model
+(planned content binding; improvisation licensed by the *player*, not the runner; never
+arc-impacting lore; never unauthorized revelation) plus the four places the prompts diverge from
+it. **Inverts the standing sync rule** in the process — "nothing model-facing before B3" was sound
+while the prompts were believed correct and backwards once they are not, because baselining
+prompts about to be rewritten measures a system that will not exist.
+
+### The reasoning worth keeping
+
+**Three claims died in this round, each to evidence rather than argument**, and the sequence is the
+real finding: a measurement round's job is to survive its own results.
+
+1. *"Cross-day grader agreement fell to 67%, so the model may drift."* Two pairs shared a pass; the
+   third (80%, also cross-day) was never computed. 67/80/87 across three pairs of 15 is one rate
+   near 78% plus binomial noise. **Compute every pair before naming a mechanism.**
+2. *"The composite absorbed the label churn."* Penalty moved 35.25 → 35.50 across two passes, which
+   looked like robustness and was arithmetic luck: −8 from a critical→major cancelling +9 from
+   three minor→major. Four of five re-labellings went *up*. **A near-zero net is not evidence of
+   cancellation until you decompose it.**
+3. *"Session-length variance is the highest-leverage thing to fix."* The 7-turn run reached the
+   plan's centrepiece; the 29-turn run never did, and `session-3-plan.md` § Pacing & Exits
+   sanctions both exits. **Read the artifact before calling its variation a defect.**
+
+**The instrument's blind spot found the roadmap's.** `5c16` invented two things: "Aldric Voss", a
+*named* antagonist identity — check-turn's check 4 fired and the grader scored it the batch's most
+severe finding — and "a geologist, sent by the consortium, three months ago", spoken by a canon NPC,
+appearing nowhere in canon or plan, supplying the antagonist's cover identity. Nothing flagged the
+second. The difference is not consequence; it is that check 4 triages "the draft's newly-named
+things" and an unnamed actor never enters the triage, after which the preamble's *"never flag mere
+addition"* covers it. **A checker that catches the flagrant case can be structurally blind to the
+worse one**, and a benchmark measuring a system that way scores the blindness as quality.
+
+**Detection is the floor, not the goal** (`runner-authority.md` § Delivery). The runner will not
+load a skill or read a file unless told to on that turn — which is why `turn-reminder` exists, and
+the stronger form of `CLAUDE.md`'s "a universal rule parked in an unloaded skill is silently absent"
+is that *loading is not salience*. But teaching the checker to complain raises the violation count
+and improves nothing: gm-llm is a game as well as a benchmark, and a corrected draft costs a real
+turn. Each gap has two halves — make it visible, then make it unnecessary.
+
+## Declared lossiness / deferrals
+
+- **The runner-authority model is provisional.** Transcribed from one conversation, not worked
+  through section by section, and the gap table is what a single pilot exposed rather than an
+  audit. Both passes are owed before any prose is authored — ROADMAP `recalibration` row 0, and
+  the doc says so in its own § The model is provisional.
+- **Four grade headers carry a *backfilled* instrument hash**, asserted from git (graded
+  2026-07-29T07:56–08:20Z, after the last `bench/assets` change at 2026-07-28T05:49Z, tree
+  unmodified since) rather than observed at grade time. Each carries an `instrument_backfill` field
+  saying so. `5c16` was re-graded fresh instead; its superseded grades are parked under
+  `superseded-20260726/` and are what gave finding 3 three passes of one run to work with.
+- **`bench grade --double --sample N` grades `findings[:N]`** — the first N, not a random N — so the
+  pooled 92%/88% agreement over-represents early turns. Making it random changes the instrument, so
+  it was not done in passing.
+- **The pilot's scores do not survive recalibration**; its methodology findings do. The prompt
+  fingerprint is part of a run's condition, so this is visible rather than silent.
+- **Plan coverage is unmeasured and stays that way this round.** A run that never reaches the plan's
+  centrepiece breaks no authority rule — the content it played was all planned — and nothing sees
+  it. Parked in `runner-authority.md` § What this does not settle.
+- **`--sample`'s bias, the floor calibration, and the words-vs-units denominator** are all carried
+  to B3 rather than decided on five runs.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all thirteen `dev/test_*.py` scripts pass (`test_grade.py` now
+21, six added this round); `tools/status.py --check` and `tools/lint_docs.py` both clean. **No
+model-facing prose changed** — the recalibration it sets up is entirely future work.
