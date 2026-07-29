@@ -49,10 +49,11 @@ The runner is the only agent whose *output is its submission* — every other ag
 through a tool call (`task_complete`, `report_findings`, `submit_grade`), which separates process
 from product by construction. That is likely why process leaks into narration, and `dm-runner`
 already has to say "never narrate your own process". A `submit_turn` tool would make the separation
-structural rather than instructed. Deliberately conditional: raise it **if** track **recalibration**
-row 1 gives the runner a per-turn todo list and the pilot's meta-break rate rises — a todo list is
-process, and the runner is the one agent the player can see. Parked on ROADMAP track
-**recalibration**.
+structural rather than instructed. Deliberately conditional, and the condition is now half-armed:
+the runner **has** a per-turn todo list (Part 9), so this is live the moment a run shows the
+meta-break rate rising — a todo list is process, and the runner is the one agent the player can
+see. The first live or bench run after Part 9 is what answers it; the archive's per-turn `tools`
+field says whether the list is even being written. Parked on ROADMAP track **recalibration**.
 
 ### Is the score model's 0-point floor calibrated anywhere real?
 

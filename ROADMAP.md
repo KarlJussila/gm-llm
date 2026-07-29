@@ -39,7 +39,6 @@ audit these rows close, and § Delivery, which is why row 1 runs before the pros
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 1 | `turn-reminder` as an executable algorithm | high | **Runs first: it decides where every rule below can live.** The runner reads canon and skills on turn 1 and never again (§ Delivery), so today only the reminder and the checker reach a turn. Grant `dm-runner` `todowrite` (the one agent without it) and make the reminder a per-turn list with re-load *triggers*. If it takes, rules move back into skills and the reminder gets shorter; if not, they all compete for reminder space. Measurable without the grader |
 | 2 | Re-cut `check-turn`'s new-canon test on plot impact (F5) | high | The checker examined the geologist and **passed** it as "consistent with canon"; it asks *does this conflict?* where rule 4 asks *does this touch the plot?* Keep the classes, change the test, widen intake past newly-*named* things — and narrow the preamble's divergence licence to player-initiated without re-opening the false positives it was written to stop |
 | 3 | Enforce revelation against the plan's reveal flags (rule 5) | high | The plan already carries `(known)` / `(new reveal)` / `(stays hidden)` per clue, and neither `session-run` nor `check-turn` consults them. Needs those flags on the checker side — decide preloaded block vs. on-demand read |
 | 4 | Author the runner-side rules (F1, F3, F4 + secondary) | high | `session-run` § Table craft holds none of the absolutes; `discoveries` binds the plan's mechanics and frees its content; `social-play` bounds what an NPC may *know* but not what may be invented in their mouth. Shape depends on row 1's outcome |
@@ -54,9 +53,8 @@ Plan of record: [`design/benchmark.md`](design/benchmark.md) (B-numbers are its 
 | 1 | B1 prereq — pin the player-end contract | high | One home, one generation path, one load contract for the play packet; BENCHMARK calls it a prereq to finalizing the bench |
 | 2 | B3 — bank the baseline batch | medium | Identical-condition tier-0 runs; **sized from the pilot, not from BENCHMARK's "5–10"** ([`dev/fixtures/hollowfell/pilot-2026-07-29.md`](dev/fixtures/hollowfell/pilot-2026-07-29.md)). Waits on track **recalibration** — a baseline of prompts about to be rewritten measures nothing |
 | 3 | `bench status` — batch state without a throwaway script | low | Runs by outcome (complete / capped / reconcile-pending) is a number this repo keeps hand-deriving; `bench-out/` is gitignored so it can't live in `status.py` (Part 1) |
-| 4 | B4 — golden prompt-stream test | medium | Free regression armor; B5 must diff clean against it |
-| 5 | B5 — playbook extraction | high | Extract the invariant engine; verified twice (golden diff mandatory, confirmation batch optional) |
-| 6 | B6–B9 — tier plumbing, then tier authoring | high | Not startable until B5; B7 (bare) is authored before B8 (standard) because the extreme tier stress-tests the contract fragments |
+| 4 | B5 — playbook extraction | high | Extract the invariant engine; verified twice (golden diff mandatory, confirmation batch optional) |
+| 5 | B6–B9 — tier plumbing, then tier authoring | high | Not startable until B5; B7 (bare) is authored before B8 (standard) because the extreme tier stress-tests the contract fragments |
 
 ## live — shakedown against a real model
 
@@ -95,6 +93,7 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
 | frontends | 5 | Step 3: `bench run` plays a `Lifecycle` — its own `Game`/player-session/reconciler wiring gone, the post-wrap tail now `wrap(on_stage=…)`, the test seam moved to `lifecycle_factory` |
 | frontends | 6 | Step 4: `bench run --ui tui` — `BatchHooks`, a lifecycle attached per run, `BatchHeader`; watching made read-only and the comparability invariant asserted against a headless batch |
 | recalibration | 8 | The ruleset settled (eight transcribed rules → six, one of them a positive) and the corpus audited against it: the runner path scores nothing on rules 1–4, and the session records show why — canon and skills are read on turn 1 and never again |
+| recalibration | 9 | Row 1: the per-turn brief rebuilt as a list the runner executes (`todowrite`, granted to `dm-runner`), with the *loading* step split out of narration — and an orchestrator-side staleness count behind it, because a standing instruction to re-load is what the pilot measured being ignored. Built; unobserved against a live model |
 | benchmark | 7 | The five-run pilot read (**B3 itself is not banked** — the pilot is what says how to bank it): the grading instrument content-hashed, an error bar and a resolution figure on the score, thin subscores flagged. Its findings opened track **recalibration** and parked B3 behind it |
 
 ## Standing sync rules
@@ -110,7 +109,8 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
   pilot's methodology (variance structure, grader reliability, the thin-dimension limit); the
   numbers describe a superseded subject. Harness-only work (frontends, packaging, docs) runs
   alongside freely throughout.
-- **B4 lands before B5.** The golden stream is the only thing that makes the playbook
+- **B5 diffs clean against the golden stream** (`dev/test_golden_stream.py`, B4 — landed before
+  this loop existed, which is why it has no Part). It is the only thing that makes the playbook
   extraction verifiable as behavior-preserving.
 - **The live shakedowns can run at any time** and should run before, not after, a release that
   touches the orchestrator.

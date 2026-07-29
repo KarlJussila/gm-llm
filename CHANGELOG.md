@@ -10,6 +10,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Added
+- **Each archived turn records what the runner opened while drafting it** (`tools`, `stale`), so
+  whether a session was played from canon or from memory is readable without the grader.
 - **`bench report` states its own precision.** The integrity score now carries a 95% confidence
   interval on the batch mean and a *resolution* figure — the smallest difference a batch that size
   could tell apart. The multiplier is Student's t rather than the normal 1.96, because a batch
@@ -28,6 +30,22 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   "already graded", and `bench report` flags a batch scored by more than one instrument instead
   of pooling it. Grades written before the fingerprint existed are grandfathered rather than
   invalidated.
+
+### Changed
+- **The per-turn brief is an algorithm the runner executes, not a paragraph it reads.** Session
+  records showed the runner loading its skills and reading canon on turn 1 of a forty-turn session
+  and never again — a standing instruction to re-load reads as already satisfied, so by turn 24 the
+  campaign was being narrated from memory. The brief now opens the turn with a `todowrite` list
+  (`dm-runner` was the one agent without the tool) whose second step is loading for *this* beat,
+  and the orchestrator counts the turns since the runner last opened a skill or a campaign file —
+  saying so, with the count, once it passes five. The prepared-context header no longer tells the
+  runner it "need not re-open" the files it was given; it says the head start has a shelf life.
+
+### Fixed
+- **A turn that ends on a tool call no longer loses its narration.** opencode splits a turn at each
+  tool call and returns only the last message, so prose written *before* a trailing tool call came
+  back empty — a blank scene to the gate and the player. The draft is now recovered from the
+  session history.
 
 ## [0.5.0] — 2026-07-29
 

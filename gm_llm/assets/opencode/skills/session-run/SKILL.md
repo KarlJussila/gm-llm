@@ -17,7 +17,8 @@ defaults here wherever they conflict.
 ## Companion skills — load the ones the session calls for
 
 This is the core; the companions carry the scene-specific craft. **Assess each scene, load the matching
-skill before you play it, and follow its craft — not just this file.** When in doubt, load.
+skill before you play it, and follow its craft — not just this file.** Every scene, not only the first
+one: what you loaded twenty turns ago is not in front of you. When in doubt, load.
 
 - **`session-flow`** — always. Opening the session and pacing it toward an ending *you* (not the
   player) decide to land. When pacing says it's time, load **`session-close`** — the closing procedure.

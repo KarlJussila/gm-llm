@@ -112,6 +112,16 @@ a rulebook, with the rules back in skills that are actually read at the moment t
 the bet behind the reminder-as-algorithm row on the track, and it is why that row runs before the
 rows that author rule prose.
 
+**What the reminder now does about it.** The brief opens every turn with a `todowrite` list whose
+second step is loading for *this* beat and re-opening what the scene turns on (`dm-runner` holds the
+tool it was the only agent to lack), and the orchestrator — not the prose — counts the turns since
+the runner last called `skill`/`read`/`grep`/`glob`, saying so with the count once it passes five.
+That count is orchestrator-side for the same reason the wrap countdown is: a line that never changes
+stops being acted on, which is exactly what this section measures. **Built, not yet observed against
+a live model.** Whether it took is read off each turn's `tools`/`stale` fields in the run archive;
+until a run says so the third home is not open, and the rows that author rule prose should still
+assume the reminder and the checker are the only text that reaches a turn.
+
 ### Detection is the floor, not the goal
 
 A violation the checker catches is still a violation the runner committed, and gm-llm is a game as
@@ -250,6 +260,8 @@ than silent. The pilot's *methodology* findings survive; its *scores* do not des
 recalibrated system.
 
 One recalibration change is measurable **without the grader**: mid-session reads, skill loads per
-turn and grep counts are deterministic observations in opencode's session DB, not subject to the
-pilot's ±17. Whether the reminder-as-algorithm took can be read from a single run. That query belongs
-in `bench status` (ROADMAP benchmark 3) rather than being re-derived by hand.
+turn and grep counts are deterministic observations, not subject to the pilot's ±17. Whether the
+reminder-as-algorithm took can be read from a single run. The run archive now carries it per turn
+(`tools` — what the runner called while drafting — and `stale`, the turns it had then gone without
+opening anything), so this is a read of `bench-out/`, not of opencode's session DB. Surfacing it
+belongs in `bench status` (ROADMAP benchmark 3) rather than being re-derived by hand.

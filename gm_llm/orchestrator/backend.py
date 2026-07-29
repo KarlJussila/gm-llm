@@ -350,17 +350,47 @@ class Backend:
         parts = resp.get("parts", []) if isinstance(resp, dict) else []
         return [p.get("text", "") for p in parts if p.get("type") == "text" and p.get("text")]
 
-    @classmethod
-    def _last_text(cls, resp: dict) -> str:
-        texts = cls._text_parts(resp)
-        return texts[-1].strip() if texts else ""
+    @staticmethod
+    def _pick_text(texts: list[str], whole: bool) -> str:
+        """`whole=True` → every text part joined (for replies whose content spans parts,
+        e.g. a checker that runs a `todowrite` list and then submits its `report_findings`
+        tool call); otherwise the last one (the runner's narration, a single clean block)."""
+        kept = [t.strip() for t in texts if t.strip()]
+        if not kept:
+            return ""
+        return "\n".join(kept) if whole else kept[-1]
 
     @classmethod
-    def _all_text(cls, resp: dict) -> str:
-        """Every text part joined — for replies whose content spans parts (e.g. a
-        checker that runs a `todowrite` list, then submits its `report_findings`
-        tool call: `_last_text` would keep only the last text part)."""
-        return "\n".join(t.strip() for t in cls._text_parts(resp)).strip()
+    def _resp_text(cls, resp: dict, whole: bool = False) -> str:
+        return cls._pick_text(cls._text_parts(resp), whole)
+
+    def _recent_parts(self, session_id: str) -> list[dict]:
+        """Every message part the agent produced in the most recent turn — scanning every
+        assistant message after the last user message in the session history.
+
+        Must read history rather than the POST response: opencode splits a turn at each
+        tool call and the POST returns only the LAST assistant message. So a tool call the
+        model follows with more output would be invisible in the response — and, the other
+        way round, an agent that writes its prose and *then* touches a tool (marking off a
+        task list, signalling `task_complete`) leaves that prose stranded in an earlier
+        message, which `_run_prompt` recovers from here rather than returning a blank
+        scene. Prompts are serialized (one in-flight), so the trailing assistant messages
+        are exactly this turn's. Best-effort — any error yields empty."""
+        try:
+            msgs = self._raw_get(f"/session/{session_id}/message", timeout=30)
+        except (urllib.error.URLError, OSError, ValueError):
+            return []
+        if not isinstance(msgs, list):
+            return []
+        last_user = -1
+        for i, m in enumerate(msgs):
+            if isinstance(m, dict) and m.get("info", {}).get("role") == "user":
+                last_user = i
+        parts: list[dict] = []
+        for m in msgs[last_user + 1:]:
+            parts.extend(p for p in (m.get("parts", []) if isinstance(m, dict) else [])
+                         if isinstance(p, dict))
+        return parts
 
     def _recent_tool_names(self, session_id: str) -> frozenset[str]:
         """The names of every tool the agent called in the most recent turn — scanning
@@ -374,32 +404,20 @@ class Backend:
         return frozenset(name for name, _ in self._recent_tool_calls(session_id))
 
     def _recent_tool_calls(self, session_id: str) -> list[tuple[str, dict]]:
-        """Every (tool_name, input_args) the agent called in the most recent turn —
-        scanning every assistant message after the last user message. Pairs with
-        `_recent_tool_names` (which derives just the names) and feeds `Reply.tool_inputs`
-        via `prompt_full`. Best-effort — any error yields empty."""
-        try:
-            msgs = self._raw_get(f"/session/{session_id}/message", timeout=30)
-        except (urllib.error.URLError, OSError, ValueError):
-            return []
-        if not isinstance(msgs, list):
-            return []
-        last_user = -1
-        for i, m in enumerate(msgs):
-            if isinstance(m, dict) and m.get("info", {}).get("role") == "user":
-                last_user = i
-        calls = []
-        for m in msgs[last_user + 1:]:
-            for p in (m.get("parts", []) if isinstance(m, dict) else []):
-                if p.get("type") == "tool" and p.get("tool"):
-                    state = p.get("state") or {}
-                    calls.append((p["tool"], state.get("input") or {}))
-        return calls
+        """Every (tool_name, input_args) the agent called in the most recent turn — the
+        tool half of `_recent_parts`. Pairs with `_recent_tool_names` (which derives just
+        the names) and feeds `Reply.tool_inputs` via `prompt_full`."""
+        return self._tool_calls(self._recent_parts(session_id))
+
+    @staticmethod
+    def _tool_calls(parts: list[dict]) -> list[tuple[str, dict]]:
+        return [(p["tool"], (p.get("state") or {}).get("input") or {})
+                for p in parts if p.get("type") == "tool" and p.get("tool")]
 
     def _dump_parts(self, session_id: str, agent: str, resp: dict, out: str) -> None:
         """Debug (logs.debug): append the reply's full part structure to the raw
         log, so we can see whether a checker's findings landed in an earlier part
-        than its verdict (which `_last_text` would drop) vs. the model genuinely
+        than its verdict (which the default last-part read would drop) vs. the model genuinely
         emitting only the verdict."""
         parts = resp.get("parts", []) if isinstance(resp, dict) else []
         types = [p.get("type") for p in parts]
@@ -410,7 +428,7 @@ class Backend:
                  f"text parts: {len(texts)}\n")
         for i, t in enumerate(texts):
             block += f"--- text part {i} ---\n{t}\n"
-        block += f"--- _last_text returned (the checker's text output) ---\n{out}\n"
+        block += f"--- text returned (the checker's text output) ---\n{out}\n"
         append(self.logs.raw, block)
 
     # -- public API ---------------------------------------------------------
@@ -605,12 +623,21 @@ class Backend:
                     if self._stalled:
                         reason = f"no output for {self._effective_stall()}s (stalled — rate limit or slow first token)"
                     else:
-                        out = self._all_text(resp) if whole else self._last_text(resp)
+                        out = self._resp_text(resp, whole)
                         if self.logs.debug:
                             self._dump_parts(session_id, agent, resp, out)
                         if out:
                             return out
-                        if self._recent_tool_names(session_id):
+                        # Nothing in the response — but the response is only the LAST
+                        # assistant message, and a turn that ends on a tool call strands
+                        # its prose in an earlier one. Recover that before calling the turn
+                        # text-free: an empty runner draft is a blank scene.
+                        parts = self._recent_parts(session_id)
+                        out = self._pick_text([p.get("text", "") for p in parts
+                                               if p.get("type") == "text"], whole)
+                        if out:
+                            return out
+                        if self._tool_calls(parts):
                             # A tool-call-only turn is a legitimate reply, not a failure —
                             # e.g. a checker told to submit report_findings and output
                             # nothing else. Retrying would re-send the same prompt (and

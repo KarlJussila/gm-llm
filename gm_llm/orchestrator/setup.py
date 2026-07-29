@@ -111,9 +111,9 @@ class Setup:
 
         # whole=True: the dm's player-facing setup message can span several text parts (it
         # works as it talks — e.g. the world overview followed by a short closer), and
-        # _last_text would surface only the final fragment, dropping the overview. Joining
-        # all text parts surfaces the whole message; reasoning/tool parts are excluded, so
-        # the behind-the-screen thinking never leaks in.
+        # the default last-part read would surface only the final fragment, dropping the
+        # overview. Joining all text parts surfaces the whole message; reasoning/tool parts
+        # are excluded, so the behind-the-screen thinking never leaks in.
         self._announce(self._stage)
         reply = self.backend.prompt(self.dm_sid, self.dm_agent,
                                     load(_STAGE_BRIEFS[self._stage]), whole=True)

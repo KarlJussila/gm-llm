@@ -19,6 +19,7 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [6](#part-6--frontends-batch-chrome-and-an-inert-frontend-2026-07-29) | frontends | How a frontend attaches to something it must not perturb, and how that gets asserted rather than argued; why a parked question was the wrong question |
 | [7](#part-7--benchmark-the-pilot-that-redirected-the-roadmap-2026-07-29) | benchmark | Why an instrument needs a content hash and not a version label; how to read a small batch honestly (t, not z; which subscores are noise); three claims that died to their own evidence |
 | [8](#part-8--recalibration-the-ruleset-settled-and-why-prose-alone-cannot-land-it-2026-07-29) | recalibration | How a ruleset gets sorted onto the right axis; why "always loaded" means "loaded once", measured; a gate that examined a violation and passed it |
+| [9](#part-9--recalibration-the-per-turn-brief-as-an-algorithm-the-runner-executes-2026-07-29) | recalibration | Why the fix for an ignored instruction is a *changing* line the orchestrator computes, not better wording; what handing a narrating agent a tool costs; making a prompt change measurable without a grader |
 
 ## Recurring threads (the classes worth knowing)
 
@@ -47,6 +48,11 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
   The class: whenever compliance with an instruction *is* a tool call, it is directly observable, and
   a prompt round that tunes the wording without checking whether the call ever fires is tuning text
   the model stopped consulting. Reach for the session records first. (Part 8)
+  Part 9 is the repair half, and it generalizes past prompts: **an instruction that reads the same
+  every turn gets scored as already satisfied, so the fix is a line that changes, computed by the
+  code that knows.** The wrap countdown had already learned this — a static "a few more turns" was
+  deferred every turn until it became a descending number — and the staleness line is the same
+  device on a different failure. Better wording is not the lever; state the model can't fabricate is.
 - **One fact, two homes — the copy rots.** CLAUDE.md and `dev/MAINTAINING.md` both stated
   the versioning rule; MAINTAINING's copy was stale by a whole build-config change. Whenever
   a rule gets restated, the restatement is the defect. `lint_docs.py` check 7 encodes the
@@ -893,3 +899,109 @@ can live in skills at all. If loading becomes reliable the reminder gets *shorte
 `python -m compileall gm_llm` clean; all thirteen `dev/test_*.py` scripts pass; `tools/status.py
 --check` and `tools/lint_docs.py` both clean. Model-facing prose changed only by restoring Karl's
 stash — no rule authored this round.
+
+# Part 9 — Recalibration: the per-turn brief as an algorithm the runner executes (2026-07-29)
+
+## The gap
+
+Part 8 measured the thing that makes prompt work futile: across five pilot runs the runner loaded
+`session-run`, `session-flow` and `discoveries` at **turn 1** and never re-loaded any of them, in
+sessions that ran past turn 40; canon reads were all at turn 1 plus one glob near the close, with
+**one** mid-session lookup across all five runs. `turn-reminder` names the scene skills on every
+single turn, so this is not an unread instruction — it is an instruction the model scores as
+*already satisfied*. By turn 24 the campaign is being narrated from a memory of files twenty-three
+turns back, which is where invented facts come from, and no rule written into a skill can reach
+that turn.
+
+So this row ran before the rows that author rule prose: it decides whether a rule can live in a
+skill at all.
+
+## What the round does
+
+### The brief is a list, not a paragraph
+
+`dm-runner` gets `todowrite` — it was the only agent in the corpus without it, while `dm` and
+`narrative-checker` both have it and both work through it. The brief now opens each turn by asking
+for a five-entry list built from its own step headings, and the steps were re-cut so **loading has
+its own step**. It had been the first half of the old step 4, sharing a bullet with "then write the
+world's response" — the enumeration ran straight into the narration instruction, which is a good
+way to be read as preamble to it.
+
+Two smaller calls inside the brief, both about the same failure:
+
+- **The blank in step 2 ("Beat is ___") is filled by the model.** Writing the list is then an act of
+  classification rather than a ritual, and classifying the beat is the whole trigger for which skill
+  to load.
+- **"Don't touch the list again once you start writing."** Not tidiness: opencode splits a turn at
+  each tool call and returns only the last assistant message, so a runner that narrates and *then*
+  marks its list complete hands back an empty draft. See the guard below — the instruction reduces
+  the case, the code removes it.
+
+### The staleness count is orchestrator-side, and that is the point
+
+The load-bearing part of this round is not the list. A brief that says "load again, every turn" is
+still a standing instruction, which is the exact failure class being fixed — the same static text
+has ridden every turn since the pivot. So the orchestrator counts, off each turn's tool calls, how
+many consecutive turns the runner has gone without calling `skill`/`read`/`grep`/`glob`, and past
+five it prepends a line that says so **with the count in it**, which keeps climbing while it is
+ignored.
+
+This is deliberately the same shape as `_wrap_banner`, and for the recorded reason: the wrap nudge
+was made a descending countdown because the runner read the same "a few more turns" every turn and
+deferred every time. A line that changes is read; a line that does not becomes furniture. The
+threshold is five — a scene skill is ~700 tokens and a session is context-bound, so re-reading is
+not free, and five puts the campaign back in front of the runner several times a session without
+paying for it every turn. Combat beats do not reach the counter (they run through `_run_gate`
+directly), so a fight freezes it rather than firing a line that would point the runner at the wrong
+craft.
+
+`runner-header` was amended in the same spirit. It opened with *"read for you; you need not re-open
+these"* — literally true at turn 1 and licensing the failure at turn 24. It now says the head start
+has a shelf life.
+
+### The guard the task list makes necessary
+
+Giving the runner a tool it will call *while narrating* creates a way to lose the narration.
+`_run_prompt` read text from the POST response, which is only the last assistant message; prose
+written before a trailing tool call was invisible, and `_run_prompt` would then classify the turn as
+a legitimate tool-only reply and return `""` — an empty draft, gated and appended to the transcript
+as a blank scene. It now recovers the turn's text from session history before reaching that
+conclusion. The scan `_recent_tool_calls` already did was generalized to `_recent_parts`, so both
+readers share one history fetch.
+
+This hazard predates the round (the runner could already end a turn on `task_complete`); handing it
+a per-turn tool is what made it likely enough to fix.
+
+### Measurement without the grader
+
+Each archived turn now carries `tools` (what the runner called while drafting) and `stale` (turns it
+had then gone without opening anything). The pilot derived this from opencode's own session DB by
+hand; it is now a read of `bench-out/`. Whether this round took is exactly the question those two
+fields answer, and `bench status` (ROADMAP benchmark 3) is where surfacing it belongs.
+
+## Declared lossiness / deferrals
+
+- **Nothing here has faced a live model.** The whole round is a bet about how mimo reads a brief,
+  and no baseline is banked to score prose against (B3, parked). What can be checked cheaply — that
+  the list is written at all, that loads and reads recur — is now in the archive, and it needs one
+  run. `design/runner-authority.md` § Delivery says so where the next author will read it.
+- **The brief got longer, not shorter.** The plan of record predicts a *shorter* reminder once
+  loading is reliable and rules move back into skills. That payoff belongs to rows 2–5; this round
+  paid ~35% more words for the scaffold and the split-out loading step, and trimmed only the
+  duplication it could (the list is built from the step headings rather than restating them).
+- **Rows 2–5 must still assume the reminder and the checker are the only per-turn text.** The third
+  home does not open until a run says loading recurs.
+- **`combat-reminder` was left alone.** Combat is tracker-driven and its brief is emitted per step;
+  the measured failure is in the play loop.
+- **The `submit_turn` question is now half-armed.** `open-questions.md` carries it: the runner has a
+  todo list, so the condition is a rise in meta-breaks, which the next run answers.
+- **A stale ROADMAP row was retired in passing.** B4 (the golden prompt-stream test) has been built
+  and in the gate since before this loop existed; the benchmark track still listed it as remaining
+  work. The code wins and the doc gets fixed in the round that notices it.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all fourteen `dev/test_*.py` scripts pass (the new one is
+`dev/test_runner_turn.py`); `tools/status.py --check` and `tools/lint_docs.py` both clean. The
+golden stream was re-recorded — its diff is exactly the four `dm-runner` messages this round
+rewrote, and nothing else.

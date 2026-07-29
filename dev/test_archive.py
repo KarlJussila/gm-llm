@@ -118,7 +118,8 @@ def test_archive_lazy_header(tmp):
 
 def test_game_turn_events(tmp):
     logs = Logs.under(base=tmp / "logs")
-    backend = FakeBackend(tmp, drafts=["The inn is warm.", "His hair is black."])
+    backend = FakeBackend(tmp, drafts=[_Reply("The inn is warm.", ("skill", "read")),
+                                       "His hair is black."])
     gate = FakeGate([
         _gate_result("Let's begin the session.", clean=True),
         _gate_result("I look at the barkeep.", clean=False),
@@ -143,6 +144,10 @@ def test_game_turn_events(tmp):
     assert checks["check-conduct"]["passed"] and not checks["check-conduct"]["defaulted"]
     assert corrected["canon_sections"] == 7
     assert corrected["context"] == {"tokens": 1200, "limit": 100_000, "threshold": 80_000}
+    # What the runner opened while drafting, and how stale it had gone — the recalibration
+    # signal, readable straight off the archive (design/runner-authority.md § Delivery).
+    assert opening["tools"] == ["read", "skill"] and opening["stale"] == 0
+    assert corrected["tools"] == [] and corrected["stale"] == 1
 
 
 def test_planner_stage_event(tmp):

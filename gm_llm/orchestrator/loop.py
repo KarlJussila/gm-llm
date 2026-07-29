@@ -13,11 +13,14 @@ draft or the gate's correction chatter. (This replaces the old capture plugin, w
 recorded the raw runner session — drafts, corrections and all.) `log-extractor` then
 reads this clean record after the session.
 
-It also owns the **per-turn craft reminder**: the turn algorithm (agency, ask-for-a-
-roll, narrate-the-response) rides in front of each player message, fresh every turn
-so it can't decay over a long session. (This replaces the old `dm-reminder` plugin,
-which pushed the same loop into the system prompt — the user message is more salient
-and the orchestrator already drives the prompt.)
+It also owns the **per-turn craft reminder**: the turn algorithm (frame the message,
+load for the beat, ask for a roll, narrate the response) rides in front of each player
+message, fresh every turn so it can't decay over a long session. (This replaces the old
+`dm-reminder` plugin, which pushed the same loop into the system prompt — the user
+message is more salient and the orchestrator already drives the prompt.) Riding along
+with it is one thing the brief can't know: how long the runner has gone without opening
+a skill or a canon file — counted here off each turn's tool calls, because a *standing*
+instruction to re-load stops being acted on after turn 1 (see `_reminder`).
 
 `Game` is the headless core. Interfaces (the TUI, the benchmark) drive it:
   g = Game(backend, gate)
@@ -87,6 +90,19 @@ def _looks_like_close(text: str) -> bool:
 # growth rate, so this is comfortable pressure, not a scramble.
 _WRAP_WARN_TURNS = 4
 
+# Tools that mean the runner LOOKED SOMETHING UP this turn rather than narrating from
+# memory — a skill re-load, or any read of the campaign. (`list` isn't here: a directory
+# listing refreshes nothing.)
+_CONSULT_TOOLS = frozenset({"skill", "read", "grep", "glob"})
+
+# …and how many consecutive turns it may go without one before the brief says so. The
+# measured failure is absolute, not gradual: across five pilot runs the runner loaded its
+# skills and read canon at turn 1 and never again, in a session that ran to turn 41
+# (design/runner-authority.md § Delivery). Five keeps the re-reading bounded — a scene
+# skill is ~700 tokens and the session is context-bound (`_update_wrap_countdown`) — while
+# putting the campaign back in front of the runner several times a session.
+_STALE_AFTER_TURNS = 5
+
 
 @dataclass
 class TurnResult:
@@ -98,6 +114,10 @@ class TurnResult:
     session_complete: bool = False  # the runner signalled the session's end via task_complete
     combat_started: bool = False    # the runner called start_encounter this turn — enter combat mode
     close_nudged: bool = False      # the draft ended in prose; a close nudge was dispatched
+    # Every tool the runner called drafting this turn. Archived per turn because whether
+    # it looked anything up is the one recalibration signal readable without the grader
+    # (design/runner-authority.md § Consequences for the benchmark).
+    tools: frozenset[str] = frozenset()
 
 
 class Game(CombatMixin):
@@ -118,6 +138,10 @@ class Game(CombatMixin):
         # per-turn countdown that steers the runner to wrap the session (see
         # `_update_wrap_countdown`). Fresh per Game, so it never carries across sessions.
         self._wrap_countdown: int | None = None
+        # Consecutive turns the runner has narrated without opening a skill or a campaign
+        # file — the staleness the per-turn brief calls out (see `_reminder`). Fresh per
+        # Game: a resume re-reads or re-primes, so the count starts over with it.
+        self._since_consult = 0
         # Turn ordinal within THIS run (the archive's turn id). A resume starts a new
         # run over the same session — the archive's `resume` event marks the restart.
         self._turn_no = 0
@@ -182,8 +206,32 @@ class Game(CombatMixin):
         # in <player>…</player> so the runner never mistakes an orchestrator instruction
         # for the player's fiction (or vice versa). The gate and the transcript see only
         # the clean player_msg, never the reminder or the fence.
-        message = f"{self._wrap_banner()}{load('turn-reminder')}\n\n<player>\n{player_input}\n</player>"
+        message = f"{self._wrap_banner()}{self._reminder()}\n\n<player>\n{player_input}\n</player>"
         return self._gated_turn(message, player_input)
+
+    def _reminder(self) -> str:
+        """The per-turn brief, with its staleness slot filled in — empty until the runner
+        has gone `_STALE_AFTER_TURNS` turns without opening a skill or a campaign file,
+        then a line naming the count.
+
+        Why the orchestrator computes this rather than the brief simply saying "re-load
+        your skills": that static line has ridden every turn since the pivot and the
+        session records show it stops being acted on after turn 1 — the runner reads a
+        standing instruction as already satisfied. The same failure produced the wrap
+        countdown (`_wrap_banner`), and the same fix applies: a line that appears only
+        when it is true, carrying a number that moves."""
+        refresh = ""
+        if self._since_consult >= _STALE_AFTER_TURNS:
+            refresh = load("turn-refresh").format(n=self._since_consult) + "\n\n"
+        return load("turn-reminder").format(refresh=refresh)
+
+    def _observe_consult(self, reply) -> None:
+        """Update the staleness count off the turn's tool calls: any lookup resets it,
+        a turn narrated purely from memory advances it. Combat beats don't reach here
+        (they run through `_run_gate` directly), so a fight freezes the count rather than
+        driving it — the brief's step 2 is about the play loop's scene skills, and firing
+        it mid-initiative would point the runner at the wrong craft."""
+        self._since_consult = 0 if (set(reply.tools) & _CONSULT_TOOLS) else self._since_consult + 1
 
     def _wrap_banner(self) -> str:
         """The session-length nudge that rides in front of the next player message, or
@@ -317,9 +365,10 @@ class Game(CombatMixin):
         # A start_encounter mid-narration flips the interface into the combat loop once
         # this (player-driven) turn returns; end_encounter flips it back.
         self._combat_observe(reply)
+        self._observe_consult(reply)  # …and did it look anything up while writing it?
         tr = TurnResult(player_msg, draft, final, result, corrected, session_complete,
                         combat_started=("start_encounter" in reply.tools),
-                        close_nudged=close_nudged)
+                        close_nudged=close_nudged, tools=frozenset(reply.tools))
         self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
         cu = self.backend.context_usage(self.runner_sid)  # one read, shared: countdown + archive
         self._update_wrap_countdown(session_complete, cu)
@@ -467,7 +516,9 @@ class Game(CombatMixin):
 
     def _archive_turn(self, tr: TurnResult, opening: bool, cu) -> None:
         """One `turn` score event — the DRAFT always rides along (the benchmark
-        scores the draft; the correction is its own signal)."""
+        scores the draft; the correction is its own signal). `tools`/`stale` carry the
+        recalibration signal: what the runner opened while drafting, and how many turns
+        it had then gone without opening anything (post-turn, so 0 means this turn)."""
         if not (self.logs and self.logs.archive):
             return
         g = tr.gate
@@ -475,7 +526,7 @@ class Game(CombatMixin):
             "turn", session=self.session, turn=self._turn_no, opening=opening,
             player=tr.player_input, draft=tr.draft, final=tr.final,
             corrected=tr.corrected, session_complete=tr.session_complete,
-            close_nudged=tr.close_nudged,
+            close_nudged=tr.close_nudged, tools=sorted(tr.tools), stale=self._since_consult,
             verdicts=[verdict_fields(g.narrative), verdict_fields(g.conduct)],
             canon_sections=g.canon_sections,
             context=({"tokens": cu.tokens, "limit": cu.context_limit,
