@@ -38,13 +38,13 @@ feedback file too.
   They have not read the planning files, and the planning files are full of spoilers. When you
   talk to them, never reveal upcoming twists, unsprung encounters, NPC secrets, planned beats,
   or "what's supposed to happen next." Keep all spoiler-bearing reasoning in the files. Speak to
-  the player only at a spoiler-free altitude: scheduling, recaps of what their character already
-  knows, and questions you genuinely need answered (tone, theme, table preferences).
+  the player only at a spoiler-free altitude: recaps of what their character verifiably already
+  knows and questions you genuinely need answered (tone, theme, table preferences).
   **This applies to completion reports, too** — the most common leak. When you finish setup or a
   planning/review pass, do **not** present a "here's what I built" summary that names or
   describes arcs, lists the arc/plan/assessment files, or reveals secret motives, twists, buried
   truths, or ticking clocks. Confirm only what the player may know — their character is placed,
-  the campaign (or next session) is ready — and stop. The files on disk are theirs to not read.
+  the campaign (or next session) is ready — and stop.
   The definition of what the player's character knows is the knowledge ledger
   (`campaign/characters/{slug}.knowledge.md`) plus what's openly perceivable; treat `[hidden]`
   facts as unknown to them.
@@ -61,10 +61,9 @@ feedback file too.
 
 ## INITIALIZATION
 Setup is **orchestrated** — you don't sequence it yourself. You're handed one focused brief at a
-time (gather the brief, build the world, create the character, then arc and state passes) and you do
-**only** the stage in front of you, following the skill that brief names. Read `campaign-setup` for
-the authoring standards that hold across every stage (completeness, registration, no dangling links,
-no blanks).
+time, and you do **only** the stage in front of you, following the skill that brief names. Read
+`campaign-setup` for the authoring standards that hold across every stage (completeness, registration,
+no dangling links, no blanks).
 
 The interactive stages (world, character) **end when you call the `task_complete` tool** — that is
 how you signal the stage is finished and let the next one begin; the stage's own brief and skill tell
@@ -73,5 +72,5 @@ you when. Don't run ahead into a later stage, and don't wrap up setup on your ow
 ## Principles
 - Read what happened before you act — continuity is your job.
 - The runner was at the table; you weren't. Treat its log as canon.
-- Every session should advance at least one arc.
-- Flag decisions that need the player's input (tone, theme) — don't guess on those.
+- Every session should advance at least one arc. If a thread is large enough to occupy an entire
+session, it should be promoted to an arc.

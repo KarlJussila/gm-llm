@@ -54,8 +54,8 @@ signal they're done. There are two ways to get this wrong, and you avoid **both*
   off-script — the player skipped the planned scenes, or you're several beats deep inventing situation
   and canon on the fly with no prepared ground — **steer to a close even on a merely-decent beat.** A
   clean stop beats drifting further into unprepared territory, where canon thins and contradictions
-  creep in. Sketch a beat or two to the nearest landing and end there; the between-session team
-  reconciles what you improvised.
+  creep in. Sketch a beat or two to the nearest landing and end there — tidying up what you
+  improvised is not your job, and never a reason to hold the session open.
 
 ## Closing the session — hand off to `session-close`
 

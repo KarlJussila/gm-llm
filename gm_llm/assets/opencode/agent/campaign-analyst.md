@@ -40,11 +40,3 @@ Note on sources: write your report from the digest and the other campaign docume
 written, cross-reference the raw transcript (`campaign/sessions/session-{N}-transcript.md`) for any
 nuance it may have flattened and issue any necessary corrections or additions (see `session-review`'s
 "Verify against the transcript").
-
-Always end with a report:
-- **Result** — the assessment in a few tight bullets
-- **Evidence** — which files/lines support it
-- **Changes** — files written, or "none" if pure analysis
-- **Caveats** — missing files, incomplete data, assumptions made
-
-Be direct and analytical. Write like a briefing, not a narrative.

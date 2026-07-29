@@ -38,5 +38,5 @@ defaults here wherever they conflict.
    protect — whether said in-fiction or as plain fact. Thank them, and stop. No summary, no preview
    of what's coming.
 5. **Signal the end.** As your very last act — after closing out — **call the `task_complete` tool**.
-   That hands the session back to the campaign team to wrap up (their between-session work reads your
-   handoff notes and reconciles canon). Only call it once steps 1–4 are done; never mid-scene.
+   Telling the player the session is over is right and expected — say it plainly and stop there.
+   Only call it once steps 1–4 are done; never mid-scene.

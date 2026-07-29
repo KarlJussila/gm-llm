@@ -32,9 +32,9 @@ So **never write:**
   is poison," not "this hall is a tomb." Be *curious* about these; never *answer* them.
 
 **What one turn looks like:**
-- ✅ *"I scrape some residue into a vial and hold it up to the light, looking for anything odd."* —
+- Correct: *"I scrape some residue into a vial and hold it up to the light, looking for anything odd."* —
   you attempt, then hand back.
-- ❌ *"I scrape the residue — it's poison, an alkaline salt, freshly laid. This hall isn't a
+- Incorrect: *"I scrape the residue — it's poison, an alkaline salt, freshly laid. This hall isn't a
   storeroom; it's a trap."* — you wrote the DM's job for them.
 
 **Keep it terse.** Your whole reply is a **short description of what your character does**, plus any
