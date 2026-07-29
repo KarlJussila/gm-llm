@@ -15,6 +15,7 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [2](#part-2--docs-consolidating-the-planning-docs-onto-the-loop-2026-07-27) | docs | Why `SPEC.md` and `PLAN.md` were deleted rather than moved; how a plan-of-record doc differs from a roadmap and a backlog |
 | [3](#part-3--frontends-one-agent-driven-fight-loop-2026-07-27) | frontends | Why the *safer* of two duplicate loops becomes the shared implementation; where the agent-player seam sits for `PlayerSource` |
 | [4](#part-4--frontends-one-session-loop-keyboard-or-agent-2026-07-27) | frontends | How a blocking loop and an async frontend are reconciled (and what must be released at shutdown); why a failed call is the frontend's call to answer, not the loop's |
+| [5](#part-5--frontends-a-bench-run-is-a-lifecycle-2026-07-28) | frontends | Where to put a test seam so a harness fakes one step instead of a whole interface; why a green-across-the-board refactor still owes new tests |
 
 ## Recurring threads (the classes worth knowing)
 
@@ -442,3 +443,72 @@ new ones (`test_play_session.py`, `test_tui_loop.py` — the TUI pilot runs in ~
 `tools/status.py --check` and `tools/lint_docs.py` both clean. No model-facing prose changed: the
 packet framing moved home byte-for-byte and the prompt fingerprint over the run dirs is unaffected,
 so the B3 freeze is untouched.
+
+# Part 5 — Frontends: a bench run is a lifecycle (2026-07-28)
+
+## The gap
+
+Step 2 gave the three interfaces one turn loop, but left the *session* around that loop wired
+twice. `Lifecycle` is the object the TUI is written against — it owns the `Game`, resolves the
+`--player` axis, and its `wrap()` is the whole post-wrap tail behind one `on_stage` protocol.
+`bench.runner.run_once` re-did all three by hand: `Game(backend, gate_factory(...))`, a
+`backend.create_session("bench-player")` fed to a locally-built `AgentPlayer`, and an injected
+`reconcile_fn(backend, gate, logs, n)` reached through a *second* `gate_factory` call. The
+consequence was not a missing feature but a missing seam: a bench run produced no stage events
+anyone could render, so "watch a batch reconcile in the TUI" had nothing to attach to.
+
+## What the round does
+
+`run_once` builds one `Lifecycle` and plays it. `Game` and `AgentPlayer` leave bench's imports
+entirely; the tail is `lifecycle.wrap(on_stage=…)`.
+
+- **The injected seam moved up, not away.** `reconcile_fn` is replaced by `lifecycle_factory`,
+  defaulting to `_default_lifecycle` (which is one `Lifecycle(..., player="auto")` call). The
+  expensive step inside it is now `Lifecycle.reconcile(n, on_stage, commit)` — one line lifted
+  out of `wrap` so a harness can stand in for *it* rather than for the whole lifecycle. The test
+  fake is a three-line `Lifecycle` subclass, so `Game`, the player source and the warm-runner
+  handoff stay real in every bench test instead of being mocked alongside the reconciler.
+- **The gate is built once.** `_post_wrap` used to call `gate_factory` a second time to hand a
+  reconciler its gate; the lifecycle already holds the one the game plays under.
+- **`--play-only` is `handoff()` without `wrap()`.** The alternative — a `reconcile=False` flag on
+  `wrap` — would have pushed a bench-shaped axis into the product interface for no other caller.
+- **The stage protocol is live in bench today.** `_post_wrap` passes `on_stage=lambda key:
+  note(f"reconcile: {key}…")`, so a console batch already narrates `handoff → digest → … →
+  propagation` instead of sitting silent through the longest part of a run. Step 4 swaps that
+  `note` for the TUI's ticker and nothing else.
+
+## Two tests for the contract, not the plumbing
+
+The sixteen existing cases passed unmodified once the fakes were re-pointed — the armor HANDOFF
+named, doing its job. Two new ones pin what the round is *for*, since a refactor that keeps every
+old test green proves only that it changed nothing observable:
+
+- `test_post_wrap_is_lifecycle_wrap` — the tail really is `wrap()`: the warm runner's
+  `session-1-notes.md` lands, and the stage ticks reach the run's progress notes.
+- `test_player_source_comes_from_the_lifecycle` — the fixture's packet primes the player agent's
+  *first* message and only that one, observed at the backend rather than asserted about the
+  wiring. Nothing tested the packet actually reaching the model before.
+
+## Declared lossiness / deferrals
+
+- **The autoplayer's opencode session is titled `play-player`, not `bench-player`.** One name for
+  the scripted player across every mode is the point of routing through `player_source()`; the
+  title is a debugging label, and bench's own log line still prints the id.
+- **`wrap()` rolls the lifecycle on to session N+1, which bench never plays** — one wasted
+  `create_session` per run, immediately before `backend.stop()`. Paying it keeps `wrap` a single
+  contract for both callers; a `roll=False` flag would be a bench-shaped hole in the interface.
+- **A fixture with no session plan now fails loudly** (`ValueError` from `run_once`) instead of
+  playing a `Game` with `session=None` and writing nothing. It sinks the batch, which is right: a
+  misassembled fixture fails identically on every run.
+- **Console autoplay is still the one direct `Game` construction.** It is now the whole of
+  frontends step 5, parked on ROADMAP. It blocks no cell — the TUI's auto mode already runs on
+  the real lifecycle — and routing it needs `player_source()` to carry the resume story an
+  `AgentPlayer` primes with, which is a contract question rather than a wiring one.
+- **Comparability is untouched and still unenforced.** No archive-facing code changed and no
+  condition field moved, so the B3 freeze holds; the open question about whether the "a frontend
+  never touches the archive path" invariant should be *asserted* rather than argued is unchanged.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all twelve `dev/test_*.py` scripts pass (bench now 18/18);
+`tools/status.py --check` and `tools/lint_docs.py` both clean. No model-facing prose changed.

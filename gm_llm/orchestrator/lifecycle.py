@@ -115,6 +115,14 @@ class Lifecycle:
         self.setup = None
         return n
 
+    def reconcile(self, n: int, on_stage=None, commit: bool = True) -> None:
+        """The between-session pass over session `n` — the wrap's one expensive step,
+        factored out so it can be stood in for. `bench run`'s no-opencode tests override
+        this and nothing else, keeping the rest of the wrap (the warm-runner handoff
+        notes, the roll forward) real rather than mocking the whole lifecycle."""
+        Reconciler(self.backend, self.gate, on_stage=on_stage,
+                   logs=self.logs).reconcile_session(n, commit=commit)
+
     def wrap(self, on_stage=None, stream_write=None, commit: bool = True) -> int:
         """Reconcile the just-played session (digest → … → prep N+1), then roll the
         game forward to session N+1; returns the new session number.
@@ -130,8 +138,7 @@ class Lifecycle:
             if on_stage:
                 on_stage("handoff")
             self.game.handoff()
-            Reconciler(self.backend, self.gate, on_stage=on_stage,
-                       logs=self.logs).reconcile_session(n, commit=commit)
+            self.reconcile(n, on_stage=on_stage, commit=commit)
         finally:
             if tap:
                 tap.stop()

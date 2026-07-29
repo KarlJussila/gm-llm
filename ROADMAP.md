@@ -30,8 +30,8 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 3 | Route bench through `Lifecycle` | medium | Bench constructs `Game` directly and reaches the reconciler via `reconcile_fn`, bypassing the interface the TUI is written against. `Lifecycle.player_source()` is already across |
 | 4 | Batch chrome in the TUI (run *k* of *N*) | medium | `PlayApp` assumes one campaign dir for the app's life; needs the cancel-semantics decision first (`design/open-questions.md`) |
+| 5 | Route console autoplay through `Lifecycle` | low | The last direct `Game` construction. Blocks nothing — duplication to retire, not a gap; needs `player_source()` to carry the resume story |
 
 ## benchmark — the instrument
 
@@ -80,6 +80,7 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
 | packaging | 2 | Phase 1 (native-Windows portability) closed — its rules now live in `dev/MAINTAINING.md` § Portability |
 | frontends | 3 | Step 1: the two `_play_combat`s unified into `orchestrator.play_combat`, bench's cap accounting preserved as the base and tested directly |
 | frontends | 4 | Step 2: `PlayerSource` + `play_session` — one turn loop for the TUI, autoplay and bench; `--player auto --ui tui` filled in, and the TUI given a headless test |
+| frontends | 5 | Step 3: `bench run` plays a `Lifecycle` — its own `Game`/player-session/reconciler wiring gone, the post-wrap tail now `wrap(on_stage=…)`, the test seam moved to `lifecycle_factory` |
 
 ## Standing sync rules
 
@@ -87,8 +88,6 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
   rule and it constrains every other track: prompt edits, tier work, and any refactor that
   could move the prompts wait behind it. Harness-only work (frontends, packaging, docs) runs
   alongside freely.
-- **frontends 1–3 land before 4.** Batch chrome renders a driver that must already be unified;
-  building the chrome first means building it twice.
 - **B4 lands before B5.** The golden stream is the only thing that makes the playbook
   extraction verifiable as behavior-preserving.
 - **The live shakedowns can run at any time** and should run before, not after, a release that

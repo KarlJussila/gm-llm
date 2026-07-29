@@ -2,9 +2,10 @@
 """Standalone checks for the bench runner (B1) — no pytest; run me directly.
 
 Exercises run-dir assembly, the conditions event, the play loop, the turn cap, and
-batch resilience over fakes for the expensive seams (Backend, Gate, reconcile) so it
-needs no network, no npm, and no opencode. Mirrors dev/test_archive.py's style — the
-same _Reply / gate-verdict fakes, tempdirs, and a hand-rolled runner over asserts.
+batch resilience over fakes for the expensive seams (Backend, Gate, the lifecycle's
+between-session pass) so it needs no network, no npm, and no opencode. Mirrors
+dev/test_archive.py's style — the same _Reply / gate-verdict fakes, tempdirs, and a
+hand-rolled runner over asserts.
 """
 
 import json
@@ -20,6 +21,7 @@ sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 import copy  # noqa: E402
 
 from gm_llm.bench import runner  # noqa: E402
+from gm_llm.orchestrator import Lifecycle  # noqa: E402
 from gm_llm.orchestrator.combat import CombatState  # noqa: E402
 from gm_llm.orchestrator.gate import GateResult, Verdict  # noqa: E402
 
@@ -191,6 +193,25 @@ class CombatFakeBackend:
         return _Reply("The goblin lunges at you.", tools={"damage", "advance_turn"})
 
 
+def _lifecycle_factory(on_reconcile=None):
+    """The real `Lifecycle` — the interface bench plays through — with only its expensive
+    seam stood in for. `Game`, the player source and the warm-runner handoff stay real (the
+    resume tests turn on exactly those); `reconcile` is recorded via `on_reconcile(n)`,
+    which may also raise to simulate a post-wrap give-up."""
+    class _FakeLifecycle(Lifecycle):
+        def reconcile(self, n, on_stage=None, commit=True):
+            if on_stage:
+                on_stage("digest")  # the real pipeline's first stage tick
+            if on_reconcile is not None:
+                on_reconcile(n)
+
+    def factory(backend, gate, directory, logs, *, character):
+        return _FakeLifecycle(backend, gate, str(directory), logs=logs, player="auto",
+                              character=character)
+
+    return factory
+
+
 def _combat_fakes(*, end_after=1, reconcile_calls=None):
     def backend_factory(directory, **kw):
         return CombatFakeBackend(directory, end_after=end_after)
@@ -198,12 +219,10 @@ def _combat_fakes(*, end_after=1, reconcile_calls=None):
     def gate_factory(backend, directory, logs):
         return FakeGate()
 
-    def reconcile_fn(backend, gate, logs, n):
-        if reconcile_calls is not None:
-            reconcile_calls.append(n)
-
     return dict(backend_factory=backend_factory, gate_factory=gate_factory,
-                reconcile_fn=reconcile_fn, note=lambda m: None)
+                lifecycle_factory=_lifecycle_factory(
+                    None if reconcile_calls is None else reconcile_calls.append),
+                note=lambda m: None)
 
 
 AGENTS = {
@@ -251,12 +270,10 @@ def _fakes(*, complete_after=None, reconcile_calls=None):
     def gate_factory(backend, directory, logs):
         return FakeGate()
 
-    def reconcile_fn(backend, gate, logs, n):
-        if reconcile_calls is not None:
-            reconcile_calls.append(n)
-
     return dict(backend_factory=backend_factory, gate_factory=gate_factory,
-                reconcile_fn=reconcile_fn, note=lambda m: None)
+                lifecycle_factory=_lifecycle_factory(
+                    None if reconcile_calls is None else reconcile_calls.append),
+                note=lambda m: None)
 
 
 def _archive_events(run_dir):
@@ -365,6 +382,56 @@ def test_natural_close(tmp):
     assert not any(e["event"] == "cap" for e in _archive_events(run_dir))
 
 
+def test_post_wrap_is_lifecycle_wrap(tmp):
+    """The post-wrap tail is `Lifecycle.wrap`, not a private Game+Reconciler wiring: it
+    captures the warm runner's handoff notes AND reports its stages through `on_stage` —
+    the protocol the TUI already renders, which is what makes watching a bench run's
+    reconcile nearly free (design/frontends.md step 3)."""
+    template = _make_template(tmp / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    run_dir = tmp / "run"
+    runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test")
+
+    notes, reconciled = [], []
+    fakes = _fakes(complete_after=1, reconcile_calls=reconciled)
+    fakes["note"] = notes.append
+    rec = runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=30, **fakes)
+
+    assert rec["outcome"] == "complete" and reconciled == [1], (rec, reconciled)
+    assert (run_dir / "campaign" / "sessions" / "session-1-notes.md").is_file(), \
+        "wrap() captures the warm runner's handoff notes before the between-session pass"
+    assert "reconcile: handoff…" in notes and "reconcile: digest…" in notes, \
+        f"the wrap's stage ticks reach the run's progress notes — got {notes}"
+
+
+def test_player_source_comes_from_the_lifecycle(tmp):
+    """The autoplayer is `Lifecycle.player_source()`, so a bench run and `play --player
+    auto` prime the character packet by construction rather than by two matching spellings
+    of the same bracketed heading."""
+    template = _make_template(tmp / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    run_dir = tmp / "run"
+    runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test")
+
+    said = []
+
+    class Recording(FakeBackend):
+        def prompt(self, sid, agent, message, whole=False):
+            said.append((agent, message))
+            return "I look around."
+
+    fakes = _fakes(complete_after=2)
+    fakes["backend_factory"] = lambda directory, **kw: Recording(directory, complete_after=2)
+    runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=30, **fakes)
+
+    player = [m for agent, m in said if agent == "player"]
+    assert len(player) == 2, f"two player turns before the wrap — got {len(player)}"
+    assert "[YOUR CHARACTER" in player[0] and "A wandering cleric." in player[0], \
+        f"the fixture's packet primes the first message — got {player[0]!r}"
+    assert "<!-- a spoiler comment -->" not in player[0], "packet comments are stripped"
+    assert "[YOUR CHARACTER" not in player[1], "the packet is handed over once, not per turn"
+
+
 def test_post_wrap_reconcile_failure_stays_complete(tmp):
     """A stall in the post-wrap reconcile (a rate limit, or a slow large-input call the
     retries gave up on) must NOT demote a naturally-wrapped run: play is the measured
@@ -377,9 +444,9 @@ def test_post_wrap_reconcile_failure_stays_complete(tmp):
     runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test")
 
     fakes = _fakes(complete_after=1)
-    def boom(backend, gate, logs, n):
+    def boom(n):
         raise BackendError("log-extractor failed after 4 retries")
-    fakes["reconcile_fn"] = boom
+    fakes["lifecycle_factory"] = _lifecycle_factory(boom)
 
     rec = runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=30, **fakes)
     assert rec["outcome"] == "complete", f"wrapped run must stay complete — got {rec}"
@@ -426,14 +493,14 @@ def test_resume_finishes_reconcile_only(tmp):
     state = {"draft": 0, "complete_on": {2}}  # opening=1, turn1 draft=2 wraps
     calls = []
 
-    def fakes(reconcile_fn):
+    def fakes(on_reconcile):
         return dict(
             init=lambda d: None, install=lambda d: (True, "noop"),
             backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
             gate_factory=lambda backend, directory, logs: FakeGate(),
-            reconcile_fn=reconcile_fn, note=lambda m: None)
+            lifecycle_factory=_lifecycle_factory(on_reconcile), note=lambda m: None)
 
-    def boom(backend, gate, logs, n):
+    def boom(n):
         calls.append(("boom", n))
         raise BackendError("narrative-checker failed after 2 retries")
 
@@ -442,7 +509,7 @@ def test_resume_finishes_reconcile_only(tmp):
     run_dir = out / first[0]["run_dir"]
     played = sum(1 for e in _archive_events(run_dir) if e["event"] == "turn")
 
-    def ok(backend, gate, logs, n):
+    def ok(n):
         calls.append(("ok", n))
 
     resumed = runner.run_batch(fixture, out, turn_cap=10, resume=True, **fakes(ok))
@@ -539,7 +606,7 @@ def test_failed_run_survives_batch(tmp):
         init=lambda d: None, install=lambda d: (True, "noop"),
         backend_factory=flaky_backend,
         gate_factory=lambda backend, directory, logs: FakeGate(),
-        reconcile_fn=lambda *a: None, note=lambda m: None)
+        lifecycle_factory=_lifecycle_factory(), note=lambda m: None)
 
     assert len(records) == 2, "the batch kept going after the failure"
     assert records[0]["outcome"].startswith("failed:"), records[0]
@@ -637,7 +704,7 @@ def test_rate_limit_is_incomplete_not_failed(tmp):
         init=lambda d: None, install=lambda d: (True, "noop"),
         backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
         gate_factory=lambda backend, directory, logs: FakeGate(),
-        reconcile_fn=lambda *a: None, note=lambda m: None)
+        lifecycle_factory=_lifecycle_factory(), note=lambda m: None)
 
     assert records[0]["outcome"].startswith("incomplete:"), records[0]
     assert records[0]["turns"] == 2, f"two turns landed before the give-up — got {records[0]}"
@@ -663,7 +730,7 @@ def test_resume_continues_incomplete_run(tmp):
             init=lambda d: None, install=lambda d: (True, "noop"),
             backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
             gate_factory=lambda backend, directory, logs: FakeGate(),
-            reconcile_fn=lambda backend, gate, logs, n: reconciled.append(n),
+            lifecycle_factory=_lifecycle_factory(reconciled.append),
             note=lambda m: None, **over)
 
     first = runner.run_batch(fixture, out, runs=1, turn_cap=10, **fakes())
@@ -703,6 +770,7 @@ def test_resume_noop_when_nothing_incomplete(tmp):
 def main():
     tests = (test_assemble_run, test_conditions_event, test_prompt_fingerprint,
              test_prompt_change_is_a_mixed_condition, test_natural_close,
+             test_post_wrap_is_lifecycle_wrap, test_player_source_comes_from_the_lifecycle,
              test_post_wrap_reconcile_failure_stays_complete,
              test_cap_breach_skips_reconcile, test_combat_natural_close,
              test_combat_cap_breach, test_failed_run_survives_batch,

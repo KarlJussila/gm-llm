@@ -33,30 +33,37 @@ they actually differ.
 for per-turn steps, `on_tool` for setup. The TUI renders all three today via
 `Lifecycle.wrap(on_stage=…)`.
 
-## What is actually in the way
+**A bench run is a `Lifecycle`.** `bench.runner.run_once` no longer wires its own `Game`,
+player session and reconciler: it builds the lifecycle (through an injectable
+`lifecycle_factory`), plays `lifecycle.player_source()`, and its post-wrap tail is
+`lifecycle.wrap(on_stage=…)` — so the run already emits the stage protocol a frontend
+renders (findings Part 5). What stays bench's is what is actually bench's: the run dir, the
+conditions event, the archive continuation, and how an outcome is recorded.
 
-**The auto modes bypass `Lifecycle`.** `Lifecycle` is the interface the TUI is written
-against (`tui/app.py`), but `autoplay.run()` and `bench.runner.run_once()` both construct
-`Game` directly and reach the reconciler their own way (`reconcile_fn`). The abstraction
-that would make them renderable is the one they skip. `Lifecycle.player_source()` is the
-first piece to move across; the rest is step 3.
+## What is actually in the way
 
 **`PlayApp` assumes one campaign directory for the app's whole life** — which a batch of N
 runs is not. That is step 4, and it needs the cancel-semantics decision first
 (`open-questions.md`).
 
+**Console autoplay still wires its own `Game`.** `autoplay.run()` is the last direct
+constructor. Nothing is blocked by it — the mode×frontend cell it serves works, and the TUI's
+auto cell already runs on the real lifecycle — so this is duplication to retire, not a gap to
+close. It needs `player_source()` to carry the resume story an `AgentPlayer` primes with,
+which is a contract question of its own. Step 5.
+
 ## Sequence
 
 Contracts before consumers — the driver unification lands before anything renders it. Steps
-1 and 2 have landed (§ What is already in place); the numbering is stable, so ROADMAP's rows
+1–3 have landed (§ What is already in place); the numbering is stable, so ROADMAP's rows
 keep pointing at the same steps.
 
-3. **Route bench through `Lifecycle`** instead of `reconcile_fn`. Once it does, watching
-   reconcile in the TUI is nearly free — the TUI already renders `wrap(on_stage=…)`.
 4. **Batch chrome.** `run_batch` stays above the frontend: N runs, per-run backend on a
    shared port, conditions stamping, manifest rewrite, resume classification. None of it is
    per-session. The TUI needs a batch header it has never had (run *k* of *N*, outcome so
    far).
+5. **Route console autoplay through `Lifecycle`** — the last direct `Game` construction.
+   Unblocks nothing; retires the duplication.
 
 ## Constraints
 

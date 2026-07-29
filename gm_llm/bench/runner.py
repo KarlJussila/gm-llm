@@ -23,7 +23,7 @@ Two invariants this module owns:
     unwrapped session has no clean transcript end — so a run that never learned to wrap
     can't masquerade as one that did.
 
-Everything expensive is injected (`backend_factory`, `gate_factory`, `reconcile_fn`,
+Everything expensive is injected (`backend_factory`, `gate_factory`, `lifecycle_factory`,
 and the `init`/`install` callables on `prepare_template`) so `dev/test_bench.py` can
 exercise the assembly, conditions, loop, cap, and batch-resilience logic with no
 network, no npm, and no opencode. The defaults wire up the real orchestrator.
@@ -42,8 +42,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..orchestrator import (
-    AgentPlayer, Archive, Backend, BackendError, CanonPreloader, Gate, Game, Logs, PlayHooks,
-    Reconciler, play_session,
+    Archive, Backend, BackendError, CanonPreloader, Gate, Lifecycle, Logs, PlayHooks,
+    play_session,
 )
 from ..orchestrator.logs import debug_enabled
 from ..project import init_project, install_plugin_deps
@@ -210,7 +210,7 @@ def assemble_run(template_dir, fixture_campaign, run_dir, fixture_id: str) -> No
                    cwd=run_dir, capture_output=True)
 
 
-# ── backend / gate / reconcile — injectable seams ────────────────────────────
+# ── backend / gate / lifecycle — injectable seams ────────────────────────────
 
 def _default_backend(directory, *, port, min_gap, turn_timeout, logs, note=_quiet):
     b = Backend(directory, port=port, min_call_gap=min_gap, turn_timeout=turn_timeout,
@@ -224,8 +224,14 @@ def _default_gate(backend, directory, logs):
     return Gate(backend, CanonPreloader(directory), logs=logs)
 
 
-def _default_reconcile(backend, gate, logs, n: int) -> None:
-    Reconciler(backend, gate, logs=logs).reconcile_session(n, commit=True, prep=True)
+def _default_lifecycle(backend, gate, directory, logs, *, character: str) -> Lifecycle:
+    """The campaign lifecycle a run is played through — the same object the TUI drives
+    (design/frontends.md step 3). `player="auto"` makes `player_source()` hand back the
+    scripted `player` agent primed with the fixture's packet, and `wrap()` is the whole
+    post-wrap tail (warm-runner handoff notes, then the between-session pass) behind one
+    `on_stage` protocol a frontend can render."""
+    return Lifecycle(backend, gate, str(directory), logs=logs, player="auto",
+                     character=character)
 
 
 def _handoff_done(game) -> bool:
@@ -237,22 +243,28 @@ def _handoff_done(game) -> bool:
     return (game.campaign / "sessions" / f"session-{game.session}-notes.md").is_file()
 
 
-def _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn, *,
-               reconcile: bool, note) -> None:
-    """The post-wrap tail: handoff notes, then the reconcile pass. Both are idempotent —
-    handoff no-ops on existing notes, and the reconciler's stage markers restart it at the
-    stage it died on — so a finish-only resume re-enters here and pays only for what's left.
+def _post_wrap(lifecycle, *, reconcile: bool, note) -> None:
+    """The post-wrap tail, driven through the lifecycle: `wrap()` is handoff notes then the
+    reconcile pass, and its `on_stage` ticks become progress notes here (the same protocol
+    the TUI renders). Both steps are idempotent — handoff no-ops on existing notes, and the
+    reconciler's stage markers restart it at the stage it died on — so a finish-only resume
+    re-enters here and pays only for what's left. `--play-only` wants the notes without the
+    pass, which is `handoff()` alone.
+
+    The wrap rolls the lifecycle on to session N+1; bench never plays it — the run ends here.
 
     Play wrapped, and that's the measured subject: a stall here (a rate limit, or a slow
     large-input call the retries gave up on) must NOT demote a wrapped run to
     incomplete/failed, or the archive would say "complete" while the manifest says
     otherwise. The run stays `complete` and `reconcile_pending` marks the gap instead, so
     `--resume` comes back for it rather than stranding the contradiction."""
+    n = lifecycle.game.session
     try:
-        game.handoff()
         if reconcile:
-            note(f"reconciling session {game.session}…")
-            reconcile_fn(backend, gate_factory(backend, run_dir, logs), logs, game.session)
+            note(f"reconciling session {n}…")
+            lifecycle.wrap(on_stage=lambda key: note(f"reconcile: {key}…"))
+        else:
+            lifecycle.game.handoff()
     except BackendError as e:
         note(f"post-wrap step gave up ({e}) — session already wrapped; leaving reconcile "
              f"undone. Pick it up with `bench run --resume`.")
@@ -281,7 +293,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
              kickoff: str = "Let's begin the session.", port: int = 4181,
              min_gap: float = 1.0, turn_timeout: int = 360, stream: bool = False,
              resume: bool = False, backend_factory=_default_backend,
-             gate_factory=_default_gate, reconcile_fn=_default_reconcile,
+             gate_factory=_default_gate, lifecycle_factory=_default_lifecycle,
              note=_quiet) -> dict:
     """Play one already-assembled run dir through the gated loop and return its record
     (`outcome`, `turns`, `archive`). Boots a backend on the run dir (its own log bundle,
@@ -310,10 +322,13 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
     — the turn loop never opens, because a wrapped session must not grow turns. That's how
     a reconcile the rate limits ate gets finished (see `reconcile_pending`).
 
-    Play itself is `orchestrator.play_session` over an `AgentPlayer` — the same loop the TUI
-    drives with a human on the other end (design/frontends.md). What stays here is what is
-    actually bench's: the run dir, the conditions event, the archive continuation, and how an
-    outcome is recorded. Combat (a turn that calls `start_encounter`) is the loop's handoff to
+    Play runs on the product's own interfaces, not a second wiring of them: the run dir is a
+    `Lifecycle` (which owns the `Game` and hands back the `AgentPlayer` for `--player auto`),
+    the turns are `orchestrator.play_session`, and the tail is `Lifecycle.wrap` — the same
+    objects the TUI drives with a human on the other end (design/frontends.md). What stays
+    here is what is actually bench's: the run dir, the conditions event, the archive
+    continuation, and how an outcome is recorded. Combat (a turn that calls
+    `start_encounter`) is the loop's handoff to
     `play_combat`, which counts **each PC slot as one turn** against `turn_cap` — so a fight
     can't make a run uncappable, and one that runs into the cap is a cap breach like any other
     (reconcile skipped)."""
@@ -344,9 +359,16 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
         reconcile = not play_only
 
         character = _character(run_dir, fixture, note)
-        game = Game(backend, gate_factory(backend, run_dir, logs), logs=logs)
-        player_sid = backend.create_session("bench-player")
-        note(f"runner={game.runner_sid} player={player_sid} session={game.session}")
+        lifecycle = lifecycle_factory(backend, gate_factory(backend, run_dir, logs),
+                                      run_dir, logs, character=character)
+        if lifecycle.game is None:  # a fixture always ships session 1's plan
+            raise ValueError(f"{run_dir}: no session plan under campaign/sessions — the "
+                             f"fixture's campaign/ did not land; nothing to play")
+        game = lifecycle.game
+        # One source per session loop, from the lifecycle rather than built here — bench and
+        # the TUI's `--player auto` then prime the packet identically, by construction.
+        source = lifecycle.player_source()
+        note(f"runner={game.runner_sid} player={source.session_id} session={game.session}")
 
         scene = None
         if resuming and not finish_only:
@@ -369,8 +391,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             record["turns"], record["outcome"] = turns_done, "complete"
             if not _handoff_done(game):
                 game.resume()  # cold runner: rebuild its context before asking for notes
-            _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn,
-                       reconcile=reconcile, note=note)
+            _post_wrap(lifecycle, reconcile=reconcile, note=note)
         else:
             # The played turn count has to survive a give-up mid-play (it is the resume
             # point), and an exception carries no return value — so the loop reports it
@@ -387,7 +408,6 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
                 on_prompt=lambda t: note(f"turn {t}/{turn_cap}: player…"),
                 on_player=_mark,
                 on_slot=lambda _ev, t: note(f"turn {t}/{turn_cap}: combat PC slot…"))
-            source = AgentPlayer(backend, player_sid, character=character)
             turns, outcome, interrupted = turns_done, "cap", None
             try:
                 result = play_session(game, source, scene, hooks=hooks, turns=turns_done,
@@ -407,8 +427,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             elif outcome == "complete":
                 note(f"session wrapped naturally after {turns} turn(s).")
                 record["outcome"] = "complete"
-                _post_wrap(game, backend, run_dir, logs, gate_factory, reconcile_fn,
-                           reconcile=reconcile, note=note)
+                _post_wrap(lifecycle, reconcile=reconcile, note=note)
             else:
                 note(f"hit the turn cap ({turn_cap}) without a wrap — skipping reconcile.")
                 if logs and logs.archive:
@@ -544,7 +563,7 @@ def _rel(path, base) -> str:
 def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int,
                   play_only: bool, kickoff: str, port: float, min_gap: float,
                   turn_timeout: int, stream: bool, backend_factory, gate_factory,
-                  reconcile_fn, note) -> list[dict]:
+                  lifecycle_factory, note) -> list[dict]:
     """`--resume`: pick every *unfinished* run in `out_dir` back up and continue it in place,
     updating its manifest line. Two kinds of unfinished, and they resume differently:
 
@@ -592,7 +611,7 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
                 run_dir, fixture, turn_cap=turn_cap, play_only=play_only, kickoff=kickoff,
                 port=port, min_gap=min_gap, turn_timeout=turn_timeout, stream=stream,
                 resume=True, backend_factory=backend_factory, gate_factory=gate_factory,
-                reconcile_fn=reconcile_fn, note=note)
+                lifecycle_factory=lifecycle_factory, note=note)
         except KeyboardInterrupt:
             note("batch aborted (Ctrl-C).")
             raise
@@ -618,7 +637,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
               port: int = 4181, min_gap: float = 1.0, turn_timeout: int = 360,
               stream: bool = False, resume: bool = False, init=init_project,
               install=install_plugin_deps, backend_factory=_default_backend,
-              gate_factory=_default_gate, reconcile_fn=_default_reconcile,
+              gate_factory=_default_gate, lifecycle_factory=_default_lifecycle,
               note=_quiet) -> list[dict]:
     """Run a batch of `runs` plays of `fixture_path` under `out_dir`, appending one JSONL
     line per run to `out_dir/batch.jsonl`. Prepares the template once, then per run:
@@ -646,7 +665,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
             out_dir, manifest, fixture, turn_cap=turn_cap, play_only=play_only,
             kickoff=kickoff, port=port, min_gap=min_gap, turn_timeout=turn_timeout,
             stream=stream, backend_factory=backend_factory, gate_factory=gate_factory,
-            reconcile_fn=reconcile_fn, note=note)
+            lifecycle_factory=lifecycle_factory, note=note)
 
     template = prepare_template(out_dir, init=init, install=install, note=note)
 
@@ -662,7 +681,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
                 run_dir, fixture, turn_cap=turn_cap, play_only=play_only, kickoff=kickoff,
                 port=port, min_gap=min_gap, turn_timeout=turn_timeout, stream=stream,
                 backend_factory=backend_factory, gate_factory=gate_factory,
-                reconcile_fn=reconcile_fn, note=note)
+                lifecycle_factory=lifecycle_factory, note=note)
         except KeyboardInterrupt:
             note("batch aborted (Ctrl-C).")
             raise

@@ -9,6 +9,13 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Changed
+- **A `bench run` narrates its reconcile.** The between-session pass is the longest stretch of a
+  run and used to print one line before going quiet for minutes; it now reports each stage
+  (`reconcile: handoff… digest… …`) as it starts. This falls out of routing bench through the
+  same `Lifecycle` the TUI plays on, which also retires bench's private `Game`/player-session/
+  reconciler wiring — the same objects, one construction.
+
 ### Added
 - **Watch the scripted player in the TUI (`gm-llm play --player auto --ui tui`).** The last
   unbuilt cell of the play grid. An unattended run now renders in the full TUI — scene pane,

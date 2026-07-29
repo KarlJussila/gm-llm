@@ -13,21 +13,23 @@
 > The loop: a session reads this block, does the one named task at the named effort, closes
 > the round with `/close-round`, and **rewrites this block** to name the next task.
 
-- **Task now: frontends 3 — route `bench run` through `Lifecycle` (effort: medium).** Plan of
-  record `design/frontends.md` § Sequence, and its § What is actually in the way is the brief:
-  `bench.runner.run_once()` builds `Game` directly and reaches the reconciler through its
-  injected `reconcile_fn`, so it skips the one interface the TUI is written against. Once it
-  doesn't, watching a bench run's reconcile in the TUI is nearly free (`Lifecycle.wrap` already
-  speaks the `on_stage` protocol the TUI renders). **Keep the injected seams injectable** —
-  `dev/test_bench.py`'s sixteen cases run on `backend_factory` / `gate_factory` /
-  `reconcile_fn` with no opencode, and that armor is what made step 2 safe.
-- **Then:** frontends 4 (batch chrome), which needs the batch cancel-semantics decision first
-  (`design/open-questions.md`).
+- **Task now: frontends 4 — batch chrome in the TUI (effort: medium).** Plan of record
+  `design/frontends.md` § Sequence and § What is actually in the way. **Decide the batch
+  cancel semantics first** (`design/open-questions.md` § Frontends) — it is the round's opening
+  move, not a separate round; raise it to Karl only if it turns out to be a taste call rather
+  than a mechanics one. The blocker is that `PlayApp` assumes one campaign directory for the
+  app's whole life, which a batch of N run dirs is not; `run_batch` stays *above* the frontend
+  (per-run backends on a shared port, conditions stamping, manifest rewrite, resume
+  classification are none of them per-session). What the TUI needs is a header it has never
+  had: run *k* of *N*, outcome so far. Rendering a run is already done — bench emits the
+  `on_stage` protocol through `Lifecycle.wrap` since Part 5. **Comparability is the invariant**:
+  attaching a frontend must not touch the archive path.
 - **Blocked:** anything model-facing, behind benchmark B3 (`ROADMAP.md` § Standing sync rules).
 - **Needs Karl:** the live-model shakedowns; model configuration ownership; whether
   `dev/test_*.py` should become pytest. All in `design/open-questions.md`.
-- **Also open:** docs 1 (generate `findings.md` § Contents, low) — worth doing while the
-  archive is still short enough that the generator is trivial to verify.
+- **Also open (both low, both unblocked):** docs 1 (generate `findings.md` § Contents) — Part 5
+  was hand-added to that index, which is the rot it predicts; and frontends 5 (console autoplay
+  through `Lifecycle`), the last direct `Game` construction.
 
 ## Live totals
 
@@ -49,23 +51,23 @@ its counts here. `CLAUDE.md` § How to run things has the commands.
 
 ## Where things stand
 
-- **Gate** — green as of Part 4, including two new scripts: `dev/test_play_session.py` (the
-  loop, headless) and `dev/test_tui_loop.py` (the real `PlayApp` over Textual's pilot). Note it
-  is *not* pytest; see CLAUDE.md.
+- **Gate** — green as of Part 5. Twelve scripts, including `dev/test_play_session.py` (the loop,
+  headless) and `dev/test_tui_loop.py` (the real `PlayApp` over Textual's pilot). Note it is
+  *not* pytest; see CLAUDE.md.
 - **Working tree** — clean, this round committed.
 - **docs** — the planning docs are now one architecture (Part 2). Root holds the loop
   (`CLAUDE.md`, `HANDOFF.md`, `ROADMAP.md`) plus `README.md` and `CHANGELOG.md`; every plan of
   record lives in `design/`, routed from `design/README.md`, which is also where "what the
   system is" now lives. `SPEC.md` and `PLAN.md` are gone.
-- **frontends** — steps 1–2 landed (Parts 3–4). There is one turn loop,
-  `orchestrator.play_session`, and one fight loop under it; the player axis is a
-  `PlayerSource` and rendering is `PlayHooks`. `--player auto --ui tui` is filled in. What is
-  left is bench: it still builds `Game` itself and reconciles through `reconcile_fn`, so it is
-  off the frontend axes (step 3), and `PlayApp` still assumes one campaign dir for its whole
-  life (step 4).
+- **frontends** — steps 1–3 landed (Parts 3–5). One turn loop (`orchestrator.play_session`) with
+  one fight loop under it; the player axis is a `PlayerSource`, rendering is `PlayHooks`, and a
+  bench run is now a `Lifecycle` like every other mode — same `Game`, same `player_source()`,
+  same `wrap(on_stage=…)`. `--player auto --ui tui` is filled in. Left: `PlayApp` still assumes
+  one campaign dir for its whole life (step 4), and console autoplay still builds its own `Game`
+  (step 5, blocks nothing).
 - **version** — `CHANGELOG.md`'s `[Unreleased]` has been open since 0.4.2 and now carries a
-  user-facing feature (the TUI's `--player auto` cell) plus `bench tokens`/`report`. Worth a
-  minor bump when the frontends track reaches a resting point; nothing forces it this round.
+  user-facing feature (the TUI's `--player auto` cell) plus `bench tokens`/`report`. The
+  frontends track reaches a resting point when step 4 lands — that is the natural minor bump.
 - **benchmark** — B0 landed. B1/B2 are substantially built (`bench run`, `grade`, `report`,
   `tokens`, `--resume`) but B1 is not final until the player-end contract is pinned. **B3 is
   not banked**, which is what blocks all model-facing work.
