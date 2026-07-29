@@ -162,6 +162,13 @@ dev ping       [N]                     probe the model's rate-limit state
 bench run | grade | report             the benchmark harness (design/benchmark.md)
 ```
 
+`bench run --ui tui` watches a batch in the play TUI instead of as stdout notes — a header
+tracks run *k* of *N* and the outcomes so far, and each run's play, fights and reconcile
+render as they would in a live session. Watching is read-only: nothing typed reaches a run
+and `ctrl+w` is refused, so a watched batch's archives are what a headless batch's would be.
+`ctrl+x` still cancels the call in flight (the loop asks again), and `ctrl+q` stops the batch
+— the run in flight ends resumable, so `bench run --resume` picks it back up.
+
 Defaults do the right thing: `prep` targets the next session and `reconcile` the latest
 played one (inferred from disk and printed before running), and both **commit by
 default** — `--no-commit` for a dry run.

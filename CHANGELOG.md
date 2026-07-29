@@ -9,6 +9,24 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Added
+- **Watch a benchmark batch in the TUI (`bench run --ui tui`).** A batch header tracks run *k*
+  of *N* and the outcomes so far, and each run's play — turns, gate verdicts, fights, the
+  post-session reconcile's stage ticker — renders in the scene pane as it would in a live
+  session, with the model stream behind `ctrl+g`. Watching is deliberately read-only: nothing
+  typed reaches a run, `ctrl+w` is refused (a run wraps itself), and a watched batch's archives
+  are byte-for-byte what a headless batch's would be — asserted by playing the same fixture
+  both ways and diffing. `ctrl+x` still cancels the call in flight and the loop asks again;
+  `ctrl+q` stops the batch, leaving the run in flight resumable via `bench run --resume`.
+
+### Fixed
+- **A session the frontend stopped is no longer archived as a turn-cap breach.** `bench run`
+  read every non-wrapped ending as "hit the cap" and stamped a `cap` event for it — so a run
+  ended early recorded a ceiling it never reached, and `--resume` skipped it as terminal. It is
+  now `incomplete` and resumable.
+- **`play --player auto --ui tui` no longer crashes on a typed line.** The scripted player has
+  no inbox; typing at it now says so.
+
 ### Changed
 - **A `bench run` narrates its reconcile.** The between-session pass is the longest stretch of a
   run and used to print one line before going quiet for minutes; it now reports each stage

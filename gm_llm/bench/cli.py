@@ -50,6 +50,9 @@ def add_bench_parser(subparsers, engine) -> None:
                           "instead of starting fresh ones (ignores --runs)")
     run.add_argument("--out", default="bench-out",
                      help="output dir for template + run dirs + batch.jsonl (default: bench-out)")
+    run.add_argument("--ui", choices=("console", "tui"), default="console",
+                     help="watch the batch in the play TUI instead of streaming notes to "
+                          "stdout (read-only; the archives are unaffected)")
     run.add_argument("--kickoff", default="Let's begin the session.")
     run.set_defaults(func=cmd_bench_run)
 
@@ -77,18 +80,50 @@ def add_bench_parser(subparsers, engine) -> None:
 
 
 
+def _watch_in_tui(args, batch_kwargs) -> list:
+    """`--ui tui`: the same batch, rendered in the play TUI instead of as stdout notes.
+
+    `run_batch` stays where it is — the app drives it on its own thread and attaches to each
+    run's lifecycle through `BatchHooks`, so what lands in the archives is what a headless
+    batch lands (design/frontends.md § Constraints). Two consequences worth naming:
+
+      * `--stream` is dropped — the behind-the-screen pane *is* the stream, and a second
+        EventTap would write into a screen Textual owns.
+      * The batch outlives the screen by design. Quitting stops the loop, and this joins the
+        batch thread afterwards so the run in flight finishes unwinding (its backend
+        stopped, its manifest line written) before the summary is printed."""
+    from ..tui.app import PlayApp
+    if args.stream:
+        _note("--stream is what --ui tui already does (ctrl+g for the pane) — ignoring it.")
+    records: list = []
+
+    def drive(hooks):
+        records.extend(runner.run_batch(args.fixture, args.out, hooks=hooks,
+                                        note=app.note, **batch_kwargs))
+
+    app = PlayApp(batch=drive)
+    app.title = "gm-llm (bench)"
+    app.run()
+    if app.batch_running():
+        _note("stopping — letting the run in flight unwind (backend, manifest)…")
+    app.join_batch()
+    return records
+
+
 def cmd_bench_run(args) -> None:
     """Translate the parsed args into a `run_batch` call. Reconcile is a long between-
     session dm pass, so the per-call timeout defaults generous (1800s) unless the run is
     play-only or the user overrode `--turn-timeout`."""
     timeout = args.turn_timeout or (360 if args.play_only else 1800)
     mode = "resume" if args.resume else f"runs={args.runs}"
-    _note(f"fixture={args.fixture} {mode} out={args.out} "
+    _note(f"fixture={args.fixture} {mode} out={args.out} ui={args.ui} "
           f"turn-cap={args.turn_cap} reconcile={not args.play_only}")
-    records = runner.run_batch(
-        args.fixture, args.out, runs=args.runs, turn_cap=args.turn_cap,
-        play_only=args.play_only, kickoff=args.kickoff, resume=args.resume, port=args.port,
-        min_gap=args.min_gap, turn_timeout=timeout, stream=args.stream, note=_note)
+    kw = dict(runs=args.runs, turn_cap=args.turn_cap, play_only=args.play_only,
+              kickoff=args.kickoff, resume=args.resume, port=args.port,
+              min_gap=args.min_gap, turn_timeout=timeout)
+    records = (_watch_in_tui(args, kw) if args.ui == "tui"
+               else runner.run_batch(args.fixture, args.out, stream=args.stream,
+                                     note=_note, **kw))
 
     done = sum(1 for r in records if r["outcome"] == "complete")
     capped = sum(1 for r in records if r["outcome"] == "cap")

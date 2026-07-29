@@ -11,6 +11,7 @@ methods here run on the UI thread — workers reach them via `call_from_thread`.
 from __future__ import annotations
 
 import time
+from collections import Counter
 
 from textual.message import Message
 from textual.widgets import Static
@@ -183,6 +184,59 @@ class StatusBar(Static):
             parts.append(f"[$text-disabled]{trail} ▸[/]")
         parts.append(f"{m}:{s:02d}")
         self.update("  ·  ".join(parts))
+
+
+class BatchHeader(Static):
+    """The batch chrome: which run of how many is playing, and how the finished ones went —
+    `bench  run 2/5 · run-20260728T…  ·  1 complete`.
+
+    The one thing no per-session widget can say. A batch outlives every lifecycle the app
+    attaches (design/frontends.md step 4), so the tally lives here rather than being
+    re-derived from a campaign that is only the current run's. Hidden unless the app is
+    watching a batch.
+
+    Outcomes are tallied by their head word — `incomplete: rate limited` and
+    `incomplete: stopped from the frontend` are one column, not two."""
+
+    DEFAULT_CSS = """
+    BatchHeader { height: 1; padding: 0 1; background: $primary 20%; color: $text;
+                  display: none; }
+    BatchHeader.active { display: block; }
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__("", **kwargs)
+        self._label = "preparing the batch…"
+        self._outcomes: list[str] = []
+        self._line = ""
+
+    @property
+    def line(self) -> str:
+        """What the header currently says (markup and all) — the batch's own summary of
+        itself, readable without reaching into Textual's render internals."""
+        return self._line
+
+    def activate(self) -> None:
+        self.add_class("active")
+        self._render_line()
+
+    def set_run(self, index: int, total: int, run_id: str) -> None:
+        self._label = f"run {index}/{total} · {run_id}"
+        self._render_line()
+
+    def set_outcome(self, outcome: str) -> None:
+        self._outcomes.append(str(outcome).split(":")[0].strip())
+        self._render_line()
+
+    def set_done(self) -> None:
+        self._label = "batch done"
+        self._render_line()
+
+    def _render_line(self) -> None:
+        tally = Counter(self._outcomes)
+        so_far = "  ·  ".join(f"{n} {name}" for name, n in tally.most_common())
+        self._line = f"[b]bench[/b]  {self._label}" + (f"  ·  {so_far}" if so_far else "")
+        self.update(self._line)
 
 
 class PromptBar(Static, can_focus=True):

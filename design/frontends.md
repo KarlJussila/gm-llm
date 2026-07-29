@@ -40,11 +40,23 @@ player session and reconciler: it builds the lifecycle (through an injectable
 renders (findings Part 5). What stays bench's is what is actually bench's: the run dir, the
 conditions event, the archive continuation, and how an outcome is recorded.
 
-## What is actually in the way
+**A batch is a `Lifecycle` per run.** `PlayApp` no longer assumes one campaign directory for
+the app's life: `self.lc` is *attached per run* (None between runs, with `phase` answering
+for it) and the batch stays above the frontend, on its own thread, calling back through
+`bench.runner.BatchHooks` — `on_run` / `on_open` → `PlayHooks` / `on_stage` / `on_close`.
+`bench run --ui tui` is the wiring. `BatchHeader` is the chrome a batch needs and a session
+never did: run *k* of *N*, outcome so far (findings Part 6).
 
-**`PlayApp` assumes one campaign directory for the app's whole life** — which a batch of N
-runs is not. That is step 4, and it needs the cancel-semantics decision first
-(`open-questions.md`).
+**Watching is read-only, and that is enforced.** `BatchHooks` composes the frontend's hooks
+*under* bench's own bookkeeping rather than replacing them, so a watched run counts turns and
+gives up in the same places an unwatched one does; nothing typed reaches a run; `ctrl+w` is
+refused (a run wraps itself); and the per-turn context readout is skipped. `ctrl+x` is the
+one affordance that carries over verbatim — abort the call in flight, the loop asks again
+from the same scene — because a cancelled turn provably leaves no trace in transcript, canon
+or archive. Quitting stops the loop, which ends that run `incomplete`/resumable (never a
+`cap`, which would archive a ceiling it never hit) and ends the batch.
+
+## What is actually in the way
 
 **Console autoplay still wires its own `Game`.** `autoplay.run()` is the last direct
 constructor. Nothing is blocked by it — the mode×frontend cell it serves works, and the TUI's
@@ -55,13 +67,9 @@ which is a contract question of its own. Step 5.
 ## Sequence
 
 Contracts before consumers — the driver unification lands before anything renders it. Steps
-1–3 have landed (§ What is already in place); the numbering is stable, so ROADMAP's rows
+1–4 have landed (§ What is already in place); the numbering is stable, so ROADMAP's rows
 keep pointing at the same steps.
 
-4. **Batch chrome.** `run_batch` stays above the frontend: N runs, per-run backend on a
-   shared port, conditions stamping, manifest rewrite, resume classification. None of it is
-   per-session. The TUI needs a batch header it has never had (run *k* of *N*, outcome so
-   far).
 5. **Route console autoplay through `Lifecycle`** — the last direct `Game` construction.
    Unblocks nothing; retires the duplication.
 
@@ -75,7 +83,10 @@ keep pointing at the same steps.
   wait on a dead event loop.
 - **Comparability is the invariant.** Bench's value is condition-stamped runs that pool.
   Attaching a frontend must be provably inert with respect to what is measured: the frontend
-  never touches the archive path. Prefer asserting that to stamping `ui` into `conditions`,
-  which would fragment the baseline B3 is meant to bank.
+  never touches the archive path. That is now *asserted* rather than argued —
+  `dev/test_bench_tui.py` plays the same batch headless and watched (typing into the watching
+  app on the way past) and requires the two archives' event streams to be identical. Which is
+  why `ui` is not a recorded condition: stamping it would fragment the baseline B3 is meant
+  to bank, and there is nothing for it to explain.
 - **Don't widen to a console human frontend.** The other unbuilt cell (`--ui console` with a
   human player) is not on this track. The TUI is the human frontend; the stub is correct.

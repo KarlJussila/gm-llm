@@ -53,24 +53,6 @@ BENCHMARK B1 names this a prereq to finalizing the bench: **where** the play pac
 bench, `--character` for autoplay). One canonical home, one generation path, one load contract.
 Parked on ROADMAP track **benchmark**.
 
-## Frontends
-
-### What does cancel mean for a *batch* in the TUI?
-
-Settled for one unattended session (Part 4): `ctrl+x` aborts whichever call is in flight — the
-player agent's or the DM's — and the loop asks again from the same scene, so cancel means "redo
-this call", not "end anything". A batch has no such reading: abandon the run and move to the
-next, or stop the batch? `run_batch` also owns per-run backends and the manifest, neither of
-which the session loop can see. Needs deciding before batch chrome lands, not after. Parked on
-ROADMAP track **frontends** (step 4).
-
-### Should `ui` be a recorded condition?
-
-`design/frontends.md` argues no: stamping it fragments the baseline, and the honest invariant
-is that the frontend never touches the archive path. But that invariant currently has nothing
-enforcing it. If it stays unenforced, the argument for not stamping gets weaker. Parked on
-ROADMAP track **frontends**.
-
 ## Canon layout
 
 ### `sessions/` would read better as per-session directories

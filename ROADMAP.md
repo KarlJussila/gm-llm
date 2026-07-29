@@ -30,7 +30,6 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 4 | Batch chrome in the TUI (run *k* of *N*) | medium | `PlayApp` assumes one campaign dir for the app's life; needs the cancel-semantics decision first (`design/open-questions.md`) |
 | 5 | Route console autoplay through `Lifecycle` | low | The last direct `Game` construction. Blocks nothing — duplication to retire, not a gap; needs `player_source()` to carry the resume story |
 
 ## benchmark — the instrument
@@ -81,6 +80,7 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
 | frontends | 3 | Step 1: the two `_play_combat`s unified into `orchestrator.play_combat`, bench's cap accounting preserved as the base and tested directly |
 | frontends | 4 | Step 2: `PlayerSource` + `play_session` — one turn loop for the TUI, autoplay and bench; `--player auto --ui tui` filled in, and the TUI given a headless test |
 | frontends | 5 | Step 3: `bench run` plays a `Lifecycle` — its own `Game`/player-session/reconciler wiring gone, the post-wrap tail now `wrap(on_stage=…)`, the test seam moved to `lifecycle_factory` |
+| frontends | 6 | Step 4: `bench run --ui tui` — `BatchHooks`, a lifecycle attached per run, `BatchHeader`; watching made read-only and the comparability invariant asserted against a headless batch |
 
 ## Standing sync rules
 

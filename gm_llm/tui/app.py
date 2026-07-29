@@ -42,6 +42,21 @@ arrow surface over the same actions the keybinds and slash-commands drive.
 The app talks only to a Lifecycle-like object (`game.start/turn/meta` →
 `TurnResult`, `wrap`, `finish_setup`, `status`), so the same UI runs against
 `MockLifecycle` or the real backend.
+
+**Batch mode** (`batch=`, from `bench run --ui tui`) is the one thing that breaks the
+one-campaign-per-app assumption everything above rests on: a batch is N run dirs, so the
+lifecycle is *attached per run* rather than handed in at construction (`self.lc` is None
+between runs, and `phase` answers for it). The batch itself stays above the app — it runs on
+its own thread and calls back through `bench.runner.BatchHooks` — because per-run backends,
+conditions stamping and the manifest are none of them per-session. What the app adds is the
+chrome a batch needs and a session never did: `BatchHeader` (run k of N, outcome so far).
+
+Watching is **read-only**: nothing typed reaches a run, ctrl+w is refused (a run wraps
+itself), and even the context-usage readout is skipped — a watched run must make the same
+calls in the same order as a headless one, or the archives stop pooling
+(design/frontends.md § Constraints). The single exception is ctrl+x, whose meaning carries
+over verbatim from a live session — abort the call in flight, the loop asks again from the
+same scene — because a cancelled turn provably leaves no trace behind it.
 """
 
 from __future__ import annotations
@@ -63,7 +78,9 @@ from gm_llm.orchestrator.play import PlayHooks, play_session
 from gm_llm.orchestrator.textmarkup import inline
 
 from .screens import MenuScreen, RollScreen, StatusScreen
-from .widgets import DMBlock, PendingBlock, PlayerLine, PromptBar, SceneLine, StatusBar
+from .widgets import (
+    BatchHeader, DMBlock, PendingBlock, PlayerLine, PromptBar, SceneLine, StatusBar,
+)
 
 
 class PlayApp(App):
@@ -101,8 +118,8 @@ class PlayApp(App):
         "done": "finishing up",
     }
 
-    def __init__(self, lifecycle, cleanup=None, theme: str = "dracula",
-                 turn_cap: int | None = None):
+    def __init__(self, lifecycle=None, cleanup=None, theme: str = "dracula",
+                 turn_cap: int | None = None, batch=None):
         super().__init__()
         self.lc = lifecycle
         self.cleanup = cleanup
@@ -135,14 +152,27 @@ class PlayApp(App):
         self._combat_awaiting = None
         self._combat_gate = threading.Event()
         self._combat_reaction = None
+        # Batch mode: `batch(hooks)` plays N runs (bench's `run_batch`) on its own thread,
+        # attaching a lifecycle per run. None for every other mode — one campaign, handed in.
+        self._batch = batch
+        self._batch_thread = None
 
     @property
     def game(self):
-        """The session currently in play; the lifecycle swaps it on wrap."""
-        return self.lc.game
+        """The session currently in play; the lifecycle swaps it on wrap. None in batch
+        mode between runs, when no lifecycle is attached."""
+        return self.lc.game if self.lc is not None else None
+
+    @property
+    def phase(self) -> str:
+        """Where the campaign stands — asked of the lifecycle, which a batch app doesn't
+        have between runs. Nothing but a real campaign is ever in setup, so "play" is the
+        honest answer for an unattached app: no setup affordance, no wrap prompt."""
+        return self.lc.phase if self.lc is not None else "play"
 
     def compose(self) -> ComposeResult:
         yield Header()
+        yield BatchHeader()
         with Horizontal(id="main"):
             yield VerticalScroll(id="scene")
             # RichLog: append-efficient (no O(n²) re-render), handles its own
@@ -164,26 +194,38 @@ class PlayApp(App):
         self.theme = self._theme if self._theme in self.available_themes else "dracula"
         self._status = self.query_one(StatusBar)
         self._prompt = self.query_one(PromptBar)
+        self._header = self.query_one(BatchHeader)
         self._write_screen("[b]behind the screen[/b] — live model stream · gate verdicts")
-        self._scene_status("esc menu · ctrl+t action/meta · ctrl+g behind-screen · "
-                           "ctrl+x cancel · ctrl+w wrap · /roll 2d6+3 · /meta <q> · /quit")
+        if self._batch is not None:
+            # Watching a batch: no player affordances to advertise, and the retry notice is
+            # wired per run (each run boots its own backend).
+            self._scene_status("esc menu · ctrl+g behind-screen · ctrl+x cancel the call "
+                               "in flight · ctrl+q stop the batch")
+            self._start_batch()
+            return
         # Backend retries surface as a *sticky* status-bar warning (with the running
         # clock), so a rate-limited hang stays visibly flagged the whole time it retries
         # instead of looking like a silent hang. It clears when a call finally gets through.
-        self.lc.backend.on_retry = lambda agent, attempt, wait, reason: \
-            self.call_from_thread(self._status.note,
-                                  f"{agent} call failed ({escape(str(reason))}) — "
-                                  f"retry {attempt}/{self.lc.backend.retries} in {int(wait)}s",
-                                  True)
+        self._scene_status("esc menu · ctrl+t action/meta · ctrl+g behind-screen · "
+                           "ctrl+x cancel · ctrl+w wrap · /roll 2d6+3 · /meta <q> · /quit")
+        self._wire_retry_notice(self.lc.backend)
         self._sync_input()
         self._refresh_subtitle()
-        if self.lc.phase == "wrap_pending":
+        if self.phase == "wrap_pending":
             # A prior run ended session N (task_complete fired) and the player
             # never confirmed the wrap — show the same choice again, no model
             # call, no resume: reconcile-and-prep or quit, nothing else.
             self._show_wrap_pending()
             return
         self.run_worker(self._open(), exclusive=True)
+
+    def _wire_retry_notice(self, backend) -> None:
+        """Route a backend's retry ladder to the status bar. One backend per app normally;
+        one per run in batch mode, which is why this is a method and not a line in on_mount."""
+        backend.on_retry = lambda agent, attempt, wait, reason: self._ui(
+            self._status.note,
+            f"{agent} call failed ({escape(str(reason))}) — "
+            f"retry {attempt}/{getattr(backend, 'retries', '?')} in {int(wait)}s", True)
 
     def _show_wrap_pending(self) -> None:
         self._pending = "wrap"
@@ -257,6 +299,11 @@ class PlayApp(App):
 
     def _sync_input(self) -> None:
         inp = self.query_one("#cmd", Input)
+        if self._batch is not None:
+            # A watched batch is read-only — the box is kept only for /quit and /roll.
+            inp.border_title = "WATCHING — a bench batch plays itself"
+            inp.placeholder = "nothing typed reaches the run · ctrl+q stops the batch"
+            return
         if self._combat_awaiting == "confirm":
             inp.border_title = "COMBAT — Enter to confirm, or type a reaction"
             inp.placeholder = "Enter to confirm the enemy's action · type a reaction to interject"
@@ -267,7 +314,7 @@ class PlayApp(App):
             return
         if self._working:
             inp.border_title = "…thinking — draft freely, send once the table frees up…"
-        elif self.lc.phase == "setup":
+        elif self.phase == "setup":
             inp.border_title = "SETUP — talk to the DM"
         elif self._pending == "wrap":
             inp.border_title = "SESSION COMPLETE — reconcile or quit, nothing else"
@@ -277,14 +324,16 @@ class PlayApp(App):
             inp.border_title = "ACTION — gated"
         else:
             inp.border_title = "META — out-of-game, ungated"
-        inp.placeholder = ("Answer the DM…" if self.lc.phase == "setup"
+        inp.placeholder = ("Answer the DM…" if self.phase == "setup"
                            else "Y to wrap, N not yet, or /quit" if self._pending == "wrap"
                            else "Y to start the session, N not yet, or /quit" if self._pending == "open"
                            else "What does your character do?" if self.mode == "action"
                            else "Ask the DM a logistical question…")
 
     def _default_busy_label(self) -> str:
-        if self.lc.phase == "setup":
+        if self._batch is not None:
+            return "the run is playing"
+        if self.phase == "setup":
             return "the DM is building"
         if self._wrapping:
             return "wrapping the session"
@@ -307,13 +356,17 @@ class PlayApp(App):
         self._status.set_phase(self.TURN_STEPS.get(key, key))
 
     def _refresh_subtitle(self) -> None:
-        base = "SETUP" if self.lc.phase == "setup" else f"{self.mode.upper()} mode"
+        base = "SETUP" if self.phase == "setup" else f"{self.mode.upper()} mode"
         self.sub_title = base + self._ctx_note
 
     def _spawn_context_refresh(self) -> None:
         """Kick off a background refresh of the context-usage note (a couple of
-        HTTP round-trips) — fire-and-forget, doesn't hold up the input."""
-        if self.lc.phase == "play":
+        HTTP round-trips) — fire-and-forget, doesn't hold up the input.
+
+        Never in batch mode: a watched run has to hit the backend in the same order a
+        headless one does, and a per-turn readout the archive can't see is exactly the kind
+        of frontend side-effect the comparability invariant rules out."""
+        if self._batch is None and self.phase == "play":
             self.run_worker(self._refresh_context_note(), exclusive=False)
 
     async def _refresh_context_note(self) -> None:
@@ -342,7 +395,7 @@ class PlayApp(App):
 
     async def _open(self) -> None:
         self._busy(True)
-        if self.lc.phase == "setup":
+        if self.phase == "setup":
             await self._open_setup()   # _open_setup starts its own stream
             return
         # (Re)wire the per-turn step ticker — the lifecycle swaps the game on
@@ -480,6 +533,113 @@ class PlayApp(App):
         self._combat_gate.set()
         return live
 
+    # -- batch mode: N runs, one app (bench run --ui tui) --------------------
+    #
+    # The batch runs on its own thread and attaches a lifecycle per run; the app renders
+    # what it is handed and never drives it. Everything below the `on_open` handoff is the
+    # ordinary session machinery — the loop, the hooks, the stream tap — which is the whole
+    # point of frontends steps 1–3: rendering a bench run costs a lifecycle swap, not a
+    # second app.
+
+    def _start_batch(self) -> None:
+        self._header.activate()
+        self._busy(True, label="preparing the batch")
+        self._batch_thread = threading.Thread(target=self._run_batch, name="bench-batch")
+        self._batch_thread.start()
+
+    def _run_batch(self) -> None:
+        """The batch, off the UI thread for the app's whole life.
+
+        Deliberately a plain thread and not a Textual worker: the CLI joins it *after* the
+        app comes down, so a run in flight finishes unwinding — backend stopped, manifest
+        line written — instead of being abandoned mid-record when the screen closes."""
+        from gm_llm.bench.runner import BatchHooks
+        hooks = BatchHooks(
+            on_run=lambda i, n, run_id: self._ui(self._batch_run, i, n, run_id),
+            on_open=self._batch_open,          # worker thread: attaches, returns the hooks
+            on_stage=lambda key: self._ui(self._batch_stage, key),
+            on_close=self._batch_close)        # worker thread: stops the tap, then renders
+        try:
+            self._batch(hooks)
+        except Exception as e:  # noqa: BLE001 — surface any failure into the scene
+            self._ui(self._phase_failed, "the batch", e)
+            return
+        self._ui(self._batch_done)
+
+    def batch_running(self) -> bool:
+        return self._batch_thread is not None and self._batch_thread.is_alive()
+
+    def join_batch(self, timeout: float | None = None) -> None:
+        """Wait for the batch thread after `run()` returns — the caller's half of the
+        unwind. A run whose model call is still in flight keeps this waiting until the
+        call's own timeout gives up, which is the honest behaviour: its manifest line
+        isn't written yet."""
+        if self._batch_thread is not None:
+            self._batch_thread.join(timeout)
+
+    def note(self, msg: str) -> None:
+        """A bench progress note (the `note` callback `run_batch` writes its log through).
+        Behind the screen, not into the scene: the scene is the play."""
+        self._ui(self._write_screen, f"[dim]\\[bench] {escape(msg)}[/]")
+
+    def _batch_run(self, index: int, total: int, run_id: str) -> None:
+        self._header.set_run(index, total, run_id)
+        self._scene_status(f"── run {index}/{total} · {run_id} ──", kind="rule")
+        self._busy(True, label="assembling the run")
+
+    def _batch_open(self, lifecycle, source, scene: str):
+        """`on_open`, on the batch thread: attach this run's lifecycle and hand back the
+        hooks its turns render through. The source is the run's, not one built here — the
+        loop is bench's, and two sources would mean two players."""
+        self.lc = lifecycle
+        self._source = source
+        self._loop_live = True
+        self._turn = 0
+        self._wire_retry_notice(lifecycle.backend)
+        if lifecycle.game is not None:
+            lifecycle.game.on_step = lambda k: self._ui(self._turn_step, k)
+        self._session_tap = lifecycle.play_stream(
+            lambda s: self._ui(self._append_screen, s))
+        self._ui(self._batch_opened, scene)
+        return self._session_hooks()
+
+    def _batch_opened(self, scene: str) -> None:
+        self._clear_thinking()
+        self._scene_dm(inline(scene))
+        self._busy(True)
+
+    def _batch_stage(self, key: str) -> None:
+        """A post-wrap pipeline stage — the run reconciling itself, rendered with the same
+        ticker a played campaign's wrap uses."""
+        if not self._working:
+            self._busy(True, label="wrapping the run")
+        self._announce_stage("wrap", key)
+
+    def _batch_close(self, record: dict) -> None:
+        """`on_close`, on the batch thread. The tap is stopped here rather than on the UI
+        thread: `stop()` flushes through a `call_from_thread` write callback."""
+        self._loop_live = False
+        tap, self._session_tap = self._session_tap, None
+        if tap:
+            tap.stop()
+        self._ui(self._batch_closed, record)
+
+    def _batch_closed(self, record: dict) -> None:
+        outcome = str(record.get("outcome", "?"))
+        self._clear_thinking()
+        self.lc = None       # this run's backend is being stopped; nothing is attached now
+        self._source = None
+        self._busy(False)
+        self._header.set_outcome(outcome)
+        self._scene_status(f"— {record.get('run', 'run')}: {outcome} "
+                           f"({record.get('turns', 0)} turn(s)) —",
+                           kind="success" if outcome == "complete" else "error")
+
+    def _batch_done(self) -> None:
+        self._busy(False)
+        self._header.set_done()
+        self._scene_status("— the batch is done — ctrl+q to close —", kind="success")
+
     # -- setup: the new-campaign conversation (phase == "setup") ------------
 
     # Map a written file to a spoiler-free build stage (first match wins). The dm's
@@ -590,6 +750,22 @@ class PlayApp(App):
         if event.input.id != "cmd":
             return  # a modal's input (e.g. the roll prompt), not the play bar
         text = event.value.strip()
+        if self._batch is not None:
+            # Watching a bench batch: read-only. Not a UX preference — a typed line would
+            # be a turn (or a meta call) the archive can't distinguish from the run's own,
+            # and the run would stop being comparable to a headless one. /quit and the
+            # local dice roller are the two things that touch nothing.
+            event.input.value = ""
+            low = text.lower()
+            if low in ("/quit", "/exit", "/q"):
+                self.exit()
+            elif low.startswith("/roll"):
+                self._scene_status(roll_expr(text[5:].strip())
+                                   or "could not parse — try /roll 2d6+3", kind="rule")
+            elif text:
+                self._scene_status("— watching a bench batch — nothing typed reaches the "
+                                   "run · ctrl+q stops the batch —", kind="rule")
+            return
         # Combat routing takes precedence: the confirm gate needs a bare Enter (an empty
         # submit) to mean "confirm", and combat input must reach the fight even while the
         # pump worker is mid-flight. `/roll` (local dice) and `/quit` still work here.
@@ -622,7 +798,7 @@ class PlayApp(App):
             self.exit()
             return
         # During setup the bar is a plain answer to the DM — no play commands apply.
-        if self.lc.phase == "setup":
+        if self.phase == "setup":
             self._prompt.dismiss()  # answering the DM supersedes a shown prompt
             self._scene_player(f"[$success bold]You[/]  {inline(text)}")
             self.run_worker(self._do_setup(text), exclusive=True)
@@ -675,6 +851,11 @@ class PlayApp(App):
         if not self._loop_live:
             self._scene_status("— the session loop has stopped — ctrl+w to wrap, or /quit —",
                                kind="rule")
+            return
+        if not self._source.human:
+            # `--player auto`: the agent supplies the turns and the source has no inbox.
+            self.notify("the player agent is driving this session — ctrl+w to stop it",
+                        severity="warning", timeout=3)
             return
         self._combat_awaiting = None
         self._busy(True)
@@ -835,7 +1016,12 @@ class PlayApp(App):
             self._busy(True, label="the fight plays out")
             self._scene_thinking("the fight plays out")
         elif stage == "turn":
-            self._hand_back(message)
+            if self._source is not None and not self._source.human:
+                # Nobody's draft to hand back — the loop re-asks the player agent.
+                self._scene_status("— cancelled — asking again from the same scene —",
+                                   kind="rule")
+            else:
+                self._hand_back(message)
             self._busy(False)
         else:  # "player" — the player agent's own call was cancelled; it'll be asked again
             self._scene_status("— cancelled —", kind="rule")
@@ -870,9 +1056,9 @@ class PlayApp(App):
         out the model call. Aborts the in-flight call so the UI frees up instead of
         locking; the running worker then unwinds with a 'cancelled' note. No-op when
         nothing is running."""
-        if self.lc.phase != "play":  # cancel/revert is a play-turn affordance
+        if self.phase != "play":  # cancel/revert is a play-turn affordance
             return
-        if not self._working:
+        if not self._working or self.game is None:
             return
         self.run_worker(self._do_cancel(), exclusive=False)
 
@@ -901,6 +1087,12 @@ class PlayApp(App):
         No-op while busy — except during a watched `--player auto` run, which is *always*
         busy: there the wrap is the only way to stop it, and the source's `stop()` is graceful
         (the turn in flight finishes and is kept)."""
+        if self._batch is not None:
+            # A bench run wraps itself (`run_once`'s post-wrap tail) — a wrap from here
+            # would end play early and record a session the run never finished.
+            self.notify("a bench run wraps itself — ctrl+q stops the batch",
+                        severity="warning", timeout=3)
+            return
         watched = self._loop_live and self._source is not None and not self._source.human
         if self._wrapping or (self._working and not watched):
             return
@@ -918,7 +1110,7 @@ class PlayApp(App):
             self._pending = None
             self.run_worker(self._open(), exclusive=True)
             return
-        if self.lc.phase not in ("play", "wrap_pending"):  # nothing to wrap during setup
+        if self.phase not in ("play", "wrap_pending"):  # nothing to wrap during setup
             return
         self._pending = None
         # The loop still owns the game while it idles on the player — take it down first
@@ -1014,7 +1206,7 @@ class PlayApp(App):
         """The mouse-and-arrow surface over the same actions the keybinds drive."""
         if isinstance(self.screen, ModalScreen):
             return  # a modal is already up
-        in_setup = self.lc.phase == "setup"
+        in_setup = self.phase == "setup"
         idle = not self._working and not self._wrapping
         if self._pending == "finish_setup":
             wrap_label, wrap_ok = "Finish setup → session 1  (^w)", idle
@@ -1022,13 +1214,15 @@ class PlayApp(App):
             wrap_label, wrap_ok = "Start the planned session  (^w)", idle
         else:
             wrap_label, wrap_ok = "Wrap session  (^w)", idle and not in_setup
+        if self._batch is not None:  # a run wraps itself; nothing here drives it
+            wrap_label, wrap_ok = "Wrap session  (^w)", False
         items = [
-            ("status", "Campaign status", False),
+            ("status", "Campaign status", self.lc is None),
             ("wrap", wrap_label, not wrap_ok),
             ("cancel", "Cancel turn  (^x)", in_setup or not self._working),
             ("screen", "Toggle behind-screen  (^g)", False),
             ("mode", f"Switch to {'META' if self.mode == 'action' else 'ACTION'} mode  (^t)",
-             in_setup),
+             in_setup or self._batch is not None),
             ("roll", "Roll dice…", False),
             ("quit", "Quit  (^q)", False),
         ]
@@ -1072,7 +1266,9 @@ class PlayApp(App):
             log.scroll_end(animate=False)
 
     def action_toggle_mode(self) -> None:
-        if self.lc.phase == "setup":
+        if self._batch is not None:
+            return  # watching, not playing — there is no mode to be in
+        if self.phase == "setup":
             return  # setup has no modes — the bar is always a DM answer
         self.mode = "meta" if self.mode == "action" else "action"
         self._sync_input()

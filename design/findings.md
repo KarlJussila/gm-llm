@@ -16,6 +16,7 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [3](#part-3--frontends-one-agent-driven-fight-loop-2026-07-27) | frontends | Why the *safer* of two duplicate loops becomes the shared implementation; where the agent-player seam sits for `PlayerSource` |
 | [4](#part-4--frontends-one-session-loop-keyboard-or-agent-2026-07-27) | frontends | How a blocking loop and an async frontend are reconciled (and what must be released at shutdown); why a failed call is the frontend's call to answer, not the loop's |
 | [5](#part-5--frontends-a-bench-run-is-a-lifecycle-2026-07-28) | frontends | Where to put a test seam so a harness fakes one step instead of a whole interface; why a green-across-the-board refactor still owes new tests |
+| [6](#part-6--frontends-batch-chrome-and-an-inert-frontend-2026-07-29) | frontends | How a frontend attaches to something it must not perturb, and how that gets asserted rather than argued; why a parked question was the wrong question |
 
 ## Recurring threads (the classes worth knowing)
 
@@ -43,6 +44,15 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
   Part 4 applied it once more and found the corollary: when the copies also disagree about a
   *case* neither documents — resuming into a live fight, which both agent-player loops got wrong
   — unifying is what surfaces it, because the merged loop has to answer the question once.
+- **When a frontend attaches to something it must not perturb, enumerate what it may do — the
+  answer is "almost nothing", and the test is a diff against the unattached run.** Batch chrome
+  looked like a rendering problem and was a permissions problem: the useful question was not
+  "what does cancel mean here" but "what is a frontend allowed to do to a run at all". The rule
+  that fell out generalizes past bench: an affordance carries over only if its effect is
+  *traceless* in whatever the system is measuring (ctrl+x leaves no turn behind, so it stays);
+  everything else — a typed line, a wrap, even a read that costs a call — is refused. And once
+  the answer is "nothing", it is assertable: play the same work watched and unwatched and require
+  the records to match. (Part 6)
 - **A thread parked on a UI is a thread that will not exit.** The blocking session loop runs on a
   worker thread and waits on the app's event loop to render; on shutdown Textual cancels the
   worker's *coroutine* while its thread keeps running, so any wait the thread is sitting on
@@ -511,4 +521,96 @@ old test green proves only that it changed nothing observable:
 ## Green bar
 
 `python -m compileall gm_llm` clean; all twelve `dev/test_*.py` scripts pass (bench now 18/18);
+`tools/status.py --check` and `tools/lint_docs.py` both clean. No model-facing prose changed.
+
+# Part 6 — Frontends: batch chrome, and an inert frontend (2026-07-29)
+
+## The gap
+
+Steps 1–3 made a bench run renderable — one turn loop, one `PlayHooks`, one `Lifecycle` with a
+stage protocol behind it. Nothing rendered it, because a *batch* is not a session: `PlayApp`
+took its lifecycle in the constructor and read `self.lc` for the app's whole life, and N run
+dirs are N lifecycles. The blocker was the app's shape, not the loop's.
+
+And the question the plan of record parked first — what `ctrl+x` means for a batch — turned out
+to be the wrong question, or rather a question whose answer falls out of a bigger one that had
+been sitting in the backlog unanswered: **what is a frontend allowed to do to a run at all?**
+
+## The decision: watching is read-only
+
+`ctrl+x` needs no new meaning. In a live session it aborts the call in flight and the loop asks
+again from the same scene — "redo this call", not "end anything" — and a cancelled turn provably
+leaves no trace in transcript, canon or archive (the loop rolls `turns` back to its checkpoint;
+the app reverts the runner session). That reading transfers to a batch verbatim, so it stays.
+
+What has no reading is everything *else* a frontend could do, and the answer is that it may do
+none of it, because bench's value is condition-stamped runs that pool:
+
+- **A typed line is refused.** It would be a turn (or a meta call) that the archive cannot
+  distinguish from the run's own, and the run would stop being comparable to a headless one.
+- **`ctrl+w` is refused.** A wrap from the frontend ends play early; `play_session` would return
+  `stopped`, which `run_once` — before this round — read as a cap and stamped a `cap` event for.
+  The run would have archived a ceiling it never hit. That was a live bug the chrome exposed:
+  `stopped` is now its own branch, recorded `incomplete: stopped from the frontend`, no `cap`
+  event, classifying `resumable`.
+- **The context-usage readout is skipped.** It is a real per-turn backend call that a headless
+  run does not make.
+- **The loop's error policy stays bench's.** `BatchHooks` composes the frontend's `PlayHooks`
+  *under* bench's own bookkeeping rather than replacing them, and consults the frontend's
+  `on_interrupt` only for a `BackendCancelled` — the cancel above. Every other give-up rides out
+  to the record exactly as it does headless, so a watched run gives up where an unwatched one
+  does.
+
+This also settles the *other* frontends open question, which had been getting weaker on the
+argument "the frontend never touches the archive path, but nothing enforces it". Something
+enforces it now (below), so `ui` stays out of `conditions` — stamping it would fragment the
+baseline B3 is meant to bank, and there is nothing left for it to explain.
+
+## What the round does
+
+- **`bench.runner.BatchHooks`** — the batch's side of a frontend: `on_run(index, total, run_id)`,
+  `on_open(lifecycle, source, scene) -> PlayHooks`, `on_stage(key)`, `on_close(record)`. Threaded
+  through `run_once`, `run_batch` and `_resume_batch`, defaulting to silence. `run_batch` stays
+  above the frontend — per-run backends, conditions stamping, the manifest, resume classification
+  are none of them per-session.
+- **`PlayApp` attaches a lifecycle per run.** `self.lc` is None between runs; a new `phase`
+  property answers for it (nothing but a real campaign is ever in setup). `on_open` runs on the
+  batch thread: it latches the lifecycle and the run's *own* source (two sources would be two
+  players), wires the retry notice and the step ticker, starts the stream tap, and hands back
+  `_session_hooks()` — the same hooks a keyboard session renders through.
+- **`BatchHeader`** — run *k* of *N* and the outcome tally, which no per-session widget can say
+  because the batch outlives every lifecycle the app attaches.
+- **`bench run --ui tui`.** `--stream` is dropped there (the pane is the stream).
+- **The batch is a plain thread, not a Textual worker.** The CLI joins it *after* `app.run()`
+  returns, so the run in flight finishes unwinding — backend stopped, manifest line written —
+  instead of being abandoned mid-record when the screen closes. A frontend that goes down ends
+  the batch there and leaves the rest to `--resume`.
+
+## The test is the invariant
+
+`dev/test_bench_tui.py` plays the same fixture twice over the same fakes — once headless, once
+through the real `PlayApp` on Textual's pilot — and requires the two batches' outcomes, turn
+counts and **archive event streams to be identical**, typing a line into the watching app on the
+way past. The second scenario quits mid-run and pins the honest ending: `incomplete`, no `cap`
+event, `classify_archive` says `resumable`, run 2 never opens, the manifest line is on disk.
+
+That is the comparability constraint moved from prose into the gate. It is worth noting what
+makes it cheap: the assertion is possible only because the archive is written by one path that
+neither frontend can reach.
+
+## Declared lossiness / deferrals
+
+- **No context-usage readout while watching a batch** (above). The subtitle just says the mode.
+  If it is ever wanted, the honest version reads the archive, not the backend.
+- **The watched run does open one extra connection** — the behind-the-screen `EventTap`, an SSE
+  subscription to opencode's own event bus. It is the same read-only tap `bench run --stream`
+  makes and it emits nothing into the run; the archive equality test covers the claim.
+- **`--player auto` in a live campaign could always have crashed on a typed line** (`AgentPlayer`
+  has no `submit`). Found while guarding the batch path; fixed there too, as a notice.
+- **Console autoplay is still the one direct `Game` construction** — frontends step 5, unchanged
+  and blocking nothing.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all thirteen `dev/test_*.py` scripts pass;
 `tools/status.py --check` and `tools/lint_docs.py` both clean. No model-facing prose changed.

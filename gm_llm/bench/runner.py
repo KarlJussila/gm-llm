@@ -38,13 +38,16 @@ import re
 import secrets
 import shutil
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 from ..orchestrator import (
     Archive, Backend, BackendError, CanonPreloader, Gate, Lifecycle, Logs, PlayHooks,
     play_session,
 )
+from ..orchestrator.backend import BackendCancelled
 from ..orchestrator.logs import debug_enabled
 from ..project import init_project, install_plugin_deps
 
@@ -68,6 +71,47 @@ def _run_id() -> str:
 
 def _quiet(msg: str) -> None:  # default `note` — the CLI passes its own coloured one
     print(f"[bench] {msg}", flush=True)
+
+
+def _noop(*_args, **_kwargs):
+    return None
+
+
+@dataclass
+class BatchHooks:
+    """A frontend attached to a batch — the events a run produces that a session's own
+    `PlayHooks` cannot, because they are not per-session: which run of how many is starting,
+    the lifecycle it will be played through, and how it ended.
+
+      on_run(index, total, run_id)   — run `index` of `total` is about to be played.
+      on_open(lifecycle, source, scene) -> PlayHooks | None — the run is open on `scene`;
+                                      hand back the hooks to render its turns with.
+      on_stage(key)                  — a post-wrap pipeline stage started (the same protocol
+                                      `Lifecycle.wrap` announces to every other frontend).
+      on_close(record)               — the run's record (`outcome`, `turns`, `archive`).
+
+    **Deliberately incapable of changing what is measured** (design/frontends.md §
+    Constraints). A frontend renders the loop; it never drives it. Two consequences are
+    enforced here rather than left to the frontend's good manners:
+
+      * The turn loop's **error policy stays bench's**. `on_open`'s hooks are composed with
+        this module's own bookkeeping, and their `on_interrupt` is consulted **only** for a
+        `BackendCancelled` — a call the watcher itself took back, which leaves no trace in
+        transcript, canon or archive and so costs the measurement nothing. Every other
+        give-up rides out to `run_once` exactly as it does headless.
+      * A frontend that takes the loop down (its app quitting) ends the run as
+        `incomplete`/resumable — never as a cap, which would archive a ceiling the run
+        never hit.
+
+    `run_batch` stays above all of this: the per-run backends, the conditions stamping, the
+    manifest and the resume classification are none of them per-session, and none of them a
+    frontend's business.
+    """
+
+    on_run: Callable[[int, int, str], None] = _noop
+    on_open: "Callable[[object, object, str], PlayHooks | None]" = _noop
+    on_stage: Callable[[str], None] = _noop
+    on_close: Callable[[dict], None] = _noop
 
 
 # ── fixture + conditions ─────────────────────────────────────────────────────
@@ -243,7 +287,7 @@ def _handoff_done(game) -> bool:
     return (game.campaign / "sessions" / f"session-{game.session}-notes.md").is_file()
 
 
-def _post_wrap(lifecycle, *, reconcile: bool, note) -> None:
+def _post_wrap(lifecycle, *, reconcile: bool, note, on_stage=_noop) -> None:
     """The post-wrap tail, driven through the lifecycle: `wrap()` is handoff notes then the
     reconcile pass, and its `on_stage` ticks become progress notes here (the same protocol
     the TUI renders). Both steps are idempotent — handoff no-ops on existing notes, and the
@@ -259,10 +303,15 @@ def _post_wrap(lifecycle, *, reconcile: bool, note) -> None:
     otherwise. The run stays `complete` and `reconcile_pending` marks the gap instead, so
     `--resume` comes back for it rather than stranding the contradiction."""
     n = lifecycle.game.session
+
+    def _tick(key: str) -> None:
+        note(f"reconcile: {key}…")
+        on_stage(key)
+
     try:
         if reconcile:
             note(f"reconciling session {n}…")
-            lifecycle.wrap(on_stage=lambda key: note(f"reconcile: {key}…"))
+            lifecycle.wrap(on_stage=_tick)
         else:
             lifecycle.game.handoff()
     except BackendError as e:
@@ -294,7 +343,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
              min_gap: float = 1.0, turn_timeout: int = 360, stream: bool = False,
              resume: bool = False, backend_factory=_default_backend,
              gate_factory=_default_gate, lifecycle_factory=_default_lifecycle,
-             note=_quiet) -> dict:
+             hooks: "BatchHooks | None" = None, note=_quiet) -> dict:
     """Play one already-assembled run dir through the gated loop and return its record
     (`outcome`, `turns`, `archive`). Boots a backend on the run dir (its own log bundle,
     its own archive), emits the `conditions` event, plays to `task_complete` or the hard
@@ -331,7 +380,12 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
     `start_encounter`) is the loop's handoff to
     `play_combat`, which counts **each PC slot as one turn** against `turn_cap` — so a fight
     can't make a run uncappable, and one that runs into the cap is a cap breach like any other
-    (reconcile skipped)."""
+    (reconcile skipped).
+
+    **`hooks`** attaches a frontend (`BatchHooks`) — the TUI watching a batch. It is handed
+    the lifecycle, the player source and the opening scene, and hands back the `PlayHooks`
+    its turns render through; what it cannot do is change the run. See `BatchHooks`."""
+    hooks = hooks or BatchHooks()
     run_dir = Path(run_dir)
     logs = Logs.under(project=run_dir, debug=debug_enabled())
 
@@ -391,7 +445,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             record["turns"], record["outcome"] = turns_done, "complete"
             if not _handoff_done(game):
                 game.resume()  # cold runner: rebuild its context before asking for notes
-            _post_wrap(lifecycle, reconcile=reconcile, note=note)
+            _post_wrap(lifecycle, reconcile=reconcile, note=note, on_stage=hooks.on_stage)
         else:
             # The played turn count has to survive a give-up mid-play (it is the resume
             # point), and an exception carries no return value — so the loop reports it
@@ -399,18 +453,39 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             # drafted. Silent otherwise: no rendering hooks, so a run's output is the same
             # shape in a fight as out of one.
             progress = {"turns": turns_done}
+            # The frontend's renderer, composed *under* the bookkeeping above rather than
+            # replacing it — a watched run counts turns, notes progress and gives up in
+            # exactly the places an unwatched one does (see `BatchHooks`).
+            front = hooks.on_open(lifecycle, source, scene) or PlayHooks()
 
-            def _mark(_text, t):
+            def _prompt(t):
+                note(f"turn {t}/{turn_cap}: player…")
+                front.on_prompt(t)
+
+            def _mark(text, t):
                 progress["turns"] = t
                 note(f"turn {t}/{turn_cap}: dm (draft + gate)…")
+                front.on_player(text, t)
 
-            hooks = PlayHooks(
-                on_prompt=lambda t: note(f"turn {t}/{turn_cap}: player…"),
-                on_player=_mark,
-                on_slot=lambda _ev, t: note(f"turn {t}/{turn_cap}: combat PC slot…"))
+            def _slot(event, t):
+                note(f"turn {t}/{turn_cap}: combat PC slot…")
+                front.on_slot(event, t)
+
+            def _interrupt(stage, exc, message):
+                # Only a cancel the watcher itself asked for is survivable here: it leaves
+                # no trace in transcript, canon or archive, so the redo is invisible to the
+                # measurement. A retry ladder that gave up rides out to the record below,
+                # frontend or no frontend.
+                return (isinstance(exc, BackendCancelled)
+                        and bool(front.on_interrupt(stage, exc, message)))
+
+            play_hooks = PlayHooks(
+                on_prompt=_prompt, on_player=_mark, on_turn=front.on_turn, on_slot=_slot,
+                on_beat=front.on_beat, on_combat_end=front.on_combat_end,
+                on_interrupt=_interrupt if front.on_interrupt else None)
             turns, outcome, interrupted = turns_done, "cap", None
             try:
-                result = play_session(game, source, scene, hooks=hooks, turns=turns_done,
+                result = play_session(game, source, scene, hooks=play_hooks, turns=turns_done,
                                       turn_cap=turn_cap)
                 turns, outcome = result.turns, result.outcome
             except BackendError as e:
@@ -427,7 +502,15 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             elif outcome == "complete":
                 note(f"session wrapped naturally after {turns} turn(s).")
                 record["outcome"] = "complete"
-                _post_wrap(lifecycle, reconcile=reconcile, note=note)
+                _post_wrap(lifecycle, reconcile=reconcile, note=note, on_stage=hooks.on_stage)
+            elif outcome == "stopped":
+                # The player source was stopped — only a frontend does that, on its way out.
+                # Nothing about the session is settled, so nothing is stamped: a `cap` event
+                # here would archive a ceiling the run never reached. It classifies
+                # `resumable`, and `stopped` tells the batch to stop opening new runs.
+                note(f"stopped after {turns} turn(s) — resumable with `bench run --resume`.")
+                record["outcome"] = "incomplete: stopped from the frontend"
+                record["stopped"] = True
             else:
                 note(f"hit the turn cap ({turn_cap}) without a wrap — skipping reconcile.")
                 if logs and logs.archive:
@@ -563,7 +646,7 @@ def _rel(path, base) -> str:
 def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int,
                   play_only: bool, kickoff: str, port: float, min_gap: float,
                   turn_timeout: int, stream: bool, backend_factory, gate_factory,
-                  lifecycle_factory, note) -> list[dict]:
+                  lifecycle_factory, hooks, note) -> list[dict]:
     """`--resume`: pick every *unfinished* run in `out_dir` back up and continue it in place,
     updating its manifest line. Two kinds of unfinished, and they resume differently:
 
@@ -603,15 +686,16 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
         return records
 
     note(f"resuming {len(pending)} unfinished run(s)…")
-    for rd, rec, done, kind in pending:
+    for i, (rd, rec, done, kind) in enumerate(pending):
         run_dir = out_dir / rd
         note(f"── resume {rd} ({'reconcile only' if kind == 'reconcile' else f'from {done} turn(s)'}) ──")
+        hooks.on_run(i + 1, len(pending), rd)
         try:
             result = run_once(
                 run_dir, fixture, turn_cap=turn_cap, play_only=play_only, kickoff=kickoff,
                 port=port, min_gap=min_gap, turn_timeout=turn_timeout, stream=stream,
                 resume=True, backend_factory=backend_factory, gate_factory=gate_factory,
-                lifecycle_factory=lifecycle_factory, note=note)
+                lifecycle_factory=lifecycle_factory, hooks=hooks, note=note)
         except KeyboardInterrupt:
             note("batch aborted (Ctrl-C).")
             raise
@@ -628,7 +712,11 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
             record["archive"] = _rel(result["archive"], out_dir)
         _rewrite_manifest(manifest, record)
         records.append(record)
+        hooks.on_close(record)
         note(f"resume {rd}: {record['outcome']} ({record['turns']} turn(s))")
+        if result.get("stopped"):
+            note("frontend stopped — leaving the rest of the sweep for the next `--resume`.")
+            break
     return records
 
 
@@ -638,7 +726,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
               stream: bool = False, resume: bool = False, init=init_project,
               install=install_plugin_deps, backend_factory=_default_backend,
               gate_factory=_default_gate, lifecycle_factory=_default_lifecycle,
-              note=_quiet) -> list[dict]:
+              hooks: "BatchHooks | None" = None, note=_quiet) -> list[dict]:
     """Run a batch of `runs` plays of `fixture_path` under `out_dir`, appending one JSONL
     line per run to `out_dir/batch.jsonl`. Prepares the template once, then per run:
     assemble → play → record. `KeyboardInterrupt` aborts the whole batch cleanly.
@@ -653,7 +741,14 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
         under `out_dir` in place (see `_resume_batch`), updating its manifest line. Run a
         fresh batch, then `--resume` after the caps clear to top up the incompletes.
 
-    Re-invoking without `--resume` and the same `--out` still just appends new fresh runs."""
+    Re-invoking without `--resume` and the same `--out` still just appends new fresh runs.
+
+    **`hooks`** attaches a frontend (`BatchHooks`) to the batch — `bench run --ui tui` watches
+    it in the play TUI. The batch stays here either way: a frontend renders runs, it never
+    owns the template, the manifest or the resume classification. A frontend that goes down
+    mid-run ends that run `incomplete` and stops the batch there, leaving the rest for
+    `--resume`."""
+    hooks = hooks or BatchHooks()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     fixture = load_fixture(fixture_path)
@@ -665,7 +760,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
             out_dir, manifest, fixture, turn_cap=turn_cap, play_only=play_only,
             kickoff=kickoff, port=port, min_gap=min_gap, turn_timeout=turn_timeout,
             stream=stream, backend_factory=backend_factory, gate_factory=gate_factory,
-            lifecycle_factory=lifecycle_factory, note=note)
+            lifecycle_factory=lifecycle_factory, hooks=hooks, note=note)
 
     template = prepare_template(out_dir, init=init, install=install, note=note)
 
@@ -674,6 +769,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
         runid = _run_id()
         run_dir = out_dir / f"run-{runid}"
         note(f"── run {i + 1}/{runs} · {runid} ──")
+        hooks.on_run(i + 1, runs, runid)
         assemble_run(template, fixture_campaign, run_dir, fixture.get("id", "fixture"))
         started = _now()
         try:
@@ -681,7 +777,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
                 run_dir, fixture, turn_cap=turn_cap, play_only=play_only, kickoff=kickoff,
                 port=port, min_gap=min_gap, turn_timeout=turn_timeout, stream=stream,
                 backend_factory=backend_factory, gate_factory=gate_factory,
-                lifecycle_factory=lifecycle_factory, note=note)
+                lifecycle_factory=lifecycle_factory, hooks=hooks, note=note)
         except KeyboardInterrupt:
             note("batch aborted (Ctrl-C).")
             raise
@@ -704,5 +800,11 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
         with manifest.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
         records.append(record)
+        hooks.on_close(record)
         note(f"run {runid}: {record['outcome']} ({record['turns']} turn(s))")
+        if result.get("stopped"):
+            # The frontend went down mid-run. Opening a fresh run into a dead frontend
+            # would play it unwatched — end the batch here, like a Ctrl-C.
+            note("frontend stopped — ending the batch; resume with `bench run --resume`.")
+            break
     return records
