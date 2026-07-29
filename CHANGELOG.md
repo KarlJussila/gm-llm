@@ -9,6 +9,18 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Added
+- **The grading instrument is fingerprinted (`bench grade`, `bench report`).** A grades file's
+  rubric version was a hand-typed label, and a label does not move when the prose under it is
+  rewritten in place — `rubric-v1.md` has already been reworked once (penalty table, binding
+  categories, wider dedup window) with every grades file on both sides still reading `v1`.
+  Grade headers now carry a content hash over the whole instrument (rubric, grader brief,
+  `submit-grade` schema), the way a run's header already hashes the prompts it played. Two
+  consequences: re-grading after sharpening the rubric no longer silently skips every run as
+  "already graded", and `bench report` flags a batch scored by more than one instrument instead
+  of pooling it. Grades written before the fingerprint existed are grandfathered rather than
+  invalidated.
+
 ## [0.5.0] — 2026-07-29
 
 ### Added

@@ -63,7 +63,7 @@ def add_bench_parser(subparsers, engine) -> None:
     grade_p.add_argument("--model", default=None,
                          help="override the pinned grader model (a V2 re-grade — grades are derived data)")
     grade_p.add_argument("--force", action="store_true",
-                         help="re-grade runs already graded at this rubric+model")
+                         help="re-grade runs already graded at this rubric+model+instrument")
     grade_p.add_argument("--double", action="store_true",
                          help="grade a sample twice in independent sessions and report agreement")
     grade_p.add_argument("--sample", type=int, default=None,

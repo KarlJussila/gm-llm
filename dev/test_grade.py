@@ -7,9 +7,10 @@ shapes) and drives the grade/report passes over a fake grader Backend with scrip
 style (the same _Reply fake, tempdirs, hand-rolled runner over asserts).
 
 Covers: brief construction (draft + report + rubric + window), finding extraction, the
-grades-file shape + idempotence, the ungraded-after-nudge path, dedup via duplicate_of,
---double agreement math, and report aggregation (defaulted rate + the mixed-conditions
-warning).
+grades-file shape + idempotence, the instrument fingerprint (an in-place rubric rewrite
+re-grades; a pre-fingerprint header is grandfathered; a mixed-instrument batch is flagged),
+the ungraded-after-nudge path, dedup via duplicate_of, --double agreement math, and report
+aggregation (defaulted rate + the mixed-conditions warning).
 """
 
 import json
@@ -331,6 +332,101 @@ def test_grades_file_shape_and_idempotence(tmp):
     assert backend.sessions == before + 1, "--force re-grades"
 
 
+def test_instrument_fingerprint_catches_an_in_place_rubric_rewrite(tmp):
+    """The rubric label is hand-typed and does not move when the prose under it is rewritten
+    in place — which has already happened once under `v1`, leaving grades from both sides
+    indistinguishable. The fingerprint is what actually separates two instruments."""
+    assets = tmp / "assets"
+    assets.mkdir()
+    (assets / "rubric-v1.md").write_text("severity: minor|major\n", encoding="utf-8")
+    (assets / "grader.md").write_text("---\nmodel: m\n---\ngrade it\n", encoding="utf-8")
+    before = grade.instrument_fingerprint(assets)
+    assert before["files"] == 2 and len(before["sha256"]) == 16
+
+    # the same filename, new criteria under it — the label would not have noticed
+    (assets / "rubric-v1.md").write_text("severity: minor|major|critical\n", encoding="utf-8")
+    after = grade.instrument_fingerprint(assets)
+    assert after["sha256"] != before["sha256"], "rewriting a rubric in place changes the hash"
+
+    # and it is a fingerprint, not a mtime: identical content hashes identically
+    (assets / "rubric-v1.md").write_text("severity: minor|major\n", encoding="utf-8")
+    assert grade.instrument_fingerprint(assets)["sha256"] == before["sha256"]
+
+    # a missing tree never raises into a grading pass — it reports zero files, which is
+    # visibly not an instrument rather than a plausible-looking hash
+    missing = grade.instrument_fingerprint(tmp / "nope")
+    assert missing.get("files") == 0, "an absent assets tree is empty, not an exception"
+
+
+def test_a_changed_instrument_regrades_and_a_legacy_one_is_grandfathered(tmp):
+    archive = _write_archive(tmp, "20260717T000000Z-inst", [
+        _turn(1, 1, [_verdict("check-turn", False, "wrong hair"), _verdict("check-conduct", True)],
+              complete=True),
+    ])
+    backend = FakeGraderBackend(grades={
+        "s1t1:check-turn": {"severity": "minor", "category": "canon-contradiction",
+                            "rationale": "cosmetic slip.", "duplicate_of": ""}})
+    inst_a = {"sha256": "aaaaaaaaaaaaaaaa", "files": 4}
+    inst_b = {"sha256": "bbbbbbbbbbbbbbbb", "files": 4}
+
+    path = grade.grade_archive(backend, archive, rubric_text=_RUBRIC, meta=_META,
+                               instrument=inst_a, note=lambda m: None)
+    assert _grade_lines(path)[0]["instrument"] == inst_a, "the header stamps the instrument"
+
+    before = backend.sessions
+    grade.grade_archive(backend, archive, rubric_text=_RUBRIC, meta=_META,
+                        instrument=inst_a, note=lambda m: None)
+    assert backend.sessions == before, "same instrument — still idempotent"
+
+    # the teeth: a rubric sharpened under the same `v1` label must not silently skip
+    grade.grade_archive(backend, archive, rubric_text=_RUBRIC, meta=_META,
+                        instrument=inst_b, note=lambda m: None)
+    assert backend.sessions == before + 1, "a changed instrument re-grades rather than skipping"
+
+    # a header written before the fingerprint existed is grandfathered, not re-graded:
+    # re-scoring a banked batch is worse than leaving history readable (`--force` is there)
+    legacy = [e for e in _grade_lines(path)]
+    legacy[0].pop("instrument")
+    path.write_text("\n".join(json.dumps(e) for e in legacy) + "\n", encoding="utf-8")
+    before = backend.sessions
+    grade.grade_archive(backend, archive, rubric_text=_RUBRIC, meta=_META,
+                        instrument=inst_b, note=lambda m: None)
+    assert backend.sessions == before, "an unstamped legacy grades file is grandfathered"
+
+
+def test_mixed_grading_instruments_are_flagged(tmp):
+    """Two runs scored by different rubric prose are no more comparable than two runs played
+    under different prompts — and the batch must say so where a reader will see it."""
+    out = tmp / "out"
+    out.mkdir()
+    a1 = _write_archive(out, "run1", [
+        _turn(1, 1, [_verdict("check-turn", False, "wrong hair"), _verdict("check-conduct", True)],
+              complete=True)])
+    a2 = _write_archive(out, "run2", [
+        _turn(1, 1, [_verdict("check-turn", False, "wrong eyes"), _verdict("check-conduct", True)],
+              complete=True)])
+    b = FakeGraderBackend(grades={
+        "s1t1:check-turn": {"severity": "major", "category": "canon-contradiction",
+                            "rationale": "misinforms.", "duplicate_of": ""}})
+    grade.grade_archive(b, a1, rubric_text=_RUBRIC, meta=_META,
+                        instrument={"sha256": "1111111111111111", "files": 4}, note=lambda m: None)
+    grade.grade_archive(b, a2, rubric_text=_RUBRIC, meta=_META,
+                        instrument={"sha256": "2222222222222222", "files": 4}, note=lambda m: None)
+
+    batch = scoring.summarize_batch(out)
+    assert batch["mixed_grading"], "two instruments in one batch is a mixed batch"
+    assert len(batch["grading"]) == 2
+    text = scoring.format_report(batch)
+    assert "MIXED GRADING" in text and "not comparable" in text
+
+    # one instrument across the batch reads as a plain condition line, no banner
+    grade.grade_archive(b, a2, rubric_text=_RUBRIC, meta=_META, force=True,
+                        instrument={"sha256": "1111111111111111", "files": 4}, note=lambda m: None)
+    batch = scoring.summarize_batch(out)
+    assert not batch["mixed_grading"] and len(batch["grading"]) == 1
+    assert "MIXED GRADING" not in scoring.format_report(batch)
+
+
 def test_ungraded_after_nudge(tmp):
     archive = _write_archive(tmp, "run-ung", [
         _turn(1, 1, [_verdict("check-turn", False, "wrong hair"), _verdict("check-conduct", True)]),
@@ -492,7 +588,10 @@ def main():
              test_window_spans_same_turn_but_not_same_verdict, test_score_model,
              test_rubric_penalty_table_matches_the_score_model,
              test_unmanifested_archive_is_flagged_not_silently_dropped,
-             test_grades_file_shape_and_idempotence, test_ungraded_after_nudge,
+             test_grades_file_shape_and_idempotence,
+             test_instrument_fingerprint_catches_an_in_place_rubric_rewrite,
+             test_a_changed_instrument_regrades_and_a_legacy_one_is_grandfathered,
+             test_mixed_grading_instruments_are_flagged, test_ungraded_after_nudge,
              test_dedup_via_duplicate_of, test_double_agreement, test_report_aggregation,
              test_mixed_conditions_warning, test_turn_cap_is_not_a_condition_but_hitting_it_is,
              test_grade_batch_double)

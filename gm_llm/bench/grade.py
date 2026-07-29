@@ -29,8 +29,9 @@ Three pieces:
 
   * **The grade pass** — `grade_archive` walks a run's findings in order, grades each in
     its own fresh grader session, and writes `grades-<run_id>-<rubric>.jsonl` next to the
-    archive: a header line (rubric, grader model/temp, source) then one line per finding.
-    Idempotent — a run already graded at this rubric+model is skipped unless `--force`.
+    archive: a header line (rubric label, instrument fingerprint, grader model/temp, source)
+    then one line per finding. Idempotent — a run already graded at this rubric, model and
+    instrument hash is skipped unless `--force`.
     A short window of already-graded findings rides in each brief so the grader can mark a
     violation that persists across consecutive turns `duplicate_of` an earlier one, and
     the persisting violation doesn't multiply the score.
@@ -43,6 +44,7 @@ opencode. Stdlib only.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -128,6 +130,42 @@ def assemble_grade_ws(out_dir, *, model: str | None = None, install=install_plug
     else:
         note(f"reusing grading workspace at {ws}")
     return ws
+
+
+def instrument_fingerprint(assets=ASSETS) -> dict:
+    """A content hash over the grading instrument — the rubric, the grader's standing brief,
+    and the `submit_grade` tool the grade has to fit through.
+
+    The rubric *version* is a hand-typed label, and a label does not move when the prose
+    under it does. `rubric-v1.md` has already been rewritten in place — the penalty table,
+    the binding category annotations, the widened dedup window — and every grades file on
+    both sides of that edit still says `v1`, so nothing downstream could tell the two apart.
+    A grade is only comparable to a grade taken with the same instrument, so the instrument
+    is fingerprinted for exactly the reason the prompts are (`runner.prompt_fingerprint`):
+    the label records which rubric was *meant*, the hash records which one actually ran.
+
+    Every file under `assets/` counts — the rubric is the criteria, `grader.md` is the
+    standing brief, `submit-grade.ts` is the schema a grade must fit, and `package.json`
+    pins the dep that plugin imports. Hashing the assets rather than the assembled
+    workspace is deliberate: `assemble_grade_ws` rewrites all of them from here on every
+    pass, so the two agree by construction, and the one thing that legitimately differs —
+    a `--model` override — is already recorded separately in the header's `grader` block.
+
+    Relative name and content both feed the digest, walked in sorted order so the hash is
+    stable across filesystems. Best-effort like its sibling: an unreadable tree yields
+    `{"error": ...}` rather than raising into a grading pass."""
+    h, files = hashlib.sha256(), 0
+    try:
+        for path in sorted(Path(assets).rglob("*"), key=lambda p: p.relative_to(assets).as_posix()):
+            if not path.is_file():
+                continue
+            h.update(f"{path.relative_to(assets).as_posix()}\0".encode())
+            h.update(path.read_bytes())
+            h.update(b"\0")
+            files += 1
+    except OSError as e:
+        return {"error": str(e)}
+    return {"sha256": h.hexdigest()[:16], "files": files}
 
 
 def grader_meta(ws) -> dict:
@@ -375,29 +413,46 @@ def _run_id_of(events: list[dict], fallback: str) -> str:
     return fallback
 
 
-def _already_graded(grades_path: Path, meta: dict) -> bool:
-    """True if `grades_path` already holds a header for this rubric+grader-model — the
-    idempotence check (`--force` overrides). A different model or rubric re-grades."""
+def _already_graded(grades_path: Path, meta: dict, instrument: dict) -> bool:
+    """True if `grades_path` already holds a header for this rubric label, grader model *and*
+    instrument hash — the idempotence check (`--force` overrides).
+
+    The hash is what gives this teeth. An in-place rubric rewrite keeps the `v1` label, so
+    without it a re-grade after sharpening the criteria silently skips every run and leaves
+    the batch scored by the old instrument under the new one's name.
+
+    A header written before the fingerprint existed carries no `instrument` and is
+    grandfathered — the same call `scoring._condition_signature` makes for pre-fingerprint
+    archives. Re-grading a whole banked batch is a worse answer than leaving history
+    readable; `--force` is there when a re-grade is what you actually want."""
     try:
         first = _read_events(grades_path)[0]
     except (OSError, ValueError, IndexError):
         return False
-    return (first.get("rubric") == RUBRIC
-            and (first.get("grader") or {}).get("model") == meta.get("model"))
+    if first.get("rubric") != RUBRIC:
+        return False
+    if (first.get("grader") or {}).get("model") != meta.get("model"):
+        return False
+    prior = first.get("instrument")
+    return prior is None or prior.get("sha256") == instrument.get("sha256")
 
 
 def grade_archive(backend, archive_path, *, rubric_text: str, meta: dict, force: bool = False,
-                  suffix: str = "", limit: int | None = None, note=_quiet) -> Path:
+                  suffix: str = "", limit: int | None = None, instrument: dict | None = None,
+                  note=_quiet) -> Path:
     """Grade one run's archive → `grades-<run_id>-<rubric><suffix>.jsonl` beside it (a
     header line, then one line per finding). Idempotent: an existing file at this
-    rubric+model is left untouched unless `force`. `limit` caps how many findings are
-    graded (the `--double` sample). Returns the grades path (written or reused)."""
+    rubric+model+instrument is left untouched unless `force`. `limit` caps how many findings
+    are graded (the `--double` sample). `instrument` is the fingerprint stamped into the
+    header, computed here when the caller didn't (a batch computes it once).
+    Returns the grades path (written or reused)."""
     archive_path = Path(archive_path)
+    instrument = instrument_fingerprint() if instrument is None else instrument
     events = _read_events(archive_path)
     run_id = _run_id_of(events, archive_path.stem.replace("archive-", ""))
     grades_path = archive_path.parent / f"grades-{run_id}-{RUBRIC}{suffix}.jsonl"
 
-    if grades_path.is_file() and not force and _already_graded(grades_path, meta):
+    if grades_path.is_file() and not force and _already_graded(grades_path, meta, instrument):
         note(f"{grades_path.name}: already graded at {RUBRIC}/{meta.get('model')} — skipping (use --force).")
         return grades_path
 
@@ -405,8 +460,9 @@ def grade_archive(backend, archive_path, *, rubric_text: str, meta: dict, force:
     if limit is not None:
         findings = findings[:limit]
 
-    header = {"event": "grades", "schema": 1, "rubric": RUBRIC, "grader": meta,
-              "graded_at": _now(), "archive": archive_path.name, "run_id": run_id}
+    header = {"event": "grades", "schema": 1, "rubric": RUBRIC, "instrument": instrument,
+              "grader": meta, "graded_at": _now(), "archive": archive_path.name,
+              "run_id": run_id}
     lines = [json.dumps(header, ensure_ascii=False)]
     graded: list[dict] = []
     note(f"grading {len(findings)} finding(s) from {archive_path.name}…")
@@ -511,6 +567,9 @@ def grade_batch(out_dir, *, model: str | None = None, force: bool = False,
         return {"graded": [], "double": None}
 
     rubric_text = (ASSETS / "rubric-v1.md").read_text(encoding="utf-8")
+    instrument = instrument_fingerprint()
+    note(f"instrument: rubric {RUBRIC} · {instrument.get('sha256', instrument.get('error'))} "
+         f"({instrument.get('files', 0)} file(s))")
     ws = assemble_grade_ws(out_dir, model=model, install=install, note=note)
     meta = grader_meta(ws)
     logs = Logs.under(project=ws, debug=debug_enabled())
@@ -524,12 +583,13 @@ def grade_batch(out_dir, *, model: str | None = None, force: bool = False,
         for archive in archives:
             note(f"── grading {archive.name} ──")
             primary = grade_archive(backend, archive, rubric_text=rubric_text, meta=meta,
-                                    force=force, note=note)
+                                    force=force, instrument=instrument, note=note)
             graded_paths.append(primary)
             if double:
                 note(f"── double pass {archive.name} (sample={sample or 'all'}) ──")
                 second = grade_archive(backend, archive, rubric_text=rubric_text, meta=meta,
-                                       force=True, suffix="-b", limit=sample, note=note)
+                                       force=True, suffix="-b", limit=sample,
+                                       instrument=instrument, note=note)
                 pairs.append((primary, second))
     finally:
         note("stopping backend…")

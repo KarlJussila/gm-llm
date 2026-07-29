@@ -258,15 +258,43 @@ def summarize_run(events: list[dict], grades: list[dict]) -> dict:
 
 # ── batch ────────────────────────────────────────────────────────────────────
 
-def _grades_for(archive_path: Path) -> list[dict]:
-    """The per-finding grade lines for a run, from `grades-<run_id>-<rubric>.jsonl` beside
-    its archive (the primary pass — the `-b` double pass is not a report input). Empty if
-    the run hasn't been graded."""
+def _grades_path(archive_path: Path) -> Path:
+    """Where a run's primary grades live: `grades-<run_id>-<rubric>.jsonl` beside its
+    archive (the `-b` double pass is not a report input)."""
     run_id = archive_path.stem.replace("archive-", "")
-    grades_path = archive_path.parent / f"grades-{run_id}-{RUBRIC}.jsonl"
+    return archive_path.parent / f"grades-{run_id}-{RUBRIC}.jsonl"
+
+
+def _grades_for(archive_path: Path) -> list[dict]:
+    """The per-finding grade lines for a run. Empty if the run hasn't been graded."""
+    grades_path = _grades_path(archive_path)
     if not grades_path.is_file():
         return []
     return [e for e in _read_events(grades_path) if e.get("event") != "grades"]
+
+
+def _grading_signature(archive_path: Path) -> dict | None:
+    """Which grading instrument produced this run's grades, from the grades header: the
+    rubric label, the instrument fingerprint, and the grader model/temperature.
+
+    Grades are only comparable to grades taken the same way, and the rubric *label* does not
+    move when the prose under it is rewritten in place — which has already happened once
+    under `v1`. So the hash `grade.instrument_fingerprint` stamps is the part that actually
+    separates two instruments; the label is kept alongside it for reading. `None` when the
+    run is ungraded (it contributes no grades to disagree about). A header from before the
+    fingerprint existed reports `sha256: None` and pools with its own kind, the same
+    grandfathering `_condition_signature` gives pre-fingerprint archives."""
+    grades_path = _grades_path(archive_path)
+    if not grades_path.is_file():
+        return None
+    try:
+        header = _read_events(grades_path)[0]
+    except (OSError, ValueError, IndexError):
+        return None
+    grader = header.get("grader") or {}
+    return {"rubric": header.get("rubric"),
+            "sha256": (header.get("instrument") or {}).get("sha256"),
+            "grader": (grader.get("model"), grader.get("temperature"))}
 
 
 def summarize_batch(out_dir) -> dict:
@@ -289,7 +317,9 @@ def summarize_batch(out_dir) -> dict:
                 continue
             archive_path = out_dir / arc
             events = _read_events(archive_path)
-            runs.append(summarize_run(events, _grades_for(archive_path)))
+            summary = summarize_run(events, _grades_for(archive_path))
+            summary["grading"] = _grading_signature(archive_path)
+            runs.append(summary)
 
     # mixed-conditions check
     sigs = [_condition_signature(r.get("conditions") or {}) for r in runs if not r.get("no_archive")]
@@ -300,6 +330,15 @@ def summarize_batch(out_dir) -> dict:
             distinct.append(s)
     mixed = len(distinct) > 1
     capped = [r.get("run_id") for r in runs if r.get("outcome") == "cap"]
+
+    # The same check one level down, on the instrument rather than the subject: two runs
+    # scored by different rubric prose are no more comparable than two runs played under
+    # different prompts, and until the fingerprint existed nothing could see the difference.
+    grading_sigs: list[dict] = []
+    for r in runs:
+        sig = r.get("grading")
+        if sig is not None and sig not in grading_sigs:
+            grading_sigs.append(sig)
 
     graded_runs = [r for r in runs if r.get("graded")]
     by_sev_raw: dict[str, int] = {}
@@ -329,6 +368,8 @@ def summarize_batch(out_dir) -> dict:
                                  for d in _DIMENSIONS},
         "mixed_conditions": mixed,
         "conditions": distinct,
+        "mixed_grading": len(grading_sigs) > 1,
+        "grading": grading_sigs,
         # runs the cap actually bound — a truncated session with no reconcile is a different
         # data point, and unlike the configured cap it is worth flagging
         "capped_runs": capped,
@@ -370,6 +411,12 @@ def _fmt_sig(sig: dict) -> str:
             f"turn_cap={sig.get('turn_cap')} prompts={sig.get('prompts') or 'unstamped'} · {agents}")
 
 
+def _fmt_grading(sig: dict) -> str:
+    model, temp = sig.get("grader") or (None, None)
+    return (f"rubric {sig.get('rubric')} @ {sig.get('sha256') or 'unstamped'} "
+            f"· grader={model}@{temp}")
+
+
 def format_report(batch: dict) -> str:
     """The one-page plain-text report. The mixed-conditions banner (if any) leads, then
     instrument health, then the batch distributions, then a per-run table."""
@@ -395,6 +442,15 @@ def format_report(batch: dict) -> str:
     L.append(f"  defaulted verdicts     : {batch['defaulted_total']} total across the batch")
     L.append(f"  ungraded findings      : {batch['ungraded_total']} total "
              f"({batch['n_graded']}/{batch['n_runs']} run(s) graded)")
+    if batch.get("mixed_grading"):
+        L.append(f"  !! MIXED GRADING       : {len(batch['grading'])} distinct instruments "
+                 f"scored this batch — the scores below are not comparable:")
+        for i, sig in enumerate(batch["grading"], 1):
+            L.append(f"       [{i}] {_fmt_grading(sig)}")
+        L.append("     Re-grade the batch on one instrument (`bench grade --force`); the")
+        L.append("     archives are untouched ground truth, so nothing is lost by re-scoring.")
+    elif batch.get("grading"):
+        L.append(f"  grading instrument     : {_fmt_grading(batch['grading'][0])}")
     if batch["capped_runs"]:
         L.append(f"  !! TURN-CAP TRUNCATED   : {len(batch['capped_runs'])} run(s) hit the cap "
                  f"without wrapping — no reconcile, no stage findings:")
