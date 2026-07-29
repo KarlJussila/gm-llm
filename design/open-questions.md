@@ -34,11 +34,25 @@ A pilot run spent 29 turns on the session plan's secondary discovery tracks and 
 centrepiece the plan names, with every thread runner-introduced rather than player-introduced
 (Part 7). That breaks no rule in `runner-authority.md` — all the content it played was planned —
 and no check sees it, so the run scored *well*: fewer turns covering less ground still means fewer
-graded units to divide violations by. Open on two axes: whether plan coverage becomes a check at
-all, and whether it belongs at runtime (where the checker sees one turn) or in a post-session stage
-gate (where the whole transcript is available, which is where it naturally fits). Coupled to the
-denominator question — a coverage measure and a per-word denominator attack the same distortion
-from opposite ends. Parked on ROADMAP track **recalibration**.
+graded units to divide violations by. `runner-authority.md` rule 3 (route the player back to planned
+material rather than invent around it) is the runner-side half; this is the measurement half, and it
+stays open on two axes: whether plan coverage becomes a check at all, and whether it belongs at
+runtime (where the checker sees one turn) or in a post-session stage gate (where the whole transcript
+is available, which is where it naturally fits — coverage is a whole-session property the runtime
+gate structurally cannot see). Coupled to the denominator question — a coverage measure and a
+per-word denominator attack the same distortion from opposite ends. Parked on ROADMAP track
+**recalibration**.
+
+### Should the runner submit its turn through a tool?
+
+The runner is the only agent whose *output is its submission* — every other agent hands work over
+through a tool call (`task_complete`, `report_findings`, `submit_grade`), which separates process
+from product by construction. That is likely why process leaks into narration, and `dm-runner`
+already has to say "never narrate your own process". A `submit_turn` tool would make the separation
+structural rather than instructed. Deliberately conditional: raise it **if** track **recalibration**
+row 1 gives the runner a per-turn todo list and the pilot's meta-break rate rises — a todo list is
+process, and the runner is the one agent the player can see. Parked on ROADMAP track
+**recalibration**.
 
 ### Is the score model's 0-point floor calibrated anywhere real?
 

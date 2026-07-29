@@ -50,6 +50,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   no inbox; typing at it now says so.
 
 ### Changed
+- **Prompt trims across the agents.** `campaign-analyst`, `dm`, `log-extractor` and `player` lose
+  prose that told an agent about orchestration it never acts on, and `session-flow`/`session-close`
+  stop telling the runner that a between-session team will tidy up whatever it improvised — which
+  priced improvisation at zero. No rule changed; the standing criterion is that an agent is told
+  about machinery only where recognizing it changes its behavior.
 - **A `bench run` narrates its reconcile.** The between-session pass is the longest stretch of a
   run and used to print one line before going quiet for minutes; it now reports each stage
   (`reconcile: handoff… digest… …`) as it starts. This falls out of routing bench through the

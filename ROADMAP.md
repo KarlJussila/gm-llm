@@ -34,16 +34,16 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 
 ## recalibration — align the prompts with the runner-authority model
 
-Plan of record: [`design/runner-authority.md`](design/runner-authority.md), which holds the model
-and the numbered gaps these rows close.
+Plan of record: [`design/runner-authority.md`](design/runner-authority.md) — the six rules, the
+audit these rows close, and § Delivery, which is why row 1 runs before the prose rows.
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 0 | Settle the ruleset with Karl, then audit the prompts against it section by section | high | The model was transcribed from one conversation, not worked through; and the gap table is what one pilot exposed, not an audit. Both passes are owed **before** any row below authors prose |
-| 1 | Narrow `check-turn`'s divergence licence to player-initiated (gap 1) | high | Prompt prose against a hard-won guardrail: the existing line exists to stop false positives on improv and must keep doing that while ceasing to license runner-initiated divergence |
-| 2 | Close the "mere addition" hole for arc-touching lore (gap 2) | high | Rule 6 is an absolute and currently passes both the preamble and check 4's entity triage; unnamed lore is the case to catch |
-| 3 | Enforce revelation against the plan, not just canon flags (gaps 3, 4) | high | Rule 7 is the other absolute. Needs the plan's revealable list on the checker side — decide preloaded revealable-block vs. on-demand read |
-| 4 | Decide whether DCs stay in session plans | medium | The model makes them advisory; open whether `dm` keeps authoring them |
+| 1 | `turn-reminder` as an executable algorithm | high | **Runs first: it decides where every rule below can live.** The runner reads canon and skills on turn 1 and never again (§ Delivery), so today only the reminder and the checker reach a turn. Grant `dm-runner` `todowrite` (the one agent without it) and make the reminder a per-turn list with re-load *triggers*. If it takes, rules move back into skills and the reminder gets shorter; if not, they all compete for reminder space. Measurable without the grader |
+| 2 | Re-cut `check-turn`'s new-canon test on plot impact (F5) | high | The checker examined the geologist and **passed** it as "consistent with canon"; it asks *does this conflict?* where rule 4 asks *does this touch the plot?* Keep the classes, change the test, widen intake past newly-*named* things — and narrow the preamble's divergence licence to player-initiated without re-opening the false positives it was written to stop |
+| 3 | Enforce revelation against the plan's reveal flags (rule 5) | high | The plan already carries `(known)` / `(new reveal)` / `(stays hidden)` per clue, and neither `session-run` nor `check-turn` consults them. Needs those flags on the checker side — decide preloaded block vs. on-demand read |
+| 4 | Author the runner-side rules (F1, F3, F4 + secondary) | high | `session-run` § Table craft holds none of the absolutes; `discoveries` binds the plan's mechanics and frees its content; `social-play` bounds what an NPC may *know* but not what may be invented in their mouth. Shape depends on row 1's outcome |
+| 5 | Planner-side pass — `npc-plan` richness, the 30–40% rule, and whether DCs stay | medium | Every NPC trait the plan commits is one the runner cannot invent, so this is leverage on rule 4 rather than cleanup. Carries the DC decision (rule 1 makes them advisory; open whether `dm` keeps authoring them) |
 
 ## benchmark — the instrument
 
@@ -94,6 +94,7 @@ working are `dev/MAINTAINING.md` § Portability; what remains is validation and 
 | frontends | 4 | Step 2: `PlayerSource` + `play_session` — one turn loop for the TUI, autoplay and bench; `--player auto --ui tui` filled in, and the TUI given a headless test |
 | frontends | 5 | Step 3: `bench run` plays a `Lifecycle` — its own `Game`/player-session/reconciler wiring gone, the post-wrap tail now `wrap(on_stage=…)`, the test seam moved to `lifecycle_factory` |
 | frontends | 6 | Step 4: `bench run --ui tui` — `BatchHooks`, a lifecycle attached per run, `BatchHeader`; watching made read-only and the comparability invariant asserted against a headless batch |
+| recalibration | 8 | The ruleset settled (eight transcribed rules → six, one of them a positive) and the corpus audited against it: the runner path scores nothing on rules 1–4, and the session records show why — canon and skills are read on turn 1 and never again |
 | benchmark | 7 | The five-run pilot read (**B3 itself is not banked** — the pilot is what says how to bank it): the grading instrument content-hashed, an error bar and a resolution figure on the score, thin subscores flagged. Its findings opened track **recalibration** and parked B3 behind it |
 
 ## Standing sync rules

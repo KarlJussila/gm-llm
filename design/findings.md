@@ -18,6 +18,7 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [5](#part-5--frontends-a-bench-run-is-a-lifecycle-2026-07-28) | frontends | Where to put a test seam so a harness fakes one step instead of a whole interface; why a green-across-the-board refactor still owes new tests |
 | [6](#part-6--frontends-batch-chrome-and-an-inert-frontend-2026-07-29) | frontends | How a frontend attaches to something it must not perturb, and how that gets asserted rather than argued; why a parked question was the wrong question |
 | [7](#part-7--benchmark-the-pilot-that-redirected-the-roadmap-2026-07-29) | benchmark | Why an instrument needs a content hash and not a version label; how to read a small batch honestly (t, not z; which subscores are noise); three claims that died to their own evidence |
+| [8](#part-8--recalibration-the-ruleset-settled-and-why-prose-alone-cannot-land-it-2026-07-29) | recalibration | How a ruleset gets sorted onto the right axis; why "always loaded" means "loaded once", measured; a gate that examined a violation and passed it |
 
 ## Recurring threads (the classes worth knowing)
 
@@ -34,6 +35,18 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
   waves through "mere addition". The blind spot is not a weaker version of the caught case; it is
   its complement, and a benchmark reading that instrument scores the blindness as quality. Ask what
   shape of violation a check *cannot* express, not just how well it does what it does. (Part 7)
+  Part 8 read the gate's own verdict and found the mechanism was not blindness at all: the check
+  examined the unnamed invention, classified it, and **passed** it as "consistent with the world".
+  Hence the sharper rule — **before widening a check's net, read what it said.** "Didn't see it" and
+  "saw it and approved it" look identical from the outside and have opposite fixes; only the second
+  means the *criterion* is wrong, and widening intake against it changes nothing.
+- **"Loaded" is not "in effect" — count the tool calls before tuning the prose.** Skills the corpus
+  calls always-loaded are loaded exactly once, on turn 1, and never re-loaded across a 41-turn
+  session, even though the per-turn brief names them every turn: the runner treats loading as a
+  once-per-session act. Canon reads have the same shape — one mid-session lookup across five runs.
+  The class: whenever compliance with an instruction *is* a tool call, it is directly observable, and
+  a prompt round that tunes the wording without checking whether the call ever fires is tuning text
+  the model stopped consulting. Reach for the session records first. (Part 8)
 - **One fact, two homes — the copy rots.** CLAUDE.md and `dev/MAINTAINING.md` both stated
   the versioning rule; MAINTAINING's copy was stale by a whole build-config change. Whenever
   a rule gets restated, the restatement is the defect. `lint_docs.py` check 7 encodes the
@@ -739,3 +752,144 @@ turn. Each gap has two halves — make it visible, then make it unnecessary.
 `python -m compileall gm_llm` clean; all thirteen `dev/test_*.py` scripts pass (`test_grade.py` now
 21, six added this round); `tools/status.py --check` and `tools/lint_docs.py` both clean. **No
 model-facing prose changed** — the recalibration it sets up is entirely future work.
+
+---
+
+# Part 8 — Recalibration: the ruleset settled, and why prose alone cannot land it (2026-07-29)
+
+## The gap
+
+Part 7 opened track **recalibration** on a model of runner authority transcribed from a single
+conversation, plus a four-row gap table produced by reading the runtime gate. Both were explicitly
+provisional: the model had never been worked through, and the gap table was what one pilot happened
+to expose rather than an audit. Nothing could be authored against either.
+
+Two things were wrong with them in ways only the work could show. The model's rules were sorted on
+the wrong axis in one place and carried a carve-out that licensed the exact failure it was written
+to stop. And the gap table was written against the **checker**, so it found checker gaps — it never
+asked what the *runner* is told, which turned out to be nothing at all.
+
+## What the round does
+
+### The ruleset — eight rules to six
+
+Settled section by section with Karl. `design/runner-authority.md` § The model now holds the six,
+and § What the settling changed records the three substantive moves so a reader who meets the
+eight-rule form quoted in Part 7 is not misled:
+
+- **"Nothing that outlives the session" was scoped wrong.** Duration is not the boundary: a crate of
+  rations, a guard with a name and a grudge, and a nameless miner all outlive the session and are all
+  permitted. **Story impact is the boundary.** Three separate prohibitions collapse into one rule —
+  *what you invent may complicate the character, never the plot* — expressed in objects the system
+  actually has (arc, thread, clock, live investigation) rather than in a judgment about "substantial
+  consequence".
+- **The staged-NPC carve-out is cut.** The transcribed rule permitted revelation "by an NPC the plan
+  staged", which reads as licensing whatever a staged NPC says — and the geologist was delivered
+  through a staged NPC. Staging authorizes the NPC, not their content. Their dialogue is governed by
+  the same rule as anything else, which makes the four-case set fall out cleanly: "I don't know" —
+  fine; the same line while lying — fine, it comes from the plan's concealed tells; the foreman's
+  lunch — fine; an investigation lead invented on the spot — blocked.
+- **One rule was added, and it is the only one in the set that says yes.** *The plan fixes what can
+  be learned, not the only route to it* — if the player bypasses the intended source, a plausible
+  alternative route to the same fact may work. It reframes the whole problem: every other rule
+  answers "what may I invent off-plan?", and this one says the question is usually wrong, because
+  the answer is *relocate*, which requires authoring nothing. Its three limits were all found by
+  Karl rejecting the first draft, and each closes a real failure: plausibility (no finding a
+  foreman's opinions in a library), last-resort (no strewing leads), and **never move an NPC, a
+  place, or an object** — because "move the beat" reads to a light model as *move the object*, and a
+  teleported NPC is a worse failure than the omission it fixes.
+- **Closing early was demoted** from the response to divergence to the response to *exhaustion*. The
+  earlier form let a runner spend twenty turns on individually-harmless scenes and stay compliant,
+  which is the pilot's failure mode exactly. Inconsequential scenes are the walk to the exit, never a
+  way to keep playing.
+
+### The audit — the runner is told none of it
+
+Ten prompts read section by section. The finding is not disagreement but **absence**: the
+runner-facing path (`dm-runner`, `session-run`, `session-flow`, `social-play`, `discoveries`,
+`turn-reminder`, `runner-header`) states none of rules 1–4. `session-run`'s own section titled
+**"Table craft — non-negotiable"** carries four bullets, all governing runner-vs-player; not one
+governs runner-vs-canon. Where the prompts do speak they lean the other way: `dm-runner` names
+improvisation as one of four pillars of the job, and `session-plan` instructs the planner to leave a
+30–40% improv budget.
+
+Two inversions are worth carrying forward. `discoveries` binds the plan on its **mechanical** flag
+(check-gated vs. player-assembled) — the axis the settled rule 1 makes *advisory* — while nothing
+binds the runner to the committed answer the planner was required to fix. And `check-conduct`'s
+biggest catch by volume is player agency: the boundary the corpus states well is the boundary the
+gate spends itself enforcing.
+
+### The checker approved the geologist
+
+Part 7 recorded that nothing flagged the invented geologist and inferred the cause was check 4's
+newly-*named* intake filter. The archive says otherwise, and the correction matters because it
+changes the fix. `check-turn` examined the turn and passed it — in writing:
+
+> The geologist is a **legitimate new entity introduced through NPC testimony** — a natural response
+> to the player's question about unusual visitors, **consistent with the world**… **The geologist
+> should be registered in the INDEX post-session.**
+
+It passed on precisely the two rules this round cut: *consistency, not obedience* and the staged-NPC
+carve-out. In the same breath it computed that the thing needs a canon file — the predicate that
+should have blocked it — and drew the opposite conclusion. The next turn it blocked "Aldric Voss"
+stating its operative distinction outright (*"established in the transcript… but never named"*).
+
+So the defect is the **classification criterion**, not the intake: the checker asks *does this
+conflict?* where the rule asks *does this touch the plot?* Widening intake alone would have changed
+nothing on this turn. It also disposes of an objection raised against putting "would this need a
+canon file?" in front of the runner — that it has no reason to know the registration rules. The same
+model volunteered that predicate unprompted.
+
+### Why prose alone cannot land any of it
+
+The strongest result of the round, and it is measured rather than argued. Counted from the five
+pilot runs' opencode session records across roughly 125 runner turns: `session-run`, `session-flow`
+and `discoveries` are loaded at **turn 1** in every run and **never re-loaded, in any run**. Canon
+`read`/`glob` calls are all at turn 1 plus one `glob` near the close; there is exactly one
+mid-session lookup across all five runs. The runner's own `dice` tool fires six times, total.
+
+This kills the intuition it replaces. `discoveries` is not unloaded — it is read on turn 1 of a
+session that runs to turn 41 and then sits forty turns back in context while the investigation it
+governs happens. `turn-reminder` names it every single turn, and after turn 1 the runner treats the
+instruction as satisfied: **loading is a once-per-session act.** "Always loaded" therefore means
+"loaded once", and `session-run` is on the same footing as the companions the corpus treats as
+optional. Only `turn-reminder` has genuine per-turn presence, and invention is substantially a
+*staleness* problem that no prompt rule addresses.
+
+That reorders the track. Making the reminder an executable algorithm — `dm-runner` is the only agent
+in the corpus without `todowrite`, while `dm` and `narrative-checker` both have it and both use it
+heavily — now runs **before** the rows that author rule prose, because it decides whether those rules
+can live in skills at all. If loading becomes reliable the reminder gets *shorter*, not longer.
+
+### Also
+
+- Karl's stashed prompt trims were restored and are part of this commit — including the
+  `session-flow` line that stops telling the runner someone downstream reconciles what it improvised,
+  which is a rule-6 change the ruleset conversation arrived at independently. The stash's
+  `check-conduct` hunk was **not** restored: it edits the "wrapping too early" bullet the same
+  conversation decided to delete, and committing an edit to text agreed to be removed is noise.
+- A standing criterion the audit adopted: **an agent is told about machinery only where recognizing
+  it changes its behavior.** The `<turn-reminder>` tags stay (the runner must not echo what it does
+  not recognize); "the orchestrator runs you" goes.
+
+## Declared lossiness / deferrals
+
+- **The prose rows are not started.** Row 0's job was findings; every authored change is rows 1–5.
+  The audit's secondary divergences are recorded in the plan of record rather than fixed.
+- **The planner-side audit is owed.** `npc-plan` commits disposition, agenda, what they know and
+  concealed tells per NPC, and every trait it commits is one the runner cannot invent — but whether
+  that block is rich enough was not read closely. It is row 5.
+- **`check-conduct`'s "wrapping too early" bullet is decided-dropped, not dropped.** The decision is
+  recorded; the deletion belongs to a row that authors prose.
+- **Rule 3 has no home yet.** `discoveries` owns how information is found and `session-flow` owns the
+  session's shape; routing is genuinely both, and splitting it invites the restatement rot. Deferred
+  to row 1, which reworks the skill division.
+- **Nothing was verified against a score.** No baseline is banked and the pilot's is superseded. But
+  row 1 is the first change in the track measurable *without* the grader — skill loads and
+  mid-session reads are deterministic observations in opencode's session DB.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all thirteen `dev/test_*.py` scripts pass; `tools/status.py
+--check` and `tools/lint_docs.py` both clean. Model-facing prose changed only by restoring Karl's
+stash — no rule authored this round.

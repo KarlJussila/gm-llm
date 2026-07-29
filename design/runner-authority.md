@@ -3,150 +3,253 @@
 Plan of record for the prompt recalibration workstream. What the system is →
 [README.md](README.md); the benchmark that surfaced the gaps → [benchmark.md](benchmark.md).
 
-**Sequencing lives in `ROADMAP.md` track recalibration.** This doc says what the rule *is* and
-where the current prompts disagree with it; it does not say how far the work has got.
+**Sequencing lives in `ROADMAP.md` track recalibration.** This doc says what the rule *is*, where
+the current prompts disagree with it, and what stops a rule from landing; it does not say how far
+the work has got.
 
 ## The model
 
-The runner is an **executor of a plan**, not a co-author of the campaign. Its licence to invent
-is narrow, and it is narrower than the current prompts allow.
+The runner is an **executor of a plan**, not a co-author of the campaign. Its licence to invent is
+narrow, and it is narrower than the current prompts allow. Six rules, settled section by section:
 
-1. **Planned content is binding.** Where documentation exists, it is adhered to — most of all the
-   *what it means* portion. Planned content should not diverge. The plan is not a suggestion the
-   runner weighs against its own instincts mid-scene.
-2. **Improvisation is licensed by the player, not by the runner.** The runner may improvise when
-   the *player* goes off the track. It may not decide on its own to go somewhere the plan did not
-   put it.
-3. **Improv still respects canon, and treads lightly on new canon.** Going off-plan is not
-   permission to contradict established facts, and it is barely permission to establish new ones.
-4. **No new entities of substantial consequence.** The runner does not author identities,
-   factions, places, or items that carry weight.
-5. **Nothing that outlives the session.** Ideally the runner authors no new detail or entity
-   likely to matter beyond the current session.
-6. **Never arc-impacting lore.** An absolute. Lore that touches an arc is authored between
-   sessions, by `dm`, through the gated pipeline — never improvised at the table.
-7. **Never unauthorized revelation.** The runner never hands the player hidden information that
-   the session plan did not list as revealable this session (or place with an NPC the plan
-   staged). Also absolute.
-8. **Prefer an abrupt end to heavy improvisation.** Running out of planned material is a better
-   outcome than inventing to fill the time. Stopping early is a legitimate move; improvising a
-   session's worth of new world is not.
+1. **Planned content binds; planned mechanics advise.** Identities, answers, what an NPC knows,
+   what's revealable — fixed, and most of all the *what it means* portion. DCs, which skill,
+   check-gated vs. player-assembled — the runner's call, so long as it follows the mechanics craft
+   it already has.
+2. **Improvisation is licensed by the player, never by the runner.** The runner may improvise when
+   the *player* goes off the track. It does not decide on its own to leave the plan.
+3. **The plan fixes what can be learned, not the only route to it.** If the player bypasses the
+   intended source, a *plausible* alternative route to the same fact may work — behind a fitting
+   check. Three hard limits:
+   - **Plausibility.** The route has to make sense where they are. A library holds records, not a
+     foreman's opinions. If there is no sensible channel where they are looking, they do not find it
+     there — that is a real dead end, and dead ends are allowed.
+   - **Last resort, not default.** Use it when the intended source has genuinely been passed by.
+     Don't strew leads: the player tripping over the plot everywhere they go is worse than missing
+     it once.
+   - **Never move an NPC, a place, or an object to make it work.** The world does not rearrange
+     itself around the player.
+4. **What you invent may complicate the character, never the plot.** Absolute. Gold, rations, a
+   wound, a favor owed, a guard who chases them off — free, and that guard may have a name and
+   motives. An arc, a thread, a clock, or the answer to anything the player is investigating —
+   never.
+5. **Two sources, one question — where did this come from?** When the draft tells the player
+   something they did not know: **from the plan or canon** → only if this session is authorized to
+   reveal it; **from you** → only if it is *entailed* by what is written, or nothing hangs on it.
+   Also absolute.
+6. **Off the plan with no route back is a closing signal, not a mode of play.** Once you are
+   improvising with no planned material in reach, land it within a beat or two. Inconsequential
+   scenes are the walk to the exit — never a way to keep playing.
 
-**DCs are the soft part.** Difficulty numbers in a session plan are low-importance and arguably do
-not belong there at all — they are the one thing in a plan the runner may treat as advisory. This
-is the inverse of the intuition that the mechanical bits are binding and the story bits are
-flexible; the reverse is closer to true here, though neither is exactly right.
+The compressed form, for wherever the runner must apply this mid-narration:
 
-## Where the prompts currently disagree
+> **Did I make this up? Then it can complicate the character — never the plot.**
 
-Found by reading the runtime gate against the model above, during the benchmark pilot
-([`dev/fixtures/hollowfell/pilot-2026-07-29.md`](../dev/fixtures/hollowfell/pilot-2026-07-29.md)).
-Each is a gap between what the model requires and what a prompt actually says.
+Two supporting definitions the long form needs:
 
-| # | Where | The disagreement |
-|---|---|---|
-| 1 | `check-turn` § preamble | *"Consistency, not obedience… diverging from the arc is allowed and only recorded."* Licenses divergence **generally**; the model licenses it only when the *player* initiated it. The line's intent — don't flag the runner for following a player off-track — is right; its scope is too wide. |
-| 2 | `check-turn` § preamble | *"A draft that adds new detail consistent with the transcript is ordinary play — flag a conflict…, never mere addition."* Check 4 triages **newly-named things** only, so arc-touching lore that names no entity is "mere addition" and passes both. That is rule 6, the absolute one. See the worked case below. |
-| 3 | `check-turn` § 5 | Spoiler discipline is judged against `[hidden]` flags **in canon**. Information the runner *invented* has no flag to trip, and the plan's list of what is revealable this session is never consulted. Rule 7 is therefore unenforced in its stated form; what is enforced is the weaker "don't reveal canon marked hidden." |
-| 4 | orchestrator | The session plan is **not** preloaded to the runtime checker. `Canon.build()` assembles baseline canon + draft-named entities + transcript tail; the plan goes to `Canon.runner_preload()` only. Adjudicating rule 7 needs the plan's revealable list on the checker's side. |
+- **Entailed** — what a reader of the file would already take for granted. The king has a crown, the
+  tavern has a bar and a smell, the miner's hands are callused. Not authoring; *rendering* what canon
+  already implies. Consequence is irrelevant here — important entities need this most, because they
+  are the ones on screen.
+- **Inconsequential** — true of the world, but nothing hangs on it. The foreman's lunch, the
+  corner-guy's name, the weather. Test: if it is never mentioned again, nothing is lost.
 
-Gaps 1–3 are prose. Gap 4 is a small orchestrator change (or on-demand reading — the checker holds
-`read`/`glob`/`grep`, and `check-feedback`/`check-init` already read `campaign/` on demand — but the
-runtime gate opens a fresh session per turn, so re-reading a whole plan every turn is the expensive
-option).
+### What the settling changed
 
-### The worked case for gap 2 — the geologist
+Recorded because the earlier eight-rule form is quoted in Part 7 and a reader will notice:
 
-From the pilot's `5c16`, and the reason gap 2 is not hypothetical. Two inventions in one session,
-one caught and one not:
+- **"Nothing that outlives the session" was scoped wrong and is gone.** Duration is not the line —
+  rations, a named guard and a nameless miner all outlive the session and are all fine. **Story
+  impact is the line.** Three rules (no consequential entities / nothing that outlives the session /
+  never arc-impacting lore) collapse into rule 4.
+- **The staged-NPC carve-out is cut.** Staging an NPC authorizes the NPC, not arbitrary content in
+  their mouth; their dialogue is governed by rule 4 like anything else. Worked set: "I don't know" —
+  fine. "I don't know", lying — fine, it comes from the plan's `Known to:` / concealed tells. The
+  foreman's lunch — fine. "A sketchy guy went down into the mines last week", to a player
+  investigating the mines — blocked.
+- **Rule 3 is new**, and it is the only rule in the set that says *yes*. It is also the runner-side
+  half of the plan-coverage question in [`open-questions.md`](open-questions.md) § Benchmark.
+- **Closing early was demoted from a response to divergence to a response to exhaustion.** The
+  previous form let a runner spend twenty turns on individually-harmless scenes and stay compliant.
 
-- **"Aldric Voss"** — a named antagonist identity with backstory. Check 4 fired, blocked it, and
-  the grader scored it the batch's most severe finding. The system worked.
-- **"A geologist, sent by the consortium, three months ago"** — spoken by Brennan, an existing
-  canon NPC. The word *geologist* appears **nowhere** in the fixture: not in canon, not in the
-  session plan. The runner authored the antagonist's cover identity and a three-month timeline,
-  and attached it to the **consortium**, which *is* canon. Nothing flagged it.
+## Delivery: the runner reads the campaign once and then narrates from memory
 
-The difference is not consequence — the geologist is arguably the more load-bearing of the two —
-it is that Voss had a proper name and the geologist had a role. Check 4 triages "the draft's
-newly-named things"; an unnamed actor never enters the triage, and the preamble's "never flag mere
-addition" then covers it. A recalibrated check has to catch **new plot-load-bearing actors and
-lore regardless of whether they were given a name.**
+This section outranks the audit below. A rule that cannot reach the runner mid-scene is not a rule,
+and the measurements say almost nothing currently does.
 
-It also raises a question rule 7's wording does not settle: the geologist was delivered *through
-an NPC the plan stages*. Rule 7 permits revelation "by an NPC the plan staged", which can be read
-as licensing whatever a staged NPC says. It should not — staging an NPC authorizes the NPC, not
-arbitrary content in their mouth. Wording to settle in the ruleset review.
+Counted from the five pilot runs' opencode session records (`~/.local/share/opencode/opencode.db`,
+`part` rows of type `tool`), across roughly 125 runner turns:
 
-**Rule 8 is already well covered** and needs no work: `session-flow` § Pacing states it
-("Heavily improvised territory is itself a reason to close"), `session-run` marks that skill
-always-loaded, and `turn-reminder` step 5 carries a compressed form into *every* turn. It is listed
-here only so a later reading doesn't mistake its absence from the gap table for an oversight.
+| | |
+|---|---|
+| Skills loaded | `session-run`, `session-flow`, `discoveries` at **turn 1** in every run; `social-play` at turn 1 twice, mid-session twice, never once; `session-close` near the end in every run |
+| Skills **re**-loaded | none, in any run |
+| Canon `read`/`glob` | all at turn 1, plus one `glob` near the close (hunting the plan's advancement line). **One** mid-session lookup across all five runs |
+| The runner's own `dice` | six calls, total |
 
-## Delivery: stating a rule is not the same as landing it
+Three things follow, and they are the constraints every recalibration row has to design against.
 
-A constraint that shapes every row above. **The runner will not read a file or load a skill unless
-it is told to on that turn** — mid-narration it stays in flow and stops checking things. That is
-what `turn-reminder` exists for, and it is why rule 8 is in the reminder rather than left to the
-skill that owns it.
+**Loading is not the problem; re-loading is.** The runner does load `discoveries` — always, every
+run. It reads it on turn 1 of a session that runs to turn 41 and never opens it again. `turn-reminder`
+step 4 names `social-play` and `discoveries` on *every* turn, and after turn 1 the runner treats the
+instruction as already satisfied. `session-close` is the apparent exception only because it is gated
+on a condition that is not true until late — not because it is named more often.
 
-`CLAUDE.md` § Writing prompts already says a universal rule parked in an unloaded skill is silently
-absent. This is the stronger form: *loading is not salience.* Even an always-loaded skill is applied
-weakly once narration is underway, so a rule the runner must apply **mid-flow** has to be either in
-`turn-reminder` or enforced by the checker — not merely stated somewhere correct.
+**"Always loaded" means "loaded once."** `session-run` sits on exactly the same footing as the
+companion skills the corpus treats as optional. The only text with genuine per-turn presence in the
+system is `turn-reminder`.
 
-Consequences for this workstream:
+**Invention is substantially a staleness problem.** By turn 24 the runner is narrating a campaign it
+last looked at twenty-three turns ago, from memory, with the canon far behind it in context. No
+prompt rule fixes staleness. This is why rule 4 cannot be addressed by prose alone.
 
-- Rules 6 and 7 are absolutes the runner must honor on every turn, so they cannot be addressed by
-  prose in a skill alone. Gaps 2 and 3 are written against the **checker** for that reason: the
-  gate catches what the reminder cannot carry.
-- `turn-reminder` is the scarcest real estate in the system and is already dense (five numbered
-  steps, each long). Anything added there displaces attention from what is already there.
+### The consequence for where rules live
 
-**But detection is the floor, not the goal.** A violation the checker catches is still a violation
-the runner committed, and gm-llm is a game as well as a benchmark — a corrected draft costs a turn
-and a correction budget every time. So each gap has two halves:
+While loading is unreliable there are two homes for a mid-flow rule — `turn-reminder`, or the
+checker — and `turn-reminder` is the scarcest real estate in the system. **Make loading reliable and
+a third home opens**, and the reminder gets *shorter* rather than longer: a dispatch list instead of
+a rulebook, with the rules back in skills that are actually read at the moment they apply. That is
+the bet behind the reminder-as-algorithm row on the track, and it is why that row runs before the
+rows that author rule prose.
 
-1. **Flag it** — the checker must be able to see the violation at all. This is what gaps 1–4 are
-   about, and it is the prerequisite for measuring anything.
-2. **Stop needing to** — the runner must carry the rule without being caught. That is the harder
-   half and the one that decides whether the product is good, not merely measurable.
+### Detection is the floor, not the goal
 
-Getting a light model to hold a rule mid-narration is the actual craft problem. The tier ladder is
-how it gets measured: at the bottom, *how small a model can we make run a clean game?* — above it,
-*how much framework does a stronger model need to run one?* (`benchmark.md` § Goal). A
+A violation the checker catches is still a violation the runner committed, and gm-llm is a game as
+well as a benchmark — a corrected draft costs a turn and a correction budget every time. In the pilot
+runs roughly a third of drafted turns were corrected. So each gap has two halves: **flag it** (the
+checker must be able to see the violation at all — the prerequisite for measuring anything) and
+**stop needing to** (the runner carries the rule without being caught). The second is the harder half
+and the one that decides whether the product is good rather than merely measurable. The tier ladder
+is how it gets scored: at the bottom, *how small a model can we make run a clean game?*; above it,
+*how much framework does a stronger model need?* ([`benchmark.md`](benchmark.md) § Goal). A
 recalibration that only teaches the checker to complain would raise the violation count and improve
 nothing.
 
-## The model is provisional — it needs a proper review
+## The audit — every prompt against the six rules
 
-§ The model above was transcribed from one conversation and has **not** been worked through with
-Karl section by section. It is good enough to sequence work against and not good enough to author
-prompt prose from. Before track **recalibration** row 1 starts, two passes are owed:
+Read section by section: `dm-runner`, `session-run`, `session-flow`, `social-play`, `discoveries`,
+`session-close`, `turn-reminder`, `runner-header`, `check-turn`, `check-conduct`, plus the planner
+rows that feed rules 1 and 5.
 
-1. **The ruleset itself** — an extended back-and-forth to settle the rules' scope and wording.
-   Known-open from the transcription: whether rules 4 and 5 are one rule or two (they were said as
-   one thought); whether rule 8 is a rule or a corollary of rule 3; how hard "DCs are advisory"
-   actually is; and rule 7's "or an NPC the plan staged", which as written can be read as licensing
-   whatever a staged NPC says (see the geologist case).
-2. **The prompts, section by section** — read the existing agents, skills and briefs against the
-   settled ruleset and record every divergence, rather than only the ones a benchmark run happened
-   to surface. The gap table above is what one pilot exposed; it is not an audit.
+| Prompt | 1 content binds | 2 player-licensed | 3 routing | 4 no plot impact | 5 two sources | 6 close |
+|---|---|---|---|---|---|---|
+| `dm-runner` | — | — | — | — | canon branch | pointer |
+| `session-run` | — | — | — | — | canon branch | — |
+| `session-flow` | — | — | **absent** | — | — | partial |
+| `social-play` | — | — | — | **absent** | provenance only | — |
+| `discoveries` | **inverted** | — | — | — | — | — |
+| `session-close` | yes (advancement) | — | — | — | yes (closing) | yes |
+| `turn-reminder` | mechanics only | — | — | — | — | yes (step 5) |
+| `runner-header` | — | — | — | — | canon branch | — |
+| `check-turn` | — | too wide | n/a | name-gated | canon flags | n/a |
+| `check-conduct` | — | — | n/a | n/a | n/a | partial |
+
+The runner-facing path scores nothing on rules 1–4. This is not weak coverage; the rules are absent.
+
+### The five findings
+
+**F1 — `session-run` § "Table craft — non-negotiable" contains none of the absolutes.** Its four
+bullets are the player-declares boundary, the impossible-declaration boundary, who rolls dice, and
+ask-for-rolls-often. All four govern **runner vs. player**. Nothing governs **runner vs. canon**. The
+always-loaded core's own non-negotiable section is missing rules 1–4. Primary hole; necessary to fix
+and — per § Delivery — not sufficient.
+
+**F2 — `turn-reminder` spends its scarcest words on the axis rule 1 calls advisory.** Step 3 (ask for
+a roll) is by far the longest of the five steps and is entirely mechanics. The absolutes get none.
+Its length is earned scar tissue — several early campaigns would not ask for checks at all — and rule
+1 does not threaten it: step 3 governs *whether to ask*, which stays binding craft; rule 1 demotes
+only the plan's specific DC, which step 3 never claims. So the absolutes need *new* space, not
+reclaimed space. Step 4 is the candidate, being the one step that does nothing after turn 1.
+
+**F3 — `discoveries` binds the plan on exactly the wrong axis.** *"Follow the plan's resolution mode.
+The session plan flags each discovery as player-assembled or check-gated"* enforces the mechanical
+flag, which rule 1 makes advisory. Meanwhile `session-plan` § The one rule forces the planner to fix
+*"the answer behind a mystery"* and `investigation-plan` emits **the committed answer** — and no
+runner-facing prose says that answer binds. The plan's mechanics are enforced and its content is not.
+
+**F4 — `social-play` grants NPC autonomy without bounding where the NPC's material comes from.**
+*"The NPC plays their own hand… aims, doubts, and limits… personal agendas: some transactional, some
+two-faced."* Correct craft, and the licence the geologist rode in on — Brennan playing his own hand.
+The skill has a provenance rule for what an NPC may *know* and none for what the runner may *invent*
+in their mouth. Some of this is better fixed in `npc-plan`, which already commits *"disposition,
+agenda, what they know, how they react, concealed tells"* per NPC: every trait the plan commits is one
+the runner cannot invent. Whether that block is rich enough is a planner-side audit still owed.
+
+**F5 — `check-turn`'s defect is its classification criterion, not its intake.** See the worked case.
+
+### The worked case — the checker approved the geologist
+
+From the pilot's `32e6`. The gate did not miss the invention; it examined it and passed it. Turn 24,
+`check-turn`, clean pass, verbatim:
+
+> The geologist is a **legitimate new entity introduced through NPC testimony** — a natural response
+> to the player's question about unusual visitors, **consistent with the world** (consortium sends
+> personnel) and the mystery. No spoilers leaked… **The geologist should be registered in the INDEX
+> post-session.**
+
+It passed on the two rules this round cut: *consistency, not obedience* (it does not conflict, so it
+is "mere addition") and the staged-NPC carve-out (*introduced through NPC testimony*). In the same
+breath it computed that the thing needs a canon file — the predicate that should have blocked it —
+and drew the opposite conclusion.
+
+The next turn it blocks "Aldric Voss", stating its operative distinction outright: *"The geologist was
+established in the transcript (line 431) **but never named**."* Two turns later it passes a fabricated
+mine sign-in roster as *"ambient world-building that doesn't conflict with existing canon."*
+
+So the checker asks **"does this conflict?"** where rule 4 asks **"does this touch the plot?"**, and
+a proper name is what escalates. Check 4's classes are nearly right already (*"ambient color… with no
+plot weight"* vs *"load-bearing"*); what must change is the **test**, re-cut on arc / thread / clock /
+live-investigation impact, with intake widened to anything the draft asserts that is in neither canon
+nor the transcript. Widening intake alone would have changed nothing here.
+
+It also answers an objection raised against putting "would this need a canon file?" in front of the
+runner — that the runner has no reason to know the registration rules. Empirically the same model
+computes that predicate unprompted. The knowledge is present; only the consequence is missing.
+
+### Secondary divergences
+
+- `dm-runner` frontmatter names **improvisation** as one of four pillars of the job. § Boundaries is
+  the natural home for rule 4 — already the "what you may not do" section, currently holding two of
+  six rules.
+- `session-flow` § Pacing treats *"the player skipped the planned scenes"* purely as a **close**
+  trigger. Under rule 3 the first response is routing; closing is what happens when routing fails.
+- `session-run` § Spoiler discipline tests reveals against the **ledger + `[hidden]` in world/arc
+  files**. The plan's per-session `(known)` / `(new reveal)` / `(stays hidden)` flags are never
+  consulted, so a fact marked `(stays hidden)` this session but not `[hidden]` in canon is
+  unprotected. `check-turn` check 5 has the same defect — and the plan already carries those flags,
+  so rule 5 is enforceable today.
+- `runner-header` frames the plan as *"your prepared script — full of spoilers that are yours to
+  hold."* Spoiler-bearing, yes; **binding**, never said.
+- `session-plan` *"Keep 30–40% unplanned. Leave room for improvisation"* needs reconciling with rules
+  2 and 3. Its rider — *"that openness is the **path**, not the **facts**"* — is the closest thing to
+  rule 4 anywhere in the corpus and should be promoted, not rewritten.
+- `check-conduct` § 5's **"Wrapping too early"** bullet is dropped by decision (no teeth; never
+  fired), which also dissolves its collision with rule 6. `session-close` step 1's single-scene floor
+  is its runner-side twin and is softened, not cut.
+
+### A standing criterion the audit adopted
+
+**An agent is told about machinery only where recognizing it changes its behavior.** `dm-runner`'s
+`<turn-reminder>` / `<correction>` / `<prepared-context>` tags stay — it must not echo what it does
+not recognize. "The orchestrator runs you" goes. Test every reference in the corpus with *"what does
+the model do differently for knowing this?"*
 
 ## Deliberately out of scope here
 
-Two things this doc is *not* the home for, so a reader does not go looking:
-
 - **Plan coverage** — a session can honor every rule above and still under-deliver its plan, which
-  the pilot caught and nothing measures. That is a question about the *instrument*, not about the
-  runner's authority: it lives in `open-questions.md` § Benchmark, on track **recalibration**.
-- **Whether `dm` keeps authoring DCs** — the rule above settles their *weight* (advisory); whether
-  they belong in a plan at all is a planner question, and it is ROADMAP **recalibration** row 4.
+  the pilot caught and nothing measures. That is a question about the *instrument*:
+  [`open-questions.md`](open-questions.md) § Benchmark, on track **recalibration**.
+- **Whether `dm` keeps authoring DCs** — rule 1 settles their *weight* (advisory); whether they
+  belong in a plan at all is a planner question, on the same track.
 
 ## Consequences for the benchmark
 
 Recalibrating these prompts changes the subject under test, so **every archive taken before it is
 superseded** — the prompt fingerprint is part of the condition precisely so this is visible rather
-than silent. The pilot's *methodology* findings survive (they are properties of the measurement
-design); its *scores* do not describe the recalibrated system. `ROADMAP.md` sequences the two
-tracks against each other.
+than silent. The pilot's *methodology* findings survive; its *scores* do not describe the
+recalibrated system.
+
+One recalibration change is measurable **without the grader**: mid-session reads, skill loads per
+turn and grep counts are deterministic observations in opencode's session DB, not subject to the
+pilot's ±17. Whether the reminder-as-algorithm took can be read from a single run. That query belongs
+in `bench status` (ROADMAP benchmark 3) rather than being re-derived by hand.
