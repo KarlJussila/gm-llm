@@ -20,8 +20,16 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [7](#part-7--benchmark-the-pilot-that-redirected-the-roadmap-2026-07-29) | benchmark | Why an instrument needs a content hash and not a version label; how to read a small batch honestly (t, not z; which subscores are noise); three claims that died to their own evidence |
 | [8](#part-8--recalibration-the-ruleset-settled-and-why-prose-alone-cannot-land-it-2026-07-29) | recalibration | How a ruleset gets sorted onto the right axis; why "always loaded" means "loaded once", measured; a gate that examined a violation and passed it |
 | [9](#part-9--recalibration-the-per-turn-brief-as-an-algorithm-the-runner-executes-2026-07-29) | recalibration | Why the fix for an ignored instruction is a *changing* line the orchestrator computes, not better wording; what handing a narrating agent a tool costs; making a prompt change measurable without a grader |
+| [10](#part-10--direction-freezing-mimo-and-starting-luna-clean-2026-08-14) | direction | Why a concrete second product path must precede generic tier machinery; what "start over" preserves; why model reasoning is profile identity |
 
 ## Recurring threads (the classes worth knowing)
+
+- **The first implementation is not a neutral abstraction.** The planned tier framework began by
+  extracting MiMo's hard-coded stage graph into a playbook, then building every later tier through
+  that shape. Once MiMo stopped being the target, this became a way to preserve its assumptions
+  under generic names. The corrective pattern is a concrete second path first: preserve only the
+  public outcomes and model-independent substrate, add the smallest seams the second path proves,
+  and extract common machinery after two implementations reveal what is actually common. (Part 10)
 
 - **Whatever measures needs an identity as much as whatever is measured.** A run's prompts were
   content-hashed; the rubric that scored it carried a hand-typed `v1` that did not move when the
@@ -1005,3 +1013,78 @@ fields answer, and `bench status` (ROADMAP benchmark 3) is where surfacing it be
 `dev/test_runner_turn.py`); `tools/status.py --check` and `tools/lint_docs.py` both clean. The
 golden stream was re-recorded — its diff is exactly the four `dm-runner` messages this round
 rewrote, and nothing else.
+
+# Part 10 — Direction: freezing MiMo and starting Luna clean (2026-08-14)
+
+## The gap
+
+The roadmap still treated MiMo as the product target even after its pilot made the practical limit
+clear. It scheduled more prompt recalibration, then a MiMo baseline, then extraction of MiMo's
+hard-coded orchestration into a generic playbook, and only after all of that allowed a stronger
+model's tier to exist. The sequence made the weakest model's failure modes the architecture every
+later model had to inherit.
+
+That was already visible in the supposed Tier-1 design: disable selected runtime flags, assemble
+new prose from shared fragments, but preserve roughly Tier 0's stage structure. It was subtraction
+from MiMo, not a design for another model.
+
+## What the round does
+
+MiMo freezes as the playable Tier-0 profile. Its shipped assets, the partially landed per-turn
+todo/staleness experiment, and its orchestration stay available for the game and for comparison,
+but the remaining recalibration rows and the prerequisite MiMo baseline are retired. Tier-0 work is
+now preservation work: supported-path regressions, provider drift, and golden-stream protection
+when shared substrate changes.
+
+Tier 1 targets `opencode/gpt-5.6-luna` at `xhigh` reasoning. The model catalog and OpenAI model
+documentation both expose `xhigh` between `high` and `max`; Karl's observed quality gain at higher
+reasoning is the product reason to start there. Model and reasoning level are one profile condition,
+not two casual knobs. A later effort comparison is an ablation with its own archive identity.
+
+The new plan draws the start-over boundary by ownership:
+
+- **Keep model-independent substrate:** human-readable campaign files and knowledge separation,
+  deterministic dice/combat tools, transcript and completion facts, checkpoints and git ownership,
+  backend/lifecycle/frontends, raw archives, grading, and the fixture.
+- **Re-author model-facing behavior:** roles, agent topology, prompts, skills, context delivery,
+  checker feedback, and setup/play/reconcile decomposition.
+- **Do not decide the second category in advance.** Luna first gets a minimal Hollowfell live-play
+  probe with no MiMo control layer. Its trace defines the contract for the first production slice.
+
+### Why the Luna probe precedes tier plumbing
+
+The old B5/B6 sequence would first make Tier 0 data — namespace, playbook, flags, skill set — and
+then express Luna using that schema. That is speculative abstraction with an unusually strong bias:
+every field is a concept MiMo already needed. A concrete Luna path provides the missing second
+sample. Only then can a shared seam be named without guessing.
+
+This does not mean duplicating the whole application. The first slice reuses proven substrate and
+adds only enough selection to bypass Tier-0 behavior. If both paths later need the same configurable
+mechanic, it can be extracted with two real callers and a clear contract.
+
+### Why the checker begins observe-only
+
+The archive and grader are useful precisely because they can observe a subject without becoming the
+subject. Feeding MiMo checker verdicts into Luna would let a weaker, known-incomplete instrument
+shape a stronger model's play, confounding the comparison and potentially degrading the product.
+Tier 1 therefore archives the same checks but withholds correction by default. Correction delivery
+can return only as a focused experiment that demonstrates a gain.
+
+## Declared lossiness / deferrals
+
+- No Tier-1 production code or prompt prose lands here. The next task is the diagnostic live-play
+  probe; writing a reusable profile framework before that run would contradict the decision.
+- The exact OpenCode configuration syntax for pinning `xhigh` is left to the probe, where it can be
+  verified against the installed OpenCode version. The product condition itself is settled.
+- The MiMo plan-coverage, `submit_turn`, DC-authoring, and remaining runner-authority questions are
+  no longer live backlog. Parts 7–9 preserve their evidence; reopen one only if Luna reproduces it.
+- The old archive label `low` remains historical data. Benchmark B5 owns a forward profile-identity
+  migration rather than rewriting past runs.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; every `dev/test_*.py` script passes; `tools/status.py --check`
+and `tools/lint_docs.py` both clean. The sandbox hangs while closing even a minimal
+`asyncio.to_thread()` program, so the Python 3.11 gate used a disposable `/tmp` shim that performs
+the same default-executor shutdown synchronously; no repository code or test was changed for it.
+This round changes planning and stable orientation only, not runtime code or model-facing assets.

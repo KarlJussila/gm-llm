@@ -1,7 +1,8 @@
 # CLAUDE.md — gm-llm
 
-gm-llm is an opencode-driven D&D game-master system: the orchestrator (`gm_llm/orchestrator/`)
-drives headless `opencode serve` agents through setup → play → reconcile.
+gm-llm is an opencode-driven D&D game-master system. The shipped Tier-0 profile drives MiMo through
+setup → play → reconcile; the active product direction is a clean Tier-1 profile for Luna at
+`xhigh` reasoning. Both use the code-owned campaign/runtime substrate in `gm_llm/orchestrator/`.
 
 This file holds the **stable** facts worth loading every session. Anything that changes
 round-to-round lives in `HANDOFF.md`, not here.
@@ -74,10 +75,15 @@ Model-facing prose lives in three places:
 - `gm_llm/orchestrator/prompts/*.md` — orchestrator-injected briefs (e.g. `turn-reminder`, prepended
   to every player message).
 
-These prompts **are** the product (the benchmark's `low` tier). The target model is modest (mimo) —
-write for it.
+These prompts **are** the shipped Tier-0 MiMo product. They are now a frozen legacy profile, kept
+playable and protected by the golden prompt stream. The Luna Tier-1 surface is authored separately;
+do not use Tier 0 as its prompt template. See `design/luna.md`.
 
 ## Writing prompts
+
+The rules below describe maintenance of Tier 0. Tier-1 prompt work begins from Luna's observed
+behavior and `design/luna.md`: no Tier-0 guard, reminder, skill choreography, or role split carries
+over without a reproduced need.
 
 - **Concise and precise beats verbose.** Every line spends the model's attention. State a rule once,
   well.
@@ -103,8 +109,9 @@ write for it.
 
 ## Operational
 
-- Prose changes should ideally be verified against a score baseline; none is banked yet (`design/benchmark.md`
-  B3), so lean on the git-archaeology discipline in the meantime.
+- Tier-0 prose is frozen except for a supported-path regression. Luna prose is verified first by
+  the diagnostic slice, then by profile-stamped benchmark runs; model and reasoning level are both
+  part of the condition.
 - Changes reach a live campaign via `pipx reinstall` (package code + assets) + `gm-llm update` in the
   campaign (copies skills into its `.opencode/`). **Never while a TUI session is live** — quit at the
   wrap prompt first.

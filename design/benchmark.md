@@ -9,30 +9,26 @@ does not say what is next or what has landed.
 
 ## Goal
 
-Make gm-llm double as a benchmark: an LLM plays a full session (via an autoplayer),
-and its score is the number and severity of violations flagged during play. Tiers scale
-back the scaffolding — from the full product (prompt engineering, skills, per-turn
-reminders, checker-fed corrections) down to *"here's the session plan, here's the notes
-layout, here's the dice tool and the wrap tool; run the session."* **Every tier is
-checked and scored identically, whether or not the model ever sees the feedback.**
+Make gm-llm double as a benchmark: an LLM plays a full session (via an autoplayer), and its score
+is the number and severity of violations flagged during play. Product profiles may use different
+models, prompts, roles, and runtime support, but **every profile is observed and scored by the same
+instrument whether or not the subject ever sees its feedback.**
 
-The benchmark measures how much of the product's quality comes from structure
-(orchestration, reminders, corrections) versus craft prose (skills, guardrails) versus
-the model itself — and how gracefully a given model degrades as scaffolding is removed.
+The first comparison is intentionally historical rather than a synthetic ladder: Tier 0 is the
+heavily scaffolded MiMo product; Tier 1 is a clean Luna product at `xhigh` reasoning. It asks how
+much quality comes from the model versus the control system without requiring Luna to be built by
+subtracting pieces from MiMo. Later ablations may vary guidance or runtime support once two concrete
+profiles show which axes are real.
 
-Stated as the question each end of the ladder asks: at the bottom (`low`, the product),
-**how small a model can we make run a clean game?** — at the top (`high`, bare),
-**how much framework does a stronger model need to run one?** The subject is the runner
-playing well, never the checker catching it failing: a violation the gate corrects is still
-a violation the runner committed, and it costs a real game a turn. See
-[runner-authority.md](runner-authority.md) § Delivery.
+The subject is the runner playing well, never the checker catching it failing. A violation the gate
+corrects is still a violation the runner committed and costs a real game a turn. In Tier 1 the gate
+begins observe-only, so the instrument cannot become a weaker model steering a stronger one.
 
 ## Principles
 
-1. **Tier 0 is the product, byte-for-byte.** The current prompts, agents, and skills
-   *are* tier 0. They are never recomposed, templated, or routed through includes — the
-   interwoven contract-and-craft texture is tuned for the modest model and stays intact.
-   The product path never changes behavior because the benchmark exists.
+1. **Tier 0 is frozen byte-for-byte.** The current prompts, agents, skills, and orchestration
+   behavior are the legacy MiMo profile. They are never recomposed or used as the Tier-1 template;
+   the golden stream protects them while shared substrate changes.
 
 2. **Instrument vs. subject.** Assets partition into the *subject* (dm, dm-runner, the
    play/setup/planning skills, orchestrator briefs to them — what's being tested) and
@@ -41,21 +37,14 @@ a violation the runner committed, and it costs a real game a turn. See
    copy, no tier resolution path, ever, and is pinned to a fixed model/temperature
    independent of the subject model.
 
-3. **Contract vs. craft — for new tiers only.** *Contract* = mechanical facts every
-   tier must state (campaign layout, tool semantics, wrap protocol, notes format).
-   *Craft* = pacing, agency, spoiler discipline, the turn algorithm — the experimental
-   variable, deliberately different per tier, never synced. Shared contract fragments
-   feed tiers 1–2 by composition; tier 0's sync with the fragments is enforced by a
-   conformance **test** (facts present, not phrasing matched), never by composition.
+3. **Contract vs. craft.** *Contract* = externally necessary facts (campaign layout, tool semantics,
+   completion, transcript and checkpoint outcomes). *Craft* = the model-facing way a profile gets
+   there. Tier 1 shares the contract, not Tier 0's phrasing or decomposition.
 
-4. **Tiers are data: a prompt namespace + a playbook + axis flags + a skill set.** The
-   orchestrator's invariant skeleton (dispatch → gate → score event → checkpoint) is
-   the engine; each tier supplies a *playbook* — its stage sequence and briefs — plus
-   runtime-support flags. Two independent axes, kept separate in the config even though
-   shipped tiers are named points in the space:
-   - **guidance** — prompt verbosity, which skills exist, playbook granularity;
-   - **runtime support** — per-turn reminder, wrap nudges, canon preload, whether gate
-     verdicts are delivered as corrections (the gate itself always runs).
+4. **Concrete profiles before tier machinery.** Luna first runs through the smallest concrete
+   second path that can exercise the shared substrate. Only after both profiles exist may common
+   mechanics be extracted. A generic playbook, include system, axis matrix, or fragment library is
+   justified by demonstrated duplication, not required in advance.
 
 5. **Runtime captures; it never judges.** Scoring is decoupled from gating. Play emits
    a raw JSONL archive (drafts included); severity/category grading is a separate
@@ -64,29 +53,24 @@ a violation the runner committed, and it costs a real game a turn. See
    invalidating it. `report_findings` keeps its current schema; the in-loop checker's
    workload is never perturbed.
 
-6. **Baseline before restructuring.** No refactor lands until the current system's
-   score distribution is measured. Behavior-preserving refactors are verified by a
-   golden prompt-stream test (byte-level, free); prose-changing work is verified
-   against the score baseline (model runs, expensive).
+6. **Measure the profile being developed.** A MiMo baseline no longer gates Luna work. Tier 0 is
+   preserved by its golden stream; Luna gets a diagnostic run before product design and a baseline
+   once its end-to-end path is viable. No pre-Luna score can validate Luna prose.
 
-7. **Scores compare within a tier, not across tiers.** Tier 0's corrections change the
-   downstream trajectory — different condition, not just a different score. Cross-tier
-   deltas describe *scaffolding sensitivity*, not a single ladder of difficulty.
+7. **Scores compare within a condition.** Profile, subject model, reasoning level, prompt identity,
+   correction delivery, and fixture are all condition fields. Cross-profile deltas describe whole
+   product behavior, not a single ladder of difficulty.
 
 ## Layout (target)
 
 ```
 gm_llm/
   assets/
-    opencode/            # unchanged — the product, which IS the `low` tier
-    fragments/           # contract prose, single source: layout, tools, wrap, notes
-    tiers/
-      medium/            # "standard" overrides: rewritten barebones agent/*.md, prompts/*.md
-      high/              # "bare" overrides: minimal kickoff + near-empty agent files
-  orchestrator/          # engine: Game/Gate/commit/markers; playbook-driven; score events
+    opencode/            # frozen Tier-0 MiMo assets
+    profiles/
+      luna/              # complete Tier-1 model-facing surface, authored independently
+  orchestrator/          # shared substrate plus the concrete profile seams Luna proves necessary
   bench/                 # not shipped in the wheel
-    tiers.py             # Tier profiles (namespace + playbook + axes + skills)
-    playbooks.py         # the stage sequences, as data
     runner.py            # drives Game with the player agent against a fixture
     grade.py             # post-session severity/category grading over the archive
     scoring.py           # archive + grades → report
@@ -96,15 +80,14 @@ dev/
                          #  and registered only from a checkout)
 ```
 
-Skills stay flat under `assets/opencode/skills/` (opencode dictates that); a tier either
-ships a skill or doesn't — skills are only ever tier-0 content. If the benchmark ever
-needs a parallel prompt tree, the design has gone wrong.
+Tier 0 keeps its flat opencode skill tree. The Luna profile owns only the model-facing assets its
+observed behavior calls for; stable plugins and campaign templates remain shared substrate rather
+than being copied into each profile.
 
 ## The stages
 
-Each stage is defined so it is useful even if the workstream pauses, and so the expensive step
-(the baseline batch) happens exactly once, on the final instrument. The order they are *worked* in
-is ROADMAP's business.
+Each stage is useful if the workstream pauses. A profile baseline happens only after that product
+path and its condition identity are viable. The order stages are *worked* in is ROADMAP's business.
 
 ### B0 — Capture layer *(code only, no model-facing change)*
 
@@ -185,7 +168,7 @@ Promote the autoplay harness (the scripted `player` agent) to benchmark grade.
   use the same denominator, so the composite comes from the total penalty rather than an
   average of subscores and the deficits decompose additively. Reported *beside* the severity
   vector, never instead of it. The 0-point floor rate is a display calibration — retune it
-  once B3 shows where tier 0 lands.
+  only from a banked profile baseline, beginning with Luna.
 - Instrument reliability: `bench grade --double` grades a sample twice and reports
   agreement. Also surface the `defaulted`-verdict rate — a checker not doing its job
   must never read as the subject improving.
@@ -195,82 +178,53 @@ Promote the autoplay harness (the scripted `player` agent) to benchmark grade.
 
 *Exit: a batch turns into a one-page report with distributions, not single numbers.*
 
-### B3 — Baseline batch *(the measurement, before any refactor)*
+### B3 — Profile baseline batch
 
-- 5–10 identical-condition tier-0 runs on the **current, untouched** code and prompts.
-- Deliverables: the score distribution; the run-to-run variance (if variance is
-  comparable to the effect sizes we care about, that's a finding — fix sample size or
-  instrument before proceeding); grader agreement; defaulted rate.
-- This baseline anchors everything after it. Nothing model-facing changes until it's
-  banked.
-- **Size the batch from the pilot, not from this doc's "5–10".** A five-run pilot on
-  `hollowfell` is written up at
-  [`dev/fixtures/hollowfell/pilot-2026-07-29.md`](../dev/fixtures/hollowfell/pilot-2026-07-29.md):
-  it measures the run-to-run variance, and the sample size that variance implies is larger than
-  the range above. Read it before scheduling the batch.
+- Identical-condition runs for a viable product profile, stamped with profile, subject model,
+  reasoning level, correction-delivery mode, and prompt/instrument fingerprints.
+- Deliverables: the score distribution, run-to-run variance, grader agreement, and defaulted rate.
+- Size a batch from a pilot under that same profile. The Tier-0 pilot at
+  [`dev/fixtures/hollowfell/pilot-2026-07-29.md`](../dev/fixtures/hollowfell/pilot-2026-07-29.md)
+  remains methodology evidence, not a Luna sample-size calculation or a gate on Luna work.
 
-*Exit: a written baseline report checked into `dev/fixtures/` or alongside this doc.*
+*Exit: a profile-specific written baseline report checked in with its complete condition identity.*
 
 ### B4 — Golden prompt-stream test *(free regression armor)*
 
 - Under the mock backend, record the exact `(agent, session, message)` stream the
   orchestrator emits for a scripted setup → play → wrap → reconcile pass. Check the
   recording in; a test diffs future streams against it byte-for-byte.
-- This is the cheap guard for behavior-preserving refactors: B5 must diff clean.
+- This is the cheap guard that shared-substrate changes do not silently rewrite Tier 0.
 
-### B5 — Playbook extraction *(refactor, verified twice)*
+### B5 — Profile identity and selection
 
-- Extract the invariant engine from `loop.py`/`planner.py`/`reconciler.py`/`setup.py`;
-  move the hard-coded sequencing into a tier-0 playbook (data). Same briefs, same
-  order, same session boundaries, same commits.
-- Verify: (a) golden stream diffs clean — mandatory; (b) an optional tier-0
-  confirmation batch matches the B3 distribution — if it doesn't, the golden test
-  missed a surface, investigate before any tier prose is written.
+- Stamp profile and reasoning level alongside the existing per-agent model/temperature identity.
+- Let the bench select an already-built product profile using the same profile boundary as normal
+  play. The benchmark does not invent its own tier resolver or assemble a product from overrides.
+- Reject accidental pooling across any changed condition.
 
-*Exit: tier 0 reproduces current behavior through the playbook mechanism.*
+*Exit: the same fixture can run through either product profile and cannot be compared under a
+misidentified condition.*
 
-### B6 — Tier plumbing
+### B6 — Observe-only Tier-1 instrument
 
-- `Tier` dataclass (guidance axis + runtime-support axis), `bench/tiers.py`.
-- Tier-aware prompt resolution: `prompts/{tier}/{name}.md` overrides base; a minimal
-  `{{include:fragment}}` mechanism — **used only by non-zero tiers**. Tier 0 resolves
-  to the current files with no processing.
-- Scaffolder learns tiers (bench-only; `gm-llm init` for users is always tier 0).
-- Runtime-support flags wired: reminder off, wrap-nudge off, preload off, observe-only
-  gate (check runs, correction brief withheld, archive records it either way).
-- Conformance tests (in the `dev/test_completeness.py` style): every tier's assembled
-  prompts state the contract facts (paths, tool names, wrap signal); agent frontmatter
-  grants identical tools/permissions across tiers; every include resolves; every
-  playbook references briefs and skills that exist.
+- Run the common checker and archive against Luna drafts without delivering MiMo correction prose
+  back to Luna.
+- Keep the raw draft, verdict, default/failure state, and final player-visible turn distinct.
+- Verify that attaching the instrument does not change the Tier-1 prompt stream or output path.
 
-### B7 — `high` tier ("bare") authoring
+### B7 — Luna baseline and focused ablations
 
-Author the extreme tier first — it's tiny, and it stress-tests the contract fragments:
-*could a model actually run a session from only this?*
+- Bank the Tier-1 Luna-at-`xhigh` baseline only after the end-to-end profile is viable.
+- Use focused ablations to answer observed questions (for example correction delivery on/off or a
+  context preload present/absent). Do not manufacture a full axis matrix in advance.
+- A Tier-0 batch is optional comparison evidence, not a prerequisite and not pooled with Luna.
 
-- Write the contract fragments (`campaign-layout`, `tools`, `wrap-protocol`,
-  `notes-format`) — these become the single source the conformance test holds tier 0
-  against, too.
-- Minimal kickoff brief (fragments + "run the session"), near-empty agent files
-  (frontmatter is contract: permissions, tools, model), pass-through turns, no skills.
-- Collapsed post-session playbook: one "update the campaign records from this
-  transcript, following the layout" stage; `check-propagation` still scores it.
-- Shakedown runs; fix contract gaps the bare model trips over (each gap found here is
-  a fact tier 1 must also state).
+### B8 — Benchmark proper
 
-### B8 — `medium` tier ("standard") authoring
-
-- Rewritten barebones prompts: role + contract, no guardrail prose (no pacing/agency/
-  metagame lectures — a model that knows D&D should know). Calibrated by the tier-2
-  experience; this is the hardest prose to write, hence last.
-- Roughly tier-0's stage structure, pointed at the barebones namespace; runtime
-  support off per the tier definition.
-
-### B9 — Benchmark proper
-
-- Batches per (tier × subject model); reports; publishable methodology writeup.
-- The two-axis config enables ablations ("corrections on, craft prose off") — more
-  interesting than a single blended score per tier.
+- Batches per complete condition; reports; publishable methodology writeup.
+- Cross-profile results are presented as whole-product comparisons. Only controlled ablations make
+  narrower causal claims about a particular mechanism.
 
 ## Out of scope — and the condition that would bring each one in
 
@@ -291,10 +245,10 @@ trigger that would change that. Unresolved questions live in
 
 ## Measurement methodology (summary)
 
-- **Fixed per batch:** fixture, player model + temperature, checker model, turn
-  budget, tier, gm-llm version, rubric version. All stamped into the archive.
-- **Score the draft, always** — the same measurement whether or not tier 0 then
-  corrects it. Corrections are recorded as their own signal (correction rate).
+- **Fixed per batch:** fixture, profile, subject model + reasoning level, checker model, turn
+  budget, correction-delivery mode, gm-llm version, rubric version. All stamped into the archive.
+- **Score the draft, always** — the same measurement whether a profile corrects it or leaves the
+  instrument observe-only. Corrections are recorded as their own signal (correction rate).
 - **Distributions, not points:** 5–10 runs minimum; report variance alongside means.
 - **Instrument health reported with every batch:** defaulted-verdict rate, grader
   agreement. An unhealthy instrument invalidates the batch, not just a run.
@@ -308,16 +262,16 @@ trigger that would change that. Unresolved questions live in
 | --- | --- |
 | Run-to-run variance swamps tier effects | B3 measures variance *first*; grow sample size or sharpen the rubric before drawing conclusions |
 | Checker (mimo) misses violations → scores flatter the subject | Same detector across all tiers keeps comparisons internally valid; drafts archived from day one so the audit pass can quantify recall later |
-| Playbook refactor subtly changes the model-facing surface | Golden stream test (byte-level) + optional tier-0 confirmation batch |
+| Shared-substrate work subtly changes Tier 0 | Golden stream test (byte-level); a confirmation batch only when the prompt stream cannot cover the seam |
 | Free-tier rate limits make batches slow/flaky | Batch runner designed for overnight, resumable runs; conditions stamped so partial batches stay usable |
 | Rubric revisions invalidate history | Grades are derived from the raw archive — re-grade, never re-play |
 | Fixture drifts from evolving canon-conventions | The fixture is frozen per benchmark epoch; a conventions change that touches the fixture forces a fixture re-generation **and** a re-baseline (accept and document) |
-| Contract fragments and tier-0 prose drift apart | Conformance test asserts facts, not phrasing; runs in CI/dev tests |
+| A generic profile abstraction bakes in Tier-0 assumptions | Build the concrete Luna path first; extract only contracts both live profiles actually share |
 
-## Decisions (settled 2026-07-15)
+## Decisions (updated 2026-08-14)
 
-1. **Grader/checker instrument model** — the in-loop checker stays mimo (preserves the
-   product's gate). Mimo isn't the target instrument for any part of this, but it's
+1. **Grader/checker instrument model** — the common checker stays MiMo (preserves Tier 0's
+   gate) but begins observe-only for Tier 1. MiMo isn't the target instrument for any part, but it's
    what's available; this is a niche prototype and a stronger instrument can ship as a
    V2 re-grade (grades are derived data). No cross-epoch consistency promised yet.
    The grader model is picked at B2.
@@ -326,12 +280,10 @@ trigger that would change that. Unresolved questions live in
 3. **Turn budget** — play to natural close (`task_complete`) with a hard turn cap as
    the safety net. Cap breaches are stamped into the archive; turns-to-wrap stays a
    meaningful signal.
-4. **Reconcile** — `bench run` includes the post-session reconcile (wrap + stage gates)
-   by default, with a `--play-only` flag for cheap iteration. The bare tier's collapsed
-   pipeline remains a B7 design question.
-5. **Tier names** — the LLM reasoning-effort tier names, tracking difficulty (how
-   much the model must carry unaided): **`low`** (the product, formerly tier 0),
-   **`medium`** (standard, formerly tier 1), **`high`** (bare, formerly tier 2).
-   `xhigh` and `max` are reserved headroom — tiers can shuffle over and new,
-   barer ones slot in without renaming what's shipped. These are the labels
-   stamped into archives. Where this doc says "tier 0/1/2", read low/medium/high.
+4. **Reconcile** — `bench run` includes the selected profile's post-session outcome by default,
+   with a `--play-only` flag for cheap iteration. Profiles may reach that outcome through different
+   internal stage graphs.
+5. **Profile identity** — product profiles use stable numeric identities: Tier 0 is the frozen MiMo
+   path and Tier 1 is Luna at `xhigh`. Reasoning levels are condition fields, not tier names. Existing
+   archives stamped `low` remain historical data; B5 owns the forward identity migration rather than
+   pretending `low` means both a product and a reasoning setting.

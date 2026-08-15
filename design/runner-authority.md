@@ -1,11 +1,12 @@
 # Runner authority — what `dm-runner` may and may not author
 
-Plan of record for the prompt recalibration workstream. What the system is →
-[README.md](README.md); the benchmark that surfaced the gaps → [benchmark.md](benchmark.md).
+Tier-0 reference for the MiMo prompt recalibration. What the system is → [README.md](README.md);
+the benchmark that surfaced the gaps → [benchmark.md](benchmark.md); the clean Luna path that
+supersedes this as the active product direction → [luna.md](luna.md).
 
-**Sequencing lives in `ROADMAP.md` track recalibration.** This doc says what the rule *is*, where
-the current prompts disagree with it, and what stops a rule from landing; it does not say how far
-the work has got.
+This document explains the authority model behind Tier 0's partially landed reminder/staleness
+experiment. Its remaining prose work is intentionally retired: Tier 1 does not inherit this
+control model unless Luna reproduces the failure that a particular rule or mechanism repairs.
 
 ## The model
 
@@ -244,24 +245,16 @@ computes that predicate unprompted. The knowledge is present; only the consequen
 not recognize. "The orchestrator runs you" goes. Test every reference in the corpus with *"what does
 the model do differently for knowing this?"*
 
-## Deliberately out of scope here
+## Deliberately not carried into Tier 1
 
-- **Plan coverage** — a session can honor every rule above and still under-deliver its plan, which
-  the pilot caught and nothing measures. That is a question about the *instrument*:
-  [`open-questions.md`](open-questions.md) § Benchmark, on track **recalibration**.
-- **Whether `dm` keeps authoring DCs** — rule 1 settles their *weight* (advisory); whether they
-  belong in a plan at all is a planner question, on the same track.
+The MiMo audit also raised plan-coverage scoring, `submit_turn`, and whether `dm` should author DCs.
+They are not inherited backlog. Re-open one for Tier 1 only when a Luna run reproduces the need;
+Parts 7–9 retain the MiMo evidence if that happens.
 
 ## Consequences for the benchmark
 
-Recalibrating these prompts changes the subject under test, so **every archive taken before it is
-superseded** — the prompt fingerprint is part of the condition precisely so this is visible rather
-than silent. The pilot's *methodology* findings survive; its *scores* do not describe the
-recalibrated system.
-
-One recalibration change is measurable **without the grader**: mid-session reads, skill loads per
-turn and grep counts are deterministic observations, not subject to the pilot's ±17. Whether the
-reminder-as-algorithm took can be read from a single run. The run archive now carries it per turn
-(`tools` — what the runner called while drafting — and `stale`, the turns it had then gone without
-opening anything), so this is a read of `bench-out/`, not of opencode's session DB. Surfacing it
-belongs in `bench status` (ROADMAP benchmark 3) rather than being re-derived by hand.
+The experiment changed the Tier-0 subject, so pre- and post-change archives are distinct conditions;
+the prompt fingerprint makes that visible. Its per-turn `tools` and `stale` fields can still show
+whether MiMo followed the reminder without using the grader, and `bench status` (ROADMAP benchmark
+2) may surface them. That observation is historical Tier-0 evidence, not a gate or design input for
+the Luna path.

@@ -14,7 +14,8 @@ For *how to use* gm-llm, read the root `README.md`. For the current state of the
 | [benchmark.md](benchmark.md) | Plan of record for the benchmark workstream — the tiered instrument, the B-numbered stages ROADMAP sequences, measurement methodology, risks. |
 | [combat.md](combat.md) | Plan of record for combat as a runner play-mode — the tracker contract, the obligation channel, the loop, balance-as-a-skill. |
 | [frontends.md](frontends.md) | Plan of record for frontend/mode modularity — watching autoplay and bench runs in the TUI. |
-| [runner-authority.md](runner-authority.md) | Plan of record for prompt recalibration — what `dm-runner` may and may not author, and where the current prompts disagree with it. |
+| [luna.md](luna.md) | Plan of record for the Luna-targeted Tier-1 product — its clean-slate boundary, discovery slice, and product shape. |
+| [runner-authority.md](runner-authority.md) | Tier-0 reference — the MiMo runner-authority model and the partially landed recalibration that Tier 1 deliberately does not inherit. |
 
 ### Working docs (not the design — the project's own state)
 
@@ -25,7 +26,8 @@ For *how to use* gm-llm, read the root `README.md`. For the current state of the
 
 ## The system in one paragraph
 
-gm-llm lets a modest LLM design, run, and maintain a long-running solo tabletop D&D campaign.
+The currently shipped Tier-0 profile lets a modest LLM design, run, and maintain a long-running
+solo tabletop D&D campaign.
 Two **primary agents** split the work the way a human DM's week does: `dm` is the
 between-sessions brain (it authors every campaign file — world, arcs, character files, session
 plans, the post-session apply) and `dm-runner` runs one live session and then stops. Neither
@@ -38,6 +40,10 @@ what order steps happen. **Skills** hold the actual procedures, one home per rul
 demand. All state is human-readable markdown in a **campaign repo** kept separate from the
 framework repo, and what the player character knows is tracked separately from what the DM
 knows — so the spoiler boundary is a data structure rather than a behavioral guideline.
+
+The next product profile is Tier 1, targeted at Luna. It keeps the code-owned campaign and runtime
+substrate but re-authors the model-facing behavior from first principles; see [luna.md](luna.md).
+The architecture below describes the shipped Tier-0 profile, not a mandatory topology for Tier 1.
 
 ## Architecture
 

@@ -1,11 +1,9 @@
 # ROADMAP — all planned work, sequenced
 
 The single sequence for everything that remains, with a **recommended effort level per task**.
-What each task *is* lives in the linked plan-of-record docs — this file only orders the work
-and says how hard to think about it.
-
-How a session picks up and hands off: `CLAUDE.md` § Standing rules. The live "task now"
-pointer is `HANDOFF.md` § Next task.
+What each task *is* lives in the linked plan-of-record docs — this file orders the work and says
+how hard to think about it. Pickup and handoff live in `CLAUDE.md` § Standing rules; the active row
+is `HANDOFF.md` § Next task.
 
 ## Effort levels
 
@@ -15,14 +13,32 @@ pointer is `HANDOFF.md` § Next task.
 | **medium** | Specified implementation that still encodes a contract | The default |
 | **high** | Decisions, contract reviews, first-of-kind work with no oracle | Spend it on choices that are expensive to reverse, never on labor |
 
-**Prompt-prose work is never low.** The gate proves the harness works; it says nothing about
-whether a prompt change made the DM better, and no score baseline is banked yet (track
-**benchmark**, B3). Until one is, every change under `gm_llm/assets/opencode/` or
-`gm_llm/orchestrator/prompts/` is at least medium and leans on the git-archaeology discipline
-in `CLAUDE.md` § Writing prompts.
+**Model-facing work is never low.** The gate proves the harness works, not that a DM improved.
+Tier-0 prose is frozen; Luna prose is validated from live evidence and then profile-stamped runs.
 
-Fan-out to workers is a *method*, not a level: rows that name it mean the round batches menial
-items out and the **driving session re-verifies every result**.
+## luna — build Tier 1 for Luna from first principles
+
+Plan of record: [`design/luna.md`](design/luna.md).
+
+| # | Task | Effort | Why |
+|---|---|---|---|
+| 1 | Run the clean Luna live-play probe | high | Use Hollowfell with `opencode/gpt-5.6-luna` at `xhigh`: minimal role/contract, deterministic tools, raw capture; no Tier-0 reminders, todo choreography, forced skills, or correction delivery. The output is the smallest evidence-backed live-play contract, not production tier plumbing |
+| 2 | Build the concrete Tier-1 live-play vertical slice | high | Dedicated Luna assets plus public profile selection through the existing play UI; add only seams the probe proves, keep the MiMo checker observe-only, and hold Tier 0 byte-stable under the golden stream |
+| 3 | Re-author setup and reconcile around Luna | high | Preserve their public outcomes, not Tier 0's two-agent split or micro-stage graph. Start with the largest coherent tasks and split only where a Luna run shows quality or recovery needs it |
+| 4 | Close Tier-1 operational gaps | medium | Resume, cancellation, context pressure, combat, checkpoints, update, and campaign selection/migration work end to end; includes the real combat shakedown the current product never received |
+| 5 | Shakedown, promote, and release Tier 1 | high | Run a real new campaign through setup → play → reconcile, bank acceptance evidence, make Luna the recommended new-campaign profile, and keep MiMo Tier 0 selectable |
+
+## benchmark — measure concrete profiles
+
+Plan of record: [`design/benchmark.md`](design/benchmark.md).
+
+| # | Task | Effort | Why |
+|---|---|---|---|
+| 1 | B1 prereq — pin the player-end contract | high | One home, one generation path, one load contract for the play packet; needed for unattended multi-session runs regardless of profile |
+| 2 | `bench status` — batch state without a throwaway script | low | Runs by outcome are still hand-derived; include per-turn `tools`/`stale` for historical Tier-0 reads without making them Tier-1 requirements |
+| 3 | B5/B6 — profile identity and observe-only instrumentation | medium | After Luna 2 establishes the real profile seam, stamp profile + reasoning and run the common instrument without feeding MiMo correction prose into Luna |
+| 4 | B3/B7 — bank the Luna baseline | medium | After Luna 5 is viable, size from a Luna pilot and bank an identical-condition Tier-1 distribution; the MiMo pilot supplies methodology, not the sample size or a prerequisite |
+| 5 | Focused ablations and benchmark writeup | high | Test only observed mechanisms, then make causal claims from controlled conditions rather than treating two whole products as a single difficulty ladder |
 
 ## frontends — mode × frontend modularity
 
@@ -32,85 +48,44 @@ Plan of record: [`design/frontends.md`](design/frontends.md).
 |---|---|---|---|
 | 5 | Route console autoplay through `Lifecycle` | low | The last direct `Game` construction. Blocks nothing — duplication to retire, not a gap; needs `player_source()` to carry the resume story |
 
-## recalibration — align the prompts with the runner-authority model
+## packaging — native Windows
 
-Plan of record: [`design/runner-authority.md`](design/runner-authority.md) — the six rules, the
-audit these rows close, and § Delivery, which is why row 1 runs before the prose rows.
-
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 2 | Re-cut `check-turn`'s new-canon test on plot impact (F5) | high | The checker examined the geologist and **passed** it as "consistent with canon"; it asks *does this conflict?* where rule 4 asks *does this touch the plot?* Keep the classes, change the test, widen intake past newly-*named* things — and narrow the preamble's divergence licence to player-initiated without re-opening the false positives it was written to stop |
-| 3 | Enforce revelation against the plan's reveal flags (rule 5) | high | The plan already carries `(known)` / `(new reveal)` / `(stays hidden)` per clue, and neither `session-run` nor `check-turn` consults them. Needs those flags on the checker side — decide preloaded block vs. on-demand read |
-| 4 | Author the runner-side rules (F1, F3, F4 + secondary) | high | `session-run` § Table craft holds none of the absolutes; `discoveries` binds the plan's mechanics and frees its content; `social-play` bounds what an NPC may *know* but not what may be invented in their mouth. Shape depends on row 1's outcome |
-| 5 | Planner-side pass — `npc-plan` richness, the 30–40% rule, and whether DCs stay | medium | Every NPC trait the plan commits is one the runner cannot invent, so this is leverage on rule 4 rather than cleanup. Carries the DC decision (rule 1 makes them advisory; open whether `dm` keeps authoring them) |
-
-## benchmark — the instrument
-
-Plan of record: [`design/benchmark.md`](design/benchmark.md) (B-numbers are its sections).
+The portability rules are `dev/MAINTAINING.md` § Portability. Profile ownership resolves the old
+model-configuration question: the install ships definitions, and a campaign selects one.
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 1 | B1 prereq — pin the player-end contract | high | One home, one generation path, one load contract for the play packet; BENCHMARK calls it a prereq to finalizing the bench |
-| 2 | B3 — bank the baseline batch | medium | Identical-condition tier-0 runs; **sized from the pilot, not from BENCHMARK's "5–10"** ([`dev/fixtures/hollowfell/pilot-2026-07-29.md`](dev/fixtures/hollowfell/pilot-2026-07-29.md)). Waits on track **recalibration** — a baseline of prompts about to be rewritten measures nothing |
-| 3 | `bench status` — batch state without a throwaway script | low | Runs by outcome (complete / capped / reconcile-pending) is a number this repo keeps hand-deriving; `bench-out/` is gitignored so it can't live in `status.py` (Part 1) |
-| 4 | B5 — playbook extraction | high | Extract the invariant engine; verified twice (golden diff mandatory, confirmation batch optional) |
-| 5 | B6–B9 — tier plumbing, then tier authoring | high | Not startable until B5; B7 (bare) is authored before B8 (standard) because the extreme tier stress-tests the contract fragments |
-
-## live — shakedown against a real model
-
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 1 | New-campaign shakedown (setup + character import) | medium | Owed since the prior plan; exercises the per-arc apply briefs and slimmed checker skills |
-| 2 | Combat shakedown | medium | The whole tracker/loop/gate/craft stack is mock-verified only ([`design/combat.md`](design/combat.md)) |
-
-## packaging — native Windows and easy setup
-
-No plan-of-record doc: the design is settled and built. The portability rules that keep it
-working are `dev/MAINTAINING.md` § Portability; what remains is validation and one decision.
-
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 1 | Validate on native Windows | medium | The biggest external unknown — opencode's own native-Windows maturity (clean server lifecycle, child-process teardown). Everything in our code is fixable; this needs a real Windows box. Probe `opencode.cmd` resolution, process-tree kill, paths with spaces, ANSI. Fallback if opencode itself is the problem (WSL is ruled out): pin a known-good opencode version and document it |
-| 2 | Model configuration | high | Deferred by agreement; needs the campaign-vs-install ownership decision (`design/open-questions.md`) |
+| 1 | Validate on native Windows | medium | Probe opencode command resolution, process-tree kill, paths with spaces, and ANSI on a real Windows box. If opencode itself is the problem, pin a known-good version and document it |
 
 ## docs — keep the loop honest
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 1 | Generate `findings.md` § Contents | low | Hand-maintained indexes fall behind the archive they index; do it before the archive is long enough to matter |
-| 2 | Decide on pytest for `dev/test_*.py` | medium | Changes the gate, so it is its own round (`design/open-questions.md`) |
-| 3 | `sessions/` → per-session directories | high | A large cross-cutting path refactor (orchestrator modules, briefs, skills, `canon-conventions` §2, tests) with no behavior change to show for it — it must be its own round and never a rider (`design/open-questions.md`) |
+| 1 | Generate `findings.md` § Contents | low | Hand-maintained indexes have drifted repeatedly; automate the index before the archive grows further |
+| 2 | Decide on pytest for `dev/test_*.py` | medium | Changes the gate, so it remains its own coherent task (`design/open-questions.md`) |
+| 3 | `sessions/` → per-session directories | high | A cross-cutting path refactor with no behavior change to show for it; keep it separate (`design/open-questions.md`) |
 
 ## Landed
 
 | Track | Parts | Outcome |
 |---|---|---|
 | docs | 1 | The handoff-round loop stood up: five docs, `status.py`, `lint_docs.py`, `close-round`; `dev/MAINTAINING.md` reconciled |
-| docs | 2 | Planning consolidated onto the loop: `SPEC.md`/`PLAN.md` absorbed and deleted, plan-of-record docs moved into `design/`, private roadmaps and backlogs stripped, lint checks 10–12 |
-| packaging | 2 | Phase 1 (native-Windows portability) closed — its rules now live in `dev/MAINTAINING.md` § Portability |
-| frontends | 3 | Step 1: the two `_play_combat`s unified into `orchestrator.play_combat`, bench's cap accounting preserved as the base and tested directly |
-| frontends | 4 | Step 2: `PlayerSource` + `play_session` — one turn loop for the TUI, autoplay and bench; `--player auto --ui tui` filled in, and the TUI given a headless test |
-| frontends | 5 | Step 3: `bench run` plays a `Lifecycle` — its own `Game`/player-session/reconciler wiring gone, the post-wrap tail now `wrap(on_stage=…)`, the test seam moved to `lifecycle_factory` |
-| frontends | 6 | Step 4: `bench run --ui tui` — `BatchHooks`, a lifecycle attached per run, `BatchHeader`; watching made read-only and the comparability invariant asserted against a headless batch |
-| recalibration | 8 | The ruleset settled (eight transcribed rules → six, one of them a positive) and the corpus audited against it: the runner path scores nothing on rules 1–4, and the session records show why — canon and skills are read on turn 1 and never again |
-| recalibration | 9 | Row 1: the per-turn brief rebuilt as a list the runner executes (`todowrite`, granted to `dm-runner`), with the *loading* step split out of narration — and an orchestrator-side staleness count behind it, because a standing instruction to re-load is what the pilot measured being ignored. Built; unobserved against a live model |
-| benchmark | 7 | The five-run pilot read (**B3 itself is not banked** — the pilot is what says how to bank it): the grading instrument content-hashed, an error bar and a resolution figure on the score, thin subscores flagged. Its findings opened track **recalibration** and parked B3 behind it |
+| docs | 2 | Planning consolidated onto the loop: old duplicate plans deleted, plan-of-record docs routed through `design/`, lint checks added |
+| packaging | 2 | Native-Windows portability changes built; real-box validation remains |
+| frontends | 3–6 | Combat and session loops unified; bench routed through `Lifecycle`; unattended runs became watchable without perturbation |
+| benchmark | 7 | The MiMo pilot exposed large variance, instrument identity gaps, and runner failures; its methodology survives while its scores describe a superseded subject |
+| recalibration | 8–9 | MiMo runner authority audited; one reminder/staleness experiment landed. Remaining recalibration retired when Tier 0 froze |
+| direction | 10 | MiMo frozen as playable Tier 0; Luna at `xhigh` selected for a clean Tier-1 path; generic tier/playbook extraction removed as a prerequisite |
 
 ## Standing sync rules
 
-- **Recalibration runs before B3, and suspends the freeze while it does.** The standing rule was
-  "nothing model-facing changes before B3 banks the baseline" — sound while the prompts were
-  believed correct, and inverted once they are not: baselining prompts that are about to be
-  rewritten measures a system that will not exist. Track **recalibration** is therefore the one
-  model-facing exception, and it closes before B3 opens. The freeze still binds every *other*
-  model-facing change, and B3 is sized from the pilot, not from BENCHMARK's "5–10".
-- **The pilot's scores do not survive recalibration.** The prompt fingerprint is part of a run's
-  condition, so recalibrated runs cannot pool with pre-recalibration ones. What survives is the
-  pilot's methodology (variance structure, grader reliability, the thin-dimension limit); the
-  numbers describe a superseded subject. Harness-only work (frontends, packaging, docs) runs
-  alongside freely throughout.
-- **B5 diffs clean against the golden stream** (`dev/test_golden_stream.py`, B4 — landed before
-  this loop existed, which is why it has no Part). It is the only thing that makes the playbook
-  extraction verifiable as behavior-preserving.
-- **The live shakedowns can run at any time** and should run before, not after, a release that
-  touches the orchestrator.
+- **Tier 0 is frozen, not deleted.** Its prompts and orchestration change only for a supported-path
+  regression or provider drift. Shared-substrate work keeps its golden prompt stream clean.
+- **A concrete Luna path comes before generic profile machinery.** Luna 1 is diagnostic and Luna 2
+  adds only its proven seams. Extract a shared abstraction only after both product paths need it.
+- **The Tier-0 pilot does not gate Tier 1.** It remains evidence about methodology and MiMo. Luna's
+  own pilot sizes Luna's baseline after the product path is viable.
+- **The checker is observe-only for Tier 1 by default.** Every run remains measurable, but a MiMo
+  instrument does not steer Luna unless a focused experiment demonstrates a gain.
+- **Model and reasoning are condition identity.** Tier 1 begins at Luna `xhigh`; a different effort
+  is a different benchmark condition, not a casual config edit.
