@@ -49,23 +49,51 @@ implements it.
    Tier 1 need not preserve Tier 0's two-primary-agent split or its exact stage graph to deliver
    those outcomes.
 
-## The first slice
+## The first slice (probed in Part 11)
 
-The discovery run uses the existing Hollowfell session fixture so its plan and campaign state are
-known quantities. It runs Luna as the live DM with:
+The discovery probe ran against the Hollowfell session-3 fixture using `openai/gpt-5.6-luna-fast` at
+`xhigh` reasoning (`variant: xhigh`) with observe-only checking. The run wrapped naturally via
+`task_complete` in 13 player turns (3532s) without per-turn reminders, todo choreography, forced
+skill loading, or correction delivery.
 
-- a minimal role and spoiler boundary;
-- Luna pinned at `xhigh` reasoning;
-- the prepared session plan plus only the campaign-layout/tool facts needed to act;
-- the existing dice, combat, and completion tools;
-- transcript and raw score-event capture; and
-- no per-turn reminder, todo choreography, forced skill loading, correction delivery, or staged
-  post-session work.
+### Evidence-backed live-play contract
 
-The slice is diagnostic rather than a benchmark claim. Read the transcript, tool trace, context
-growth, completion behavior, and checker reports together. Its output is a small Tier-1 live-play
-contract: what Luna must receive once, what it can retrieve on demand, which code-owned boundaries
-remain necessary, and which Tier-0 mechanisms stay absent.
+1. **What Luna needs once (at session start):**
+   - **Prepared context:** the prepared session plan plus baseline canon and named entities
+     (`runner_preload()`), delivered once in front of the opening kickoff.
+   - **Role & spoiler boundary:** concise DM authority over narration, NPC dialogue, and 5e rules
+     adjudication, with an absolute boundary on unearned secrets and plot spoilers.
+   - **Conduct craft stated in the profile prompt:** standing craft rules (e.g. withholding DCs, closing
+     exploratory scenes on situations rather than multiple-choice menus) are followed when stated in the
+     prompt; they do not require separate loadable skills or in-flight correction.
+   - **Campaign filesystem orientation:** directory layout (`world/`, `characters/`, `sessions/`) and
+     file tools (`read`, `glob`, `grep`, `list`).
+   - **Deterministic tool contract:** `dice` for rolls, combat tracker tools if initiative triggers,
+     and `task_complete` with handoff `notes` to wrap.
+
+2. **What Luna retrieves on demand:**
+   - Context lookups are targeted and autonomous. When Luna needed to verify communication links between
+     Dallid, Wren, and the Concordance on turn 13, it autonomously called `glob` and `read` on
+     `campaign/sessions/session-1-notes.md` without being reminded or prompted to do so.
+   - Universal per-turn skill re-loading is unnecessary; Luna retains instructions and context across
+     the session.
+
+3. **Which code boundaries remain:**
+   - Deterministic dice and combat state tracker (`plugin/combat-tracker.ts`).
+   - Transcript recording (`session-{N}-transcript.md`).
+   - Session completion handling: the orchestrator must extract `notes` from `task_complete`, and
+     safely handle final narration if passed in the tool's `player_message` argument.
+   - Observe-only instrumentation (`check-turn`, `check-conduct`, raw archive JSONL).
+
+4. **Which Tier-0 mechanisms stay absent:**
+   - **No per-turn reminder brief:** Luna tracks narrative context and rules across turns without a
+     changing orchestrator brief prepended to player messages.
+   - **No todo choreography:** `todowrite` is omitted; Luna structures multi-step actions cleanly
+     within its own reasoning space.
+   - **No staleness nags:** lookup tracking and escalating reminder lines are retired.
+   - **No wrap countdown banners:** Luna recognizes the plan's closing beat and initiates wrap on its own.
+   - **No in-loop correction:** the checker observes and archives verdicts without perturbing or
+     re-prompting the live DM.
 
 ## Product shape
 

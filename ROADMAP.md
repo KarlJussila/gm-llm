@@ -22,11 +22,10 @@ Plan of record: [`design/luna.md`](design/luna.md).
 
 | # | Task | Effort | Why |
 |---|---|---|---|
-| 1 | Run the clean Luna live-play probe | high | Use Hollowfell with `opencode/gpt-5.6-luna` at `xhigh`: minimal role/contract, deterministic tools, raw capture; no Tier-0 reminders, todo choreography, forced skills, or correction delivery. The output is the smallest evidence-backed live-play contract, not production tier plumbing |
-| 2 | Build the concrete Tier-1 live-play vertical slice | high | Dedicated Luna assets plus public profile selection through the existing play UI; add only seams the probe proves, keep the MiMo checker observe-only, and hold Tier 0 byte-stable under the golden stream |
-| 3 | Re-author setup and reconcile around Luna | high | Preserve their public outcomes, not Tier 0's two-agent split or micro-stage graph. Start with the largest coherent tasks and split only where a Luna run shows quality or recovery needs it |
-| 4 | Close Tier-1 operational gaps | medium | Resume, cancellation, context pressure, combat, checkpoints, update, and campaign selection/migration work end to end; includes the real combat shakedown the current product never received |
-| 5 | Shakedown, promote, and release Tier 1 | high | Run a real new campaign through setup → play → reconcile, bank acceptance evidence, make Luna the recommended new-campaign profile, and keep MiMo Tier 0 selectable |
+| 1 | Build the concrete Tier-1 live-play vertical slice | high | Dedicated Luna assets plus public profile selection through the existing play UI; add only seams the probe proves, keep the MiMo checker observe-only, and hold Tier 0 byte-stable under the golden stream |
+| 2 | Re-author setup and reconcile around Luna | high | Preserve their public outcomes, not Tier 0's two-agent split or micro-stage graph. Start with the largest coherent tasks and split only where a Luna run shows quality or recovery needs it |
+| 3 | Close Tier-1 operational gaps | medium | Resume, cancellation, context pressure, combat, checkpoints, update, and campaign selection/migration work end to end; includes the real combat shakedown the current product never received |
+| 4 | Shakedown, promote, and release Tier 1 | high | Run a real new campaign through setup → play → reconcile, bank acceptance evidence, make Luna the recommended new-campaign profile, and keep MiMo Tier 0 selectable |
 
 ## benchmark — measure concrete profiles
 
@@ -76,6 +75,7 @@ model-configuration question: the install ships definitions, and a campaign sele
 | benchmark | 7 | The MiMo pilot exposed large variance, instrument identity gaps, and runner failures; its methodology survives while its scores describe a superseded subject |
 | recalibration | 8–9 | MiMo runner authority audited; one reminder/staleness experiment landed. Remaining recalibration retired when Tier 0 froze |
 | direction | 10 | MiMo frozen as playable Tier 0; Luna at `xhigh` selected for a clean Tier-1 path; generic tier/playbook extraction removed as a prerequisite |
+| luna | 11 | Clean live-play probe ran against Hollowfell; evidence-backed contract for Tier-1 live vertical slice established |
 
 ## Standing sync rules
 

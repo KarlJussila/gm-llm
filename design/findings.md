@@ -21,8 +21,17 @@ House heading form, so the index can be generated: `# Part N — Subject: what i
 | [8](#part-8--recalibration-the-ruleset-settled-and-why-prose-alone-cannot-land-it-2026-07-29) | recalibration | How a ruleset gets sorted onto the right axis; why "always loaded" means "loaded once", measured; a gate that examined a violation and passed it |
 | [9](#part-9--recalibration-the-per-turn-brief-as-an-algorithm-the-runner-executes-2026-07-29) | recalibration | Why the fix for an ignored instruction is a *changing* line the orchestrator computes, not better wording; what handing a narrating agent a tool costs; making a prompt change measurable without a grader |
 | [10](#part-10--direction-freezing-mimo-and-starting-luna-clean-2026-08-14) | direction | Why a concrete second product path must precede generic tier machinery; what "start over" preserves; why model reasoning is profile identity |
+| [11](#part-11--luna-the-clean-live-play-probe-2026-09-03) | luna | What a live run without Tier-0 scaffolding reveals; autonomous file retrieval; natural task_complete wrap |
 
 ## Recurring threads (the classes worth knowing)
+
+- **High model reasoning replaces control scaffolding with autonomous retrieval.** Tier 0 used
+  per-turn reminder briefs, escalating staleness nags, and forced skill reloading to combat MiMo's
+  tendency to narrate from fading memory. Under clean conditions with no reminders or skill tools,
+  Luna at `xhigh` autonomously called `glob` and `read` on past session notes the moment a player
+  action questioned an established lore capability (Wren and the spellbook). The class: when reasoning
+  quality is high, prompt scaffolding that forces routine lookups becomes redundant noise; the model
+  recognizes uncertainty and retrieves evidence on its own. (Part 11)
 
 - **The first implementation is not a neutral abstraction.** The planned tier framework began by
   extracting MiMo's hard-coded stage graph into a playbook, then building every later tier through
@@ -1088,3 +1097,70 @@ and `tools/lint_docs.py` both clean. The sandbox hangs while closing even a mini
 `asyncio.to_thread()` program, so the Python 3.11 gate used a disposable `/tmp` shim that performs
 the same default-executor shutdown synchronously; no repository code or test was changed for it.
 This round changes planning and stable orientation only, not runtime code or model-facing assets.
+
+# Part 11 — Luna: the clean live-play probe (2026-09-03)
+
+## The gap
+
+Part 10 established that Tier 1 for `gpt-5.6-luna` at `xhigh` reasoning would start clean rather
+than inherit MiMo's control machinery. But what a clean profile actually requires could not be
+designed from theory: without an un-scaffolded live run, any profile definition would simply guess
+which prompts, tools, and constraints Luna needs and which Tier-0 artifacts could be safely discarded.
+
+## What the round does
+
+This round executes the clean live-play probe against the Hollowfell fixture (`dev/fixtures/hollowfell`,
+session 3) using `openai/gpt-5.6-luna-fast` with `variant: xhigh`.
+
+The probe harness (`dev/probe_luna.py`) strips out Tier 0's control layer entirely:
+- **No per-turn reminder brief:** Luna receives only the player's message in `<player>` tags.
+- **No todo choreography:** `todowrite` is omitted; Luna plans within its internal reasoning.
+- **No staleness tracking or lookup nags:** no counts or reminders to re-load skills.
+- **No wrap countdown banner:** no escalating pressure as context expands.
+- **Observe-only checking:** the MiMo `narrative-checker` evaluates every draft against `check-turn`
+  and `check-conduct`, but verdicts are logged and archived without being sent back to Luna.
+  Luna's drafts reach the transcript and the player directly.
+
+The session played 13 player turns to a natural wrap via `task_complete` in 3,532 seconds.
+
+### Empirical findings
+
+1. **Natural pacing and wrap:** Without wrap countdown banners or todo lists, Luna paced the session
+   through all six beats of the session plan (node discovery, exploitation evidence, Tarin's trace,
+   Briarwood map comparison, Keen Mind synthesis, and Brennan report/evacuation decision). On turn 13,
+   following the player's evacuation decision, Luna called `task_complete` with comprehensive handoff
+   notes covering key events, current state, and open threads.
+2. **Autonomous context retrieval:** Luna called `glob` and `read` on turn 1 and turn 13. When the
+   player mentioned sending a message via the spellbook to Wren on turn 12, Luna's reasoning trace
+   shows it recognized the need to check Wren and spellbook capabilities, autonomously read
+   `campaign/sessions/session-1-notes.md` from disk, and concluded that the spellbook cannot transmit
+   voices across distance, arranging for a surface rider instead. No orchestrator prompt instructed
+   this lookup.
+3. **Prompt fidelity over skill scaffolding:**
+   - In `check-turn`, 12 of 14 turns passed cleanly. One early turn (turn 3) asserted "no discarded
+     tools or footprints", which `check-turn` flagged as precluding Tarin's trace; Luna immediately
+     self-corrected on turn 4 when the player searched again, finding the dropped miner's wrench.
+   - In `check-conduct`, DC announcements were flagged on turns 2–4 because the probe prompt explicitly
+     told Luna to "state the check and DC clearly". Luna followed this instruction to the letter.
+     Similarly, Luna appended menus of options ("What does Dallid do?") on turns 1, 5, 7, 11, and 13
+     because the probe prompt lacked the Tier-0 feedback rule against choice menus. When told in the
+     prompt what to do, Luna complies directly without in-flight correction.
+4. **Context growth is predictable:** Context scaled smoothly from 22,501 tokens at turn 1 to 43,049
+   tokens at turn 14 (~1,500 tokens per turn), well within the 272,000-token limit.
+5. **Orchestrator completion seam:** On the wrap turn, Luna supplied the final narration inside
+   `task_complete(player_message="...")` rather than as regular message text. The Tier-1 orchestrator
+   must handle closing narration delivered via `task_complete` arguments.
+
+## Declared lossiness / deferrals
+
+- The probe driver is standalone in `dev/probe_luna.py` and does not introduce production profile
+  selection; Luna 2 owns dedicated profile assets and public profile selection in the play UI.
+- The observe-only instrument is currently wired through the probe harness rather than a configurable
+  flag in `Lifecycle`/`Gate`; B5/B6 owns the formal observe-only configuration.
+- Post-session reconcile was not run for this probe; Luna 3 owns re-authoring reconcile for Tier 1.
+
+## Green bar
+
+`python -m compileall gm_llm` clean; all fourteen `dev/test_*.py` scripts pass; `tools/status.py --check`
+and `tools/lint_docs.py` clean with 0 errors and 0 warnings.
+

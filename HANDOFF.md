@@ -6,20 +6,19 @@
 
 ## Next task
 
-- **Task now: Luna 1 — run the clean live-play probe (effort: high).** Use the Hollowfell fixture
-  with `opencode/gpt-5.6-luna` at `xhigh` reasoning. Give it a minimal live-DM role, the session
-  plan and necessary campaign/tool contract, then play through the existing scripted player.
-- **Keep out:** product tier plumbing, generic playbooks, include/fragment systems, Tier-0 prompt
-  reuse, per-turn reminders, todo choreography, forced skill loading, and correction delivery.
-  This round discovers the Luna contract; it does not implement the final profile.
-- **Capture:** transcript, raw archive, tool use, context growth, completion behavior, checker
-  reports, and a direct qualitative read. The MiMo checker observes but does not steer Luna.
-- **Exit:** write the smallest evidence-backed contract for the Tier-1 live vertical slice: what
-  Luna needs once, what it retrieves itself, which code boundaries remain, and which Tier-0
-  mechanisms stay absent.
-- **Read first:** `design/luna.md`, then `design/benchmark.md` principles and B5/B6. The historical
-  MiMo failure analysis is in `design/runner-authority.md`; consult it only to avoid accidentally
-  carrying a known workaround over.
+- **Task now: Luna 2 — build the concrete Tier-1 live-play vertical slice (effort: high).**
+  Introduce dedicated Luna model-facing assets and public profile selection through the existing play
+  UI (`--profile luna`).
+- **Implement the probe contract:** wire the evidence-backed contract from findings and `design/luna.md`:
+  preload session plan + baseline canon once at kickoff; minimal DM prompt with spoiler boundary and
+  standing conduct rules; file tools, dice, combat tools, and `task_complete`; handle wrap narration
+  in `task_complete(player_message="...")`; keep the MiMo checker observe-only; omit per-turn
+  reminders, todo choreography, staleness tracking, and wrap countdowns.
+- **Preserve Tier 0:** hold Tier-0 assets and prompt streams byte-stable under the golden test suite.
+- **Keep out:** generic playbook or multi-tier abstraction plumbing. Keep Luna's implementation
+  concrete and parallel until both live paths are landed.
+- **Read first:** `design/luna.md` § The first slice & Product shape, `design/findings.md` (the probe findings),
+  and `gm_llm/orchestrator/loop.py`.
 
 ## Live totals
 
@@ -40,22 +39,15 @@ The gate is pass/fail, not a figure to track. `CLAUDE.md` § How to run things o
 
 ## Where things stand
 
-- **Direction** — Luna Tier 1 is now the priority product path. Its model and initial reasoning
-  condition are fixed: `opencode/gpt-5.6-luna` at `xhigh`. Luna's higher reasoning quality is part
-  of the product assumption and benchmark identity.
-- **Tier 0** — MiMo remains installed, fun, and playable, but its unfinished recalibration is
-  retired. The current reminder/staleness experiment stays as-is and unobserved. Future work is
-  limited to supported-path regressions, provider drift, and preservation under the golden stream.
-- **Tier 1** — clean model-facing start. Reuse campaign files, deterministic tools, transcript,
-  markers/checkpoints, git ownership, backend/lifecycle/frontends, and raw measurement. Reconsider
-  agents, roles, prompts, skills, context delivery, correction, and stage decomposition.
-- **Architecture** — no generic tier/playbook extraction precedes Luna. The probe comes first, a
-  concrete live path second, and shared abstractions only after two real paths expose common seams.
-- **Benchmark** — its archive, grader, fixture, and methodology remain useful. The old MiMo pilot
-  does not gate Luna or size its batch. Tier-1 checking begins observe-only so MiMo cannot steer it.
-- **Other tracks** — frontend cleanup, native-Windows validation, player-packet ownership, bench
-  status, and docs work remain applicable but do not block the Luna probe.
-- **Working tree** — this direction round is committed and the gate is green.
+- **Direction** — Luna Tier 1 is the priority product path, targeting `gpt-5.6-luna` at `xhigh` reasoning.
+- **Luna 1 (probed)** — The clean live-play probe ran against Hollowfell Session 3. It played
+  to a natural wrap via `task_complete` with zero in-loop correction, zero reminders, and zero
+  todo lists. It demonstrated autonomous file lookups, high prompt fidelity, smooth context
+  scaling, and yielded the live-play contract documented in `design/luna.md` and findings.
+- **Tier 0** — MiMo remains installed, fun, and playable as Tier 0, frozen under the golden prompt stream.
+- **Tier 1** — Proceeding to Luna 2: authoring dedicated Luna assets, adding public `--profile luna`
+  selection, and wiring the live-play vertical slice while keeping the MiMo checker observe-only.
+- **Working tree** — Clean, full test suite passes.
 
 ## Pointers
 
