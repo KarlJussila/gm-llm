@@ -55,6 +55,9 @@ Model-facing prose lives in three places:
 - **Examples teach, so keep them correct.** A wrong rules example teaches the wrong rule.
 - **MiMo's scar tissue doesn't carry over.** A guard, reminder or step from the old prompts comes
   back only when a Luna run shows the failure it repairs.
+- **After the clean slate, guardrails are protected.** Prose added after the `luna-clean-slate` tag
+  is trimmed only through the `/refine-prompts` process, and a commit adding a guardrail names the
+  failure it fixes and the run that showed it.
 
 ## Operational
 

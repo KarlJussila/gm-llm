@@ -26,7 +26,8 @@ Design: [`design/luna.md`](design/luna.md). Tasks 1–5 need no model quota; 6�
    `campaign-setup` deleted; the player-level feedback store and the `subagents` setting.
 5. **Sweep out what MiMo left.** Delete the agents, skills, briefs and tests nothing calls any more,
    and `design/runner-authority.md`; bring `README.md` and `design/README.md`'s architecture in line
-   with the rebuilt product.
+   with the rebuilt product. Then tag the commit `luna-clean-slate` — the baseline the
+   `refine-prompts` skill protects everything after.
 6. **Live shakedown.** Two or three Hollowfell sessions on Luna; fix only failures the runs show.
 7. **Between-session and combat shakedown.** Reconcile and plan from those runs, a fresh campaign
    through setup, and the first real fight. Read the gates' before/after and cut the ones that
