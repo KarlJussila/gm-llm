@@ -3,17 +3,16 @@ slug: the-ashford-court
 name: The Ashford Court
 type: location
 status: active
+summary: Capital city of the Crown of Thorns
+kind: Capital city — seat of the [[crown-of-thorns]] monarchy.
+region: '[[crown-of-thorns]]'
+setting: A large city on the River Ash, in the heart of the kingdom.
+controlled-by: '[[crown-of-thorns]]'
+scale: Perhaps fifty thousand residents. A walled city with a castle, a cathedral, a merchant quarter,
+  and a scholarly district.
 ---
 
 # The Ashford Court
-
-## Vitals
-- **Kind:** Capital city — seat of the [[crown-of-thorns]] monarchy.
-- **Region:** [[crown-of-thorns]]
-- **Setting:** A large city on the River Ash, in the heart of the kingdom.
-- **Controlled by:** [[crown-of-thorns]]
-- **Scale:** Perhaps fifty thousand residents. A walled city with a castle, a cathedral,
-  a merchant quarter, and a scholarly district.
 
 ## Description
 
@@ -36,7 +35,7 @@ investigation.
 
 ## Deeper layer / what it hides
 
-- [hidden] The city's foundations contain Lattice-wards placed during the original
+- [hidden:the-ashford-court-1] The city's foundations contain Lattice-wards placed during the original
   construction — ancient protections that the current inhabitants do not understand. The
   wards are failing as the Lattice destabilizes, and the Crown's prosperity — which
   depends on the wards' stabilizing effect — is beginning to erode. Queen Isolde has

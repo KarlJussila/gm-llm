@@ -30,11 +30,12 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import completeness
+from . import paths
 from .archive import verdict_fields
 from .backend import HEAVY_RETRIES, HEAVY_STALL_TIMEOUT
 from .logs import append, banner, section
-from .phase import apply_one_correction, commit_campaign
+from .phase import apply_lint_correction, apply_one_correction, commit_campaign
+from .registry import scan
 from .planner import Planner, PrepResult  # noqa: F401 — PrepResult used in annotations
 from .prompts import load
 
@@ -124,7 +125,7 @@ class Reconciler:
             self.clear_markers(n)
         rr = ReconcileResult(n)
 
-        # B. Digest: transcript -> session-N.md, gated for source-fidelity.
+        # B. Digest: transcript -> sessions/N/digest.md, gated for source-fidelity.
         if not self._done(n, "digest"):
             self._announce("digest")
             self.backend.prompt(self.extractor_sid, self.extractor_agent,
@@ -132,7 +133,7 @@ class Reconciler:
             rr.digest = self.gate.check_digest(n)
             # The digest as gated, before the correction rewrites it in place — the
             # one reconcile artifact whose checked state never reaches a commit.
-            draft = self._read_campaign(f"sessions/session-{n}.md")
+            draft = self._read_campaign(paths.rel(n, "digest"))
             corrected = apply_one_correction(self.backend, self.extractor_sid,
                                              self.extractor_agent, rr.digest)
             self._archive_stage("digest", n, rr.digest, corrected, draft=draft)
@@ -221,28 +222,12 @@ class Reconciler:
 
     def _arc_slugs(self) -> list[str]:
         """Every arc on disk — the per-arc dispatch list, enumerated in code."""
-        d = self.root / "campaign" / "arcs"
-        try:
-            return sorted(f.name[:-3] for f in d.iterdir()
-                          if f.name.endswith(".md") and not f.name.endswith(".state.md"))
-        except OSError:
-            return []
+        return sorted(e.slug for e in scan(self.root / "campaign") if e.type == "arc")
 
     def _lint_correct(self) -> int:
-        """Run the completeness lint after D1; if anything is incomplete, dispatch ONE
-        bounded correction to the dm with the missing fields (no re-lint loop). Returns
-        the count of incomplete files found (0 if clean)."""
-        bad = [r for r in completeness.lint_dir(self.root) if not r.ok]
-        if not bad:
-            return 0
-        lines = []
-        for r in bad:
-            rel = r.path.relative_to(self.root)
-            missing = list(r.missing) + [f"{s} (section)" for s in r.missing_sections]
-            lines.append(f"- {rel} [{r.type}]: {', '.join(missing)}")
-        self.backend.prompt(self.dm_sid, self.dm_agent,
-                            load("correct-completeness") + "\n\n— Incomplete —\n" + "\n".join(lines))
-        return len(bad)
+        """Run the canon lint after the canon pass; one bounded correction if it found
+        anything. Returns the count of issues found (0 if clean)."""
+        return len(apply_lint_correction(self.backend, self.dm_sid, self.dm_agent, self.root))
 
     def _read_campaign(self, rel: str) -> str:
         try:

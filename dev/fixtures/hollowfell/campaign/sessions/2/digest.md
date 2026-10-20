@@ -220,17 +220,17 @@ Digest written for session 2. Coverage: all transcript events extracted lossless
 
 ## Evidence
 
-- Transcript: `campaign/sessions/session-2-transcript.md` (384 lines)
-- Runner notes: `campaign/sessions/session-2-notes.md` (97 lines)
-- Session 1 digest: `campaign/sessions/session-1.md` (for grounding)
+- Transcript: `campaign/sessions/2/transcript.md` (384 lines)
+- Runner notes: `campaign/sessions/2/notes.md` (97 lines)
+- Session 1 digest: `campaign/sessions/1/digest.md` (for grounding)
 - PC knowledge ledger: `campaign/characters/dallid.knowledge.md` (as-of: S1)
 - PC state: `campaign/characters/dallid.state.md` (as-of: S1)
 - Arc state: `campaign/arcs/the-hollowfell-investigation.state.md` (as-of: S1)
-- Digest: `campaign/sessions/session-2.md`
+- Digest: `campaign/sessions/2/digest.md`
 
 ## Changes
 
-- `session-2.md` created
+- `2/digest.md` created
 
 ## Caveats
 

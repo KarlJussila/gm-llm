@@ -37,6 +37,6 @@ continuity/knowledge checks are a genuine audit — if the ledger or a world fil
 still missing something the digest recorded, that's a real gap to flag, not just a pending to-do.
 
 Note on sources: write your report from the digest and the other campaign documents. Once it's
-written, cross-reference the raw transcript (`campaign/sessions/session-{N}-transcript.md`) for any
+written, cross-reference the raw transcript (`campaign/sessions/{N}/transcript.md`) for any
 nuance it may have flattened and issue any necessary corrections or additions (see `session-review`'s
 "Verify against the transcript").

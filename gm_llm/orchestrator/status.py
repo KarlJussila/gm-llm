@@ -12,18 +12,12 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .canon import latest_session
-from .completeness import lint_dir
+from . import paths
+from .lint import lint_campaign
+from .registry import scan
 
 # The per-session artifacts the pipeline produces, in pipeline order.
-# Paths are relative to campaign/sessions/.
-_ARTIFACTS = (
-    ("plan", "session-{n}-plan.md"),
-    ("transcript", "session-{n}-transcript.md"),
-    ("notes", "session-{n}-notes.md"),
-    ("digest", "session-{n}.md"),
-    ("assessment", "../assessment/session-{n}-assessment.md"),
-)
+_ARTIFACTS = ("plan", "transcript", "notes", "digest")
 
 
 @dataclass
@@ -44,13 +38,12 @@ def campaign_status(directory: str | Path) -> CampaignStatus:
     """Snapshot the campaign's standing from disk. Safe to call in any phase —
     a brand-new directory just reports setup with everything empty."""
     root = Path(directory)
-    sessions = root / "campaign" / "sessions"
-    n = latest_session(sessions)
+    campaign = root / "campaign"
+    n = paths.latest_session(campaign)
     st = CampaignStatus(root=root, phase="setup" if n is None else "play", session=n)
 
     if n is not None:
-        st.artifacts = [(name, (sessions / rel.format(n=n)).resolve().is_file())
-                        for name, rel in _ARTIFACTS]
+        st.artifacts = [(name, (campaign / paths.rel(n, name)).is_file()) for name in _ARTIFACTS]
         markers_dir = root / ".opencode" / ".orchestrator"
         if markers_dir.is_dir():
             prefix, suffix = f"reconcile-{n}-", ".done"
@@ -58,11 +51,11 @@ def campaign_status(directory: str | Path) -> CampaignStatus:
                 name[len(prefix):-len(suffix)]
                 for name in sorted(p.name for p in markers_dir.glob(f"{prefix}*{suffix}"))]
 
-    reports = lint_dir(root)
-    st.entities_total = len(reports)
-    st.entities_complete = sum(1 for r in reports if r.ok)
-    st.incomplete = [str(r.path.relative_to(root) if r.path.is_absolute() else r.path)
-                     for r in reports if not r.ok]
+    flagged = sorted({i.rel for i in lint_campaign(root)})
+    entities = {e.rel for e in scan(campaign)} if campaign.is_dir() else set()
+    st.entities_total = len(entities)
+    st.entities_complete = len(entities - set(flagged))
+    st.incomplete = [f"campaign/{rel}" for rel in flagged]
 
     try:
         git = subprocess.run(["git", "status", "--porcelain", "--", "campaign"],

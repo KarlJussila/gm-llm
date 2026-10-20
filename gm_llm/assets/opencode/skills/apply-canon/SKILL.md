@@ -21,7 +21,7 @@ contract**: the required `## Vitals` block for its type, filled with committed v
 `<placeholder>` in place is not done.
 
 ## Input
-- The **session digest** `campaign/sessions/session-{N}.md` — especially *World canon*, *Items*,
+- The **session digest** `campaign/sessions/{N}/digest.md` — especially *World canon*, *Items*,
   *Documents*, *Secrets & awareness*, *PC capabilities*, and *Combat reactions & tactics*.
 - The **registry** `campaign/INDEX.md` — to reuse existing slugs and resolve `named-only` entries
   rather than duplicate.

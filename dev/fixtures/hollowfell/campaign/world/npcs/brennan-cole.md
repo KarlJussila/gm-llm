@@ -3,17 +3,16 @@ slug: brennan-cole
 name: Brennan Cole
 type: npc
 status: active
+summary: Foreman at Hollowfell Mine; over his head and knows it
+full-name: Brennan Cole
+race: human
+pronouns: he/him
+age: early 40s
+role: Foreman at [[hollowfell-mine]]
+affiliation: Mining consortium backed by the [[crown-of-thorns]]
 ---
 
 # Brennan Cole
-
-## Vitals
-- **Full name:** Brennan Cole
-- **Race / lineage:** human
-- **Pronouns:** he/him
-- **Age:** early 40s
-- **Role / station:** Foreman at [[hollowfell-mine]]
-- **Affiliation:** Mining consortium backed by the [[crown-of-thorns]]
 
 ## Stats (rough sketch)
 - **Equivalent level:** ~3 (a hardened laborer with no formal training but real-world grit)
@@ -73,7 +72,7 @@ problem, because he can't. The consortium is pressuring him for output and he's 
   firsthand)*
 - Dallid is a scholar studying anomalous phenomena, not from the Concordance. *(learned in
   S2)*
-- [hidden] The full source of the drainage and what lies beyond the second crossing.
+- [hidden:brennan-cole-1] The full source of the drainage and what lies beyond the second crossing.
   *(doesn't know)*
 
 ## Disposition toward the PC
@@ -87,7 +86,7 @@ mine, and the person who might be able to stop it is now deep in the center tunn
 
 ## Secrets
 
-- [hidden] Brennan has been considering shutting the mine down without the consortium's
+- [hidden:brennan-cole-2] Brennan has been considering shutting the mine down without the consortium's
   permission. He hasn't told anyone. If the investigation fails, he will evacuate the
   workers and accept the consequences.
   Known to: [[brennan-cole]] only.

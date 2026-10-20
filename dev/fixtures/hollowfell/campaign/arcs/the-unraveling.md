@@ -2,8 +2,9 @@
 slug: the-unraveling
 name: The Unraveling
 type: arc
+status: dormant
 tier: major
-hooks-into: —
+summary: Dallid's search for Erasmus leads to the truth about the Lattice and the Unraveler
 ---
 
 # The Unraveling
@@ -59,7 +60,7 @@ who acts to stop it?
    the Concordance. He discovers the temporal disturbances are not random — they follow a
    pattern. He finds traces of Erasmus's research methods in the anomalies. This is the
    first confirmation that Erasmus is connected to the anomalies.
-   - [hidden] The Unraveler has been using the Briarwood as a testing ground. The traces
+   - [hidden:the-unraveling-1] The Unraveler has been using the Briarwood as a testing ground. The traces
      Dallid finds are from Erasmus's research, which the Unraveler seized after the
      Covenant captured Erasmus.
    - Known to: [[unraveler]]; [[thaleus-venn]] (will recognize the methods when shown
@@ -69,7 +70,7 @@ who acts to stop it?
    the [[covenant-of-the-sealed-veil]]. He is being forced to continue his research under
    duress. The Covenant is using Erasmus's knowledge to understand the anomalies — not to
    stop them, but to determine whether the Lattice can be sealed permanently.
-   - [hidden] Erasmus is alive and imprisoned. The Covenant has his research notes, which
+   - [hidden:the-unraveling-2] Erasmus is alive and imprisoned. The Covenant has his research notes, which
      contain fragments of Lattice understanding.
    - Known to: [[covenant-of-the-sealed-veil]]; [[vashra-keel]].
 
@@ -77,7 +78,7 @@ who acts to stop it?
    reveals the truth about the Lattice — or parts of it. Dallid learns that his own
    altered biology makes him uniquely sensitive to Lattice phenomena. The Unraveler
    becomes aware of Dallid and assesses him as a threat.
-   - [hidden] The Primordial Lattice is the hidden architecture of reality. It can be
+   - [hidden:the-unraveling-3] The Primordial Lattice is the hidden architecture of reality. It can be
      manipulated. The Unraveler is doing so. Dallid's altered biology allows him to
      perceive Lattice forces that others cannot.
    - Known to: [[thaleus-venn]]; [[unraveler]]; now [[dallid]] (partially).
@@ -87,7 +88,7 @@ who acts to stop it?
    Sundering that has been manipulating events for centuries. The full scope of the
    Unraveler's plan becomes clear: a complete rewrite of the Lattice, which would destroy
    reality as it exists.
-   - [hidden] The Unraveler was the entity that manipulated the archmages into triggering
+   - [hidden:the-unraveling-4] The Unraveler was the entity that manipulated the archmages into triggering
      the Sundering. The current anomalies are preparation for the final experiment. The
      Unraveler's goal is a new reality, designed from the ground up.
    - Known to: [[unraveler]]; now [[dallid]].
@@ -98,7 +99,7 @@ who acts to stop it?
    damage. The resolution is not guaranteed; the cost is real. Erasmus may play a role —
    his research is the key to understanding the Lattice, but his methods and motives are
    suspect.
-   - [hidden] The final experiment will either succeed (rewriting reality) or fail
+   - [hidden:the-unraveling-5] The final experiment will either succeed (rewriting reality) or fail
      (catastrophic collapse). Dallid's intervention determines which. The cost of stopping
      it may be high — Erasmus's knowledge, Dallid's altered biology, or something else
      entirely.

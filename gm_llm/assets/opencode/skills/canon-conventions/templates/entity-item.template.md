@@ -1,46 +1,40 @@
-<!--
-  ITEM INFO file — canon (what it truly is). Add a paired {slug}.state.md ONLY if the item is stateful
-  (custody, charges, condition change). Path: world/items/{slug}.md
-  Fill every <placeholder>; delete the guidance comments. Format: canon-conventions §3 + §5.
-  Significant objects/artifacts only — mundane gear lives on the character sheet.
-  Verbatim inscribed/written text goes in documents/ and is referenced here, not inlined.
--->
 ---
-slug: <kebab-slug>
+slug: <kebab-slug, same as the file name>
 name: <Canonical Name>
 type: item
-status: <active | dormant | destroyed | hidden | named-only>
+status: <active | dormant | destroyed | hidden>
+summary: <what it is, in one clause>
+kind: <weapon, relic, document, key, tool, trinket, …>
+rarity: <mundane | common | uncommon | rare | very rare | legendary | artifact>
+form: <material, size, appearance — "a palm-sized iron disc">
+origin: <who made it, where, when>
 ---
+
+<!-- Significant item — campaign-weight objects only; mundane gear lives on the character sheet.
+     Path: world/items/{slug}.md. Add {slug}.state.md only if custody, charges or condition change
+     in play. Verbatim written text goes in documents/ and is linked from here. Fill every
+     <placeholder> with a committed value and delete these comments. -->
 
 # <Canonical Name>
 
-## Vitals
-<!-- Required at-a-glance basics — fill EVERY line with a committed value (no <placeholder>, no "TBD").
-     Current owner / custody is MUTABLE — that goes in {slug}.state.md, not here. -->
-- **Kind:** <what sort of object — weapon, relic, document, key, tool, trinket, …>
-- **Rarity:** <standard D&D rarity — mundane | common | uncommon | rare | very rare | legendary | artifact>
-- **Form:** <material, size, appearance in brief — "a palm-sized iron disc", "a vellum scroll">
-- **Origin:** <era or source it came from — who made it / where / when>
-
 ## What it is
-<Appearance and basic nature — what someone holding it perceives.>
+<What someone holding it perceives.>
 
-## Properties / what it does
-<Its effects, mechanical or narrative; how it's used; its limits.>
+## Properties
+<What it does, how it's used, its limits.>
 
-## Provenance / history
-<Where it came from and how it reached the present. Short — major beats, not a saga.>
+## Provenance
+<Where it came from and how it got here.>
 
 ## Significance
-<Why it matters to the campaign — who wants it and why.>
+<Why it matters — who wants it and why.>
 
 ## Deeper layer / true nature
-<Hidden properties, real purpose, the cost or catch. Commit it now.>
+<Hidden properties, real purpose, the catch.>
 
 ## Secrets
-- [hidden] <A concealed fact about the item.>
+- [hidden:<secret-id>] <A concealed fact.>
   Known to: <[[slug]], …>
 
 ## Links
-<[[slug]] references to owners, related entities, arcs, threads, the documents/ handout if any.>
-<!-- Current owner / location is MUTABLE — put it in {slug}.state.md, not here. -->
+<[[slug]] references to owners, related entities, arcs, its documents/ handout.>

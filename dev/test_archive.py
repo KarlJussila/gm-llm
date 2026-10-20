@@ -152,7 +152,7 @@ def test_game_turn_events(tmp):
 
 def test_planner_stage_event(tmp):
     logs = Logs.under(base=tmp / "logs")
-    plan_path = tmp / "campaign" / "sessions" / "session-2-plan.md"
+    plan_path = tmp / "campaign" / "sessions" / "2" / "plan.md"
     plan_path.parent.mkdir(parents=True)
     plan_path.write_text("# Session 2 plan\n", encoding="utf-8")
 

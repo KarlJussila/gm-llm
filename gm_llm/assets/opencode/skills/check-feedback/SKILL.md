@@ -18,8 +18,8 @@ The player's word is the source of truth.
 
 ### 1. Pull context
 - Read the source feedback: the **Player feedback** section of the digest
-  `campaign/sessions/session-{N}.md` (the player's words, verbatim) and the session notes
-  `campaign/sessions/session-{N}-notes.md` if present. This is the **source of truth** for what the
+  `campaign/sessions/{N}/digest.md` (the player's words, verbatim) and the session notes
+  `campaign/sessions/{N}/notes.md` if present. This is the **source of truth** for what the
   player asked for.
 - Read the `campaign/feedback/*` files that were created or changed this pass. Read
   `campaign/feedback/README.md` for the routing table (which file governs what).

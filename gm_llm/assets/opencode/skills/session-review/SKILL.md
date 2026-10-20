@@ -10,9 +10,9 @@ each arc and the next plan should do about it. Analytical and forward-looking �
 recommend; the passes that follow act on it.
 
 ## Input
-- The **digest** `campaign/sessions/session-{N}.md` — what was played (your main source; the raw
-  `session-{N}-transcript.md` is there if you need to check exact wording or tone).
-- The **plan** `campaign/sessions/session-{N}-plan.md` — what was intended, to compare against.
+- The **digest** `campaign/sessions/{N}/digest.md` — what was played (your main source; the raw
+  `{N}/transcript.md` is there if you need to check exact wording or tone).
+- The **plan** `campaign/sessions/{N}/plan.md` — what was intended, to compare against.
 - The **active arcs** `campaign/arcs/*.md` (+ `.state.md`) and the **threads**
   `campaign/state/threads.md`.
 - The **PC knowledge ledger** `campaign/characters/{pc}.knowledge.md` — what the player now knows.
@@ -55,7 +55,7 @@ Keep it tight and actionable — a planning tool, forward-looking, not a recap o
 
 ## Verify against the transcript
 Write from the digest — that's what it's for, and it keeps your context lean. Then spot-check the raw
-transcript (`campaign/sessions/session-{N}-transcript.md`) for the moments where exact dialogue,
+transcript (`campaign/sessions/{N}/transcript.md`) for the moments where exact dialogue,
 tone, or player intent carries nuance the digest may have flattened — an engagement read, a stated
 reason, a verbatim line — and correct or add as needed. Don't reload the whole transcript up front.
 

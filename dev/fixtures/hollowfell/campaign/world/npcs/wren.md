@@ -3,17 +3,16 @@ slug: wren
 name: Wren
 type: npc
 status: active
+summary: Concordance field investigator; Seraphine's recruit
+full-name: Wren (surname not given — she uses her single name professionally)
+race: human
+pronouns: she/her
+age: late 20s
+role: Concordance investigator, field team
+affiliation: '[[aetherial-concordance]]'
 ---
 
 # Wren
-
-## Vitals
-- **Full name:** Wren (surname not given — she uses her single name professionally)
-- **Race / lineage:** human
-- **Pronouns:** she/her
-- **Age:** late 20s
-- **Role / station:** Concordance investigator, field team
-- **Affiliation:** [[aetherial-concordance]]
 
 ## Stats (rough sketch)
 - **Equivalent level:** ~4 (a trained investigator with minor magical ability)
@@ -83,11 +82,11 @@ knowledge.
 
 ## Secrets
 
-- [hidden] Seraphine Duskward specifically requested Wren to recruit a capable investigator
+- [hidden:wren-1] Seraphine Duskward specifically requested Wren to recruit a capable investigator
   for Hollowfell. Wren does not fully understand why Seraphine is so invested in this
   particular job — she follows orders.
   Known to: [[wren]]; [[seraphine-duskward]].
-- [hidden] Wren has been reporting her observations of Greyhaven to Seraphine, including
+- [hidden:wren-2] Wren has been reporting her observations of Greyhaven to Seraphine, including
   Dallid's arrival and his questions about anomalies. She identified him as a potential
   recruit before approaching him.
   Known to: [[wren]]; [[seraphine-duskward]].

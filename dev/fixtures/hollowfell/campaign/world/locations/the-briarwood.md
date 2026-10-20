@@ -3,18 +3,15 @@ slug: the-briarwood
 name: The Briarwood
 type: location
 status: active
+summary: Ancient bramble forest with temporal disturbances
+kind: Ancient bramble forest — a region of dense, thorny growth that has stood for centuries.
+region: '[[thornmere-marches]]'
+setting: A day's travel east of [[greyhaven]], in the heart of the Marches.
+controlled-by: Unclaimed — the forest is too dangerous and too valuable for any faction to control.
+scale: A large forest, perhaps twenty miles across, of dense bramble and ancient trees.
 ---
 
 # The Briarwood
-
-## Vitals
-- **Kind:** Ancient bramble forest — a region of dense, thorny growth that has stood for
-  centuries.
-- **Region:** [[thornmere-marches]]
-- **Setting:** A day's travel east of [[greyhaven]], in the heart of the Marches.
-- **Controlled by:** Unclaimed — the forest is too dangerous and too valuable for any
-  faction to control.
-- **Scale:** A large forest, perhaps twenty miles across, of dense bramble and ancient trees.
 
 ## Description
 
@@ -55,7 +52,7 @@ the campaign's opening investigation — the first thread the PC will pull.
 
 ## Deeper layer / what it hides
 
-- [hidden] The Briarwood sits on a Lattice thread — a line of force that the Unraveler
+- [hidden:the-briarwood-1] The Briarwood sits on a Lattice thread — a line of force that the Unraveler
   has been probing. The temporal disturbances are the result of the thread being stressed.
   The Unraveler is using the forest as a testing ground, and the experiments are getting
   more aggressive.
@@ -68,7 +65,7 @@ deepest point, though the bramble becomes impenetrable before the Wastes begin.
 
 ## Secrets
 
-- [hidden] The missing research team is alive but trapped in a temporal loop. They are
+- [hidden:the-briarwood-2] The missing research team is alive but trapped in a temporal loop. They are
   reliving the same three hours repeatedly. The Unraveler is observing them.
   Known to: [[unraveler]] only.
 

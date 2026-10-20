@@ -12,7 +12,7 @@ transcription: the files stay a tight list of *current* standing guidance, not a
 
 ## Input
 - The player's feedback this session: the **Player feedback** section of the digest
-  `campaign/sessions/session-{N}.md` (their words, verbatim), and `campaign/sessions/session-{N}-notes.md`
+  `campaign/sessions/{N}/digest.md` (their words, verbatim), and `campaign/sessions/{N}/notes.md`
   if present.
 - The routing guide and entry format: `campaign/feedback/README.md`.
 - The existing `campaign/feedback/*` files you're integrating into.

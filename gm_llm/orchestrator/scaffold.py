@@ -13,6 +13,8 @@ from pathlib import Path
 
 from gm_llm.assets import opencode_assets_dir
 
+from .registry import write_index
+
 
 def _skill_templates() -> Path:
     """The canon-conventions templates in the bundled assets — resolved at call time
@@ -27,7 +29,7 @@ _SUBDIRS = [
     "world/npcs", "world/factions", "world/locations",
     "world/items", "world/regions", "world/concepts", "world/bestiary",
     "arcs", "state", "characters", "sessions",
-    "assessment", "documents", "feedback",
+    "documents", "feedback",
 ]
 
 _STATE_FILES = [
@@ -72,12 +74,8 @@ def _ensure_gitignore(root: Path) -> None:
 
 
 def _write_index(campaign: Path) -> None:
-    """Copy INDEX template with placeholder data rows stripped (headers only)."""
-    template = (_skill_templates() / "INDEX.template.md").read_text(encoding="utf-8")
-    lines = template.splitlines()
-    # Remove placeholder data rows (cells that start with <) — keep comment, headings, headers, separators
-    out = [ln for ln in lines if not ln.strip().startswith("| <")]
-    (campaign / "INDEX.md").write_text("\n".join(out) + "\n", encoding="utf-8")
+    """An empty campaign's generated registry."""
+    write_index(campaign)
 
 
 def _write_state_files(campaign: Path) -> None:

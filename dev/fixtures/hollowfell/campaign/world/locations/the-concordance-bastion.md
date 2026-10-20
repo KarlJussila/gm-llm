@@ -3,18 +3,17 @@ slug: the-concordance-bastion
 name: The Concordance Bastion
 type: location
 status: active
+summary: Concordance regional headquarters in the capital
+kind: Fortress-library — the regional headquarters of the [[aetherial-concordance]].
+region: '[[crown-of-thorns]]'
+setting: Located in [[the-ashford-court]], the capital city. A walled compound in the city's scholarly
+  district.
+controlled-by: '[[aetherial-concordance]]'
+scale: A large compound with a central tower, research wings, an archive, quarters for staff, and a small
+  garrison.
 ---
 
 # The Concordance Bastion
-
-## Vitals
-- **Kind:** Fortress-library — the regional headquarters of the [[aetherial-concordance]].
-- **Region:** [[crown-of-thorns]]
-- **Setting:** Located in [[the-ashford-court]], the capital city. A walled compound in the
-  city's scholarly district.
-- **Controlled by:** [[aetherial-concordance]]
-- **Scale:** A large compound with a central tower, research wings, an archive, quarters
-  for staff, and a small garrison.
 
 ## Description
 
@@ -55,7 +54,7 @@ leadership team. Any serious investigation will eventually lead here.
 
 ## Deeper layer / what it hides
 
-- [hidden] The Bastion was built on the site of the original Concordance founding, and the
+- [hidden:the-concordance-bastion-1] The Bastion was built on the site of the original Concordance founding, and the
   foundations contain Lattice-warding that the current leadership does not understand. The
   warding is failing as the Lattice destabilizes.
   Known to: [[thaleus-venn]] (has read the original plans); [[unraveler]] (knows).
@@ -67,7 +66,7 @@ the region via the monitoring network.
 
 ## Secrets
 
-- [hidden] The archive contains the original founding charter, which references the Lattice.
+- [hidden:the-concordance-bastion-2] The archive contains the original founding charter, which references the Lattice.
   The archivist has been instructed to restrict access to it — by whom, the archivist
   does not say.
   Known to: the archivist; [[aetherial-concordance]] leadership (partial).

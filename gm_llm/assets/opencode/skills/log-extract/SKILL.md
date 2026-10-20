@@ -1,6 +1,6 @@
 ---
 name: log-extract
-description: Turn an auto-captured play transcript into the structured session digest (session-N.md). Reads the raw transcript in chunks and extracts every notable change losslessly, guided by a fixed taxonomy — it does not summarize away specifics. Used by the dm/log-extractor after a session.
+description: Turn an auto-captured play transcript into the structured session digest (N/digest.md). Reads the raw transcript in chunks and extracts every notable change losslessly, guided by a fixed taxonomy — it does not summarize away specifics. Used by the dm/log-extractor after a session.
 ---
 
 # log-extract
@@ -8,8 +8,8 @@ description: Turn an auto-captured play transcript into the structured session d
 ## Purpose
 
 The play transcript — each turn's final player and DM messages — is recorded to
-`campaign/sessions/session-{N}-transcript.md` as the session runs. This skill reads that transcript
-and produces the **structured digest** `campaign/sessions/session-{N}.md`: the canonical session log
+`campaign/sessions/{N}/transcript.md` as the session runs. This skill reads that transcript
+and produces the **structured digest** `campaign/sessions/{N}/digest.md`: the canonical session log
 the rest of the system reads, and the **single record** of what the session established (new canon
 improvised in play, plan divergence, everything the PC learned). The job is **lossless extraction,
 not summarization** — preserve every specific (names, numbers, exact learned facts, verbatim document
@@ -72,5 +72,5 @@ contains it, it goes in the digest:
 
 ## File output
 
-Write `campaign/sessions/session-{N}.md` (the digest), organized by the taxonomy above. Leave the
-raw `session-{N}-transcript.md` in place. End with a Result / Evidence / Changes / Caveats report.
+Write `campaign/sessions/{N}/digest.md` (the digest), organized by the taxonomy above. Leave the
+raw `{N}/transcript.md` in place. End with a Result / Evidence / Changes / Caveats report.

@@ -3,20 +3,16 @@ slug: ashenmere-wastes
 name: The Ashenmere Wastes
 type: region
 status: active
+summary: Blighted scar of the Sundering; ungoverned and hostile
+kind: Blighted region — a vast scar on the land, roughly the size of a kingdom. Uninhabited by choice;
+  only the desperate or the foolhardy enter.
+terrain: Ash-grey soil, petrified forests, geysers of planar energy, pockets where gravity or time behaves
+  incorrectly. No climate — the Wastes generate their own weather, which is invariably hostile.
+seat-of-power: None — the Wastes are ungoverned and ungovernable. The Concordance monitors the perimeter.
+population: None permanent. Scattered research camps on the edges; occasional expeditions into the interior.
 ---
 
 # The Ashenmere Wastes
-
-## Vitals
-- **Kind / scale:** Blighted region — a vast scar on the land, roughly the size of a kingdom.
-  Uninhabited by choice; only the desperate or the foolhardy enter.
-- **Terrain:** Ash-grey soil, petrified forests, geysers of planar energy, pockets where
-  gravity or time behaves incorrectly. No climate — the Wastes generate their own weather,
-  which is invariably hostile.
-- **Seat of power:** None — the Wastes are ungoverned and ungovernable. The Concordance
-  monitors the perimeter.
-- **Population:** None permanent. Scattered research camps on the edges; occasional expeditions
-  into the interior.
 
 ## Geography
 
@@ -57,7 +53,7 @@ planes through the damaged Veil — has never fully stopped.
 
 ## Deeper layer / what's hidden here
 
-- [hidden] The Wastes are not merely a scar — they are a wound in the Lattice itself. The
+- [hidden:ashenmere-wastes-1] The Wastes are not merely a scar — they are a wound in the Lattice itself. The
   Unraveler's original manipulation of the archmages was designed to create exactly this
   kind of wound: a place where the Lattice is thin enough to be exploited directly. The
   Wastes are the Unraveler's laboratory, and they have been using it for centuries.
@@ -70,7 +66,7 @@ abandoned settlements and Concordance monitoring stations.
 
 ## Secrets
 
-- [hidden] Deep within the Wastes, at the approximate centre, there is a Lattice node that
+- [hidden:ashenmere-wastes-2] Deep within the Wastes, at the approximate centre, there is a Lattice node that
   has been destabilized to the point of active collapse. If it fails completely, the collapse
   could cascade through the entire regional Lattice. This is what the Unraveler is working
   toward.

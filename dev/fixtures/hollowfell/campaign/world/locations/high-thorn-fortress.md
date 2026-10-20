@@ -3,16 +3,15 @@ slug: high-thorn-fortress
 name: High Thorn Fortress
 type: location
 status: active
+summary: Crown's military stronghold on the northern border
+kind: Fortress — the Crown's military stronghold on the northern border.
+region: '[[crown-of-thorns]]'
+setting: Northern highlands, commanding a mountain pass.
+controlled-by: '[[crown-of-thorns]]'
+scale: A large fortress with barracks, armories, and a garrison of several hundred.
 ---
 
 # High Thorn Fortress
-
-## Vitals
-- **Kind:** Fortress — the Crown's military stronghold on the northern border.
-- **Region:** [[crown-of-thorns]]
-- **Setting:** Northern highlands, commanding a mountain pass.
-- **Controlled by:** [[crown-of-thorns]]
-- **Scale:** A large fortress with barracks, armories, and a garrison of several hundred.
 
 ## Description
 
@@ -32,7 +31,7 @@ incursions from the northern wilds and the last supply point before the frontier
 
 ## Deeper layer / what it hides
 
-- [hidden] The fortress sits on a natural Veil-thin point — a place where the barrier
+- [hidden:high-thorn-fortress-1] The fortress sits on a natural Veil-thin point — a place where the barrier
   between planes is weaker than normal. The Crown does not know this; the fortress was
   built here for strategic reasons, not magical ones. The Unraveler has been probing the
   thin point, and the "unusual activity" the garrison reports is planar bleed from the

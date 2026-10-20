@@ -3,17 +3,16 @@ slug: the-bone-gardens
 name: The Bone Gardens
 type: location
 status: active
+summary: Petrified formations in the Ashenmere Wastes
+kind: Ruin — a region within the [[ashenmere-wastes]] where petrified trees have formed into shapes resembling
+  living beings frozen mid-scream.
+region: '[[ashenmere-wastes]]'
+setting: Deep in the Wastes, accessible only by guided expedition.
+controlled-by: None.
+scale: A large area of petrified formations.
 ---
 
 # The Bone Gardens
-
-## Vitals
-- **Kind:** Ruin — a region within the [[ashenmere-wastes]] where petrified trees have
-  formed into shapes resembling living beings frozen mid-scream.
-- **Region:** [[ashenmere-wastes]]
-- **Setting:** Deep in the Wastes, accessible only by guided expedition.
-- **Controlled by:** None.
-- **Scale:** A large area of petrified formations.
 
 ## Description
 
@@ -35,7 +34,7 @@ unusual magical residue — the petrified figures retain echoes of the life they
 
 ## Deeper layer / what it hides
 
-- [hidden] The petrified figures are not merely echoes — they are souls, trapped in
+- [hidden:the-bone-gardens-1] The petrified figures are not merely echoes — they are souls, trapped in
   the stone by the Sundering's blast. The whispers are their attempts to communicate.
   The Unraveler has been siphoning energy from the trapped souls to fuel experiments
   elsewhere. If the souls were freed, they would carry information about the Sundering

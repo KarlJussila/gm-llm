@@ -18,7 +18,7 @@ defaults here and in the sub-skills wherever they conflict.
 
 **Load `canon-conventions`** and follow it: reference every entity by `[[slug]]`, and when the plan
 needs an entity that doesn't exist yet, author it as a **full file** and register it in `INDEX.md`
-(see step 9). The plan itself goes in `campaign/sessions/session-{N}-plan.md`.
+(see step 9). The plan itself goes in `campaign/sessions/{N}/plan.md`.
 
 ## The one rule
 
@@ -108,7 +108,7 @@ encounters; a travel session no investigation). Pull a skill when its content is
   reads the plan.
 
 ## File output
-Write the plan to `campaign/sessions/session-{N}-plan.md`, where `{N}` is the next session number.
+Write the plan to `campaign/sessions/{N}/plan.md`, where `{N}` is the next session number.
 
 ## Handing off to the player — spoiler-free
 

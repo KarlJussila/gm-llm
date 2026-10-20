@@ -36,7 +36,7 @@ are **lenses**, not a step to perform. A single arc usually needs several at onc
 fit as you work the steps below.
 
 ## Input
-- The **session digest** `campaign/sessions/session-{N}.md` — especially *Plan vs. actual*,
+- The **session digest** `campaign/sessions/{N}/digest.md` — especially *Plan vs. actual*,
   *Narrative*, *Threads*, *Secrets & awareness*, *Knowledge gained*.
 - The **assessment** `campaign/assessment/session-{N}-assessment.md` — its recommendation for
   *this* arc, and its engagement reads.

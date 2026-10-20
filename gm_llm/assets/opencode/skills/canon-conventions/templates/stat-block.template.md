@@ -4,8 +4,8 @@
    • a named/recurring creature → this section inside its NPC file (world/npcs/{slug}.md);
    • a generic, reusable creature type → its own bestiary file (world/bestiary/{slug}.md), which is
      mostly just this section (use bestiary.template.md).
-  Either way the file is registered in INDEX and referenced from encounter plans by [[slug]] — never
-  inline a stat block in the session plan.
+  Either way the creature is referenced from encounter plans by [[slug]] — never inline a stat block
+  in the session plan.
   This is NOT the "Stats (rough sketch)" capability gauge — that is a rough social/exploration read;
   this is the mechanical block the runner runs the creature from and start_encounter loads.
   Commit every value (average HP, fixed bonuses); no "DM decides". SRD content only.

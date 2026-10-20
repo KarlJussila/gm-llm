@@ -3,17 +3,16 @@ slug: thaleus-venn
 name: Thaleus Venn
 type: npc
 status: active
+summary: Concordance researcher; the only person studying the Lattice
+full-name: Thaleus Venn
+race: human
+pronouns: he/him
+age: early 60s
+role: Senior researcher, [[aetherial-concordance]] (Lattice Studies division)
+affiliation: '[[aetherial-concordance]]'
 ---
 
 # Thaleus Venn
-
-## Vitals
-- **Full name:** Thaleus Venn
-- **Race / lineage:** human
-- **Pronouns:** he/him
-- **Age:** early 60s
-- **Role / station:** Senior researcher, [[aetherial-concordance]] (Lattice Studies division)
-- **Affiliation:** [[aetherial-concordance]]
 
 ## Stats (rough sketch)
 - **Equivalent level:** ~6 (an elderly scholar with deep knowledge but limited physical capability)
@@ -73,11 +72,11 @@ who has been starving for evidence and a collaborator.
 
 ## Secrets
 
-- [hidden] He has discovered that the Unraveler — whoever they are — has been actively
+- [hidden:thaleus-venn-1] He has discovered that the Unraveler — whoever they are — has been actively
   suppressing his research. He has found evidence of data corruption in the Concordance's
   archives and cannot explain it.
   Known to: [[thaleus-venn]] only.
-- [hidden] He suspects the Unraveler is connected to the original Sundering but has not
+- [hidden:thaleus-venn-2] He suspects the Unraveler is connected to the original Sundering but has not
   been able to prove it. He is correct.
   Known to: [[thaleus-venn]] (suspicion, not certainty).
 

@@ -7,7 +7,7 @@ before the result is returned. No tool the model can forget to call; no re-check
 loop; nothing reaches the player (or the benchmark's scorer) until the loop says so.
 
 The orchestrator also owns the **transcript**: because it holds each turn's final
-messages, it writes `campaign/sessions/session-{N}-transcript.md` itself — the
+messages, it writes `campaign/sessions/<N>/transcript.md` itself — the
 player's message and the *corrected* DM narration per turn, never the discarded
 draft or the gate's correction chatter. (This replaces the old capture plugin, which
 recorded the raw runner session — drafts, corrections and all.) `log-extractor` then
@@ -39,7 +39,8 @@ from pathlib import Path
 
 from .archive import verdict_fields
 from .backend import HEAVY_RETRIES, HEAVY_STALL_TIMEOUT, BackendCancelled, BackendError
-from .canon import latest_session
+from . import paths
+from .paths import latest_session
 from .combat import CombatMixin, CombatState
 from .logs import append, banner, section
 from .prompts import load
@@ -154,9 +155,9 @@ class Game(CombatMixin):
         self._combat_pending = None
         # The session being played = the highest plan on disk, unless told otherwise.
         self.campaign = Path(campaign_dir) if campaign_dir else Path(backend.directory) / "campaign"
-        self.session = session if session is not None else latest_session(self.campaign / "sessions")
+        self.session = session if session is not None else latest_session(self.campaign)
         self.transcript_path = (
-            self.campaign / "sessions" / f"session-{self.session}-transcript.md"
+            paths.transcript(self.campaign, self.session)
             if (transcript and self.session) else None
         )
 
@@ -260,7 +261,7 @@ class Game(CombatMixin):
     def handoff(self) -> Path | None:
         """At session end, ask the still-live runner (its context warm from the whole
         session) for its handoff notes — story-trajectory changes, new/changed entities,
-        threads touched — and write them to `campaign/sessions/session-{N}-notes.md`, which
+        threads touched — and write them to `campaign/sessions/<N>/notes.md`, which
         the between-session pipeline folds in alongside the transcript.
 
         The notes ride in `task_complete`'s `notes` argument (the same delivery as the
@@ -275,7 +276,7 @@ class Game(CombatMixin):
         doesn't re-dispatch. Best-effort — a failure never blocks the wrap."""
         if not self.session:
             return None
-        notes_path = self.campaign / "sessions" / f"session-{self.session}-notes.md"
+        notes_path = paths.notes(self.campaign, self.session)
         if notes_path.is_file():
             return notes_path
         self._correcting = False

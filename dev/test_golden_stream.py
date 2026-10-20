@@ -55,45 +55,24 @@ CAMPAIGN_DIRNAME = "campaign-root"
 # The dm/analyst/extractor don't really write files under a fake backend, so each
 # scripted reply that the orchestrator reads back from disk carries the file writes it
 # stands in for (its `writes`). Kept minimal but real: complete enough that the
-# CanonPreloader has entities to match and the completeness lint passes clean.
-
-_INDEX = """\
-# INDEX — Campaign Registry
-
-## PC
-| slug | name | status | info | state | one-line |
-|---|---|---|---|---|---|
-| dallid | Dallid | active | characters/dallid.md | characters/dallid.state.md | the courier bound to the satchel |
-
-## NPCs
-| slug | name | status | info | state | one-line |
-|---|---|---|---|---|---|
-| magren-soley | Magren Soley | active | world/npcs/magren-soley.md | world/npcs/magren-soley.state.md | the barkeep of the Crossroads Inn |
-
-## Factions
-| slug | name | status | info | state | one-line |
-|---|---|---|---|---|---|
-| harbor-guilds | The Harbor Guilds | active | world/factions/harbor-guilds.md | world/factions/harbor-guilds.state.md | the merchant coalition that runs the docks |
-
-## Locations
-| slug | name | status | info | state | one-line |
-|---|---|---|---|---|---|
-| crossroads-inn | The Crossroads Inn | active | world/locations/crossroads-inn.md | — | the warm dockside tavern where play opens |
-"""
+# CanonPreloader has entities to match and the canon lint passes clean.
 
 _NPC = """\
 ---
+slug: magren-soley
+name: Magren Soley
 type: npc
+status: active
+summary: the barkeep of the Crossroads Inn
+full-name: Magren Soley
+race: Human
+pronouns: he/him
+age: 52
+role: Barkeep of the Crossroads Inn
+affiliation: Unaffiliated
 ---
-# Magren Soley
 
-## Vitals
-- **Full name:** Magren Soley
-- **Race / lineage:** Human
-- **Pronouns:** he/him
-- **Age:** 52
-- **Role / station:** Barkeep of the Crossroads Inn
-- **Affiliation:** Unaffiliated
+# Magren Soley
 
 ## Stats (rough sketch)
 A tough old publican; treat as a commoner with a cudgel kept behind the bar.
@@ -107,7 +86,9 @@ Broad-shouldered, grey-streaked hair, a rag never far from his hand.
 
 _NPC_STATE = """\
 ---
-type: npc-state
+slug: magren-soley
+layer: state
+as-of: S1
 ---
 # Magren Soley — state
 - Tending the bar at the Crossroads Inn as the session opens.
@@ -115,21 +96,26 @@ type: npc-state
 
 _FACTION = """\
 ---
+slug: harbor-guilds
+name: The Harbor Guilds
 type: faction
+status: active
+summary: the merchant coalition that runs the docks
+kind: Merchant coalition
+scale: City-wide
+seat: The Customs House
+leadership: The Guild Council
+founded: Two centuries past
 ---
-# The Harbor Guilds
 
-## Vitals
-- **Kind:** Merchant coalition
-- **Scale:** City-wide
-- **Seat:** The Customs House
-- **Leadership:** The Guild Council
-- **Founded:** Two centuries past
+# The Harbor Guilds
 """
 
 _FACTION_STATE = """\
 ---
-type: faction-state
+slug: harbor-guilds
+layer: state
+as-of: S1
 ---
 # The Harbor Guilds — state
 - Quietly feuding over the flooded lower wharf.
@@ -137,38 +123,56 @@ type: faction-state
 
 _LOCATION = """\
 ---
+slug: crossroads-inn
+name: The Crossroads Inn
 type: location
+status: active
+summary: the warm dockside tavern where play opens
+kind: Tavern
+region: Harbor District
+setting: A warm, low-beamed common room thick with smoke
+controlled-by: Magren Soley
+scale: A single building
 ---
-# The Crossroads Inn
 
-## Vitals
-- **Kind:** Tavern
-- **Region:** Harbor District
-- **Setting:** A warm, low-beamed common room thick with smoke
-- **Controlled by:** Magren Soley
-- **Scale:** A single building
+# The Crossroads Inn
 """
 
 _PC_SHEET = """\
 ---
+slug: dallid
+name: Dallid
 type: pc
+status: active
+summary: the courier bound to the satchel
+race: Half-elf
+class: Rogue
+level: 1
+ability-scores: STR 10, DEX 16, CON 12, INT 13, WIS 11, CHA 14
+pronouns: they/them
 ---
-# Dallid
 
-## Vitals
-- **Race / lineage:** Half-elf
-- **Class:** Rogue
-- **Level:** 1
-- **Ability scores:** STR 10, DEX 16, CON 12, INT 13, WIS 11, CHA 14
-- **Pronouns:** they/them
+# Dallid
 
 ## Known capabilities
 - Sneak Attack, Thieves' Cant, a courier's nose for a shortcut.
 """
 
+_PC_STATE = """\
+---
+slug: dallid
+layer: state
+as-of: S1
+---
+# Dallid — state
+- At the Crossroads Inn with the satchel.
+"""
+
 _PC_KNOWLEDGE = """\
 ---
-type: pc-knowledge
+slug: dallid
+layer: knowledge
+as-of: S1
 ---
 # Dallid — knowledge
 - Knows Magren by reputation: fair, closemouthed, owes nobody.
@@ -177,7 +181,11 @@ type: pc-knowledge
 
 _ARC_MAJOR = """\
 ---
+slug: the-sunken-crown
+name: The Sunken Crown
 type: arc
+status: active
+summary: the drowned regalia beneath the harbor
 tier: major
 ---
 # The Sunken Crown
@@ -186,7 +194,9 @@ The drowned regalia beneath the harbor, and who means to raise it.
 
 _ARC_MAJOR_STATE = """\
 ---
-type: arc-state
+slug: the-sunken-crown
+layer: state
+as-of: S1
 ---
 # The Sunken Crown — state
 - Dormant. The satchel is the first thread.
@@ -194,8 +204,13 @@ type: arc-state
 
 _ARC_MINOR = """\
 ---
+slug: guild-rivalry
+name: Guild Rivalry
 type: arc
+status: active
+summary: the Harbor Guilds' cold war over the lower wharf
 tier: minor
+hooks-into: the-sunken-crown
 ---
 # Guild Rivalry
 The Harbor Guilds' cold war over the flooded lower wharf.
@@ -203,7 +218,9 @@ The Harbor Guilds' cold war over the flooded lower wharf.
 
 _ARC_MINOR_STATE = """\
 ---
-type: arc-state
+slug: guild-rivalry
+layer: state
+as-of: S1
 ---
 # Guild Rivalry — state
 - Simmering. No open moves yet.
@@ -243,7 +260,6 @@ def _writes(root: Path) -> dict:
     the project root -> content). Applied by the fake as the matching reply is served."""
     return {
         "world": {
-            "campaign/INDEX.md": _INDEX,
             "campaign/world/npcs/magren-soley.md": _NPC,
             "campaign/world/npcs/magren-soley.state.md": _NPC_STATE,
             "campaign/world/factions/harbor-guilds.md": _FACTION,
@@ -252,6 +268,7 @@ def _writes(root: Path) -> dict:
         },
         "char": {
             "campaign/characters/dallid.md": _PC_SHEET,
+            "campaign/characters/dallid.state.md": _PC_STATE,
             "campaign/characters/dallid.knowledge.md": _PC_KNOWLEDGE,
         },
         "arc_major": {
@@ -262,10 +279,10 @@ def _writes(root: Path) -> dict:
             "campaign/arcs/guild-rivalry.md": _ARC_MINOR,
             "campaign/arcs/guild-rivalry.state.md": _ARC_MINOR_STATE,
         },
-        "plan_1": {"campaign/sessions/session-1-plan.md": _PLAN_1},
-        "plan_1_fix": {"campaign/sessions/session-1-plan.md": _PLAN_1_CORRECTED},
-        "digest_1": {"campaign/sessions/session-1.md": _DIGEST_1},
-        "plan_2": {"campaign/sessions/session-2-plan.md": _PLAN_2},
+        "plan_1": {"campaign/sessions/1/plan.md": _PLAN_1},
+        "plan_1_fix": {"campaign/sessions/1/plan.md": _PLAN_1_CORRECTED},
+        "digest_1": {"campaign/sessions/1/digest.md": _DIGEST_1},
+        "plan_2": {"campaign/sessions/2/plan.md": _PLAN_2},
     }
 
 

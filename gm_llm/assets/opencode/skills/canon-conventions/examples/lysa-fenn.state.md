@@ -1,12 +1,11 @@
-<!--
-  WORKED EXAMPLE (not live campaign canon) — the paired entity STATE file.
-  Snapshot true as of the start of session 5; frozen during play.
--->
 ---
 slug: lysa-fenn
 layer: state
 as-of: S5
 ---
+
+<!-- WORKED EXAMPLE (not live campaign canon) — the paired state file, true as of the end of
+     session 5. -->
 
 ## Location
 Her office above the [[saltgate]] customs house, where she works late most nights.
@@ -18,9 +17,8 @@ everyone, including the dockhands she usually jokes with.
 ## Condition
 Unharmed. Exhausted — she's been doctoring manifests by lamplight and sleeping little.
 
-## Doing now / immediate intent
+## Doing now
 Quietly preparing a fallback: a second set of clean books she can produce if the quartermaster
 demands an audit. Has not yet warned the [[harbor-cell]] that she may go dark.
 
-## Clocks
-[[fenn-exposure]] — the garrison's scrutiny of her manifests.
+The garrison's scrutiny of her manifests is the [[fenn-exposure]] clock.

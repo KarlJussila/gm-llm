@@ -3,20 +3,18 @@ slug: covenant-of-the-sealed-veil
 name: The Covenant of the Sealed Veil
 type: faction
 status: active
+summary: Secret society that believes dangerous knowledge must be destroyed
+kind: Secret society — part religious order, part militant academy. Cells operate independently; leadership
+  is hidden even from most members.
+scale: Small but widespread — perhaps three hundred active members, organized in cells of five to ten.
+  Present in every major region but never openly.
+seat: Unknown — the Covenant has no fixed headquarters. Leadership operates from hidden sanctums.
+leadership: A council of three Veilkeepers, whose identities are secret. The most visible is [[vashra-keel]],
+  who handles field operations.
+founded: ~600 years ago, when the first Veilkeeper broke from the Concordance.
 ---
 
 # The Covenant of the Sealed Veil
-
-## Vitals
-- **Kind:** Secret society — part religious order, part militant academy. Cells operate
-  independently; leadership is hidden even from most members.
-- **Scale:** Small but widespread — perhaps three hundred active members, organized in cells
-  of five to ten. Present in every major region but never openly.
-- **Seat:** Unknown — the Covenant has no fixed headquarters. Leadership operates from
-  hidden sanctums.
-- **Leadership:** A council of three Veilkeepers, whose identities are secret. The most
-  visible is [[vashra-keel]], who handles field operations.
-- **Founded:** ~600 years ago, when the first Veilkeeper broke from the Concordance.
 
 ## Identity / Public face
 
@@ -71,11 +69,11 @@ information and assistance, but always at a price.
 
 ## Secrets
 
-- [hidden] The Covenant's founders were the last people to fully understand the Lattice.
+- [hidden:covenant-of-the-sealed-veil-1] The Covenant's founders were the last people to fully understand the Lattice.
   They chose to suppress the knowledge rather than protect it, believing that the Lattice
   is too dangerous to be studied by anyone.
   Known to: the Veilkeepers (full); [[vashra-keel]] (partial).
-- [hidden] The Covenant has a contingency plan: if the Lattice destabilizes beyond repair,
+- [hidden:covenant-of-the-sealed-veil-2] The Covenant has a contingency plan: if the Lattice destabilizes beyond repair,
   they intend to trigger a controlled collapse that would seal the Lattice permanently —
   destroying all magic in the process. They consider this an acceptable cost.
   Known to: the Veilkeepers only.

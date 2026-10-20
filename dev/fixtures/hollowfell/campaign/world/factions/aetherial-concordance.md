@@ -3,19 +3,18 @@ slug: aetherial-concordance
 name: The Aetherial Concordance
 type: faction
 status: active
+summary: Ancient order sworn to protect reality's foundations
+kind: Ancient order — part research institution, part investigative body, part peacekeeping force. Organized
+  like a combination of a scholarly academy and an intelligence agency.
+scale: Continental — chapters in every major city, with a central headquarters in the Crown of Thorns.
+  Perhaps two thousand active members, plus support staff and informants.
+seat: '[[the-concordance-bastion]] in [[the-ashford-court]].'
+leadership: A council of five Wardens, each responsible for a domain of inquiry. Currently led by First
+  Warden Seraphine Duskward.
+founded: ~600 years ago, in the aftermath of the Sundering.
 ---
 
 # The Aetherial Concordance
-
-## Vitals
-- **Kind:** Ancient order — part research institution, part investigative body, part peacekeeping
-  force. Organized like a combination of a scholarly academy and an intelligence agency.
-- **Scale:** Continental — chapters in every major city, with a central headquarters in the
-  Crown of Thorns. Perhaps two thousand active members, plus support staff and informants.
-- **Seat:** [[the-concordance-bastion]] in [[the-ashford-court]].
-- **Leadership:** A council of five Wardens, each responsible for a domain of inquiry.
-  Currently led by First Warden Seraphine Duskward.
-- **Founded:** ~600 years ago, in the aftermath of the Sundering.
 
 ## Identity / Public face
 
@@ -76,12 +75,12 @@ the PC as the anomalies escalate and the PC proves useful.
 
 ## Secrets
 
-- [hidden] The Concordance's founders knew about the Primordial Lattice and designed the
+- [hidden:aetherial-concordance-1] The Concordance's founders knew about the Primordial Lattice and designed the
   order to protect it. That knowledge was lost three generations ago when the last Warden
   who understood died without passing it on. The current leadership does not know the
   Lattice exists.
   Known to: [[thaleus-venn]] (has rediscovered fragments); [[unraveler]] (knows).
-- [hidden] The Concordance's Veil-monitoring network has been detecting the anomalies, but
+- [hidden:aetherial-concordance-2] The Concordance's Veil-monitoring network has been detecting the anomalies, but
   their data is incomplete — the Unraveler has been subtly corrupting the monitoring stations
   closest to their operations, creating blind spots.
   Known to: [[unraveler]].

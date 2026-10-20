@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .archive import verdict_fields
+from . import paths
 from .phase import apply_one_correction, commit_campaign
 from .planner import Planner
 from .prompts import load
@@ -209,7 +210,7 @@ class Setup:
     def _init_committed(self) -> bool:
         """Done iff `campaign: init` is in the campaign repo's history (or session 1
         is already planned). A robust file/git signal — we never prose-parse the dm."""
-        if (self.root / "campaign" / "sessions" / "session-1-plan.md").is_file():
+        if paths.plan(self.root / "campaign", 1).is_file():
             return True
         try:
             log = subprocess.run(["git", "log", "--pretty=%s"], cwd=self.root,

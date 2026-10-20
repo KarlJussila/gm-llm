@@ -33,7 +33,7 @@ explanation. Nobody has yet drawn the lines between them.
 
 ## The hidden layer
 
-- [hidden] The Primordial Lattice — the hidden architecture underlying all of reality — is
+- [hidden:overview-1] The Primordial Lattice — the hidden architecture underlying all of reality — is
   being deliberately exploited. A being known only as the Unraveler has discovered how to
   manipulate the Lattice's threads, bending fate, souls, and planar boundaries to their will.
   The anomalies are not random; they are the Unraveler's experiments, each one probing the

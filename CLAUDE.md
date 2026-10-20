@@ -30,9 +30,11 @@ MiMo's until the rebuild replaces them. `design/luna.md` is the target; `ROADMAP
 
 ## How to run things
 
+Use the project venv (`python3 -m venv .venv && .venv/bin/pip install -e .` if it's missing):
+
 ```sh
-python -m compileall gm_llm                             # syntax across the package
-for t in dev/test_*.py; do python "$t" || break; done   # the suite
+.venv/bin/python -m compileall gm_llm                             # syntax across the package
+for t in dev/test_*.py; do .venv/bin/python "$t" || break; done   # the suite
 ```
 
 **The suite is not pytest.** `dev/test_*.py` are standalone scripts with a homegrown `tmp` helper —

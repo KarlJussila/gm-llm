@@ -311,7 +311,7 @@ class MockLifecycle:
             root=Path("/mock/campaign"), phase=self.phase, session=n,
             artifacts=[] if n is None else [
                 ("plan", True), ("transcript", True), ("notes", False),
-                ("digest", False), ("assessment", False)],
+                ("digest", False)],
             reconcile_stages=[] if (n is None or n < 2) else ["digest", "assess"],
             entities_total=12, entities_complete=11,
             incomplete=["campaign/world/npcs/magren-soley.md"],

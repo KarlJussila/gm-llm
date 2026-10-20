@@ -3,19 +3,18 @@ slug: crown-of-thorns
 name: The Crown of Thorns
 type: region
 status: active
+summary: Kingdom of fertile heartlands; the dominant political power
+kind: Kingdom — a mid-sized realm spanning fertile river valleys, forested highlands, and a network of
+  walled cities. The dominant political power in the region.
+terrain: Rolling farmland, temperate forest, river valleys, and a coastal strip. Four seasons; moderate
+  climate.
+seat-of-power: The Crown — a hereditary monarchy with a functioning court, a bureaucratic apparatus, and
+  a standing army.
+population: Dense in the river valleys and cities; the capital alone holds perhaps fifty thousand. The
+  countryside is well-settled.
 ---
 
 # The Crown of Thorns
-
-## Vitals
-- **Kind / scale:** Kingdom — a mid-sized realm spanning fertile river valleys, forested
-  highlands, and a network of walled cities. The dominant political power in the region.
-- **Terrain:** Rolling farmland, temperate forest, river valleys, and a coastal strip. Four
-  seasons; moderate climate.
-- **Seat of power:** The Crown — a hereditary monarchy with a functioning court, a
-  bureaucratic apparatus, and a standing army.
-- **Population:** Dense in the river valleys and cities; the capital alone holds perhaps
-  fifty thousand. The countryside is well-settled.
 
 ## Geography
 
@@ -57,7 +56,7 @@ is the first real test of the institution in living memory.
 
 ## Deeper layer / what's hidden here
 
-- [hidden] The Crown's stability is partly the result of a Concordance intervention generations
+- [hidden:crown-of-thorns-1] The Crown's stability is partly the result of a Concordance intervention generations
   ago — a subtle Lattice stabilization that made the region's magic more reliable and its
   harvests more bountiful. If the Lattice destabilizes, this intervention will fail, and the
   Crown's prosperity will collapse along with it.
@@ -70,7 +69,7 @@ by road and river to the [[luminarch-academy]] and the wider world.
 
 ## Secrets
 
-- [hidden] The Crown's current monarch, Queen Isolde, has been privately consulting with
+- [hidden:crown-of-thorns-2] The Crown's current monarch, Queen Isolde, has been privately consulting with
   the [[covenant-of-the-sealed-veil]] about the anomalies. She is frightened and considering
   extreme measures.
   Known to: [[covenant-of-the-sealed-veil]] (leadership); Queen Isolde.

@@ -22,7 +22,7 @@ player. Your only player-facing output at the start is the in-fiction opening.
 
 1. **Take in the plan + canon.** If your opening message carries a `<prepared-context>` block (labeled
    PREPARED SESSION CONTEXT), the plan and the canon it draws on are already loaded there — work from
-   it; you needn't re-open those files. Otherwise read them yourself: the plan `campaign/sessions/session-{N}-plan.md`
+   it; you needn't re-open those files. Otherwise read them yourself: the plan `campaign/sessions/{N}/plan.md`
    (**no plan? Stop** — tell the player to run the `dm` to prepare it; don't plan it yourself), then
    `campaign/state/current.md`, the active arc(s), the entities in play, and the ledger
    `campaign/characters/{slug}.knowledge.md`.

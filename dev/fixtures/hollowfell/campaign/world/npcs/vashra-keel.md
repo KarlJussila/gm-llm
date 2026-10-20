@@ -3,17 +3,16 @@ slug: vashra-keel
 name: Vashra Keel
 type: npc
 status: active
+summary: Covenant field commander; ruthless suppressor of dangerous knowledge
+full-name: Vashra Keel
+race: tiefling
+pronouns: she/her
+age: mid 40s
+role: Field commander, [[covenant-of-the-sealed-veil]]
+affiliation: '[[covenant-of-the-sealed-veil]]'
 ---
 
 # Vashra Keel
-
-## Vitals
-- **Full name:** Vashra Keel
-- **Race / lineage:** tiefling
-- **Pronouns:** she/her
-- **Age:** mid 40s
-- **Role / station:** Field commander, [[covenant-of-the-sealed-veil]]
-- **Affiliation:** [[covenant-of-the-sealed-veil]]
 
 ## Stats (rough sketch)
 - **Equivalent level:** ~10 (a seasoned operative with magical training and combat capability)
@@ -73,10 +72,10 @@ ignore them. She is not cruel; she is efficient.
 
 ## Secrets
 
-- [hidden] She has personally killed three researchers who got too close to Lattice knowledge.
+- [hidden:vashra-keel-1] She has personally killed three researchers who got too close to Lattice knowledge.
   She considers these acts of necessity, not murder.
   Known to: [[vashra-keel]]; the Veilkeepers.
-- [hidden] She does not know about the Unraveler and would be a potential ally if she did —
+- [hidden:vashra-keel-2] She does not know about the Unraveler and would be a potential ally if she did —
   her skills in suppression magic would be valuable against Lattice manipulation.
   Known to: [[vashra-keel]] only (unconscious ignorance).
 

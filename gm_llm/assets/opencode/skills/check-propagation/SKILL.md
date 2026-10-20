@@ -16,7 +16,7 @@ every established fact made it from the record (the digest) into canon and state
 ## The checks
 
 ### 1. Pull context
-- Read the digest `campaign/sessions/session-{N}.md` — the structured extraction of what was played.
+- Read the digest `campaign/sessions/{N}/digest.md` — the structured extraction of what was played.
   It is your **single source-of-truth record** for what the session established.
 - Read `campaign/INDEX.md` and the updated files (entity info/state, arcs, ledger, `state/*`,
   `documents/`). You're checking the digest (the record) against the updated canon (what landed).

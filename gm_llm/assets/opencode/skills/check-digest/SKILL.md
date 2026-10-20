@@ -1,6 +1,6 @@
 ---
 name: check-digest
-description: The narrative-checker's POST role, first gate — verify the session digest (session-N.md) faithfully captures the play transcript: nothing load-bearing dropped, nothing invented or distorted. Source-fidelity only (transcript vs. digest, not canon).
+description: The narrative-checker's POST role, first gate — verify the session digest (N/digest.md) faithfully captures the play transcript: nothing load-bearing dropped, nothing invented or distorted. Source-fidelity only (transcript vs. digest, not canon).
 ---
 
 # check-digest — verify the digest faithfully captures the transcript
@@ -15,9 +15,9 @@ not authoring quality.
 ## The checks
 
 ### 1. Pull both files
-- Read `campaign/sessions/session-{N}-transcript.md` — the raw play record, your **source of
+- Read `campaign/sessions/{N}/transcript.md` — the raw play record, your **source of
   truth**. Read it in chunks if long; do not skim.
-- Read `campaign/sessions/session-{N}.md` — the digest under review.
+- Read `campaign/sessions/{N}/digest.md` — the digest under review.
 - The digest is organized into standard sections — Narrative, Knowledge gained, Secrets & awareness,
   World canon, Items, Documents, Character state, Threads, Engagement, Plan vs. actual, Player
   feedback. You're checking those against what the transcript actually shows.

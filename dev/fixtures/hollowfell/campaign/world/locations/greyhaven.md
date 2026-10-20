@@ -3,19 +3,16 @@ slug: greyhaven
 name: Greyhaven
 type: location
 status: active
+summary: Market town in the Thornmere Marches; the campaign's home base
+kind: Market town — the largest settlement in the [[thornmere-marches]] and the campaign's starting location.
+region: '[[thornmere-marches]]'
+setting: River town at the confluence of the Blackwater and the Ash; built on stilts and stone foundations
+  above the marsh.
+controlled-by: The Marcher Lords (nominally); functionally self-governing.
+scale: A few thousand residents; a handful of streets, a market square, a dock, and the surrounding marsh-hamlets.
 ---
 
 # Greyhaven
-
-## Vitals
-- **Kind:** Market town — the largest settlement in the [[thornmere-marches]] and the
-  campaign's starting location.
-- **Region:** [[thornmere-marches]]
-- **Setting:** River town at the confluence of the Blackwater and the Ash; built on stilts
-  and stone foundations above the marsh.
-- **Controlled by:** The Marcher Lords (nominally); functionally self-governing.
-- **Scale:** A few thousand residents; a handful of streets, a market square, a dock, and
-  the surrounding marsh-hamlets.
 
 ## Description
 
@@ -55,7 +52,7 @@ which is how the PC will eventually become involved in the larger investigation.
 
 ## Deeper layer / what it hides
 
-- [hidden] Greyhaven sits near a minor Lattice node — one of the reasons the Concordance
+- [hidden:greyhaven-1] Greyhaven sits near a minor Lattice node — one of the reasons the Concordance
   established an outpost here. The node is stable but the Unraveler has been testing its
   boundaries.
   Known to: [[thaleus-venn]] (theoretical); [[unraveler]] (knows).
@@ -67,7 +64,7 @@ Connected by river to the [[crown-of-thorns]] (west) and by road to the [[ashenm
 
 ## Secrets
 
-- [hidden] The Concordance outpost's data on local anomalies has been subtly corrupted.
+- [hidden:greyhaven-2] The Concordance outpost's data on local anomalies has been subtly corrupted.
   The investigators are working with incomplete information.
   Known to: [[unraveler]].
 

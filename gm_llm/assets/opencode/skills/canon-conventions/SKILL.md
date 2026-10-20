@@ -1,290 +1,109 @@
 ---
 name: canon-conventions
-description: The shared house style for writing campaign canon — file layout, entity info/state file pairs and frontmatter, slug naming, [[slug]] linking, the INDEX registry, awareness/hidden flags, and the "commit every fact, never say DM decides" authoring rule. Load this whenever you author or edit any file under campaign/ so every writer stays consistent in *how* canon is recorded.
+description: Load before you create or edit any file under campaign/ — the file layout, frontmatter, links, secret tags and the commit-every-fact rule.
 ---
 
 # canon-conventions
 
-This is the **format contract** every canon-writing agent shares. It governs *how* the campaign is
-recorded — file layout, naming, linking, frontmatter — so that the dm — authoring world, arcs,
-entities, plans, and state — writes the same shape of file every time and never drifts. *What* to write is each agent's own job; *how* to write it is here.
+How the campaign is recorded, so every file has the same shape. What to write is the job of
+whatever task you're on; how to write it is here. Templates for every file are in `templates/`
+beside this skill, and `examples/` holds a filled NPC and its state file.
 
-Read this before authoring or editing anything under `campaign/`. When this skill and an agent's
-own prompt both speak to format, this skill wins.
+## The one rule
 
-**Templates and a worked example ship alongside this skill.** Copy from `templates/` and fill every
-`<placeholder>`, deleting the `<!-- guidance -->` comments. There is one template per shape:
-- **Typed entity info** — `entity-npc`, `entity-faction`, `entity-location`, `entity-item`,
-  `entity-region` (each type has a different body; pick the matching one).
-- **`entity-state`** — one shared state shape for every stateful entity.
-- **World-truth docs** — `world-overview`, `world-cosmology`, `world-history` (non-entity setting
-  prose; see §3).
-- **`INDEX`** and the four **`state/*`** docs.
+**Commit every load-bearing fact when you write it; leave open only what the player decides.** An
+NPC's true allegiance, what a search turns up, the answer behind a mystery — decide it now and
+write it down. Never write "DM decides", "TBD" or "as needed". Ambient colour (a passing vendor's
+name) is the live DM's to improvise; it doesn't need a file.
 
-See `examples/` for a complete filled entity pair (`lysa-fenn.md` + `.state.md`) and a sample
-`INDEX.md` — the generic illustrative cast there carries through this skill's examples too.
-
----
-
-## 1. The one authoring rule
-
-> **Commit every world-fact at authoring time. Leave open only what the player decides.**
-
-Whenever you write canon, the *facts* are fixed now: an NPC's true identity, what they know, the
-answer behind a mystery, what a search turns up, who the intruder actually is. The only legitimate
-blank is the **player's path** — their choices, and the situations they choose among.
-
-- **Never write "DM decides," "the runner creates," "as needed," "TBD,"** or any other punt for a
-  load-bearing fact. That punt is exactly what lets a downstream agent fabricate a contradiction.
-  If canon already answers the question, pull that answer; if it doesn't, **decide it now** and
-  file it.
-- **Threshold — load-bearing vs. ambient.** This rule binds *load-bearing* facts: identities, what
-  an NPC reveals, the resolution of a mystery, the consequence of a check, anything the plot leans
-  on. Trivial ambient color (a passing vendor's name, the weather) is the runner's to improvise at
-  the table and gets logged then — don't pre-author it.
-
-Everything else in this skill is machinery for recording committed facts consistently.
-
----
-
-## 2. File layout
-
-Everything lives under `campaign/`. Static truth and live state are distinguished by a **filename
-suffix** (`.state.md`) and the registry — *not* by a top-level split, so an entity's info and state
-files sit side by side.
+## Layout
 
 ```
 campaign/
-├── INDEX.md                         # the registry / slug resolver (see §6)
-├── campaign.md                      # premise, spoiler-free pitch
+├── INDEX.md                 generated registry — read it, never edit it
+├── campaign.md              premise and spoiler-free pitch
 ├── world/
-│   ├── overview.md  cosmology.md  history.md   # world-truth singletons (no slug, no .state.md, not in INDEX)
-│   ├── regions/      {slug}.md (+ {slug}.state.md if control is contested)
-│   ├── npcs/         {slug}.md + {slug}.state.md
-│   ├── factions/     {slug}.md + {slug}.state.md
-│   ├── locations/    {slug}.md + {slug}.state.md
-│   ├── items/        {slug}.md (+ {slug}.state.md if stateful)
-│   ├── concepts/     {slug}.md (+ {slug}.state.md if it has live state)   # cosmological force, phenomenon, magic system…
-│   └── bestiary/     {slug}.md   # generic reusable creature TYPES (stat blocks); stateless, no .state.md
-├── arcs/             {slug}.md + {slug}.state.md
-├── state/                           # GLOBAL / relational state, owned by no entity
-│   ├── current.md                   # the "you are here" scene pointer (resume baseline)
-│   ├── calendar.md                  # in-game date + event timeline
-│   ├── threads.md                   # active leads/threads (a thread spans entities)
-│   └── clocks.md                    # time-pressure dashboard (all clocks in one place)
-├── characters/       {slug}.md + {slug}.state.md + {slug}.knowledge.md + {slug}.repertoire.md   # PC: sheet, state, knowledge ledger, combat repertoire
-├── sessions/         session-N-plan.md  session-N-transcript.md  session-N.md (digest)
-├── assessment/       session-N-assessment.md
-├── documents/        verbatim handouts (letters, inscriptions, quoted text)
-└── feedback/         per-skill player-feedback files
+│   ├── overview.md  cosmology.md  history.md     world-truth documents
+│   ├── npcs/ factions/ locations/ regions/ items/ concepts/    {slug}.md (+ {slug}.state.md)
+│   └── bestiary/            {slug}.md — reusable creature types, no state
+├── arcs/                    {slug}.md + {slug}.state.md
+├── characters/              {slug}.md (sheet) + .state.md + .knowledge.md + .repertoire.md
+├── state/                   current.md  calendar.md  threads.md  clocks.md
+├── sessions/<n>/            plan.md  transcript.md  notes.md  digest.md
+└── documents/               verbatim handouts — letters, inscriptions, quoted text
 ```
 
-- **World-truth singletons** — `overview.md`, `cosmology.md`, `history.md` — are non-entity setting
-  prose at fixed paths. They have **no slug, no `.state.md`, and no `INDEX` row** (like the `state/*`
-  docs). `history.md` is the world's **backstory** — the past that produced the present — and is
-  distinct from `state/calendar.md`, which is the *live* in-game clock (now and forward).
-- **Regional history** is a **section inside each region file**, not its own entity.
-- **Bestiary entries** — `world/bestiary/{slug}.md` — are generic, reusable **creature types** (a
-  "goblin", a "wolf"): a single **stateless** file (no `.state.md`), essentially just a `## Stat
-  block` for the tracker, registered in INDEX's Bestiary table and referenced by `[[slug]]`. A
-  *named*, unique creature with a story is an NPC instead; promote a bestiary creature to an NPC file
-  if it earns a name and a role. (A specific creature's HP/position is tracker state, never canon.)
-- **Verbatim handouts** — the exact text of a letter, an inscription, an NPC's quoted line meant to
-  be read aloud — go in `documents/`, not buried inside a digest or an entity file.
+**State files.** NPCs, factions, arcs and the PC always have a `{slug}.state.md` beside the info
+file: where it stands *now*, as of the end of a session (`as-of: S<n>`). Locations, regions, items
+and concepts get one only when they have live state that changes in play. State files are frozen
+during play and rewritten between sessions; the transcript is the live record in between. State is
+the now, not the history, and never HP, slots or coin — the player tracks those.
 
----
+**The PC** has four files: the sheet, its state, the knowledge ledger (what the *character* knows,
+believes and wonders) and the combat repertoire (its reactions and when to offer them).
 
-## 3. Stateful entities — the info / state pair
+**Verbatim text** — a letter, an inscription, a quoted passage — goes in `documents/` and is linked
+from the entity it belongs to.
 
-Every **stateful** entity (NPC, faction, active location, significant item, the PC) is **two files
-that share a slug stem and sit side by side**:
+## Frontmatter
 
-- `{slug}.md` — **info / canon.** Who or what it *is*. Identity, personality, true allegiance,
-  secrets, agenda. Update it when the underlying truth changes — a secret is revealed, an allegiance
-  flips, who/what something is permanently shifts — via a gated edit.
-- `{slug}.state.md` — **state.** Where it *is now*. Current disposition, location, condition, what
-  it's doing. **Mutable** — rewritten at session boundaries by the dm's apply pass.
-
-The **PC is a stateful entity like any other** and gets the full pair — `{slug}.md` (the sheet:
-class, level, ability scores, features — update on level-up, ability/feature change, or a new
-spell/ability's first appearance) + `{slug}.state.md` (location, notable condition, key items,
-objective) — **plus** two PC-specific ledgers: `{slug}.knowledge.md`, the epistemic ledger of what
-the PC knows, believes, and wonders, and `{slug}.repertoire.md`, the combat repertoire of how the PC
-fights (its reaction triggers as `WHEN … THEN offer …`, signature tactics, and build wrinkles). Use
-the `pc-repertoire` template; it's seeded from the sheet's reactions at create/level-up and grown
-from play by the apply pass (the sheet's *capability* pass, not the state pass — it's a distilled
-capability record, not a "now" snapshot). **Don't track granular mechanical resources** (HP, spell
-slots, coin) in state — the player owns those; record only narratively significant state, as for an NPC.
-
-**State files are session-boundary snapshots, not a live feed.** A `.state.md` is accurate at
-session *start* and is **frozen during play** — no agent rewrites it mid-session. During a session
-the only live "now" is the transcript; the apply pass reconciles the snapshots afterward. So write
-a `.state.md` as "true as of the start of session N," never as a running edit.
-
-### Info file (`{slug}.md`) frontmatter + sections
+Every entity, PC sheet and arc opens with YAML frontmatter, and that is where its identity lives:
 
 ```yaml
 ---
-slug: lysa-fenn
+slug: lysa-fenn          # kebab-case of the canonical name, same as the file name, never changes
 name: Lysa Fenn
-type: npc            # npc | faction | location | item | pc | region | concept
-status: active       # active | dormant | dead | destroyed | hidden | named-only
+type: npc                # pc | npc | faction | location | region | item | concept | creature | arc
+status: active           # active | dormant | hidden | dead | destroyed | resolved
+summary: Saltgate harbormaster; secret rebel informant     # one clause
+# …then the type's vitals — the template lists them
 ---
 ```
 
-**The frontmatter above is universal; the body differs by type — use the matching template** in
-`templates/` (`entity-npc`, `entity-faction`, `entity-location`, `entity-item`, `entity-region`,
-`entity-concept`). They each open with a **`## Vitals`** block, then follow the same arc: **surface**
-(what's openly apparent) → **deeper / hidden layer** (the committed truth beneath) → **secrets**
-(flagged, §5) → **links** (§4). What changes per type is the middle — an NPC has personality and an
-agenda; a faction has goals, structure, and reach; a location has features and hooks; a region carries
-its own **regional history** section. A **concept** (a cosmological force, cataclysm, magic system, or
-phenomenon) is the exception: only `Kind` is required and the body is **free-form** — organize it
-however the concept needs. Most concepts are static lore; one gets a `.state.md` only if it has live,
-changing state.
+Each type's template lists its vitals (an NPC's `full-name`, `race`, `pronouns`, `age`, `role`,
+`affiliation`; a location's `kind`, `region`, `setting`, `controlled-by`, `scale`; and so on). Fill
+every one with a committed value. An NPC also needs a `## Stats (rough sketch)` and an
+`## Abilities` section; a creature that can fight needs a `## Stat block` (see
+`stat-block.template.md`).
 
-**Every entity file leads with a required `## Vitals` block — the completeness contract.** It is a
-short, fixed list of at-a-glance identity fields the runner reads first, so the basics are never
-left to be improvised mid-session (an NPC with no surname or race, a location with no region).
-**The type's template is the authoritative field list** — copy its `## Vitals` lines and **fill
-every one with a committed value** (no `<placeholder>`, no "TBD"); a deterministic lint enforces
-exactly those fields. A **concept** requires only `Kind` (the rest is free-form); a **PC** also
-records Subclass when it applies — recorded, but not gated, since it's class/level-conditional.
+`INDEX.md` is built from this frontmatter. To register an entity, write its file; to change its
+summary or status, edit its frontmatter.
 
-**NPC files carry two more required sections** beyond Vitals: a **`## Stats (rough sketch)`** —
-equivalent character level, rough ability scores, and notable proficiencies (a capability gauge for
-adjudication, *not* a full stat block) — and **`## Abilities`** for spells / signature or
-supernatural powers (write "None" if they have none). A combat-relevant NPC or creature additionally
-carries an **optional `## Stat block`** — the mechanical block the tracker runs it from and
-`start_encounter` loads (HP, AC, the six ability scores with checks/saves, attacks, reactions),
-format in `stat-block.template.md`. It is
-distinct from the rough-sketch gauge and omitted for non-combatants (so it is not lint-gated).
+## Links
 
-**PC files carry a `## Known capabilities`** section — proficiencies, spells known, named abilities,
-and feats — seeded at creation and **grown through play** (record each new one the first time it
-shows at the table). *Not* gated by the lint: it accretes, and no one types their whole list up
-front. It records what the character *can do*, not resources.
+Refer to a registered entity or arc as `[[slug]]`, at its first mention in each file. Threads and
+clocks are rows in `state/threads.md` and `state/clocks.md`, and their `slug` column is linkable the
+same way. Every link must resolve: a link to something that doesn't exist means either the thing is
+real and needs a full file, or it was invented loosely and the link should go. To find what refers
+to an entity, grep for `[[slug]]`.
 
-The completeness lint checks the required fields and NPC sections are present and filled; the
-narrative-checker judges whether the values *cohere* with canon.
+**Before creating an entity, check `INDEX.md`** for an existing slug or a role-overlapping entity,
+and extend that one instead of creating a near-duplicate.
 
-**World-truth docs** (`overview`/`cosmology`/`history`) are the separate non-entity shape from §2 —
-use the `world-overview` / `world-cosmology` / `world-history` templates; they still carry the
-surface/hidden two-layer structure.
+## Secrets
 
-### State file (`{slug}.state.md`) frontmatter + sections
-
-```yaml
----
-slug: lysa-fenn
-layer: state
-as-of: S5            # the session boundary this snapshot is true as of
----
-```
-
-Body: current **location**, **disposition** (toward PC / situation right now), **condition**
-(health, status effects, resources), **what they're doing now / immediate intent**, and `[[links]]`
-to any `clocks.md` clock they drive. Keep it short — state is the now, not the history.
-
----
-
-## 4. Linking — `[[slug]]` wikilinks
-
-Canon is **densely cross-linked**. Linking is not decoration; it is the anti-fabrication tripwire.
-
-- **Every reference to a registered entity is a slug wikilink:** `[[lysa-fenn]]`,
-  `[[old-watchtower]]`, `[[failing-light]]`. **Entity and arc links resolve through `INDEX.md`**
-  (§6) — never by relative path, so files can move and only the registry path updates. **Thread and
-  clock links** (`[[fenn-exposure]]`) are *not* in the registry — they resolve to their row inside
-  `state/threads.md` / `state/clocks.md`, which are their home. The registry holds only file-backed
-  things (entities and arcs).
-- **A dangling link — an entity/arc `[[slug]]` that resolves nowhere (no registry row, and for
-  clock/thread links no matching row in their dashboard) — is a fabrication tripwire.** It means
-  one of two things: either the thing is real and must be **registered** (and, if load-bearing,
-  fleshed out into a full file), or it was invented loosely and must be **grounded or removed**.
-  The narrative-checker treats dangling links as findings; don't leave them.
-- **You cannot write a duplicate without colliding on a slug** — which is the dedup guard. Before
-  creating an entity, check `INDEX.md` for an existing slug or a role-overlapping entity. Reuse the
-  existing one rather than spawning a second (the guard against two near-identical NPCs who should
-  have been one).
-- **Backlinks are derived, never hand-maintained** — to find what references an entity, grep
-  `[[slug]]` across `campaign/`. Don't keep "referenced by" lists by hand.
-- **Noise rule:** link *registered things* — entities, threads, clocks, arcs — at their **first
-  mention per document**. Don't link every common noun, and don't re-link the same slug ten times
-  in one file.
-
----
-
-## 5. Awareness / hidden flags
-
-Any secret, hidden motive, true nature, or planned reveal is **flagged** so the system tracks who
-knows it — this is what lets NPCs act only on what they actually know, and what gates spoilers.
-
-- Prefix the fact with **`[hidden]`** (the PC doesn't know it). It becomes **`[revealed: S<n>]`**
-  the session the PC learns it.
-- Add a **`Known to:`** line listing the in-world parties aware of it (NPCs, factions, and "the PC"
-  once revealed).
-- **Flag the secrets, not the surface.** Openly apparent details need no flag.
+Any secret, hidden motive, true nature or planned reveal is tagged where it lives, with an id
+unique across the campaign and a `Known to:` line naming the in-world parties who know it:
 
 ```
-- [hidden] Lysa feeds the harbor patrol's rotation to the rebel cell.
-  Known to: [[lysa-fenn]], rebel leadership.
+- [hidden:fenn-informant] Lysa feeds the harbor patrol's rotation to the [[harbor-cell]].
+  Known to: [[lysa-fenn]], harbor-cell leadership.
 ```
 
-The PC's `{slug}.knowledge.md` ledger is the mirror of these flags: it records what the PC has
-actually learned, believes, and wonders. A reveal flips the flag here *and* there.
+Tag the secrets, not the surface — openly apparent details need no tag.
 
----
+**When the PC learns a secret,** record it once, in the knowledge ledger, ending the line with
+`[learned:<id> S<n>]`. The orchestrator then turns the home tag into `[revealed:<id> S<n>]` and adds
+the PC to its `Known to:`. Don't edit either of those yourself.
 
-## 6. The registry — `INDEX.md`
+## Named-only
 
-One file, three jobs: **dedup guard** (owns the slug namespace), **slug→file resolver** (every
-`[[link]]` resolves here), and **inventory** (every named entity at a glance). Every named entity
-that has — or should have — a file is listed. Naming a thing in play or in a plan means it gets at
-least a registry row, so it is never silently re-invented as someone else.
+A thing named in play but not yet written up may exist briefly as a stub with `status: named-only`.
+It never survives a between-session pass: whoever is writing canon turns it into a full file.
 
-**What's registered:** the slug-addressed, file-backed things — the **PC**, NPCs, factions,
-locations, items, **regions**, **bestiary creatures**, and arcs. **Not** registered: the world-truth singletons
-(`overview/cosmology/history`) and the `state/*` docs (fixed paths), nor clocks/threads (they live
-in their dashboards, §4).
+## Before you finish
 
-Format: a table per entity type (PC, NPCs, Factions, Locations, Regions, Items, Bestiary, Arcs — the
-Bestiary table is slug/name/file/one-line, no state column; the Arcs table adds `tier` and `design`). Each row maps a slug to its files, status, and a one-line
-"who/what." **`templates/INDEX.template.md` is the authoritative shape**; the gist:
-
-```markdown
-## NPCs
-| slug | name | status | info | state | one-line |
-|---|---|---|---|---|---|
-| lysa-fenn | Lysa Fenn | active | world/npcs/lysa-fenn.md | world/npcs/lysa-fenn.state.md | harbormaster; secret rebel informant |
-| the-cartographer | The Cartographer | named-only | — | — | mapmaker the PC was sent to find; file pending |
-```
-
-- **Slugs are kebab-case, derived from the canonical name** (`Lysa Fenn` → `lysa-fenn`). Stable:
-  once assigned, a slug doesn't change even if a name does.
-- **`status: named-only`** means the entity has been named but has no file yet. It still gets a
-  row, so it can't be re-invented. **`named-only` is a *runtime-only* tolerance** — it exists so
-  the runner can name a thing mid-session without stopping to author it. **It is never an
-  acceptable resting state across a session boundary.** Both planning passes resolve it: the PRE
-  pass fleshes out anything the upcoming plan will *use*, and the POST pass fleshes out anything
-  that got named in play. Nothing should still read `named-only` once a PRE or POST pass has run —
-  a lingering `named-only` is a dropped-entity bug.
-- The narrative-checker checks *against* the registry; the planner bundle and the post-session
-  digest *feed* it. The dm gates every addition.
-
----
-
-## 7. Quick checklist before you finish writing
-
-- [ ] Every load-bearing fact committed — no "DM decides / TBD / as needed" anywhere.
-- [ ] Entity file? The `## Vitals` block exists with every required field for its type filled
-      (NPCs also carry `## Stats (rough sketch)` and `## Abilities`).
-- [ ] Stateful entity? Both `{slug}.md` and `{slug}.state.md` exist, frontmatter filled.
-- [ ] Every referenced entity is a `[[slug]]` link, first mention per doc.
-- [ ] No dangling links — everything referenced is registered **and filed**. (`named-only` is a
-      mid-session runtime tolerance, never something an authoring pass leaves behind — if you are
-      writing canon right now, resolve every dangling reference to a full file before you finish.)
-- [ ] New entity checked against `INDEX.md` for slug/role overlap before creating.
-- [ ] Secrets flagged `[hidden]` + `Known to:`; surface details left unflagged.
-- [ ] `INDEX.md` row added/updated for anything created or renamed.
-- [ ] Verbatim handout text routed to `documents/`, not inlined.
+The orchestrator runs a lint after your work and sends back anything it finds: missing or unfilled
+frontmatter, a slug that doesn't match its file, a missing state file or `as-of`, an empty required
+section, a link that resolves nowhere, a secret without an id, a `named-only` stub. Check for those
+yourself first.

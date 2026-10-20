@@ -1,49 +1,45 @@
-<!--
-  FACTION INFO file — canon (what it truly is). Paired with {slug}.state.md.
-  Path: world/factions/{slug}.md   Fill every <placeholder>; delete the guidance comments.
-  Format rules: canon-conventions §3 + §5. Commit every fact — no "DM decides".
--->
 ---
-slug: <kebab-slug>
+slug: <kebab-slug, same as the file name>
 name: <Canonical Name>
 type: faction
-status: <active | dormant | destroyed | hidden | named-only>
+status: <active | dormant | destroyed | hidden>
+summary: <what it is, in one clause>
+kind: <guild, cult, noble house, mercenary company, crown office, …>
+scale: <a cell of a dozen, a city guild, a continental order>
+seat: <[[location-slug]] or [[region-slug]]>
+leadership: <[[npc-slug]], or how it's led — "a council", "leaderless cells">
+founded: <era or rough age>
 ---
+
+<!-- Faction — what it truly is. Path: world/factions/{slug}.md, paired with {slug}.state.md.
+     Fill every <placeholder> with a committed value and delete these comments. -->
 
 # <Canonical Name>
 
-## Vitals
-<!-- Required at-a-glance basics — fill EVERY line with a committed value (no <placeholder>, no "TBD"). -->
-- **Kind:** <what sort of organization — guild, cult, noble house, mercenary company, crown office, …>
-- **Scale:** <rough size / reach — a cell of a dozen, a city guild, a continental order>
-- **Seat:** <base of operations — [[location-slug]] or [[region-slug]]>
-- **Leadership:** <[[npc-slug]] who leads it, or how it's led — "leaderless cells", "a council", …>
-- **Founded:** <era or rough age — "a generation ago", "ancient", a date if canon has one>
-
 ## Identity / Public face
-<What the faction openly is — its stated purpose and how the world perceives it.>
+<Its stated purpose and how the world sees it.>
 
 ## Goals & methods
-<What it actually pursues and how it operates. Concrete aims, not vague vibes.>
+<What it actually pursues, and how.>
 
 ## Structure & key members
-<How it's organized; its leaders and notable members as [[slug]] links.>
+<How it's organized; leaders and notable members as [[slug]] links.>
 
 ## Reach & resources
-<Where it operates, who it influences, what it can bring to bear (money, force, knowledge, favors).>
+<Where it operates and what it can bring to bear.>
 
 ## Deeper layer / true agenda
-<The real goal beneath the stated one, if different. Commit it now.>
+<The real goal beneath the stated one, if different.>
 
 ## Relationships
-<Stance toward other factions — [[slug]], and allied / rival / at-war / infiltrating.>
+<Stance toward other factions — allied, rival, at war, infiltrating.>
 
 ## Disposition toward the PC
 <How it regards the PC, and what would change that.>
 
 ## Secrets
-- [hidden] <A concealed fact about the faction.>
+- [hidden:<secret-id>] <A concealed fact.>
   Known to: <[[slug]], …>
 
 ## Links
-<[[slug]] references to members, rival factions, locations, arcs, threads. First mention each.>
+<[[slug]] references to members, rivals, places, arcs.>

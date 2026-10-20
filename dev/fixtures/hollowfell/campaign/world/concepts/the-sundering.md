@@ -2,12 +2,12 @@
 slug: the-sundering
 name: The Sundering
 type: concept
+status: active
+summary: Catastrophic magical disaster that shaped the present age
+kind: A cataclysm — the catastrophic magical disaster that shaped the present age.
 ---
 
 # The Sundering
-
-## Vitals
-- **Kind:** A cataclysm — the catastrophic magical disaster that shaped the present age.
 
 ## What it was
 
@@ -29,7 +29,7 @@ a natural consequence of overreaching. This account is not wrong, but it is inco
 
 ## The hidden truth
 
-- [hidden] The Sundering was not an accident. The archmages were manipulated by the
+- [hidden:the-sundering-1] The Sundering was not an accident. The archmages were manipulated by the
   [[unraveler]], who convinced them that the Lattice could be rewritten to eliminate
   death, suffering, and entropy. The Unraveler's true goal was to weaken the Lattice's
   stability so it could be exploited. The Sundering achieved exactly that: the Lattice

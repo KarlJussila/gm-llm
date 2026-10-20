@@ -3,17 +3,16 @@ slug: seraphine-duskward
 name: Seraphine Duskward
 type: npc
 status: active
+summary: First Warden of the Concordance; pragmatic investigator
+full-name: Seraphine Duskward
+race: half-elf
+pronouns: she/her
+age: late 30s
+role: First Warden of the [[aetherial-concordance]]
+affiliation: '[[aetherial-concordance]]'
 ---
 
 # Seraphine Duskward
-
-## Vitals
-- **Full name:** Seraphine Duskward
-- **Race / lineage:** half-elf
-- **Pronouns:** she/her
-- **Age:** late 30s
-- **Role / station:** First Warden of the [[aetherial-concordance]]
-- **Affiliation:** [[aetherial-concordance]]
 
 ## Stats (rough sketch)
 - **Equivalent level:** ~8 (a seasoned investigator with minor magical ability)
@@ -72,10 +71,10 @@ reliable, sharing information and resources that a stranger would not receive.
 
 ## Secrets
 
-- [hidden] She has been conducting unauthorized investigations into the Concordance's blind
+- [hidden:seraphine-duskward-1] She has been conducting unauthorized investigations into the Concordance's blind
   spots and suspects someone inside the institution is compromised.
   Known to: [[seraphine-duskward]] only.
-- [hidden] She has requested a copy of the original founding charter from the archives and
+- [hidden:seraphine-duskward-2] She has requested a copy of the original founding charter from the archives and
   been denied. She does not yet know why.
   Known to: [[seraphine-duskward]]; the Concordance archivist.
 

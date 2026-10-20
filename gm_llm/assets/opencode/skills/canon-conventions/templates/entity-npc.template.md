@@ -1,67 +1,55 @@
-<!--
-  NPC INFO file — canon (who they truly are). Paired with {slug}.state.md.
-  Path: world/npcs/{slug}.md   Fill every <placeholder>; delete the guidance comments.
-  Format rules: canon-conventions §3 (info/state pair) + §5 (flags). Commit every fact — no "DM decides".
--->
 ---
-slug: <kebab-slug>
+slug: <kebab-slug, same as the file name>
 name: <Canonical Name>
 type: npc
-status: <active | dormant | dead | hidden | named-only>
+status: <active | dormant | dead | hidden>
+summary: <who they are, in one clause>
+full-name: <given name + surname; if they truly go by one name, say so and why>
+race: <human, dwarf, half-elf, tiefling, …>
+pronouns: <she/her | he/him | they/them | …>
+age: <a number or a band — "late 40s">
+role: <occupation or station>
+affiliation: <[[faction-or-region-slug]], or "unaffiliated">
 ---
+
+<!-- NPC — who they truly are. Path: world/npcs/{slug}.md, paired with {slug}.state.md.
+     Fill every <placeholder> with a committed value and delete these comments. -->
 
 # <Canonical Name>
 
-## Vitals
-<!-- Required at-a-glance identity — fill EVERY line with a committed value (no <placeholder>,
-     no "TBD"). The runner reads these first; a blank here is what gets improvised mid-session. -->
-- **Full name:** <Given + Surname. If they truly go by one name, write it and a one-clause why.>
-- **Race / lineage:** <human, dwarf, half-elf, tiefling, …>
-- **Pronouns:** <she/her | he/him | they/them | …>
-- **Age:** <a number or a band, e.g. "late 40s">
-- **Role / station:** <occupation or position in the world>
-- **Affiliation:** <[[faction-or-region-slug]], or "unaffiliated">
-
 ## Stats (rough sketch)
-<!-- A capability sketch for adjudication, not a full stat block — commit rough values, no "DM decides".
-     Scores are approximate; what matters is relative strength and the equivalent level. -->
-- **Equivalent level:** <a rough PC-level gauge — "commoner (CR 0)", "~5th level", "veteran (~CR 3)">
+- **Equivalent level:** <"commoner (CR 0)", "~5th level", "veteran (~CR 3)">
 - **Ability scores:** STR <n> · DEX <n> · CON <n> · INT <n> · WIS <n> · CHA <n>
-- **Proficiencies:** <skills, tools, saves they're notably good at — e.g. Deception, Insight, Stealth>
+- **Proficiencies:** <the skills, tools and saves they're notably good at>
 
 ## Abilities
-<!-- Spells and unique/special abilities they can call on. If they have none, write "None." -->
-<Spells, signature techniques, supernatural traits, or gear-granted powers — or "None.">
+<Spells, signature techniques, supernatural traits — or "None.">
 
 ## Stat block
-<!-- OPTIONAL — include ONLY if this NPC/creature can end up in a tracked fight. The mechanical block
-     the runner runs them from and start_encounter loads (HP, AC, ability scores with checks/saves,
-     attacks, reactions). Copy the format
-     from templates/stat-block.template.md. Distinct from "Stats (rough sketch)" above, which is a
-     capability gauge. Omit this section entirely for non-combatants. -->
+<!-- Only for an NPC who can end up in a tracked fight — format in stat-block.template.md.
+     Omit the section for non-combatants. -->
 
 ## Identity / Public role
-<What anyone in the world observes: appearance, bearing, how they're seen. (Vitals covers the
-basics; expand on presence and reputation here.)>
+<What anyone observes: appearance, bearing, reputation.>
 
 ## Personality / mannerisms
-<How they present and behave; tells and habits. Enough for the runner to voice them consistently.>
+<How they present and behave — enough to voice them consistently.>
 
 ## Deeper layer / true nature
-<The real story beneath the surface — hidden allegiance, true motive, what's actually going on. Commit it now.>
+<The real story beneath the surface.>
 
-## Agenda / what they want
-<The active want that drives their choices when the PC isn't steering.>
+## Agenda
+<The want that drives them when the PC isn't steering.>
 
 ## What they know
-<Facts this NPC is aware of — this gates how they can act. [[slug]] the things they know about.>
+<What this NPC is aware of — it bounds how they can act. [[slug]] what they know about.>
 
 ## Disposition toward the PC
-<Friendly / hostile / wary / transactional / complicated — and why. What shifts it.>
+<Friendly / hostile / wary / transactional — and why, and what shifts it.>
 
 ## Secrets
-- [hidden] <A concealed fact.>
-  Known to: <[[slug]], faction, …>
+- [hidden:<secret-id>] <A concealed fact.>
+  Known to: <[[slug]], …>
 
 ## Links
-<[[slug]] references to related NPCs, factions, locations, arcs, threads. First mention each.>
+<[[slug]] references to related NPCs, factions, places, arcs.>

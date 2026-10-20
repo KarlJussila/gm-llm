@@ -1,23 +1,20 @@
-<!--
-  WORKED EXAMPLE (not live campaign canon) — a filled entity INFO file.
-  Shows the target shape the entity-info template produces. Generic illustrative setting.
--->
 ---
 slug: lysa-fenn
 name: Lysa Fenn
 type: npc
 status: active
+summary: Saltgate harbormaster; secret rebel informant
+full-name: Lysa Fenn
+race: human
+pronouns: she/her
+age: early 40s
+role: Harbormaster of Saltgate
+affiliation: "[[harbor-cell]] (secret informant); answers openly to the garrison"
 ---
 
-# Lysa Fenn
+<!-- WORKED EXAMPLE (not live campaign canon) — a filled NPC file in a generic setting. -->
 
-## Vitals
-- **Full name:** Lysa Fenn
-- **Race / lineage:** human
-- **Pronouns:** she/her
-- **Age:** early 40s
-- **Role / station:** Harbormaster of Saltgate
-- **Affiliation:** [[harbor-cell]] (secret informant); answers openly to the garrison
+# Lysa Fenn
 
 ## Stats (rough sketch)
 - **Equivalent level:** ~3 (a sharp, capable civilian — no real combat training)
@@ -45,7 +42,7 @@ an idealist — she is a griever with access — and that makes her cautious rat
 will not take a risk she can't survive, and she has a private limit she has never told the cell:
 she will not get civilians killed.
 
-## Agenda / what they want
+## Agenda
 To see the garrison gone without the harbor — and the people who depend on it — burned down in the
 process. Short term: keep her position above suspicion, because the moment she's compromised the
 cell loses its eyes on the water.
@@ -62,9 +59,9 @@ show they're no friend of the garrison, she warms to guarded usefulness — info
 information. Push too fast and she goes opaque.
 
 ## Secrets
-- [hidden] Lysa feeds the harbor patrol's rotation to the [[harbor-cell]].
+- [hidden:fenn-informant] Lysa feeds the harbor patrol's rotation to the [[harbor-cell]].
   Known to: [[lysa-fenn]], harbor-cell leadership.
-- [hidden] She will refuse, at the last moment, any plan she believes will get civilians killed —
+- [hidden:fenn-limit] She will refuse, at the last moment, any plan she believes will get civilians killed —
   even if it means breaking with the cell.
   Known to: [[lysa-fenn]] only.
 

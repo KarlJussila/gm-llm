@@ -1,27 +1,21 @@
-<!--
-  Entity STATE file — mutable snapshot, paired with {slug}.md.
-  Path: world/{npcs|factions|locations|items}/{slug}.state.md
-  A session-boundary snapshot: true as of the start of session <as-of>, FROZEN during play.
-  Rewritten only by the dm's POST apply pass. Keep it short — the now, not the history.
--->
 ---
-slug: <kebab-slug>
+slug: <kebab-slug, same as the info file>
 layer: state
 as-of: S<n>
 ---
 
+<!-- An entity's state — where it stands now, beside its info file. A snapshot true as of the end
+     of session <n>, frozen during play and rewritten between sessions. Short: the now, not the
+     history. -->
+
 ## Location
-<Where this entity is right now. [[slug]] the place if it's a registered location.>
+<Where it is right now — [[slug]] the place.>
 
 ## Disposition
-<Stance toward the PC / the current situation as of now — may differ from the baseline in the info file.>
+<Its stance toward the PC and the situation as of now.>
 
 ## Condition
-<Narratively significant condition — wounded, captured, depleted, empowered. NOT point-by-point HP
-or resource counts; record what's worth remembering for the story.>
+<Narratively significant condition — wounded, captured, empowered. Not HP or resource counts.>
 
-## Doing now / immediate intent
-<What this entity is currently up to or about to do.>
-
-## Clocks
-<[[slug]] links to any clocks.md clock this entity drives. The clock lives in clocks.md; this just points to it.>
+## Doing now
+<What it's up to or about to do. [[slug]] any clock it drives.>

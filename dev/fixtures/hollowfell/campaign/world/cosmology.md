@@ -36,7 +36,7 @@ and, terrifyingly, something that can be changed.
 
 ## The hidden truth
 
-- [hidden] The Primordial Lattice is not merely the architecture of reality — it is
+- [hidden:cosmology-1] The Primordial Lattice is not merely the architecture of reality — it is
   actively maintained. The Lattice requires periodic stabilization, a function that was
   historically performed by entities or rituals that are now forgotten or suppressed. The
   current age of stability is not natural; it is the result of the last stabilization, which

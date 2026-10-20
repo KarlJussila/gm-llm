@@ -3,17 +3,16 @@ slug: maret
 name: Maret
 type: npc
 status: active
+summary: Tavern keeper at the Rusty Anchor, Greyhaven
+full-name: Maret (surname unknown or unused — she goes by Maret and that's enough)
+race: human
+pronouns: she/her
+age: late 50s
+role: Tavern keeper at the Rusty Anchor, [[greyhaven]]
+affiliation: unaffiliated
 ---
 
 # Maret
-
-## Vitals
-- **Full name:** Maret (surname unknown or unused — she goes by Maret and that's enough)
-- **Race / lineage:** human
-- **Pronouns:** she/her
-- **Age:** late 50s
-- **Role / station:** Tavern keeper at the Rusty Anchor, [[greyhaven]]
-- **Affiliation:** unaffiliated
 
 ## Stats (rough sketch)
 - **Equivalent level:** commoner (CR 0) — no combat ability, no magic

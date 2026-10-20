@@ -3,18 +3,16 @@ slug: the-convergence-point
 name: The Convergence Point
 type: location
 status: active
+summary: Epicentre of the Sundering; no one has reached it in living memory
+kind: Ruin — the approximate centre of the [[ashenmere-wastes]]; no one has reached it in living memory.
+region: '[[ashenmere-wastes]]'
+setting: The deepest point of the Wastes, accessible only by the most determined (or the most foolish)
+  expeditions.
+controlled-by: None.
+scale: Unknown — no expedition has returned with accurate descriptions.
 ---
 
 # The Convergence Point
-
-## Vitals
-- **Kind:** Ruin — the approximate centre of the [[ashenmere-wastes]]; no one has reached
-  it in living memory.
-- **Region:** [[ashenmere-wastes]]
-- **Setting:** The deepest point of the Wastes, accessible only by the most determined
-  (or the most foolish) expeditions.
-- **Controlled by:** None.
-- **Scale:** Unknown — no expedition has returned with accurate descriptions.
 
 ## Description
 
@@ -37,7 +35,7 @@ Unraveler has been exploiting it for centuries.
 
 ## Deeper layer / what it hides
 
-- [hidden] The Convergence Point is not merely the epicentre of the Sundering — it is
+- [hidden:the-convergence-point-1] The Convergence Point is not merely the epicentre of the Sundering — it is
   the site of a Lattice node that was nearly destroyed during the catastrophe. The
   Unraveler has been exploiting the damaged node for centuries, using it as an anchor
   for Lattice manipulation. The final experiment — the complete rewrite of the Lattice —

@@ -15,7 +15,7 @@ flag convention with `Known to:`, the PC knowledge ledger, and the `state/*` das
 are **session-boundary snapshots** — write each as true *as of the end of this session*.
 
 ## Input
-- The **session digest** `campaign/sessions/session-{N}.md` — especially *Knowledge gained*,
+- The **session digest** `campaign/sessions/{N}/digest.md` — especially *Knowledge gained*,
   *Secrets & awareness*, *Character state*, and *Narrative* (for the closing scene).
 - The **PC knowledge ledger** `campaign/characters/{pc}.knowledge.md`, the entity `.state.md` files,
   and `state/current.md`, `state/calendar.md`, `state/clocks.md`.

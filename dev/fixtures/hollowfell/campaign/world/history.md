@@ -27,7 +27,7 @@ rediscovered.
 
 ## The hidden history
 
-- [hidden] The Sundering was not an accident. The coalition of archmages was manipulated by an
+- [hidden:history-1] The Sundering was not an accident. The coalition of archmages was manipulated by an
   entity — the same being now known as the Unraveler — who convinced them that the Lattice
   could be rewritten to eliminate death, suffering, and entropy. The Unraveler's true goal was
   to weaken the Lattice's stability so it could be exploited. The Sundering achieved exactly

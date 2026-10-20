@@ -3,17 +3,16 @@ slug: tarin
 name: Tarin
 type: npc
 status: active
+summary: Missing miner; transported to the Ashenmere Wastes by the Lattice node
+full-name: Tarin (surname unknown — a common laborer)
+race: human
+pronouns: he/him
+age: early 30s
+role: Miner at [[hollowfell-mine]]
+affiliation: Mining consortium backed by the [[crown-of-thorns]]
 ---
 
 # Tarin
-
-## Vitals
-- **Full name:** Tarin (surname unknown — a common laborer)
-- **Race / lineage:** human
-- **Pronouns:** he/him
-- **Age:** early 30s
-- **Role / station:** Miner at [[hollowfell-mine]]
-- **Affiliation:** Mining consortium backed by the [[crown-of-thorns]]
 
 ## Stats (rough sketch)
 - **Equivalent level:** commoner (CR 0) — no combat ability, no magic
@@ -69,7 +68,7 @@ wants his life back.
 
 ## Secrets
 
-- [hidden] Tarin was transported by the Lattice node, not by a natural event. He is a
+- [hidden:tarin-1] Tarin was transported by the Lattice node, not by a natural event. He is a
   victim of the Unraveler's siphoning — an unintended casualty.
   Known to: [[unraveler]] (knows); Tarin (does not understand).
 

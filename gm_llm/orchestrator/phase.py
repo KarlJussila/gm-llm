@@ -14,6 +14,11 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from . import lint
+from .prompts import load
+from .registry import write_index
+from .reveals import sync_reveals
+
 
 def apply_one_correction(backend, session_id: str, agent: str, gate_result) -> bool:
     """The bounded-correction primitive. If the gate found violations, hand the
@@ -26,11 +31,33 @@ def apply_one_correction(backend, session_id: str, agent: str, gate_result) -> b
     return True
 
 
+def refresh_campaign(root: str | Path) -> None:
+    """Bring the derived files up to date: flip the reveals the knowledge ledger records,
+    then regenerate INDEX.md. Run after any authoring dispatch and before a commit."""
+    campaign = Path(root) / "campaign"
+    if campaign.is_dir():
+        sync_reveals(campaign)
+        write_index(campaign)
+
+
+def apply_lint_correction(backend, session_id: str, agent: str, root: str | Path) -> list:
+    """Refresh, run the canon lint, and if it found anything send the issues back to the
+    authoring agent exactly ONCE (no re-lint loop), then refresh again. Returns the issues
+    found before the correction (empty when the campaign was clean)."""
+    refresh_campaign(root)
+    issues = lint.lint_campaign(root)
+    if issues:
+        backend.prompt(session_id, agent, load("correct-lint") + "\n\n" + lint.brief(issues))
+        refresh_campaign(root)
+    return issues
+
+
 def commit_campaign(root: str | Path, message: str) -> bool:
     """Commit the campaign repo deterministically (the orchestrator owns git, not the
     model). Stages only `campaign/`; no-ops if the pass produced no change.
     Best-effort — a git failure never breaks the phase."""
     root = Path(root)
+    refresh_campaign(root)
     try:
         staged = subprocess.run(["git", "add", "--", "campaign"],
                                 cwd=root, capture_output=True, text=True,

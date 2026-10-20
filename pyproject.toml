@@ -12,6 +12,7 @@ description = "An LLM game master for solo, long-form D&D campaigns — over ope
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "pyyaml>=6",
     "rich>=13",
     "textual>=0.60",
 ]

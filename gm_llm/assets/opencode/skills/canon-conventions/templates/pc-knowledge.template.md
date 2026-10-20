@@ -1,24 +1,22 @@
-<!--
-  PC KNOWLEDGE LEDGER — what the PC knows/believes/wonders. Path: campaign/characters/{slug}.knowledge.md
-  Paired with {slug}.md + {slug}.state.md. The mirror of [hidden]/[revealed] flags: when a secret is
-  revealed in play, it flips [revealed: S<n>] in the world/arc file AND lands here.
-  A session-boundary snapshot, frozen during play, updated by the dm's apply pass at POST.
-  Holds what the CHARACTER knows — never the campaign's secrets (those stay [hidden] in canon).
--->
 ---
-slug: <kebab-slug>
+slug: <kebab-slug, same as the sheet>
 layer: knowledge
 as-of: S<n>
 ---
 
+<!-- The PC knowledge ledger — what the CHARACTER knows, believes and wonders; never the campaign's
+     secrets. When the PC learns a secret that canon tags `[hidden:<id>]`, record it here once with
+     `[learned:<id> S<n>]` at the end of the line. The orchestrator then flips the tag in the
+     secret's home file to revealed and adds the PC to its Known to — never edit those by hand. -->
+
 # <Character Name> — Knowledge
 
 ## Knows
-<Held as true: their own history and goal, plus the openly-known facts a person of their background
-would have about the world.>
+<Held as true: their own history and goal, plus what someone of their background knows.>
+- <A fact the PC learned in play.> [learned:<secret-id> S<n>]
 
 ## Believes (may be wrong)
-<Assumptions and secondhand beliefs they carry that the world may later complicate or overturn.>
+<Assumptions and secondhand beliefs the world may overturn.>
 
 ## Open questions
-<The mysteries they're already aware of and motivated to chase — what they're trying to find out.>
+<The mysteries they're aware of and chasing.>

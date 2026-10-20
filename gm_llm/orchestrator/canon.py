@@ -17,7 +17,9 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from . import paths
 from .prompts import load
+from .registry import scan
 
 
 class CanonPreloader:
@@ -41,29 +43,9 @@ class CanonPreloader:
             return []
 
     def latest_session_number(self) -> int | None:
-        return latest_session(self.campaign / "sessions")
+        return paths.latest_session(self.campaign)
 
-    # -- INDEX parsing + name matching -------------------------------------
-
-    @staticmethod
-    def parse_index(text: str) -> list[dict]:
-        """Rows are | slug | name | status | info|design | state | one-line |."""
-        out: list[dict] = []
-        is_path = lambda s: bool(s) and s != "—" and s.endswith(".md")
-        for line in text.splitlines():
-            if not line.lstrip().startswith("|"):
-                continue
-            cells = [c.strip() for c in line.split("|")]
-            cols = cells[1:-1]  # drop the empty edges
-            if len(cols) < 5:
-                continue
-            slug, name, _status, info, state = cols[0], cols[1], cols[2], cols[3], cols[4]
-            if not slug or slug == "slug" or slug.startswith("-"):  # header / separator
-                continue
-            out.append({"name": name,
-                        "info": info if is_path(info) else None,
-                        "state": state if is_path(state) else None})
-        return out
+    # -- name matching --------------------------------------------------------
 
     @staticmethod
     def name_matches(name: str, hay: str) -> bool:
@@ -80,24 +62,25 @@ class CanonPreloader:
     # -- assembly -----------------------------------------------------------
 
     def _baseline(self) -> list[str]:
-        """The standing canon every preload starts from."""
+        """The standing canon every preload starts from: the registry, where play stands,
+        everything about the PC, and every arc."""
         return (
             ["INDEX.md", "state/current.md"]
-            + self._list("characters", re.compile(r"\.knowledge\.md$"))
+            + self._list("characters", re.compile(r"\.md$"))
             + self._list("arcs", re.compile(r"\.md$"))
         )
 
     def _matched_entities(self, text: str) -> list[str]:
-        """The info + state files of every INDEX entity named in `text`."""
+        """The info + state files of every registered entity named in `text` (the PC and
+        arcs are already in the baseline)."""
         hay = text.lower()
         out: list[str] = []
-        for e in self.parse_index(self._read("INDEX.md") or ""):
-            if not self.name_matches(e["name"], hay):
+        for e in scan(self.campaign):
+            if e.type in ("pc", "arc") or not self.name_matches(e.name, hay):
                 continue
-            if e["info"]:
-                out.append(e["info"])
-            if e["state"]:
-                out.append(e["state"])
+            out.append(e.rel)
+            if e.state_rel:
+                out.append(e.state_rel)
         return out
 
     def _render(self, rels: list[str]) -> list[str]:
@@ -120,9 +103,10 @@ class CanonPreloader:
         n = self.latest_session_number()
         sections = self._render(self._baseline() + self._matched_entities(draft))
         if n:
-            t = self._read(f"sessions/session-{n}-transcript.md")
+            rel = paths.rel(n, "transcript")
+            t = self._read(rel)
             if t:
-                sections.append(f"### sessions/session-{n}-transcript.md (recent tail)\n{_tail(t, 4000)}")
+                sections.append(f"### {rel} (recent tail)\n{_tail(t, 4000)}")
         if not sections:
             return ""
         return load("canon-header") + "\n\n" + "\n\n".join(sections) + "\n\n--- end pre-loaded canon ---\n\n"
@@ -132,10 +116,10 @@ class CanonPreloader:
         and the entity files the plan names. No transcript tail — at start there is
         none, and on resume the orchestrator supplies the full transcript separately."""
         n = n if n is not None else self.latest_session_number()
-        plan = self._read(f"sessions/session-{n}-plan.md") if n else None
+        plan = self._read(paths.rel(n, "plan")) if n else None
         blocks: list[str] = []
         if plan:
-            blocks.append(f"### sessions/session-{n}-plan.md\n{plan.strip()}")
+            blocks.append(f"### {paths.rel(n, 'plan')}\n{plan.strip()}")
         blocks += self._render(self._baseline() + self._matched_entities(plan or ""))
         if not blocks:
             return ""
@@ -143,20 +127,6 @@ class CanonPreloader:
         # working set — canon read for it, not player-facing fiction to narrate back.
         return ("<prepared-context>\n" + load("runner-header") + "\n\n"
                 + "\n\n".join(blocks) + "\n</prepared-context>\n\n")
-
-
-def latest_session(sessions_dir: Path) -> int | None:
-    """The current session: the highest `session-{N}-plan.md` on disk (None if none).
-    The one implementation — Game and Lifecycle use it too."""
-    n = 0
-    try:
-        for f in Path(sessions_dir).iterdir():
-            m = re.match(r"session-(\d+)-plan\.md$", f.name)
-            if m:
-                n = max(n, int(m.group(1)))
-    except OSError:
-        return None
-    return n or None
 
 
 def _tail(text: str, n: int) -> str:

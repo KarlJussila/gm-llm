@@ -3,18 +3,16 @@ slug: luminarch-academy
 name: The Luminarch Academy
 type: location
 status: active
+summary: Continent's foremost institution of magical learning
+kind: Academy — the continent's foremost institution of magical learning.
+region: '[[crown-of-thorns]]'
+setting: Located in a fortified city in the western Crown of Thorns, days of travel from the capital.
+controlled-by: The Academy's own governing body; formally independent of the Crown.
+scale: 'A large campus: lecture halls, research wings, libraries, dormitories, and a central tower. Perhaps
+  five hundred students and staff.'
 ---
 
 # The Luminarch Academy
-
-## Vitals
-- **Kind:** Academy — the continent's foremost institution of magical learning.
-- **Region:** [[crown-of-thorns]]
-- **Setting:** Located in a fortified city in the western Crown of Thorns, days of travel
-  from the capital.
-- **Controlled by:** The Academy's own governing body; formally independent of the Crown.
-- **Scale:** A large campus: lecture halls, research wings, libraries, dormitories, and a
-  central tower. Perhaps five hundred students and staff.
 
 ## Description
 
@@ -56,7 +54,7 @@ discouraged.
 
 ## Deeper layer / what it hides
 
-- [hidden] The Academy was founded, in part, to suppress knowledge of the
+- [hidden:luminarch-academy-1] The Academy was founded, in part, to suppress knowledge of the
   [[primordial-lattice]]. The founding charter contains instructions to destroy any
   research that approaches Lattice understanding. The current leadership does not know
   this — the instruction has been passed down as tradition, not as explicit policy.
@@ -69,7 +67,7 @@ Located in the [[crown-of-thorns]], days of travel from the capital. Connected t
 
 ## Secrets
 
-- [hidden] Erasmus Venn's research notes were seized by the Academy after his disappearance.
+- [hidden:luminarch-academy-2] Erasmus Venn's research notes were seized by the Academy after his disappearance.
   They are stored in the Central Tower. The [[covenant-of-the-sealed-veil]] is aware of
   their existence and has been trying to obtain them.
   Known to: Academy leadership; [[covenant-of-the-sealed-veil]].

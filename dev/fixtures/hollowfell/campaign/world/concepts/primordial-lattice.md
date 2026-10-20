@@ -2,12 +2,12 @@
 slug: primordial-lattice
 name: The Primordial Lattice
 type: concept
+status: active
+summary: Hidden architecture underlying all of reality
+kind: A cosmological force — the hidden architecture underlying all of reality.
 ---
 
 # The Primordial Lattice
-
-## Vitals
-- **Kind:** A cosmological force — the hidden architecture underlying all of reality.
 
 ## Nature
 

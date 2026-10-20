@@ -249,9 +249,9 @@ def _make_fixture(root, *, fixture_id="hollowfell-test"):
     """A minimal fixture dir: fixture.json + a campaign/ with a session-1 plan and a
     character packet (mirrors the shipped hollowfell fixture's shape)."""
     campaign = root / "campaign"
-    (campaign / "sessions").mkdir(parents=True, exist_ok=True)
+    (campaign / "sessions" / "1").mkdir(parents=True, exist_ok=True)
     (campaign / "documents").mkdir(parents=True, exist_ok=True)
-    (campaign / "sessions" / "session-1-plan.md").write_text("# Session 1 plan\n", encoding="utf-8")
+    (campaign / "sessions" / "1" / "plan.md").write_text("# Session 1 plan\n", encoding="utf-8")
     (campaign / "documents" / "pc.md").write_text(
         "# Dallid\n<!-- a spoiler comment -->\nA wandering cleric.\n", encoding="utf-8")
     (root / "fixture.json").write_text(json.dumps({
@@ -290,7 +290,7 @@ def test_assemble_run(tmp):
     run_dir = tmp / "run"
     runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test")
 
-    assert (run_dir / "campaign" / "sessions" / "session-1-plan.md").is_file(), "campaign copied"
+    assert (run_dir / "campaign" / "sessions" / "1" / "plan.md").is_file(), "campaign copied"
     assert (run_dir / ".opencode" / "agent" / "dm-runner.md").is_file(), "template copied"
     assert (run_dir / ".git").is_dir(), "git repo initialized"
     assert ".opencode/" in (run_dir / ".gitignore").read_text(encoding="utf-8"), ".opencode gitignored"
@@ -299,7 +299,7 @@ def test_assemble_run(tmp):
                            capture_output=True, text=True)
     assert count.stdout.strip() == "1", f"expected one commit, got {count.stdout!r}"
     tracked = subprocess.run(["git", "ls-files"], cwd=run_dir, capture_output=True, text=True).stdout
-    assert "campaign/sessions/session-1-plan.md" in tracked
+    assert "campaign/sessions/1/plan.md" in tracked
     assert ".opencode/" not in tracked, ".opencode must be gitignored, not committed"
 
 
@@ -398,7 +398,7 @@ def test_post_wrap_is_lifecycle_wrap(tmp):
     rec = runner.run_once(run_dir, runner.load_fixture(fixture), turn_cap=30, **fakes)
 
     assert rec["outcome"] == "complete" and reconciled == [1], (rec, reconciled)
-    assert (run_dir / "campaign" / "sessions" / "session-1-notes.md").is_file(), \
+    assert (run_dir / "campaign" / "sessions" / "1" / "notes.md").is_file(), \
         "wrap() captures the warm runner's handoff notes before the between-session pass"
     assert "reconcile: handoff…" in notes and "reconcile: digest…" in notes, \
         f"the wrap's stage ticks reach the run's progress notes — got {notes}"

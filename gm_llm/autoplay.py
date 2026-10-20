@@ -28,7 +28,7 @@ from pathlib import Path
 from .console import (banner, fail, note, sessions_dir, show_turn, speaker, warn,
                       with_engine)
 from .orchestrator import AgentPlayer, Game, PlayHooks, play_session
-from .orchestrator.canon import latest_session
+from .orchestrator.paths import latest_session
 from .orchestrator.loop import session_is_complete
 
 
@@ -86,7 +86,7 @@ def _hooks() -> PlayHooks:
 
 def run(args) -> None:
     """The console autoplay command. Exits via `with_engine`."""
-    n = latest_session(sessions_dir(args.dir))
+    n = latest_session(Path(args.dir) / "campaign")
     if n and not args.fresh and session_is_complete(args.dir, n):
         fail(f"session {n} is already complete (task_complete fired) — run "
              f"`python -m gm_llm dev reconcile` to fold it into canon, or --fresh to replay it")

@@ -3,18 +3,15 @@ slug: hollowfell-mine
 name: Hollowfell Mine
 type: location
 status: active
+summary: Mine where magic fails; sits on a Lattice node
+kind: Mine — a recently reopened mineral extraction site in the [[thornmere-marches]].
+region: '[[thornmere-marches]]'
+setting: In the foothills east of [[greyhaven]], where the Marches rise toward the [[ashenmere-wastes]].
+controlled-by: A mining consortium backed by the [[crown-of-thorns]].
+scale: A medium-sized mine with several tunnels, a surface works, and a small workers' settlement.
 ---
 
 # Hollowfell Mine
-
-## Vitals
-- **Kind:** Mine — a recently reopened mineral extraction site in the [[thornmere-marches]].
-- **Region:** [[thornmere-marches]]
-- **Setting:** In the foothills east of [[greyhaven]], where the Marches rise toward the
-  [[ashenmere-wastes]].
-- **Controlled by:** A mining consortium backed by the [[crown-of-thorns]].
-- **Scale:** A medium-sized mine with several tunnels, a surface works, and a small
-  workers' settlement.
 
 ## Description
 
@@ -76,7 +73,7 @@ siphoned by the [[unraveler]].
 
 ## Deeper layer / what it hides
 
-- [hidden] Hollowfell Mine sits on a Lattice node — a point where the underlying
+- [hidden:hollowfell-mine-1] Hollowfell Mine sits on a Lattice node — a point where the underlying
   architecture of reality is close to the surface. The Unraveler has been siphoning
   energy from the node, which is why magic fails in the area. The node is also the
   source of the unusual mineral deposits — Lattice energy has been crystallizing in
@@ -90,7 +87,7 @@ the [[ashenmere-wastes]], though the Wastes proper are still a day's travel deep
 
 ## Secrets
 
-- [hidden] The missing worker is not dead — he stumbled into a Lattice node and was
+- [hidden:hollowfell-mine-2] The missing worker is not dead — he stumbled into a Lattice node and was
   transported to a different location. He is alive and confused, somewhere in the
   Ashenmere Wastes.
   Known to: [[unraveler]] (knows); the worker (does not understand what happened).

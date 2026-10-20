@@ -3,20 +3,18 @@ slug: thornmere-marches
 name: The Thornmere Marches
 type: region
 status: active
+summary: Frontier province of marshes and bramble; the campaign's starting region
+kind: Frontier province — a stretch of marshy lowlands, scattered settlements, and contested wilds. Roughly
+  the size of a small duchy.
+terrain: Brackish marshes, peat bogs, dense bramble forests, and a network of slow rivers. Mild but wet
+  climate; long autumns, short summers.
+seat-of-power: Contested — the Marches were claimed by the Crown of Thorns a generation ago, but local
+  lords and freeholds operate with significant autonomy. No single faction holds decisive control.
+population: Sparse — homesteads, fishing villages, and a few market towns. The largest settlement is Greyhaven,
+  with perhaps three thousand residents.
 ---
 
 # The Thornmere Marches
-
-## Vitals
-- **Kind / scale:** Frontier province — a stretch of marshy lowlands, scattered settlements,
-  and contested wilds. Roughly the size of a small duchy.
-- **Terrain:** Brackish marshes, peat bogs, dense bramble forests, and a network of slow
-  rivers. Mild but wet climate; long autumns, short summers.
-- **Seat of power:** Contested — the Marches were claimed by the Crown of Thorns a generation
-  ago, but local lords and freeholds operate with significant autonomy. No single faction holds
-  decisive control.
-- **Population:** Sparse — homesteads, fishing villages, and a few market towns. The largest
-  settlement is Greyhaven, with perhaps three thousand residents.
 
 ## Geography
 
@@ -59,7 +57,7 @@ three years ago. The readings have been getting worse.
 
 ## Deeper layer / what's hidden here
 
-- [hidden] The Briarwood's temporal distortions are not natural — they are early symptoms of
+- [hidden:thornmere-marches-1] The Briarwood's temporal distortions are not natural — they are early symptoms of
   Lattice manipulation. The Unraveler is using the Briarwood as a testing ground, probing the
   Lattice's response to localized stress. The distortions are increasing in frequency and
   intensity.
@@ -72,7 +70,7 @@ coastal regions (south). Travel to the capital takes two weeks by road, one by r
 
 ## Secrets
 
-- [hidden] Hollowfell Mine sits on a Lattice node — a point where the underlying architecture
+- [hidden:thornmere-marches-2] Hollowfell Mine sits on a Lattice node — a point where the underlying architecture
   of reality is close to the surface. The Unraveler is siphoning energy from the node, which
   is why magic fails there.
   Known to: [[unraveler]] (knows); [[thaleus-venn]] (does not yet know).

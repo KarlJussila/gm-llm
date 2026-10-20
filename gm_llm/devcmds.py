@@ -25,7 +25,8 @@ from pathlib import Path
 from . import autoplay
 from .console import banner, c, fail, note, sessions_dir, show_prep, verdict, with_engine
 from .orchestrator import Planner, Reconciler
-from .orchestrator.canon import latest_session
+from .orchestrator import paths
+from .orchestrator.paths import latest_session
 
 _PING_MODEL = os.environ.get("MODEL", "opencode/mimo-v2.5-free")
 _PING_TIMEOUT = int(os.environ.get("TIMEOUT", "45"))
@@ -40,11 +41,11 @@ def _pick_session(args, *, next_session: bool) -> int:
     if args.session:
         return args.session
     if next_session:
-        n = (latest_session(sessions_dir(args.dir)) or 0) + 1
+        n = (latest_session(Path(args.dir) / "campaign") or 0) + 1
         note(f"--session not given — prepping the next session: {n}")
         return n
-    played = [int(m.group(1)) for f in sessions_dir(args.dir).glob("session-*-transcript.md")
-              if (m := re.match(r"session-(\d+)-transcript\.md$", f.name))]
+    played = [int(d.name) for d in sessions_dir(args.dir).glob("*")
+              if d.name.isdigit() and paths.transcript(Path(args.dir) / "campaign", int(d.name)).is_file()]
     if not played:
         fail("no play transcripts on disk — nothing to reconcile (play a session first)")
         sys.exit(2)
@@ -77,7 +78,7 @@ def cmd_reconcile(args):
             if g is not None:  # None = stage skipped this run (resumed past it)
                 verdict(label, g.narrative, show_report=not args.stream)
         if rr.lint_incomplete:
-            print(c("33", f"┄┄ completeness lint: {rr.lint_incomplete} file(s) flagged · "
+            print(c("33", f"┄┄ canon lint: {rr.lint_incomplete} issue(s) · "
                           f"correction dispatched ┄┄"), flush=True)
         banner(f"session {rr.n} reconciled{' · committed' if rr.committed else ''}")
         if rr.prep is not None:
@@ -87,24 +88,16 @@ def cmd_reconcile(args):
 
 
 def cmd_lint(args):
-    """Deterministic entity-completeness lint — no backend, no model calls."""
-    from .orchestrator.completeness import lint_dir
-    reports = lint_dir(args.dir)
-    incomplete = [r for r in reports if not r.ok]
-    for r in reports:
-        rel = r.path.relative_to(args.dir) if r.path.is_absolute() else r.path
-        if r.ok:
-            print(c("32", f"  ✓ {rel}"))
-        else:
-            detail = []
-            if r.missing:
-                detail.append("missing: " + ", ".join(r.missing))
-            if r.missing_sections:
-                detail.append("sections: " + ", ".join(r.missing_sections))
-            print(c("31", f"  ✗ {rel}  [{r.type}]  " + "  ·  ".join(detail)))
-    n, bad = len(reports), len(incomplete)
-    print(c("1;36", f"\n━━ {n - bad}/{n} entity files complete ━━"))
-    sys.exit(1 if incomplete else 0)
+    """The canon lint — no backend, no model calls. Refreshes INDEX.md and the reveal flags
+    first, the same as the orchestrator does before it lints."""
+    from .orchestrator.lint import lint_campaign
+    from .orchestrator.phase import refresh_campaign
+    refresh_campaign(args.dir)
+    issues = lint_campaign(args.dir)
+    for i in issues:
+        print(c("31", f"  ✗ {i.rel}  {i.message}"))
+    print(c("1;36" if not issues else "1;31", f"\n━━ canon lint: {len(issues)} issue(s) ━━"))
+    sys.exit(1 if issues else 0)
 
 
 def cmd_ping(args):
@@ -184,7 +177,7 @@ def add_dev_parser(subparsers, common, engine) -> None:
     p.set_defaults(func=cmd_reconcile)
 
     p = sub.add_parser("lint", parents=[common],
-                       help="check entity files against the completeness contract")
+                       help="run the canon lint (frontmatter, links, secrets, state files)")
     p.set_defaults(func=cmd_lint)
 
     p = sub.add_parser("ping", help="probe the model's rate-limit state")

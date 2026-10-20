@@ -9,7 +9,7 @@ mode (gated turn) and META mode (out-of-game question, ungated).
 
 The scene pane mounts one widget per beat (see tui/widgets.py) into a
 `VerticalScroll`, capped at `_SCENE_MAX_BLOCKS` — the full transcript is
-always on disk at `campaign/sessions/session-{N}-transcript.md`. The
+always on disk at `campaign/sessions/{N}/transcript.md`. The
 behind-the-screen pane is a `RichLog` — append-efficient, but not
 text-selectable; the full gate log is on disk under the project's log dir
 (`.opencode/logs/orchestrator-checks.log`).

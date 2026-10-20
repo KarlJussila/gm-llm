@@ -47,6 +47,7 @@ from ..orchestrator import (
     Archive, Backend, BackendError, CanonPreloader, Gate, Lifecycle, Logs, PlayHooks,
     play_session,
 )
+from ..orchestrator import paths
 from ..orchestrator.backend import BackendCancelled
 from ..orchestrator.logs import debug_enabled
 from ..project import init_project, install_plugin_deps
@@ -284,7 +285,7 @@ def _handoff_done(game) -> bool:
     thing that needs the warm context is the notes."""
     if not game.session:
         return True
-    return (game.campaign / "sessions" / f"session-{game.session}-notes.md").is_file()
+    return paths.notes(game.campaign, game.session).is_file()
 
 
 def _post_wrap(lifecycle, *, reconcile: bool, note, on_stage=_noop) -> None:

@@ -1,33 +1,30 @@
-<!--
-  LOCATION INFO file — canon (what it truly is). Paired with {slug}.state.md.
-  Path: world/locations/{slug}.md   Fill every <placeholder>; delete the guidance comments.
-  Format rules: canon-conventions §3 + §5. Commit every fact — no "DM decides".
--->
 ---
-slug: <kebab-slug>
+slug: <kebab-slug, same as the file name>
 name: <Canonical Name>
 type: location
-status: <active | dormant | destroyed | hidden | named-only>
+status: <active | dormant | destroyed | hidden>
+summary: <what it is, in one clause>
+kind: <tavern, fortress, ruin, shrine, market square, …>
+region: <[[region-slug]]>
+setting: <the settlement it's in, or its wilderness context>
+controlled-by: <[[faction-slug]] or [[npc-slug]], or "unclaimed">
+scale: <a single room, a building, a district, a sprawling complex>
 ---
+
+<!-- Location — what the place truly is. Path: world/locations/{slug}.md. Add {slug}.state.md
+     only when the place has live state that changes in play. Fill every <placeholder> with a
+     committed value and delete these comments. -->
 
 # <Canonical Name>
 
-## Vitals
-<!-- Required at-a-glance basics — fill EVERY line with a committed value (no <placeholder>, no "TBD"). -->
-- **Kind:** <what sort of place — tavern, fortress, ruin, shrine, market square, …>
-- **Region:** <[[region-slug]] this sits in>
-- **Setting:** <the settlement it's in, or wilderness context — [[location-slug]] / "open coast" / …>
-- **Controlled by:** <[[faction-slug]] or [[npc-slug]] who holds it, or "unclaimed">
-- **Scale:** <how big — a single room, a building, a district, a sprawling complex>
-
 ## Description
-<What it looks, sounds, and feels like — enough for the runner to set a scene here.>
+<What it looks, sounds and feels like — enough to set a scene here.>
 
 ## Significance
-<Why this place matters to the campaign. What draws play here.>
+<Why it matters to the campaign; what draws play here.>
 
 ## Notable features
-<Rooms, landmarks, hazards, defenses, points of interest — the things that shape a scene.>
+<Rooms, landmarks, hazards, defenses — what shapes a scene.>
 
 ## Who's here
 <NPCs and factions present or based here, as [[slug]] links.>
@@ -36,14 +33,11 @@ status: <active | dormant | destroyed | hidden | named-only>
 <Concrete reasons a PC would come or return.>
 
 ## Deeper layer / what it hides
-<Secret areas, true purpose, what's concealed beneath the obvious. Commit it now.>
-
-## Connections
-<How it links to other locations and which region it sits in — [[slug]].>
+<Secret areas, true purpose, what's concealed.>
 
 ## Secrets
-- [hidden] <A concealed fact about the place.>
+- [hidden:<secret-id>] <A concealed fact.>
   Known to: <[[slug]], …>
 
 ## Links
-<[[slug]] references to inhabitants, region, connected locations, arcs, threads. First mention each.>
+<[[slug]] references to inhabitants, region, connected places, arcs.>

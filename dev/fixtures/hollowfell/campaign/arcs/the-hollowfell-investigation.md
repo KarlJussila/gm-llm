@@ -2,8 +2,11 @@
 slug: the-hollowfell-investigation
 name: The Hollowfell Investigation
 type: arc
+status: active
 tier: minor
-hooks-into: [[the-unraveling]]
+hooks-into:
+- - the-unraveling
+summary: Investigating a mine where magic fails reveals the first evidence of deliberate Lattice manipulation
 ---
 
 # The Hollowfell Investigation
@@ -46,7 +49,7 @@ pattern of anomalies.
    zone firsthand. His Awakened Spellbook reacts to the Lattice node — the book "sees"
    something Dallid can't perceive directly. The Spellbook's reactions are the first clue
    that the problem is not natural.
-   - [revealed: S2] The Lattice node is being deliberately drained. The Spellbook can
+   - [revealed:the-hollowfell-investigation-1 S2] The Lattice node is being deliberately drained. The Spellbook can
      sense the drain because it is attuned to magical forces.
    - Known to: [[unraveler]] (knows the node is there); [[dallid]] (confirmed via Arcana
      check S2 — knows energy is being drained, not the agent responsible).
@@ -69,7 +72,7 @@ pattern of anomalies.
    being drained — not naturally depleted, but siphoned. The missing worker, Tarin, is
    found in the Ashenmere Wastes, confused but alive. He describes being "pulled" through
    the rock.
-   - [hidden] The Unraveler has been siphoning energy from the node to fuel experiments
+   - [hidden:the-hollowfell-investigation-2] The Unraveler has been siphoning energy from the node to fuel experiments
      elsewhere. Tarin's transport was an unintended side effect.
    - Known to: [[unraveler]].
    - **S2:** Approaching. Dallid is deep in the center tunnel, past the second crossing.
@@ -82,7 +85,7 @@ pattern of anomalies.
 3. **The Connection** — Dallid realizes the mine's problem is connected to the Briarwood's
    temporal disturbances. The anomalies are not random; someone is doing this. This is the
    moment the larger pattern begins to emerge.
-   - [hidden] The Unraveler's experiments are coordinated. The Briarwood and Hollowfell
+   - [hidden:the-hollowfell-investigation-3] The Unraveler's experiments are coordinated. The Briarwood and Hollowfell
      are both test sites.
    - Known to: [[unraveler]]; now [[dallid]] (partially).
 
@@ -145,6 +148,6 @@ pattern of anomalies.
   artificial, Brennan Cole introduced and shared full testimony. Emergent scored-marks
   investigation added depth: someone has been tracing Lattice pathways, the sketch maps
   something real. Tension curve moved from build-up to rising action. Dallid is deep in the
-  center tunnel at the threshold of turning point 2. Turning point 1's [hidden] flag flipped
-  to [revealed: S2] — Dallid now knows the energy is being drained. Session 3 must resolve
+  center tunnel at the threshold of turning point 2. Turning point 1's [hidden:the-hollowfell-investigation-4] flag flipped
+  to [revealed:the-hollowfell-investigation-5 S2] — Dallid now knows the energy is being drained. Session 3 must resolve
   the approach and land the Lattice node discovery.

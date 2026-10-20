@@ -3,17 +3,16 @@ slug: erasmus-venn
 name: Erasmus Venn
 type: npc
 status: hidden
+summary: Former Academy researcher; Dallid's missing mentor
+full-name: Erasmus Venn
+race: human
+pronouns: he/him
+age: late 50s (at time of disappearance)
+role: Former researcher at the [[luminarch-academy]]; Dallid's mentor
+affiliation: Formerly [[luminarch-academy]]; no current affiliation
 ---
 
 # Erasmus Venn
-
-## Vitals
-- **Full name:** Erasmus Venn
-- **Race / lineage:** human
-- **Pronouns:** he/him
-- **Age:** late 50s (at time of disappearance)
-- **Role / station:** Former researcher at the [[luminarch-academy]]; Dallid's mentor
-- **Affiliation:** Formerly [[luminarch-academy]]; no current affiliation
 
 ## Stats (rough sketch)
 - **Equivalent level:** ~9 (a brilliant researcher with minor magical ability and no combat training)
@@ -72,10 +71,10 @@ biology.
 
 ## Secrets
 
-- [hidden] Erasmus was taken by the [[covenant-of-the-sealed-veil]] because his research
+- [hidden:erasmus-venn-1] Erasmus was taken by the [[covenant-of-the-sealed-veil]] because his research
   approached knowledge of the [[primordial-lattice]]. He is alive but imprisoned.
   Known to: [[covenant-of-the-sealed-veil]] (leadership); [[vashra-keel]].
-- [hidden] Erasmus's research notes contain fragments of understanding about the Lattice
+- [hidden:erasmus-venn-2] Erasmus's research notes contain fragments of understanding about the Lattice
   that the Covenant considers dangerous enough to kill for.
   Known to: [[covenant-of-the-sealed-veil]].
 

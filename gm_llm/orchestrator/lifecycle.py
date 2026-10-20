@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .canon import latest_session
+from .paths import latest_session
 from .loop import Game, session_is_complete
 from .play import AgentPlayer, KeyboardPlayer, PlayerSource
 from .reconciler import Reconciler
@@ -40,7 +40,7 @@ class Lifecycle:
         # that needs setup; a session whose runner already signalled the end (even in
         # a prior run the player never confirmed the wrap on) ⇒ show that choice again,
         # never resume it into more play; otherwise jump straight into play.
-        n = latest_session(Path(directory) / "campaign" / "sessions")
+        n = latest_session(Path(directory) / "campaign")
         if n is None:
             self.phase = "setup"
             self.game = None

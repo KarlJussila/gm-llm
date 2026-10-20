@@ -200,14 +200,14 @@ Digest written for session 1. Coverage: all transcript events extracted lossless
 
 ## Evidence
 
-- Transcript: `campaign/sessions/session-1-transcript.md` (195 lines)
-- Runner notes: `campaign/sessions/session-1-notes.md` (128 lines)
-- Session plan: `campaign/sessions/session-1-plan.md` (338 lines)
-- Digest: `campaign/sessions/session-1.md`
+- Transcript: `campaign/sessions/1/transcript.md` (195 lines)
+- Runner notes: `campaign/sessions/1/notes.md` (128 lines)
+- Session plan: `campaign/sessions/1/plan.md` (338 lines)
+- Digest: `campaign/sessions/1/digest.md`
 
 ## Changes
 
-- `session-1.md` created
+- `1/digest.md` created
 
 ## Caveats
 

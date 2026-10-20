@@ -45,10 +45,10 @@ slots, coin); the player tracks those.
 | `characters/{slug}.state.md` | PC state — location, notable condition, key items, objective | `dm` (apply pass) |
 | `characters/{slug}.knowledge.md` | What the PC **Knows / Believes / Open questions** | `dm` (apply pass) |
 | `characters/{slug}.repertoire.md` | Combat repertoire — the PC's reaction triggers & tactics | `dm` (apply pass) |
-| `sessions/session-{N}-plan.md` | The plan for an upcoming session | `dm` |
-| `sessions/session-{N}-transcript.md` | Play transcript (final messages), written each turn | orchestrator |
-| `sessions/session-{N}-notes.md` | The runner's end-of-session handoff notes | orchestrator (runner authors, code files) |
-| `sessions/session-{N}.md` | Structured session digest, extracted from the transcript | `log-extractor` |
+| `sessions/{N}/plan.md` | The plan for an upcoming session | `dm` |
+| `sessions/{N}/transcript.md` | Play transcript (final messages), written each turn | orchestrator |
+| `sessions/{N}/notes.md` | The runner's end-of-session handoff notes | orchestrator (runner authors, code files) |
+| `sessions/{N}/digest.md` | Structured session digest, extracted from the transcript | `log-extractor` |
 | `assessment/session-{N}-assessment.md` | Post-session analysis & arc recommendations | `campaign-analyst` |
 | `documents/{slug}.md` | **Verbatim** text of in-world written materials | `dm` (apply pass) |
 | `feedback/{target}.md` | Distilled player guidance, loaded by the named skill/agent | `campaign-analyst` (curation pass) |
@@ -59,13 +59,13 @@ the `state/*` docs sit at fixed paths; clocks and threads live in their dashboar
 ## How a session is captured
 
 Note-taking is **automatic** — the runner just plays. During the session the orchestrator writes the
-final player + DM messages of each turn to `sessions/session-{N}-transcript.md` (the corrected
+final player + DM messages of each turn to `sessions/{N}/transcript.md` (the corrected
 narration, not drafts). The runtime checkers only verify and report — they record nothing. After the
 session the **orchestrator** runs the staged post-session pipeline, one focused dispatch per stage,
 each checked before the next:
 
-1. the still-warm runner authors handoff notes (code files them to `session-{N}-notes.md`);
-2. `log-extractor` writes the structured digest `sessions/session-{N}.md` — a lossless extraction of
+1. the still-warm runner authors handoff notes (code files them to `{N}/notes.md`);
+2. `log-extractor` writes the structured digest `sessions/{N}/digest.md` — a lossless extraction of
    every notable change (checked against the transcript);
 3. `campaign-analyst` writes the assessment, then curates the player's feedback into `feedback/*`;
 4. the `dm` **applies** the digest to canonical state: entity info for new/changed canon (with a

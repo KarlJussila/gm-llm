@@ -3,17 +3,15 @@ slug: briarwood-anomaly-map
 name: Briarwood Anomaly Map
 type: item
 status: active
+summary: Hand-drawn map of three Briarwood anomaly sites; given to Dallid by Wren
+kind: Hand-drawn field map — a navigational and intelligence document
+rarity: mundane (no magical properties; its value is informational)
+form: Rough parchment, hand-drawn in ink, folded into a coat pocket. Three locations marked with notations
+  in a precise hand.
+origin: Drawn by [[wren]] during her three weeks monitoring the [[the-briarwood]] from [[greyhaven]].
 ---
 
 # Briarwood Anomaly Map
-
-## Vitals
-- **Kind:** Hand-drawn field map — a navigational and intelligence document
-- **Rarity:** mundane (no magical properties; its value is informational)
-- **Form:** Rough parchment, hand-drawn in ink, folded into a coat pocket. Three locations
-  marked with notations in a precise hand.
-- **Origin:** Drawn by [[wren]] during her three weeks monitoring the [[the-briarwood]]
-  from [[greyhaven]].
 
 ## What it is
 A rough, hand-drawn map of the Briarwood's three known anomaly locations. The markings are

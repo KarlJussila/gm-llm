@@ -1,0 +1,1 @@
+The canon lint found the problems below in the campaign files. Fix each one in the file it names — fill missing frontmatter with committed values, author a full file for a named-only stub or an unresolved link, give each secret an id — and change nothing else.

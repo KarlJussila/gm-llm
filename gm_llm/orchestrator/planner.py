@@ -7,7 +7,7 @@ out of runtime. Here the orchestrator drives it deterministically, mirroring the
 per-turn loop one stage earlier:
 
   prep_session(N):
-      dm authors campaign/sessions/session-N-plan.md        # 1. the dm holds the pen
+      dm authors campaign/sessions/N/plan.md                 # 1. the dm holds the pen
       result = gate.check_plan(plan)                         # 2. ALWAYS gate, in code
       if result.violations: dm revises the file once         # 3. exactly ONE bounded pass
       commit "campaign: session N plan"                       # 4. deterministic commit
@@ -29,7 +29,8 @@ from pathlib import Path
 
 from .archive import verdict_fields
 from .logs import append, banner, section
-from .phase import apply_one_correction, commit_campaign
+from . import paths
+from .phase import apply_lint_correction, apply_one_correction, commit_campaign
 from .prompts import load
 
 
@@ -63,7 +64,7 @@ class Planner:
         self.dm_sid = dm_sid or backend.create_session("dm prep")
 
     def _plan_path(self, n: int) -> Path:
-        return self.root / "campaign" / "sessions" / f"session-{n}-plan.md"
+        return paths.plan(self.root / "campaign", n)
 
     def _read_plan(self, n: int) -> str:
         p = self._plan_path(n)
@@ -79,6 +80,8 @@ class Planner:
         if not plan:
             raise PlannerError(
                 f"the dm reported done but {self._plan_path(n)} is missing or empty")
+        # New entities the plan pulled in meet the canon lint before the checker reads it.
+        apply_lint_correction(self.backend, self.dm_sid, self.dm_agent, self.root)
 
         # 2. Gate it in code — always, narrative-only.
         result = self.gate.check_plan(plan)

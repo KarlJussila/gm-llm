@@ -3,17 +3,16 @@ slug: dallid
 name: Dallid
 type: pc
 status: active
+summary: Vedalken wizard; brilliant biomancer searching for his missing mentor
+race: Vedalken
+class: Wizard
+subclass: Order of Scribes
+level: '5'
+ability-scores: STR 8 · DEX 16 · CON 14 · INT 18 · WIS 12 · CHA 10
+pronouns: he/him
 ---
 
 # Dallid
-
-## Vitals
-- **Race / lineage:** Vedalken
-- **Class:** Wizard
-- **Subclass:** Order of Scribes
-- **Level:** 5
-- **Ability scores:** STR 8 · DEX 16 · CON 14 · INT 18 · WIS 12 · CHA 10
-- **Pronouns:** he/him
 
 ## Known capabilities
 - **Proficiencies:** Arcana (expertise), History, Investigation, Nature, Religion; Simple Weapons, Thieves' Tools

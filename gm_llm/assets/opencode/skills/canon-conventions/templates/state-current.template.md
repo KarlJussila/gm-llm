@@ -1,29 +1,27 @@
-<!--
-  The "you are here" pointer — the runner's cold-start baseline. Path: campaign/state/current.md
-  Snapshot true as of the start of session <as-of>, FROZEN during play; rewritten at POST.
-  Answers "where is the PC, when, with whom, and what's the immediate situation?" in one read.
--->
 ---
 layer: state
 as-of: S<n>
 ---
 
+<!-- Where play stands — the opening point for the next session. Path: state/current.md.
+     True as of the end of session <n>; rewritten between sessions. -->
+
 # Current
 
 ## When
-<In-game date/time. [[calendar]] for the full timeline.>
+<In-game date and time.>
 
 ## Where
-<Current location. [[slug]] the registered place.>
+<The current location, linked.>
 
 ## Who's present
-<NPCs on scene right now, as [[slug]] links.>
+<NPCs on scene, linked.>
 
 ## Situation
-<The immediate scene: what is happening as the session opens. Two or three sentences.>
+<What is happening as the next session opens, in two or three sentences.>
 
 ## How we got here
-<How the last session ended / the beat this one resumes from.>
+<The beat the last session ended on.>
 
 ## Open at this moment
-<Live hooks, decisions, or questions hanging right now. [[threads]] for the full list.>
+<Live hooks, decisions or questions hanging right now.>

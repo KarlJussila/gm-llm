@@ -3,19 +3,17 @@ slug: unraveler
 name: The Unraveler
 type: faction
 status: active
+summary: Hidden antagonist exploiting the Primordial Lattice
+kind: Hidden antagonist — an individual (or entity) exploiting the Primordial Lattice for their own purposes.
+  May be human, may not be. Identity unknown to the world at large.
+scale: Unknown — operates through intermediaries and pawns. No visible organization, but the scope of
+  their operations suggests significant resources.
+seat: Unknown — possibly operates from the Ashenmere Wastes or another hidden location.
+leadership: The Unraveler acts alone or directs a small inner circle whose identities are also unknown.
+founded: Active since the Sundering (~800 years ago), possibly longer.
 ---
 
 # The Unraveler
-
-## Vitals
-- **Kind:** Hidden antagonist — an individual (or entity) exploiting the Primordial Lattice
-  for their own purposes. May be human, may not be. Identity unknown to the world at large.
-- **Scale:** Unknown — operates through intermediaries and pawns. No visible organization,
-  but the scope of their operations suggests significant resources.
-- **Seat:** Unknown — possibly operates from the Ashenmere Wastes or another hidden location.
-- **Leadership:** The Unraveler acts alone or directs a small inner circle whose identities
-  are also unknown.
-- **Founded:** Active since the Sundering (~800 years ago), possibly longer.
 
 ## Identity / Public face
 
@@ -49,7 +47,7 @@ resource is time — they have been playing a very long game.
 
 ## Deeper layer / true agenda
 
-- [hidden] The Unraveler is not merely exploiting the Lattice — they are attempting to
+- [hidden:unraveler-1] The Unraveler is not merely exploiting the Lattice — they are attempting to
   overwrite it. The Lattice is the architecture of reality; the Unraveler intends to
   rewrite that architecture to make reality conform to their design. The anomalies are
   experiments in Lattice manipulation, each one probing the Lattice's resilience and
@@ -77,12 +75,12 @@ eliminate them.
 
 ## Secrets
 
-- [hidden] The Unraveler was the entity that manipulated the archmages into triggering the
+- [hidden:unraveler-2] The Unraveler was the entity that manipulated the archmages into triggering the
   Sundering. The Sundering was not an accident — it was the Unraveler's first successful
   experiment in large-scale Lattice manipulation. The resulting damage created the conditions
   the Unraveler has been exploiting ever since.
   Known to: the Unraveler only.
-- [hidden] The Unraveler's full plan requires one more large-scale experiment before the
+- [hidden:unraveler-3] The Unraveler's full plan requires one more large-scale experiment before the
   rewrite can begin. The current anomalies are the preparation. The final experiment will
   be catastrophic — potentially destructive on a continental scale.
   Known to: the Unraveler; their inner circle (partial).

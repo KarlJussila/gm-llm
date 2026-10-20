@@ -1,23 +1,17 @@
-<!--
-  ARC STATE file — a lightweight PROGRESS snapshot. Path: campaign/arcs/{slug}.state.md
-  Paired with {slug}.md (the living design). A session-boundary snapshot, frozen during play,
-  written by the dm's POST apply pass. This is a quick at-a-glance read for the planner/runner —
-  it does NOT hold adjustments. Structural/detail revisions happen in the design body (the
-  apply-arcs pass's job); divergence is reconciled INTO that body, not parked here.
--->
 ---
-slug: <kebab-slug>
+slug: <kebab-slug, same as the arc>
 layer: state
 as-of: S<n>
 ---
 
+<!-- The arc's progress at a glance, true as of the end of session <n>. Revisions to the story
+     itself go in the arc's design file, not here. -->
+
 ## Status
-<dormant (not yet introduced) | building (hooks in play, tension rising) | climax (at its peak) |
-resolved (complete, consequences in effect)>
+<dormant | building | climax | resolved>
 
 ## Turning points hit
-<Which of the design's turning points have landed, and in which session. What remains ahead.>
-- <beat name> — <hit S<n> | pending>
+- <beat> — <hit S<n> | pending>
 
 ## Position on the tension curve
-<Where the arc currently sits on its build-up → climax → resolution arc, in a line.>
+<Where the arc sits, in a line.>
