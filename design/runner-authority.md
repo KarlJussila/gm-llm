@@ -1,12 +1,12 @@
 # Runner authority — what `dm-runner` may and may not author
 
-Tier-0 reference for the MiMo prompt recalibration. What the system is → [README.md](README.md);
-the benchmark that surfaced the gaps → [benchmark.md](benchmark.md); the clean Luna path that
-supersedes this as the active product direction → [luna.md](luna.md).
+Reference from the retired MiMo product (v0.5.0). What the system is → [README.md](README.md);
+the Luna rebuild → [luna.md](luna.md).
 
-This document explains the authority model behind Tier 0's partially landed reminder/staleness
-experiment. Its remaining prose work is intentionally retired: Tier 1 does not inherit this
-control model unless Luna reproduces the failure that a particular rule or mechanism repairs.
+This document explains the authority model behind MiMo's partially landed reminder/staleness
+experiment. The Luna DM prompt may draw on its rules, but none returns — and none of its control
+mechanisms does — unless a Luna run reproduces the failure it repairs. It is deleted with the rest
+of MiMo's leftovers (ROADMAP luna 5).
 
 ## The model
 
@@ -69,7 +69,7 @@ Recorded because the earlier eight-rule form is quoted in Part 7 and a reader wi
   foreman's lunch — fine. "A sketchy guy went down into the mines last week", to a player
   investigating the mines — blocked.
 - **Rule 3 is new**, and it is the only rule in the set that says *yes*. It is also the runner-side
-  half of the plan-coverage question in [`open-questions.md`](open-questions.md) § Benchmark.
+  half of the MiMo-era plan-coverage question (findings Part 7).
 - **Closing early was demoted from a response to divergence to a response to exhaustion.** The
   previous form let a runner spend twenty turns on individually-harmless scenes and stay compliant.
 

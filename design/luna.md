@@ -1,119 +1,179 @@
-# Luna Tier 1 — a clean product path
+# Luna — gm-llm rebuilt for GPT-6 Luna
 
-Plan of record for the Luna-targeted Tier-1 product. The benchmark that measures it is
-[benchmark.md](benchmark.md); the shipped MiMo path remains the Tier-0 reference.
+Plan of record for the product rebuild. The benchmark that measures it is
+[benchmark.md](benchmark.md); the combat tracker and loop design is [combat.md](combat.md).
+Sequencing lives in `ROADMAP.md` track **luna**.
 
 ## Outcome
 
-Tier 1 is a first-class gm-llm experience built for `opencode/gpt-5.6-luna` at `xhigh` reasoning.
-Luna supports `high`, `xhigh`, and `max`; `xhigh` is the deliberate quality-first starting point
-between the latter two, based on observed improvement at higher reasoning levels. It should let Luna
-carry the judgment it is good at instead of making it enact control machinery built around
-MiMo's failures. Tier 0 remains installed and playable as the deliberately over-scaffolded MiMo
-experience; it is not the template from which Tier 1 is derived.
+gm-llm runs setup → play → reconcile on `openai/gpt-6-luna` at `xhigh` reasoning, with prompts
+written for a capable model instead of around a weak one's failures.
 
-"Start from scratch" applies to the model-facing system: agent roles, prompt prose, skill use,
-context delivery, gate feedback, and setup/play/reconcile decomposition are all open to a simpler
-answer. It does not discard code-owned capabilities whose value is independent of the model:
+**MiMo is retired.** v0.5.0 (tagged) is the last MiMo release. `mimo-v2.6-flash-free` may be run as
+a benchmark subject against the new product, but it is never used to build it. There is no
+backwards compatibility with v0.5 campaigns; the fixture is converted by script.
 
-- the campaign's human-readable files and player-knowledge boundary;
-- deterministic dice and combat bookkeeping;
-- transcript capture, completion markers, checkpoints, and git ownership;
-- the backend, lifecycle/frontends, cancellation, and process management; and
-- the raw benchmark archive and offline grading path.
+The Part 11 probe ran on `gpt-5.6-luna-fast`. The 5.6 and 6 generations behave alike, and the
+`-fast` variants only change output speed, so its observations carry over: Luna paced and wrapped a
+session unprompted, looked canon up on its own, and followed rules exactly as stated (including a
+wrong one the probe prompt gave it).
 
-Those are substrate. A Tier-0 behavior is not substrate merely because the orchestrator currently
-implements it.
+## Principles
 
-## Design rules
+1. **Luna everywhere unless named.** Every agent and subagent is `openai/gpt-6-luna` at `xhigh`.
+   The one exception so far is the benchmark grader ([benchmark.md](benchmark.md)). Luna does not
+   accept a temperature; agent files set a reasoning `variant` instead.
+2. **No per-turn reminders.** No brief prepended to every message, no staleness counts, no wrap
+   countdown. Standing guidance lives in the agent prompt and is read once.
+3. **Skills stay; loading is the model's call.** A skill's `description` says briefly *when* to load
+   it, never a summary of what it contains. No brief names the skills to load or their order. A rule
+   that applies on every turn belongs in the agent prompt, not in a skill that is always loaded.
+4. **No instructed choreography.** No brief or skill tells the model to build a todo list or work
+   numbered steps in order. `todowrite` stays *permitted* — the model may plan with it.
+5. **Turn checks never reach the DM.** Live play has no gate. Turn checks run after play, in the
+   benchmark only.
+6. **Tool-call help stays.** A missing or malformed tool call gets one nudge (`Backend.ensure_tool`).
+   That is mechanics, not hand-holding.
+7. **Code owns the copies.** Anything derivable — the registry, reveal flags, which arcs were
+   reconciled — is derived or verified in code, not hand-maintained by the model and audited by a
+   checker.
+8. **Between-session gates must earn their place.** `check-digest`, `check-propagation`, `check-plan`
+   and `check-init` stay for now, and each archives its artifact before and after correction. A gate
+   that rarely makes a meaningful correction is cut.
+9. **Subagents are a tool the author may use.** Authoring agents may delegate through opencode's
+   `task` tool to our own subagent definitions, pinned to Luna (never opencode's built-in `general`).
+   One `task` call blocks; several in one message run concurrently. A user setting
+   `subagents: sequential | parallel` becomes one sentence in the brief — sequential by default, the
+   safe choice for rate-limited free models. Subagent calls are captured in the archive and token
+   counts.
+10. **Player feedback belongs to the player.** It lives in a player-level directory shared across
+    campaigns, one file per skill, read when that skill loads. Benchmark runs point it at the
+    fixture's own copy.
 
-1. **Observe Luna before designing for Luna.** The first artifact is a run, not a framework. Give
-   Luna the session plan, the relevant campaign contract, and the deterministic tools with a small
-   role prompt. Record where it succeeds, what it reads or calls, and where it actually needs help.
-2. **One concrete second path before an abstraction.** Add only the seams the first Tier-1 vertical
-   slice needs. Once Tier 0 and Tier 1 both exist, common mechanics may be extracted from evidence;
-   do not first turn Tier 0's hard-coded sequence into a generic playbook and call that neutrality.
-3. **No inherited scar tissue without a reproduced failure.** Per-turn todo lists, forced skill
-   reloads, staleness nags, mandatory micro-stages, and checker-fed correction are absent by
-   default. Each enters Tier 1 only if a Luna run demonstrates the failure it repairs.
-4. **The checker is an instrument, not a copilot.** Tier-1 drafts may be observed and archived by
-   the same checks so runs remain measurable, but a MiMo verdict is not fed back into Luna unless
-   an experiment shows that correction improves the game. Instrument failure must not steer the
-   subject.
-5. **Profiles own model-facing behavior.** A campaign chooses a product profile; the profile pins
-   its intended model, reasoning level, and complete model-facing assets. The install owns the
-   shipped profile definitions. Model and reasoning are both part of a run's condition identity;
-   avoid a matrix of per-agent campaign settings until a real use case needs one.
-6. **Preserve public outcomes, not internal topology.** Setup must leave a playable campaign, play
-   must leave a transcript and clean completion fact, and reconcile must fold play into canon.
-   Tier 1 need not preserve Tier 0's two-primary-agent split or its exact stage graph to deliver
-   those outcomes.
+## Agents
 
-## The first slice (probed in Part 11)
+| Agent | Role | Model-facing change |
+|---|---|---|
+| `dm-runner` | Live play: read-only campaign access, dice, the combat tracker, `task_complete` | New prompt (see § Live play) |
+| `dm` | Between sessions: setup, reconcile, planning; writes the campaign | Briefs state goals, not skill sequences; may delegate to subagents |
+| `log-extractor` | Fresh-context digest of the transcript | Whole-transcript read |
+| authoring subagent(s) | Delegated arc and entity work, pinned to Luna | New |
+| `narrative-checker` | Between-session gates, and the benchmark's after-play checker | Re-authored for Luna; never at the table |
+| `player` | The autoplayer (benchmark, `--player auto`) | See [benchmark.md](benchmark.md) |
 
-The discovery probe ran against the Hollowfell session-3 fixture using `openai/gpt-5.6-luna-fast` at
-`xhigh` reasoning (`variant: xhigh`) with observe-only checking. The run wrapped naturally via
-`task_complete` in 13 player turns (3532s) without per-turn reminders, todo choreography, forced
-skill loading, or correction delivery.
+`campaign-analyst` and the `session-review` assessment are deleted; feedback curation moves to the
+`dm` thread.
 
-### Evidence-backed live-play contract
+## Campaign layout
 
-1. **What Luna needs once (at session start):**
-   - **Prepared context:** the prepared session plan plus baseline canon and named entities
-     (`runner_preload()`), delivered once in front of the opening kickoff.
-   - **Role & spoiler boundary:** concise DM authority over narration, NPC dialogue, and 5e rules
-     adjudication, with an absolute boundary on unearned secrets and plot spoilers.
-   - **Conduct craft stated in the profile prompt:** standing craft rules (e.g. withholding DCs, closing
-     exploratory scenes on situations rather than multiple-choice menus) are followed when stated in the
-     prompt; they do not require separate loadable skills or in-flight correction.
-   - **Campaign filesystem orientation:** directory layout (`world/`, `characters/`, `sessions/`) and
-     file tools (`read`, `glob`, `grep`, `list`).
-   - **Deterministic tool contract:** `dice` for rolls, combat tracker tools if initiative triggers,
-     and `task_complete` with handoff `notes` to wrap.
+- **`INDEX.md` is generated** by code from each file's frontmatter (`slug`, `name`, `type`, `status`,
+  `summary`; arcs add `tier` and `hooks-into`). The model reads it to avoid duplicates and never
+  writes it.
+- **Vitals move into YAML frontmatter**, with a schema per entity type. The body stays prose.
+- **Secrets carry ids:** `[hidden:<id>]`. A reveal is recorded once, by id, in the PC's knowledge
+  ledger; code flips the flag in the home file and adds the PC to its `Known to:` line.
+- **One folder per session:** `sessions/<n>/{plan,transcript,notes,digest}.md`.
+- `.state.md` stays a separate file per stateful entity.
+- `assessment/` is gone, and `feedback/` leaves the campaign (principle 10).
+- **The canon lint** (code) runs after every authoring dispatch: frontmatter schema, links resolve,
+  no lingering `named-only`, `as-of` stamps current, secret ids resolve. Its findings go back once,
+  as a correction.
+- `canon-conventions` is rewritten as a reference for this layout.
 
-2. **What Luna retrieves on demand:**
-   - Context lookups are targeted and autonomous. When Luna needed to verify communication links between
-     Dallid, Wren, and the Concordance on turn 13, it autonomously called `glob` and `read` on
-     `campaign/sessions/session-1-notes.md` without being reminded or prompted to do so.
-   - Universal per-turn skill re-loading is unnecessary; Luna retains instructions and context across
-     the session.
+## Setup
 
-3. **Which code boundaries remain:**
-   - Deterministic dice and combat state tracker (`plugin/combat-tracker.ts`).
-   - Transcript recording (`session-{N}-transcript.md`).
-   - Session completion handling: the orchestrator must extract `notes` from `task_complete`, and
-     safely handle final narration if passed in the tool's `player_message` argument.
-   - Observe-only instrumentation (`check-turn`, `check-conduct`, raw archive JSONL).
+1. **Scaffold** — code.
+2. **Intake and world** (interactive). The brief states the goal and deliverable. The DM gathers the
+   brief (free-form or guided; lines and veils), builds the world, and presents a spoiler-free world
+   proposal as an ordinary message. The player can push back and the DM revises. When the player
+   approves, the DM calls `task_complete`.
+3. **Character** (interactive, same thread). Code sends the character brief; the DM opens with hooks
+   and the creation choice, imports a sheet if given one, fills the vitals, agrees backstory and
+   placement with the player, writes the PC files and any backstory canon, then calls `task_complete`.
+4. **Arcs and state** — one non-interactive dispatch. The major arc built around the PC (with its
+   level pacing), at least one minor arc hooked into it (subagents optional), and initial state.
+   Code then verifies one major arc, at least one minor arc with `hooks-into`, and state stamped
+   `S1`, with one nudge naming anything missing. Resume reads the same disk facts.
+5. **Canon lint** — one correction.
+6. **`check-init`** — the judgment half only: duplicates, a hidden layer on every entity, consistency
+   with `campaign.md`. One correction.
+7. **Commit** `campaign: init`, then **plan session 1** (§ Planning).
 
-4. **Which Tier-0 mechanisms stay absent:**
-   - **No per-turn reminder brief:** Luna tracks narrative context and rules across turns without a
-     changing orchestrator brief prepended to player messages.
-   - **No todo choreography:** `todowrite` is omitted; Luna structures multi-step actions cleanly
-     within its own reasoning space.
-   - **No staleness nags:** lookup tracking and escalating reminder lines are retired.
-   - **No wrap countdown banners:** Luna recognizes the plan's closing beat and initiates wrap on its own.
-   - **No in-loop correction:** the checker observes and archives verdicts without perturbing or
-     re-prompting the live DM.
+`campaign-setup` is deleted; its standards are either in `canon-conventions` or are now the lint.
 
-## Product shape
+## Live play
 
-Tier 1 grows outward from that slice in outcome-sized steps:
+**Start.** Code builds `<prepared-context>`: the plan, `INDEX.md`, `state/current.md`, the PC sheet
+and knowledge ledger, every arc with its state, the entities the plan names, and the player's
+feedback. Its header is one plain sentence: this is your prepared context; everything else is on
+disk. The opening is not checked.
 
-- **Live play:** a dedicated Luna asset surface and a public profile selection reach the existing
-  play UI while bypassing Tier-0 control behavior.
-- **Campaign work:** setup and reconcile are re-authored against their output contracts. Start
-  with the largest coherent Luna task and split only where observed quality or recovery demands it.
-- **Operational fit:** resume, cancellation, combat, context pressure, update, and campaign
-  migration work through the Tier-1 path.
-- **Measurement:** the benchmark stamps the profile and complete model-facing identity, observes
-  checks without perturbing play, and banks a Luna distribution only after the path is viable.
-- **Promotion:** Tier 1 becomes the recommended new-campaign experience only after an end-to-end
-  campaign shakedown. Tier 0 remains selectable for MiMo and for the scaffolding comparison.
+**Each turn.** The message is the player's text in `<player>…</player>` and nothing else. Code keeps:
+the completion marker on `task_complete`, the one nudge for an ending narrated without the tool,
+the switch into combat, the transcript, and the archive (player message, reply, tools, context size).
 
-## Tier-0 preservation boundary
+**The `dm-runner` prompt** holds, from the start of the session:
 
-Tier 0 is frozen at its current behavior, including the partially landed reminder/staleness
-experiment. The golden prompt stream protects it while shared substrate changes. Tier-0 work is
-limited to regressions that break a supported user path, provider/API drift, and small changes
-needed to keep it fun and runnable. Its unfinished prompt recalibration is not a prerequisite for
-Tier 1, and a MiMo score baseline does not gate Luna work.
+- the role and its boundaries, and spoiler discipline tested against the knowledge ledger;
+- the table craft that was `session-run` (the player declares and the DM adjudicates; the delivery
+  carve-out; stepping out of game on the impossible; the player rolls their own checks; ask for rolls
+  often; never announce a DC; outcomes on a gradient) — your play preferences, condensed;
+- how to open a session;
+- pacing: what a good stopping point is, the two failures (ending after one scene, never ending),
+  and that drifting into heavy improvisation is itself a reason to land. Ending is the DM's call.
+
+On-demand skills: `social-play`, `discoveries`, `session-close`, `combat-run` ("when a fight is about
+to start") and `combat-balance`.
+
+**Ending.** The DM loads `session-close`: land the ending, award the level-up the plan schedules,
+ask the player for feedback, close without spoilers, then make one `task_complete` call carrying the
+closing narration in `player_message` and the handoff notes in `notes`. `session-close` says what the
+notes cover. Code writes the narration into the transcript and the notes to `sessions/<n>/notes.md`.
+A separate notes request is the fallback only when they come back missing.
+
+**`task_complete` stays task-agnostic.** Its `notes` parameter is described as closing notes for the
+task, given only when the task asks for them.
+
+**Unchanged:** `/meta` questions, resume (reattach or re-prime), cancel and revert, completion as a
+disk fact.
+
+## Combat
+
+The tracker, commit and rollback, the per-combatant confirm gate with interjection, resume recovery
+and the `advance_turn` nudge all stay — reactions make combat complicated, and the confirm gate is
+how the player reacts to any enemy action. Two changes: `combat-reminder` is no longer resent each
+step (the `<combat-turn>` and `<combat-reaction>` tags stay), and `check-combat` leaves play. The
+archive records the tracker's committed and pending frames for every combat beat so the after-play
+check can compare them with the narration.
+
+## Wrap: reconcile
+
+0. **Notes** arrive with the closing `task_complete`.
+1. **Digest** — `log-extractor`, fresh session, reads the whole transcript and the notes and writes
+   `sessions/<n>/digest.md` under the existing extraction taxonomy. `check-digest`, one correction.
+2. **Feedback** — `dm` thread; code skips it when the digest has no player feedback. Distils it into
+   the player-level feedback files. No check.
+3. **Canon** — `dm` thread: new and changed entities, PC capabilities and level-up, the combat
+   repertoire, verbatim documents. Canon lint, one correction.
+4. **Arcs** — the `dm` hands each arc to a subagent, under two principles: what was played beats what
+   was planned, and canon hardens once the player has seen it. The major arc re-paces its level-ups
+   every pass. A close-out covers new minor arcs, the threads dashboard and the cross-arc sweep. Code
+   verifies every arc is stamped `as-of: S<n>` and nudges once with any it missed; resume reads the
+   same stamps.
+5. **State** — `dm` thread: reveals into the ledger by id, entity snapshots, `current`, `calendar`,
+   `clocks`.
+6. **`check-propagation`** — the judgment half only (did what was played land?). One correction.
+7. **Commit**, then plan the next session.
+
+## Planning
+
+On the `dm` thread, warm from setup or reconcile. `session-plan` works without a todo list; the
+focused plan skills load on demand. Inputs are the digest, the threads dashboard, the arcs and the
+state — there is no assessment. Canon lint on new entities, then `check-plan` with one correction,
+then a commit.
+
+## Substrate that carries over
+
+Human-readable campaign files and the knowledge boundary; dice; the combat tracker; transcript
+capture, completion markers, stage markers and code-owned commits; the backend, lifecycle,
+frontends and cancellation; the archive.

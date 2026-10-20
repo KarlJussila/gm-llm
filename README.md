@@ -333,7 +333,6 @@ Model-facing `dev` commands target a `gm-llm init`-ed campaign project via
 The mock layer (`gm_llm/orchestrator/mock.py`) duck-types `Game`/`Setup`/`Lifecycle` so the
 whole TUI runs offline.
 
-Contributing or picking the work back up: **`CLAUDE.md`** has the orientation, the gate, and the
-standing rules; **`HANDOFF.md`** is the current state; **`ROADMAP.md`** is what remains, in
-order; **`design/`** is the design itself (start at `design/README.md`) plus the per-round
-archive.
+Contributing or picking the work back up: **`CLAUDE.md`** has the orientation and how to run the
+tests; **`ROADMAP.md`** is what remains, in order; **`design/`** is the design itself (start at
+`design/README.md`).

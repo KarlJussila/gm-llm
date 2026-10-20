@@ -1,5 +1,10 @@
 # Findings
 
+> **Frozen.** This is the archive of the rounds era (Parts 1–11, July–September 2026). The rounds
+> methodology was retired in October 2026 and nothing is appended any more; current design lives in
+> the other `design/` docs and what's left in `ROADMAP.md`. Parts 10–11 describe a Tier-0/Tier-1 plan
+> that `luna.md` superseded.
+
 A **per-round record**, append-only: each Part records one round as it happened. Numbers and
 "next round" notes are **point-in-time** — correct for their Part, *not* kept up to date as
 later rounds land. For the live state read `HANDOFF.md`, not this file. Read a Part here for

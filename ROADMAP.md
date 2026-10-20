@@ -1,91 +1,80 @@
-# ROADMAP — all planned work, sequenced
+# ROADMAP — what's left, in order
 
-The single sequence for everything that remains, with a **recommended effort level per task**.
-What each task *is* lives in the linked plan-of-record docs — this file orders the work and says
-how hard to think about it. Pickup and handoff live in `CLAUDE.md` § Standing rules; the active row
-is `HANDOFF.md` § Next task.
+Each track lists its tasks in the order they should be done. What a task *is* lives in the track's
+design doc; this file only orders the work and keeps the open questions. Delete a task when it
+lands — git history is the record.
 
-## Effort levels
+## luna — rebuild the product for GPT-6 Luna
 
-| Effort | Use for | Discipline |
-|---|---|---|
-| **low** | Checklist work, fully specified, with the gate catching errors | Trust the gate; don't redesign in passing |
-| **medium** | Specified implementation that still encodes a contract | The default |
-| **high** | Decisions, contract reviews, first-of-kind work with no oracle | Spend it on choices that are expensive to reverse, never on labor |
+Design: [`design/luna.md`](design/luna.md). Tasks 1–5 need no model quota; 6–8 do.
 
-**Model-facing work is never low.** The gate proves the harness works, not that a DM improved.
-Tier-0 prose is frozen; Luna prose is validated from live evidence and then profile-stamped runs.
+1. **Campaign layout v2 and the canon lint.** Generated `INDEX.md`, Vitals in frontmatter, secret
+   ids with code-flipped reveals, per-session folders; the lint widened to links, `as-of` stamps and
+   secret ids; `canon-conventions` and its templates rewritten; Hollowfell converted by script.
+   First, because every prompt and path below depends on it.
+2. **Live play and combat.** Strip the reminder, staleness, countdown and in-loop gate from the
+   loop; the new `dm-runner` prompt with `session-run` and pacing folded in; skill descriptions that
+   say when to load; one closing `task_complete` carrying narration and notes; no combat-reminder
+   resend; tracker frames in the archive; every agent pinned to Luna `xhigh`. `dev/probe_luna.py`
+   retires with it.
+3. **Reconcile and planning.** Whole-transcript digest; the assessment, `campaign-analyst` and
+   `check-feedback` deleted; feedback curation on the `dm` thread; arcs through Luna-pinned
+   subagents with code-verified coverage; `check-propagation` reduced to its judgment half;
+   before/after archived for every gate; `session-plan` without choreography.
+4. **Setup and player-level feedback.** A world proposal the player can revise before character
+   creation; one arcs-and-state dispatch with code checks; `check-init` reduced to its judgment half;
+   `campaign-setup` deleted; the player-level feedback store and the `subagents` setting.
+5. **Sweep out what MiMo left.** Delete the agents, skills, briefs and tests nothing calls any more,
+   and `design/runner-authority.md`; bring `README.md` and `design/README.md`'s architecture in line
+   with the rebuilt product.
+6. **Live shakedown.** Two or three Hollowfell sessions on Luna; fix only failures the runs show.
+7. **Between-session and combat shakedown.** Reconcile and plan from those runs, a fresh campaign
+   through setup, and the first real fight. Read the gates' before/after and cut the ones that
+   don't earn their place.
+8. **Release.** Version bump, changelog, `README.md` for the Luna product.
 
-## luna — build Tier 1 for Luna from first principles
+## benchmark — measure the product, tier by tier
 
-Plan of record: [`design/luna.md`](design/luna.md).
+Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in that doc.
 
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 1 | Build the concrete Tier-1 live-play vertical slice | high | Dedicated Luna assets plus public profile selection through the existing play UI; add only seams the probe proves, keep the MiMo checker observe-only, and hold Tier 0 byte-stable under the golden stream |
-| 2 | Re-author setup and reconcile around Luna | high | Preserve their public outcomes, not Tier 0's two-agent split or micro-stage graph. Start with the largest coherent tasks and split only where a Luna run shows quality or recovery needs it |
-| 3 | Close Tier-1 operational gaps | medium | Resume, cancellation, context pressure, combat, checkpoints, update, and campaign selection/migration work end to end; includes the real combat shakedown the current product never received |
-| 4 | Shakedown, promote, and release Tier 1 | high | Run a real new campaign through setup → play → reconcile, bank acceptance evidence, make Luna the recommended new-campaign profile, and keep MiMo Tier 0 selectable |
+1. **B5 — conditions and tiers.** The tier as a real field, reasoning variants, subagents in the
+   conditions, `--subject-model`, feedback isolation.
+2. **B6 — autoplayer on Luna.** `player.md` and its two skills, the packet generated in code. The
+   story-so-far recap needs quota.
+3. **B7 — after-play checker.** `bench check`: one rolling Luna session per run over the pristine
+   start canon, structured findings.
+4. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject with file access,
+   checker precision in the report.
+5. **`bench status`.** Batch state by outcome without a throwaway script.
+6. **B3 — the `low` baseline.** After luna 6 and benchmark 1–4: a Luna pilot sizes the batch, then
+   bank the distribution.
+7. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the
+   baseline shows.
+8. **B10 — benchmark proper.** Batches per condition and the methodology writeup.
 
-## benchmark — measure concrete profiles
+## frontends
 
-Plan of record: [`design/benchmark.md`](design/benchmark.md).
+Design: [`design/frontends.md`](design/frontends.md).
 
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 1 | B1 prereq — pin the player-end contract | high | One home, one generation path, one load contract for the play packet; needed for unattended multi-session runs regardless of profile |
-| 2 | `bench status` — batch state without a throwaway script | low | Runs by outcome are still hand-derived; include per-turn `tools`/`stale` for historical Tier-0 reads without making them Tier-1 requirements |
-| 3 | B5/B6 — profile identity and observe-only instrumentation | medium | After Luna 2 establishes the real profile seam, stamp profile + reasoning and run the common instrument without feeding MiMo correction prose into Luna |
-| 4 | B3/B7 — bank the Luna baseline | medium | After Luna 5 is viable, size from a Luna pilot and bank an identical-condition Tier-1 distribution; the MiMo pilot supplies methodology, not the sample size or a prerequisite |
-| 5 | Focused ablations and benchmark writeup | high | Test only observed mechanisms, then make causal claims from controlled conditions rather than treating two whole products as a single difficulty ladder |
+1. **Route console autoplay through `Lifecycle`.** The last direct `Game` construction — duplication
+   to retire, not a gap. Needs `player_source()` to carry the resume story.
 
-## frontends — mode × frontend modularity
+## packaging
 
-Plan of record: [`design/frontends.md`](design/frontends.md).
+The portability rules are `dev/MAINTAINING.md` § Portability.
 
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 5 | Route console autoplay through `Lifecycle` | low | The last direct `Game` construction. Blocks nothing — duplication to retire, not a gap; needs `player_source()` to carry the resume story |
+1. **Validate on native Windows.** Probe opencode command resolution, process-tree kill, paths with
+   spaces and ANSI on a real Windows box. If opencode itself is the problem, pin a known-good version
+   and document it.
 
-## packaging — native Windows
+## Open questions
 
-The portability rules are `dev/MAINTAINING.md` § Portability. Profile ownership resolves the old
-model-configuration question: the install ships definitions, and a campaign selects one.
-
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 1 | Validate on native Windows | medium | Probe opencode command resolution, process-tree kill, paths with spaces, and ANSI on a real Windows box. If opencode itself is the problem, pin a known-good version and document it |
-
-## docs — keep the loop honest
-
-| # | Task | Effort | Why |
-|---|---|---|---|
-| 1 | Generate `findings.md` § Contents | low | Hand-maintained indexes have drifted repeatedly; automate the index before the archive grows further |
-| 2 | Decide on pytest for `dev/test_*.py` | medium | Changes the gate, so it remains its own coherent task (`design/open-questions.md`) |
-| 3 | `sessions/` → per-session directories | high | A cross-cutting path refactor with no behavior change to show for it; keep it separate (`design/open-questions.md`) |
-
-## Landed
-
-| Track | Parts | Outcome |
-|---|---|---|
-| docs | 1 | The handoff-round loop stood up: five docs, `status.py`, `lint_docs.py`, `close-round`; `dev/MAINTAINING.md` reconciled |
-| docs | 2 | Planning consolidated onto the loop: old duplicate plans deleted, plan-of-record docs routed through `design/`, lint checks added |
-| packaging | 2 | Native-Windows portability changes built; real-box validation remains |
-| frontends | 3–6 | Combat and session loops unified; bench routed through `Lifecycle`; unattended runs became watchable without perturbation |
-| benchmark | 7 | The MiMo pilot exposed large variance, instrument identity gaps, and runner failures; its methodology survives while its scores describe a superseded subject |
-| recalibration | 8–9 | MiMo runner authority audited; one reminder/staleness experiment landed. Remaining recalibration retired when Tier 0 froze |
-| direction | 10 | MiMo frozen as playable Tier 0; Luna at `xhigh` selected for a clean Tier-1 path; generic tier/playbook extraction removed as a prerequisite |
-| luna | 11 | Clean live-play probe ran against Hollowfell; evidence-backed contract for Tier-1 live vertical slice established |
-
-## Standing sync rules
-
-- **Tier 0 is frozen, not deleted.** Its prompts and orchestration change only for a supported-path
-  regression or provider drift. Shared-substrate work keeps its golden prompt stream clean.
-- **A concrete Luna path comes before generic profile machinery.** Luna 1 is diagnostic and Luna 2
-  adds only its proven seams. Extract a shared abstraction only after both product paths need it.
-- **The Tier-0 pilot does not gate Tier 1.** It remains evidence about methodology and MiMo. Luna's
-  own pilot sizes Luna's baseline after the product path is viable.
-- **The checker is observe-only for Tier 1 by default.** Every run remains measurable, but a MiMo
-  instrument does not steer Luna unless a focused experiment demonstrates a gain.
-- **Model and reasoning are condition identity.** Tier 1 begins at Luna `xhigh`; a different effort
-  is a different benchmark condition, not a casual config edit.
+- **Fold each `.state.md` into its entity file?** A `## Now (as of S<n>)` section would halve the
+  file count and remove a pair to keep in sync, at the cost of state updates editing the canon file.
+  Unsure; revisit if luna 6–7 show state drifting from its info file.
+- **Is the score model's 0-point floor calibrated anywhere real?** `scoring.score_violations` maps a
+  penalty rate onto 0–100 with a provisional floor. Until the `low` baseline is banked only deltas
+  are readable; retune from that baseline, never from the MiMo pilot.
+- **Should `dev/test_*.py` become pytest tests?** They are standalone scripts with a homegrown `tmp`
+  helper, so `pytest dev/` reports collection errors that look like breakage and are not.
+  Converting makes the test command conventional; against it, the scripts work.

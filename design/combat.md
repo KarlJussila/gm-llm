@@ -5,8 +5,9 @@ Plan of record for combat. What the system is → [README.md](README.md); the be
 
 **Status: built and shipped (0.3.0), mock-verified only** — every part of this has been exercised
 under the mock backend and the `dev/` suites, and none of it has ever run against a live model.
-The shakedown is `ROADMAP.md` track **live**. Sequencing lives in ROADMAP; this doc describes the
-design and where it lives in the tree.
+The shakedown is `ROADMAP.md` track **luna**. The Luna rebuild keeps this design and changes two
+things — no per-step reminder, and the fidelity check moves after play
+([luna.md](luna.md) § Combat). This doc describes the design and where it lives in the tree.
 
 ## Goal
 

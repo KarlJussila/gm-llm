@@ -1,7 +1,7 @@
 # Benchmark — gm-llm as a tiered scaffolding instrument
 
-Plan of record for the benchmark. What the system is → [README.md](README.md); combat →
-[combat.md](combat.md).
+Plan of record for the benchmark. What the system is → [README.md](README.md); the product it
+measures → [luna.md](luna.md); combat → [combat.md](combat.md).
 
 **Sequencing and status live in `ROADMAP.md` track benchmark**, which points at the B-numbered
 stages below by number. This doc defines what each stage *is* and the contract it has to meet; it
@@ -9,281 +9,181 @@ does not say what is next or what has landed.
 
 ## Goal
 
-Make gm-llm double as a benchmark: an LLM plays a full session (via an autoplayer), and its score
-is the number and severity of violations flagged during play. Product profiles may use different
-models, prompts, roles, and runtime support, but **every profile is observed and scored by the same
-instrument whether or not the subject ever sees its feedback.**
+Make gm-llm double as a benchmark: an LLM runs a full session against an autoplayer, and its score
+is the number and severity of the violations found in its play. Tiers scale back the scaffolding —
+from the full product (`low`: its prompts, skills, prepared context and stage structure) down to
+bare (`high`: the session plan, the file layout, the dice tool and the wrap tool). **Every tier is
+checked and scored identically, and no tier feeds a check back to the DM.** Checks run after play.
 
-The first comparison is intentionally historical rather than a synthetic ladder: Tier 0 is the
-heavily scaffolded MiMo product; Tier 1 is a clean Luna product at `xhigh` reasoning. It asks how
-much quality comes from the model versus the control system without requiring Luna to be built by
-subtracting pieces from MiMo. Later ablations may vary guidance or runtime support once two concrete
-profiles show which axes are real.
+The current target is `low`: getting the most out of GPT-6 Luna on the full product. What `medium`
+and `high` contain is decided after `low` has a banked baseline. The subject model is a separate
+axis — `mimo-v2.6-flash-free` can be run against `low` too.
 
-The subject is the runner playing well, never the checker catching it failing. A violation the gate
-corrects is still a violation the runner committed and costs a real game a turn. In Tier 1 the gate
-begins observe-only, so the instrument cannot become a weaker model steering a stronger one.
+The subject is the DM playing well, never the checker catching it failing.
 
 ## Principles
 
-1. **Tier 0 is frozen byte-for-byte.** The current prompts, agents, skills, and orchestration
-   behavior are the legacy MiMo profile. They are never recomposed or used as the Tier-1 template;
-   the golden stream protects them while shared substrate changes.
+1. **The product is the `low` tier.** The benchmark never changes product behavior: a run differs
+   from real play only in who the player is and in being archived.
+2. **Instrument vs. subject.** The *subject* is everything the product's model-facing surface is
+   made of: `dm-runner`, `dm`, `log-extractor`, the authoring subagents, their skills and briefs. The
+   *instrument* is the after-play checker, the grader, the rubric and the scoring. The instrument is
+   pinned independently of the subject. The between-session gates belong to the product — they
+   correct in real play, so they correct in a benchmark run too, and their verdicts are archived.
+3. **Runtime captures; it never judges.** Play writes a raw JSONL archive. Checking and grading are
+   separate offline passes over it, and their output is derived data: a rubric or checker revision
+   re-checks history instead of invalidating it.
+4. **Tiers are asset sets.** A tier is the set of model-facing files placed in the run directory;
+   `low` is the shipped assets. The product never resolves tiers.
+5. **Scores compare within a condition.** Tier, subject model and reasoning variant, fixture, turn
+   cap, prompt fingerprint, instrument fingerprint and rubric are all condition fields, and a report
+   refuses to pool across them.
 
-2. **Instrument vs. subject.** Assets partition into the *subject* (dm, dm-runner, the
-   play/setup/planning skills, orchestrator briefs to them — what's being tested) and
-   the *instrument* (narrative-checker, all `check-*` skills and briefs,
-   `report-findings.ts`, the grader — what measures). The instrument has exactly one
-   copy, no tier resolution path, ever, and is pinned to a fixed model/temperature
-   independent of the subject model.
+## The pipeline
 
-3. **Contract vs. craft.** *Contract* = externally necessary facts (campaign layout, tool semantics,
-   completion, transcript and checkpoint outcomes). *Craft* = the model-facing way a profile gets
-   there. Tier 1 shares the contract, not Tier 0's phrasing or decomposition.
+### Run — `bench run`
 
-4. **Concrete profiles before tier machinery.** Luna first runs through the smallest concrete
-   second path that can exercise the shared substrate. Only after both profiles exist may common
-   mechanics be extracted. A generic playbook, include system, axis matrix, or fragment library is
-   justified by demonstrated duplication, not required in advance.
+- Copy the template and the fixture's campaign into a fresh run directory and `git init` it. The
+  tier's assets go in; `--subject-model` rewrites the DM agents' model.
+- Player feedback points at the fixture's copy, never the user's own.
+- A `conditions` event stamps the fixture id, tier, turn cap, whether reconcile runs, every agent's
+  and subagent's model and reasoning variant, the prompt fingerprint and the gm-llm version.
+- The autoplayer is Luna. `player.md` holds its rules, and two skills cover the situational parts:
+  `player-combat` (a fight is about to start) and `player-rolls` (the DM asked for a roll). Its first
+  message carries the character packet and the fixture's story-so-far recap; every later message is
+  the DM's text in `<dm>…</dm>`.
+- Play runs to `task_complete`, with a hard turn cap as the safety net (each PC combat slot counts).
+  Each combat beat archives the tracker's committed and pending frames.
+- Reconcile follows a natural close unless `--play-only`.
+- Outcomes are `complete`, `cap`, `incomplete` (resumable with `--resume`) or `failed`.
 
-5. **Runtime captures; it never judges.** Scoring is decoupled from gating. Play emits
-   a raw JSONL archive (drafts included); severity/category grading is a separate
-   post-session pass by a strong model over the archive. The archive is ground truth;
-   grades are derived data — a rubric revision re-grades history instead of
-   invalidating it. `report_findings` keeps its current schema; the in-loop checker's
-   workload is never perturbed.
+### Check — `bench check`
 
-6. **Measure the profile being developed.** A MiMo baseline no longer gates Luna work. Tier 0 is
-   preserved by its golden stream; Luna gets a diagnostic run before product design and a baseline
-   once its end-to-end path is viable. No pre-Luna score can validate Luna prose.
+- **One rolling Luna checker session per run.** Its workspace is a pristine copy of the fixture's
+  start-of-session campaign, because reconcile has since rewritten the run directory. The canon is
+  loaded once.
+- Turns are fed in play order: the player's message, the DM's text, the tools it called, and for a
+  combat beat the tracker frames. The checker therefore sees the transcript only up to and including
+  the turn it is judging.
+- For each turn it submits structured findings through a tool — which check (canon, conduct or
+  combat), the claim, the evidence, a category guess — or an empty list. A mistake it already
+  flagged on an earlier turn is marked as continuing that finding rather than raised again; the
+  rolling context is what makes that possible. A turn with no submission after one nudge is recorded
+  `defaulted`.
+- Output goes to its own `checks-<run>.jsonl`; the play archive is never rewritten.
 
-7. **Scores compare within a condition.** Profile, subject model, reasoning level, prompt identity,
-   correction delivery, and fixture are all condition fields. Cross-profile deltas describe whole
-   product behavior, not a single ladder of difficulty.
+### Grade — `bench grade`
 
-## Layout (target)
+- `openai/gpt-6.1-sol` at `high` reasoning, **one session per run**, with read access to the pristine
+  start canon, the run's transcript and its checks.
+- Each finding is **confirmed or rejected**. A confirmed finding gets a severity, a category, a
+  one-line rationale and `duplicate_of`; a rejection is a checker false positive. Stage-gate
+  findings and canon-lint misses are graded the same way.
+- The grades file opens with a header (rubric label, instrument fingerprint, grader model and
+  variant). Grading is idempotent per header; `--double` grades a sample twice and reports agreement.
 
-```
-gm_llm/
-  assets/
-    opencode/            # frozen Tier-0 MiMo assets
-    profiles/
-      luna/              # complete Tier-1 model-facing surface, authored independently
-  orchestrator/          # shared substrate plus the concrete profile seams Luna proves necessary
-  bench/                 # not shipped in the wheel
-    runner.py            # drives Game with the player agent against a fixture
-    grade.py             # post-session severity/category grading over the archive
-    scoring.py           # archive + grades → report
-dev/
-  fixtures/              # frozen campaign(s): world, character packet, session-1 plan
-                         # (the `bench` group lives in gm_llm/bench, wired into gm_llm/cli.py
-                         #  and registered only from a checkout)
-```
+### Report — `bench report`
 
-Tier 0 keeps its flat opencode skill tree. The Luna profile owns only the model-facing assets its
-observed behavior calls for; stable plugins and campaign templates remain shared substrate rather
-than being copied into each profile.
+- The severity vector beside a 0–100 integrity score: severity points (steep — a critical is worth
+  three majors) over graded units, with five subscores sharing that denominator so the deficits
+  decompose additively. The 0-point floor is a display calibration, retuned only from a banked
+  baseline.
+- **Instrument health with every batch:** the defaulted rate, checker precision (confirmed findings
+  over all findings) and grader agreement. An unhealthy instrument invalidates the batch.
+- Secondary signals: turns to wrap, a clean `task_complete` close, stage-gate correction rates,
+  context growth.
+
+## The fixture
+
+`dev/fixtures/hollowfell`: a campaign with sessions 1–2 played and session 3 planned, so a run plays
+session 3 against real prior canon. It is converted to the [luna.md](luna.md) layout by script.
+
+- **The character packet is generated in code** from the PC sheet and the knowledge ledger — one
+  generation path for `bench` and `--player auto`, never a hand-merged file.
+- **The story so far** is a recap of the past transcripts, generated once, reviewed by hand and stored
+  in the fixture. Transcripts are exactly what the player saw, so the recap cannot leak a secret.
+- **Feedback files tune the subject**, so they are curated whenever the fixture is refrozen.
+- The fixture is provisional until a baseline is banked against it; refreshing it after that forces a
+  re-baseline.
 
 ## The stages
 
-Each stage is useful if the workstream pauses. A profile baseline happens only after that product
-path and its condition identity are viable. The order stages are *worked* in is ROADMAP's business.
+Each stage is useful if the workstream pauses. The order stages are *worked* in is ROADMAP's
+business.
 
-### B0 — Capture layer *(code only, no model-facing change)*
+### B0 — Capture layer
 
-Emit a structured score-event archive from the existing gate paths.
-Implementation: `gm_llm/orchestrator/archive.py`, riding on `Logs` (an `archive`
-member, lazily headed); events emitted from `loop.py` (turn), `planner.py` (plan),
-`reconciler.py` (digest/feedback/propagation/lint), `setup.py` (init). Verified by
-`dev/test_archive.py`.
+A structured score-event archive (`gm_llm/orchestrator/archive.py`, riding on `Logs`): one event per
+turn and per stage gate, written alongside the logs under `.opencode/logs/`. *Exit: a played session
+leaves a machine-readable archive sufficient to re-derive every number the benchmark reports.*
 
-- One JSONL event per runtime turn from `loop.py`/`gate.py`: player message, draft,
-  final, `corrected`, both verdicts (check name, passed, `defaulted`, full prose
-  report), canon section count, context usage, timestamps, session/turn ids.
-- One event per stage gate (`check-plan`, `check-digest`, `check-feedback`,
-  `check-propagation`, `check-init`, the completeness lint) from
-  `planner.py`/`reconciler.py`/`setup.py`.
-- Location: alongside the existing logs in `.opencode/logs/` (gitignored), one file per
-  run. This is largely the data already formatted for `orchestrator-checks.log`,
-  structured.
-- **Drafts are archived from day one** — the future audit pass (B-later) depends on it.
+### B1 — Fixture and bench runner
 
-*Exit: a played session leaves a machine-readable archive sufficient to re-derive every
-number the benchmark will ever report.*
+The fixture, `bench run` with batches and `--resume`, and the conditions event. *Exit:
+`bench run --runs 5` completes unattended and leaves five condition-stamped archives.*
 
-### B1 — Fixture + bench runner
+### B2 — Grader and report
 
-Promote the autoplay harness (the scripted `player` agent) to benchmark grade.
+`bench grade` and `bench report` as specified above. *Exit: a batch turns into a one-page report
+with distributions, not single numbers.*
 
-- A **provisional** fixture campaign under `dev/fixtures/hollowfell`: a `gm-llm` campaign's
-  `campaign/` (world, canon, the Dallid PC + play packet at `campaign/documents/`, sessions
-  1–2 played and the session-3 plan — so bench plays **session 3** fresh, with real prior
-  canon). Runs copy it to a temp dir; the source is never played in place. **We do not truly
-  "freeze" it until benchmark 1.0** — reproducible-input-across-time only pays off once we're
-  banking baselines (B3+). Until then it's *refreshed* from the live campaign (and `--fixture
-  <dir>` can point anywhere), so iteration doesn't fight a stale snapshot.
-  - **The feedback files are part of the frozen instrument.** `check-conduct` reads
-    `campaign/feedback/session-run.md`, so whatever the fixture carries tunes what the
-    checker enforces (suppress-only since the fix — feedback can excuse a flag, never
-    raise one — but its *content still shifts the instrument*). When freezing or
-    **re-freezing from a played campaign, curate or empty the feedback files** so an
-    accumulated quirk doesn't silently bake into the rubric; any change forces a
-    re-baseline like other fixture drift.
-- `bench run`: pinned player model/temperature, pinned checker model, fixed turn
-  budget, optional post-session reconcile (stage gates give post-session scores for
-  free). Batch mode: N runs with rate-limit resilience (the `ping` machinery's
-  lessons apply — expect overnight batches on the free tier). A run whose backend gives
-  up mid-play (a sustained rate limit) is recorded `incomplete`, not failed — its
-  transcript + archive persist — and `bench run --resume` continues every incomplete run
-  in `--out` in place (same archive, continuous turn ids), so a cap that trips overnight
-  doesn't burn the session's progress.
-- Every run records its conditions (models, temps, tier, fixture id, gm-llm version)
-  into the archive header. A comparison across mismatched conditions should be
-  impossible to make by accident.
-- **[Prereq to finalize] Standardize the player-end of the contract.** The player side has
-  been loose, and it needs tightening before the bench is finalized. Pin all three: **where**
-  the play packet lives (root vs. `campaign/documents/` — today's `character_packet` path is a
-  stopgap), **how** it's generated (hand-merged from the player-known layer right now — see the
-  auto-runner digest-regeneration item in B-later), and **how** it's loaded (`character_packet`
-  in `fixture.json` for bench; `--character` in `gm-llm dev autoplay`). One canonical home, one
-  generation path, one load contract.
+### B3 — The `low` baseline
 
-*Exit: `bench run --runs 5` completes unattended and leaves 5 condition-stamped archives.*
+Size a batch from a Luna pilot, then bank an identical-condition distribution of the `low` tier:
+scores, run-to-run variance, instrument health. The MiMo pilot
+([`dev/fixtures/hollowfell/pilot-2026-07-29.md`](../dev/fixtures/hollowfell/pilot-2026-07-29.md))
+supplies methodology, not the sample size. *Exit: a written baseline report with its complete
+condition identity.*
 
-### B2 — Grader + report
+### B4 — Golden prompt stream
 
-- `bench grade`: per flagged violation (or per session), a strong model at temperature 0
-  reads the checker's prose report plus turn context and assigns severity/category via
-  a structured tool call. Offline, decoupled from play — no rate coupling, one finding
-  per brief if focus demands it.
-- A versioned severity rubric doc (the grader brief embeds it; the archive records the
-  rubric version used). One grading unit per *violation* — a checker report enumerating
-  three problems on one turn grades as three. Deduplication of a violation counted twice:
-  the same mistake persisting across turns, or one draft tripping both `check-turn` and
-  `check-conduct`. Per-session calibration.
-- **The score model** (`scoring.score_violations`): each dedup'd violation costs penalty
-  points by severity (steep — a critical is worth three majors), normalized by graded units
-  into a rate, mapped to a 0–100 integrity score. Subscores on five dimensions (canon
-  fidelity, information discipline, player agency, mechanical integrity, record integrity)
-  use the same denominator, so the composite comes from the total penalty rather than an
-  average of subscores and the deficits decompose additively. Reported *beside* the severity
-  vector, never instead of it. The 0-point floor rate is a display calibration — retune it
-  only from a banked profile baseline, beginning with Luna.
-- Instrument reliability: `bench grade --double` grades a sample twice and reports
-  agreement. Also surface the `defaulted`-verdict rate — a checker not doing its job
-  must never read as the subject improving.
-- `bench report`: archive + grades → per-run and per-batch summary (violation count by
-  severity, correction rate, defaulted rate, turns-to-wrap, clean `task_complete`
-  close, stage-gate outcomes).
+Under the mock backend, record the exact `(agent, session, message)` stream for a scripted
+setup → play → wrap → reconcile pass and diff future streams against it byte for byte. An intended
+change to the stream is re-recorded in the round that makes it.
 
-*Exit: a batch turns into a one-page report with distributions, not single numbers.*
+### B5 — Conditions and tiers
 
-### B3 — Profile baseline batch
+The tier as a real field, reasoning variants instead of temperatures, subagents in the conditions,
+`--subject-model`, and feedback isolation.
 
-- Identical-condition runs for a viable product profile, stamped with profile, subject model,
-  reasoning level, correction-delivery mode, and prompt/instrument fingerprints.
-- Deliverables: the score distribution, run-to-run variance, grader agreement, and defaulted rate.
-- Size a batch from a pilot under that same profile. The Tier-0 pilot at
-  [`dev/fixtures/hollowfell/pilot-2026-07-29.md`](../dev/fixtures/hollowfell/pilot-2026-07-29.md)
-  remains methodology evidence, not a Luna sample-size calculation or a gate on Luna work.
+### B6 — Autoplayer on Luna
 
-*Exit: a profile-specific written baseline report checked in with its complete condition identity.*
+`player.md` re-authored, the `player-combat` and `player-rolls` skills, the generated packet and the
+story-so-far recap.
 
-### B4 — Golden prompt-stream test *(free regression armor)*
+### B7 — After-play checker
 
-- Under the mock backend, record the exact `(agent, session, message)` stream the
-  orchestrator emits for a scripted setup → play → wrap → reconcile pass. Check the
-  recording in; a test diffs future streams against it byte-for-byte.
-- This is the cheap guard that shared-substrate changes do not silently rewrite Tier 0.
+`bench check` as specified above, with checker prompts written for that role.
 
-### B5 — Profile identity and selection
+### B8 — Grader rework
 
-- Stamp profile and reasoning level alongside the existing per-agent model/temperature identity.
-- Let the bench select an already-built product profile using the same profile boundary as normal
-  play. The benchmark does not invent its own tier resolver or assemble a product from overrides.
-- Reject accidental pooling across any changed condition.
+Sol at `high`, one session per run, confirm or reject, file access, checker precision in the report.
 
-*Exit: the same fixture can run through either product profile and cannot be compared under a
-misidentified condition.*
+### B9 — `medium` and `high` tiers, and ablations
 
-### B6 — Observe-only Tier-1 instrument
+Define what each tier strips, from what the `low` baseline shows, and run focused ablations of
+observed mechanisms.
 
-- Run the common checker and archive against Luna drafts without delivering MiMo correction prose
-  back to Luna.
-- Keep the raw draft, verdict, default/failure state, and final player-visible turn distinct.
-- Verify that attaching the instrument does not change the Tier-1 prompt stream or output path.
+### B10 — Benchmark proper
 
-### B7 — Luna baseline and focused ablations
-
-- Bank the Tier-1 Luna-at-`xhigh` baseline only after the end-to-end profile is viable.
-- Use focused ablations to answer observed questions (for example correction delivery on/off or a
-  context preload present/absent). Do not manufacture a full axis matrix in advance.
-- A Tier-0 batch is optional comparison evidence, not a prerequisite and not pooled with Luna.
-
-### B8 — Benchmark proper
-
-- Batches per complete condition; reports; publishable methodology writeup.
-- Cross-profile results are presented as whole-product comparisons. Only controlled ablations make
-  narrower causal claims about a particular mechanism.
+Batches per condition, reports, and a methodology writeup.
 
 ## Out of scope — and the condition that would bring each one in
 
-Decisions, not a backlog: each of these is deliberately *not* part of the benchmark, with the
-trigger that would change that. Unresolved questions live in
-[open-questions.md](open-questions.md) instead.
-
-- **Independent audit pass** — a strong model re-sweeps archived *drafts* for violations the
-  in-loop checker missed (detection recall). The archive already supports it. **In when** a
-  cross-model claim needs defending.
-- **In-loop severity for the *product*** (e.g. correct only above a threshold) — a separate
-  experiment, A/B'd against the archive to watch the defaulted-verdict rate. **In when** the
-  correction rate itself becomes the thing under study.
-- **Benchmarking the setup phase** — fixtures sidestep it. **In when** setup quality is a claim
-  the benchmark wants to make.
-- **Multiple fixtures / scenario diversity**, with per-scenario score normalization. **In when** a
-  single fixture's idiosyncrasies are shown to move a tier comparison.
-
-## Measurement methodology (summary)
-
-- **Fixed per batch:** fixture, profile, subject model + reasoning level, checker model, turn
-  budget, correction-delivery mode, gm-llm version, rubric version. All stamped into the archive.
-- **Score the draft, always** — the same measurement whether a profile corrects it or leaves the
-  instrument observe-only. Corrections are recorded as their own signal (correction rate).
-- **Distributions, not points:** 5–10 runs minimum; report variance alongside means.
-- **Instrument health reported with every batch:** defaulted-verdict rate, grader
-  agreement. An unhealthy instrument invalidates the batch, not just a run.
-- **Secondary signals:** correction rate, turns-to-wrap, clean `task_complete` close,
-  stage-gate outcomes, context growth. Regressions often show here before the headline
-  violation count moves.
+- **In-loop correction for the product's turns** — none at any tier. **In when** a focused
+  experiment shows correction improves the game enough to pay for its latency.
+- **Benchmarking setup** — fixtures sidestep it. **In when** setup quality is a claim the benchmark
+  wants to make.
+- **Multiple fixtures**, with per-scenario normalization. **In when** a single fixture's
+  idiosyncrasies are shown to move a comparison.
 
 ## Risks
 
 | Risk | Mitigation |
 | --- | --- |
-| Run-to-run variance swamps tier effects | B3 measures variance *first*; grow sample size or sharpen the rubric before drawing conclusions |
-| Checker (mimo) misses violations → scores flatter the subject | Same detector across all tiers keeps comparisons internally valid; drafts archived from day one so the audit pass can quantify recall later |
-| Shared-substrate work subtly changes Tier 0 | Golden stream test (byte-level); a confirmation batch only when the prompt stream cannot cover the seam |
-| Free-tier rate limits make batches slow/flaky | Batch runner designed for overnight, resumable runs; conditions stamped so partial batches stay usable |
-| Rubric revisions invalidate history | Grades are derived from the raw archive — re-grade, never re-play |
-| Fixture drifts from evolving canon-conventions | The fixture is frozen per benchmark epoch; a conventions change that touches the fixture forces a fixture re-generation **and** a re-baseline (accept and document) |
-| A generic profile abstraction bakes in Tier-0 assumptions | Build the concrete Luna path first; extract only contracts both live profiles actually share |
-
-## Decisions (updated 2026-08-14)
-
-1. **Grader/checker instrument model** — the common checker stays MiMo (preserves Tier 0's
-   gate) but begins observe-only for Tier 1. MiMo isn't the target instrument for any part, but it's
-   what's available; this is a niche prototype and a stronger instrument can ship as a
-   V2 re-grade (grades are derived data). No cross-epoch consistency promised yet.
-   The grader model is picked at B2.
-2. **Where `bench/` lives** — `gm_llm/bench/`, wheel-excluded like `dev/`, for clean
-   imports.
-3. **Turn budget** — play to natural close (`task_complete`) with a hard turn cap as
-   the safety net. Cap breaches are stamped into the archive; turns-to-wrap stays a
-   meaningful signal.
-4. **Reconcile** — `bench run` includes the selected profile's post-session outcome by default,
-   with a `--play-only` flag for cheap iteration. Profiles may reach that outcome through different
-   internal stage graphs.
-5. **Profile identity** — product profiles use stable numeric identities: Tier 0 is the frozen MiMo
-   path and Tier 1 is Luna at `xhigh`. Reasoning levels are condition fields, not tier names. Existing
-   archives stamped `low` remain historical data; B5 owns the forward identity migration rather than
-   pretending `low` means both a product and a reasoning setting.
+| Run-to-run variance swamps differences | B3 measures variance first; grow the sample or sharpen the rubric before drawing conclusions |
+| Luna checking Luna flatters Luna | Sol confirms every finding with file access; checker precision is reported; an independent sweep of the drafts is possible from the archive |
+| The rolling checker anchors on what it already flagged, over- or under-noticing that kind of mistake afterwards | Sol re-checks each finding against the files; an independent sweep of the archived turns can measure recall |
+| Instrument edited in place | Prompt and instrument fingerprints in every header; grading is idempotent per fingerprint |
+| Rate limits make batches slow | Resumable runs; conditions stamped so partial batches stay usable |
+| Fixture drifts from the layout | A layout change re-converts the fixture and forces a re-baseline |

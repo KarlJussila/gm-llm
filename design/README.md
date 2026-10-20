@@ -1,49 +1,37 @@
-# design/ — what gm-llm is, and the plans of record
+# design/ — what gm-llm is
 
-This directory holds the design: **what the system is** (this file) and a plan-of-record doc
-per workstream. `tools/lint_docs.py` check 1 fails if a doc here is not linked from the file
-map below, so add the row when you add the doc.
-
-For *how to use* gm-llm, read the root `README.md`. For the current state of the work, read
-`HANDOFF.md`; for what remains, `ROADMAP.md`.
+This directory holds the design: **what the system is** (this file) and a design doc per
+workstream. For *how to use* gm-llm, read the root `README.md`; for what remains, `ROADMAP.md`.
 
 ## File map
 
 | Doc | What it is |
 |---|---|
-| [benchmark.md](benchmark.md) | Plan of record for the benchmark workstream — the tiered instrument, the B-numbered stages ROADMAP sequences, measurement methodology, risks. |
-| [combat.md](combat.md) | Plan of record for combat as a runner play-mode — the tracker contract, the obligation channel, the loop, balance-as-a-skill. |
-| [frontends.md](frontends.md) | Plan of record for frontend/mode modularity — watching autoplay and bench runs in the TUI. |
-| [luna.md](luna.md) | Plan of record for the Luna-targeted Tier-1 product — its clean-slate boundary, discovery slice, and product shape. |
-| [runner-authority.md](runner-authority.md) | Tier-0 reference — the MiMo runner-authority model and the partially landed recalibration that Tier 1 deliberately does not inherit. |
-
-### Working docs (not the design — the project's own state)
-
-| Doc | What it is |
-|---|---|
-| [findings.md](findings.md) | The append-only round archive — one Part per round. Point-in-time; read it for *why* a call was made. |
-| [open-questions.md](open-questions.md) | The live backlog of unresolved decisions and known gaps. Resolved items are deleted, not tombstoned. |
+| [luna.md](luna.md) | The rebuild for GPT-6 Luna — principles, agents, campaign layout, and every workflow (setup, play, combat, reconcile, planning). |
+| [benchmark.md](benchmark.md) | The benchmark — the tier ladder, the run → check → grade → report pipeline, and the B-numbered stages ROADMAP orders. |
+| [combat.md](combat.md) | Combat as a play mode — the tracker contract, the obligation channel, the loop, balance-as-a-skill. |
+| [frontends.md](frontends.md) | Frontend/mode modularity — one session loop for every frontend, and watching autoplay and bench runs in the TUI. |
+| [runner-authority.md](runner-authority.md) | Reference from the retired MiMo product — the runner-authority model. Consult it when writing the Luna DM prompt; a rule from it returns only where a Luna run reproduces the failure. |
+| [findings.md](findings.md) | Frozen history (Parts 1–11) — read it for *why* an earlier call was made. No longer appended. |
 
 ## The system in one paragraph
 
-The currently shipped Tier-0 profile lets a modest LLM design, run, and maintain a long-running
-solo tabletop D&D campaign.
-Two **primary agents** split the work the way a human DM's week does: `dm` is the
-between-sessions brain (it authors every campaign file — world, arcs, character files, session
-plans, the post-session apply) and `dm-runner` runs one live session and then stops. Neither
-does the other's job, and that bar is written into both prompts. A Python **orchestrator** owns
-every sequence — the gated per-turn loop, the staged setup, PRE-session planning, and the
-staged post-session reconcile — dispatching one focused brief at a time, each verified by a
-`check-*` role of the `narrative-checker` subagent or by a deterministic lint, with **at most
-one bounded correction** and a **code-owned git commit**. The model never decides whether or in
-what order steps happen. **Skills** hold the actual procedures, one home per rule, loaded on
-demand. All state is human-readable markdown in a **campaign repo** kept separate from the
-framework repo, and what the player character knows is tracked separately from what the DM
-knows — so the spoiler boundary is a data structure rather than a behavioral guideline.
+**This section and § Architecture describe the system as built in v0.5, with MiMo's prompts.**
+The rebuild in [luna.md](luna.md) keeps its substrate — campaign files, the knowledge boundary,
+dice, the combat tracker, transcripts, code-owned git, the backend and frontends — and replaces the
+model-facing layer; these sections are rewritten when that lands (ROADMAP luna 5).
 
-The next product profile is Tier 1, targeted at Luna. It keeps the code-owned campaign and runtime
-substrate but re-authors the model-facing behavior from first principles; see [luna.md](luna.md).
-The architecture below describes the shipped Tier-0 profile, not a mandatory topology for Tier 1.
+A Python **orchestrator** lets an LLM design, run, and maintain a long-running solo tabletop D&D
+campaign. Two **primary agents** split the work the way a human DM's week does: `dm` is the
+between-sessions brain (it authors every campaign file — world, arcs, character files, session
+plans, the post-session apply) and `dm-runner` runs one live session and then stops. The
+orchestrator owns every sequence — the per-turn loop, the staged setup, PRE-session planning, and
+the staged post-session reconcile — dispatching one focused brief at a time, each verified by a
+`check-*` role of the `narrative-checker` subagent or by a deterministic lint, with **at most one
+bounded correction** and a **code-owned git commit**. **Skills** hold the procedures, loaded on
+demand. All state is human-readable markdown in a **campaign repo** kept separate from the
+framework repo, and what the player character knows is tracked separately from what the DM knows —
+so the spoiler boundary is a data structure rather than a behavioral guideline.
 
 ## Architecture
 
