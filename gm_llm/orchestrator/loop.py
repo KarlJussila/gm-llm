@@ -1,32 +1,22 @@
 """
-The per-turn loop — the heart of the pivot.
+The per-turn loop.
 
-The orchestrator, not the model, drives every turn: the runner drafts, the gate
-ALWAYS runs, and on violations the runner gets exactly ONE bounded correction pass
-before the result is returned. No tool the model can forget to call; no re-check
-loop; nothing reaches the player (or the benchmark's scorer) until the loop says so.
+The player's message goes to the DM (`dm-runner`) and the DM's reply goes to the player. Nothing
+sits in between: no reminder rides in front of the message and no checker reviews the reply
+(design/luna.md § Live play). Checks are the benchmark's business, after play, over the archive.
 
-The orchestrator also owns the **transcript**: because it holds each turn's final
-messages, it writes `campaign/sessions/<N>/transcript.md` itself — the
-player's message and the *corrected* DM narration per turn, never the discarded
-draft or the gate's correction chatter. (This replaces the old capture plugin, which
-recorded the raw runner session — drafts, corrections and all.) `log-extractor` then
-reads this clean record after the session.
+The orchestrator owns the **transcript**: it writes `campaign/sessions/<N>/transcript.md` from each
+turn's player message and DM narration, and `log-extractor` reads that record after the session.
 
-It also owns the **per-turn craft reminder**: the turn algorithm (frame the message,
-load for the beat, ask for a roll, narrate the response) rides in front of each player
-message, fresh every turn so it can't decay over a long session. (This replaces the old
-`dm-reminder` plugin, which pushed the same loop into the system prompt — the user
-message is more salient and the orchestrator already drives the prompt.) Riding along
-with it is one thing the brief can't know: how long the runner has gone without opening
-a skill or a canon file — counted here off each turn's tool calls, because a *standing*
-instruction to re-load stops being acted on after turn 1 (see `_reminder`).
+The DM ends a session by calling `task_complete` once, with its closing narration in
+`player_message` and its handoff notes in `notes`. The closing narration joins the transcript; the
+notes are filed to `sessions/<N>/notes.md`.
 
 `Game` is the headless core. Interfaces (the TUI, the benchmark) drive it:
-  g = Game(backend, gate)
-  g.start()                 # runner opens the scene (gated)
-  g.turn(player_input)      # one full gated turn -> TurnResult
-  g.meta(question)          # out-of-game question, answered ungated
+  g = Game(backend, preloader)
+  g.start()                 # the DM opens the scene
+  g.turn(player_input)      # one turn -> TurnResult
+  g.meta(question)          # an out-of-game question, kept out of the transcript
 """
 
 from __future__ import annotations
@@ -34,39 +24,33 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 
-from .archive import verdict_fields
-from .backend import HEAVY_RETRIES, HEAVY_STALL_TIMEOUT, BackendCancelled, BackendError
 from . import paths
-from .paths import latest_session
+from .backend import HEAVY_RETRIES, HEAVY_STALL_TIMEOUT, BackendCancelled, BackendError
 from .combat import CombatMixin, CombatState
 from .logs import append, banner, section
+from .paths import latest_session
 from .prompts import load
 
-# Safety-hatch nudge: sent if the runner wrote its handoff notes as prose instead of
-# delivering them in task_complete's `notes` arg (the only channel the orchestrator
-# files — same pattern as setup's world overview).
+# Sent if the DM ended the session without delivering its notes in task_complete's `notes`
+# argument — the only channel the orchestrator files.
 _NUDGE_NOTES = (
-    "You wrote the handoff notes but didn't deliver them — the `notes` argument of "
-    "`task_complete` is the only channel the orchestrator files; a prose reply is not "
-    "captured. Call `task_complete` now with the complete notes in `notes`."
+    "You ended the session without handoff notes. Call `task_complete` now with the complete "
+    "notes in its `notes` argument."
 )
 
-# Safety-hatch nudge: sent when a draft ends the session in *prose* (a "session complete"
-# trailer) but never calls `task_complete` — the only signal that actually closes a
-# session. One bounded follow-up (fail-safe: if it doesn't land, play continues unchanged).
+# Sent when a reply ends the session in prose (a bare "session complete" trailer) but never
+# calls `task_complete` — the only signal that actually closes a session. One bounded nudge;
+# if it doesn't land, play continues unchanged.
 _NUDGE_CLOSE = (
     "You wrote an ending but didn't signal it — an ending in narration closes nothing. "
     "If the session is over, call `task_complete` now; if it isn't, keep playing."
 )
 
-# A bare end-of-session trailer: a line whose ONLY content is a "session complete/ends
-# here" marker, optionally wrapped in markdown emphasis or a horizontal rule. Matched
-# against the narration's last non-empty line, so it can't fire on ordinary prose (which
-# always carries real sentence content past the marker). Tuned to the observed failure —
-# a trailing `---` then `*Session complete.*`.
+# A bare end-of-session trailer: a line whose ONLY content is a "session complete/ends here"
+# marker, optionally wrapped in markdown emphasis or a rule. Matched against the narration's
+# last non-empty line, so it can't fire on ordinary prose.
 _CLOSE_MARKER = re.compile(
     r"^[\s>#*_~`-]*"
     r"(?:the\s+)?(?:end\s+of\s+(?:the\s+)?session"
@@ -78,120 +62,78 @@ _CLOSE_MARKER = re.compile(
 
 
 def _looks_like_close(text: str) -> bool:
-    """Conservative close-marker detector: True only when the narration's TAIL is a bare
-    end-of-session trailer (its last non-empty line is nothing but a 'session complete /
-    ends here' marker). Ordinary narration never matches — its final line carries real
-    content, not a standalone marker."""
     lines = [ln.strip() for ln in text.strip().splitlines() if ln.strip()]
     return bool(lines) and _CLOSE_MARKER.match(lines[-1]) is not None
 
-# How many turns of wrap-nudge the runner gets once its session reaches opencode's
-# compaction threshold (see `Game._update_wrap_countdown`). The reserve between that
-# threshold and the model's hard context limit is many turns of headroom at the observed
-# growth rate, so this is comfortable pressure, not a scramble.
-_WRAP_WARN_TURNS = 4
 
-# Tools that mean the runner LOOKED SOMETHING UP this turn rather than narrating from
-# memory — a skill re-load, or any read of the campaign. (`list` isn't here: a directory
-# listing refreshes nothing.)
-_CONSULT_TOOLS = frozenset({"skill", "read", "grep", "glob"})
-
-# …and how many consecutive turns it may go without one before the brief says so. The
-# measured failure is absolute, not gradual: across five pilot runs the runner loaded its
-# skills and read canon at turn 1 and never again, in a session that ran to turn 41
-# (design/runner-authority.md § Delivery). Five keeps the re-reading bounded — a scene
-# skill is ~700 tokens and the session is context-bound (`_update_wrap_countdown`) — while
-# putting the campaign back in front of the runner several times a session.
-_STALE_AFTER_TURNS = 5
+def join_narration(text: str, closing: str) -> str:
+    """The reply's own text plus the closing narration a `task_complete` carried — either may
+    be empty, and a model that repeats one inside the other gets it once."""
+    text, closing = (text or "").strip(), (closing or "").strip()
+    if not closing or closing in text:
+        return text
+    if not text or text in closing:
+        return closing
+    return f"{text}\n\n{closing}"
 
 
 @dataclass
 class TurnResult:
     player_input: str
-    draft: str          # the runner's first draft
-    final: str          # what reaches the player (== draft unless corrected)
-    gate: "GateResult"  # noqa: F821 — annotation only (lazy via __future__)
-    corrected: bool
-    session_complete: bool = False  # the runner signalled the session's end via task_complete
-    combat_started: bool = False    # the runner called start_encounter this turn — enter combat mode
-    close_nudged: bool = False      # the draft ended in prose; a close nudge was dispatched
-    # Every tool the runner called drafting this turn. Archived per turn because whether
-    # it looked anything up is the one recalibration signal readable without the grader
-    # (design/runner-authority.md § Consequences for the benchmark).
-    tools: frozenset[str] = frozenset()
+    final: str                      # the DM's narration, as the player sees it
+    session_complete: bool = False  # the DM signalled the session's end via task_complete
+    combat_started: bool = False    # the DM called start_encounter this turn
+    close_nudged: bool = False      # the reply ended in prose; a close nudge was dispatched
+    tools: frozenset[str] = frozenset()  # every tool the DM called this turn
 
 
 class Game(CombatMixin):
-    def __init__(self, backend, gate, runner_agent: str = "dm-runner",
+    def __init__(self, backend, preloader=None, runner_agent: str = "dm-runner",
                  on_turn=None, on_step=None, logs=None,
                  campaign_dir: str | None = None, session: int | None = None,
                  transcript: bool = True):
         self.backend = backend
-        self.gate = gate
+        self.preloader = preloader
         self.runner_agent = runner_agent
         self.on_turn = on_turn
-        self.on_step = on_step  # fires per turn-step ("draft"/"check"/"correct"/"done")
-        # True only while the (single, bounded) correction prompt is in flight — left
-        # set if that prompt is cancelled, so revert_last_turn knows to roll back past
-        # the correction brief to the player's own message. Reset at the next op.
-        self._correcting = False
-        # None until the runner session reaches opencode's compaction threshold; then a
-        # per-turn countdown that steers the runner to wrap the session (see
-        # `_update_wrap_countdown`). Fresh per Game, so it never carries across sessions.
-        self._wrap_countdown: int | None = None
-        # Consecutive turns the runner has narrated without opening a skill or a campaign
-        # file — the staleness the per-turn brief calls out (see `_reminder`). Fresh per
-        # Game: a resume re-reads or re-primes, so the count starts over with it.
-        self._since_consult = 0
-        # Turn ordinal within THIS run (the archive's turn id). A resume starts a new
-        # run over the same session — the archive's `resume` event marks the restart.
+        self.on_step = on_step  # fires per turn-step ("draft"/"done")
+        # Turn ordinal within THIS run (the archive's turn id). A resume starts a new run over
+        # the same session — the archive's `resume` event marks the restart.
         self._turn_no = 0
         self.logs = logs
         self.runner_sid = backend.create_session("dm-runner game")
-        # Combat mode (design/combat.md § The combat loop). `_in_combat` reflects a live tracker state file, so a
-        # resume into a fight picks it up; the loop's cursor is the tracker's own turn
-        # pointer, advanced by each turn's closing advance_turn. See combat.py.
+        # Combat mode (design/combat.md § The combat loop). `_in_combat` reflects a live tracker
+        # state file, so a resume into a fight picks it up.
         self._in_combat = CombatState(backend.directory).exists()
         self._combat_pending = None
         # The session being played = the highest plan on disk, unless told otherwise.
         self.campaign = Path(campaign_dir) if campaign_dir else Path(backend.directory) / "campaign"
         self.session = session if session is not None else latest_session(self.campaign)
-        self.transcript_path = (
-            paths.transcript(self.campaign, self.session)
-            if (transcript and self.session) else None
-        )
+        self.transcript_path = (paths.transcript(self.campaign, self.session)
+                                if (transcript and self.session) else None)
 
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
-        """The opening scene — gated like any turn (it's player-facing narration).
-        Resets the transcript and records the opening narration (no player line).
-        The runner opens with its prepared context (plan + canon) loaded in front of
-        it, so it isn't relying on its own file reads to know the session."""
+        """The opening scene. Resets the transcript and records the opening narration (no
+        player line). The DM opens with its prepared context in front of it."""
         self._init_transcript()
-        opening = self._runner_preload() + kickoff
-        tr = self._gated_turn(opening, kickoff, opening=True)
+        tr = self._play(self._runner_preload() + kickoff, kickoff, opening=True)
         self._save_runner_sid()  # so a later run can reattach this session
         return tr
 
     def resume(self) -> str | None:
-        """Resume an in-progress session. Returns the scene to continue from (the last
-        DM beat in the transcript), or None if there's nothing to resume — in which
-        case the caller should `start()` instead.
+        """Resume an in-progress session. Returns the scene to continue from (the last DM beat
+        in the transcript), or None if there's nothing to resume — the caller then `start()`s.
 
-        Two paths (chosen automatically): if the runner session from a prior run is
-        still live on the server, **reattach** to it (its full context is intact);
-        otherwise **rebuild** the context in a fresh session by priming it with the
-        transcript. Either way the transcript file is appended to, never reset."""
+        If the DM's session from a prior run is still live on the server, **reattach** to it;
+        otherwise **rebuild** the context in a fresh session from the prepared context and the
+        transcript. Either way the transcript is appended to, never reset."""
         transcript = self._read_transcript()
         if not transcript.strip():
             return None
         saved = self._load_runner_sid()
         if saved and self.backend.session_valid(saved):
-            self.runner_sid = saved                       # fast path: live session, context intact
+            self.runner_sid = saved
         else:
-            # durable path: a fresh session has neither the plan nor the play so far —
-            # give it both (prepared context, then the transcript to continue from). The
-            # transcript is fenced in <play-so-far>…</play-so-far> so the runner reads it
-            # as the established record to absorb, not a scene to re-narrate.
             prime = (self._runner_preload() + load("resume-prime")
                      + "\n\n<play-so-far>\n" + transcript + "\n</play-so-far>")
             self.backend.prompt(self.runner_sid, self.runner_agent, prime)
@@ -201,226 +143,102 @@ class Game(CombatMixin):
         return _last_dm_beat(transcript)
 
     def turn(self, player_input: str) -> TurnResult:
-        # The per-turn craft reminder rides in front of the player's message — the
-        # most salient slot, fresh every turn, so the algorithm (especially "ask for
-        # a roll") doesn't decay over a long session. The player's own words are fenced
-        # in <player>…</player> so the runner never mistakes an orchestrator instruction
-        # for the player's fiction (or vice versa). The gate and the transcript see only
-        # the clean player_msg, never the reminder or the fence.
-        message = f"{self._wrap_banner()}{self._reminder()}\n\n<player>\n{player_input}\n</player>"
-        return self._gated_turn(message, player_input)
-
-    def _reminder(self) -> str:
-        """The per-turn brief, with its staleness slot filled in — empty until the runner
-        has gone `_STALE_AFTER_TURNS` turns without opening a skill or a campaign file,
-        then a line naming the count.
-
-        Why the orchestrator computes this rather than the brief simply saying "re-load
-        your skills": that static line has ridden every turn since the pivot and the
-        session records show it stops being acted on after turn 1 — the runner reads a
-        standing instruction as already satisfied. The same failure produced the wrap
-        countdown (`_wrap_banner`), and the same fix applies: a line that appears only
-        when it is true, carrying a number that moves."""
-        refresh = ""
-        if self._since_consult >= _STALE_AFTER_TURNS:
-            refresh = load("turn-refresh").format(n=self._since_consult) + "\n\n"
-        return load("turn-reminder").format(refresh=refresh)
-
-    def _observe_consult(self, reply) -> None:
-        """Update the staleness count off the turn's tool calls: any lookup resets it,
-        a turn narrated purely from memory advances it. Combat beats don't reach here
-        (they run through `_run_gate` directly), so a fight freezes the count rather than
-        driving it — the brief's step 2 is about the play loop's scene skills, and firing
-        it mid-initiative would point the runner at the wrong craft."""
-        self._since_consult = 0 if (set(reply.tools) & _CONSULT_TOOLS) else self._since_consult + 1
-
-    def _wrap_banner(self) -> str:
-        """The session-length nudge that rides in front of the next player message, or
-        "" until the runner session reaches opencode's compaction threshold. Once it
-        has, the count in it descends turn by turn (see `_update_wrap_countdown`) so the
-        pressure to wrap escalates, instead of the runner perpetually reading the same
-        'a few more turns' and deferring."""
-        if self._wrap_countdown is None:
-            return ""
-        body = load("session-length").format(n=self._wrap_countdown)
-        return f"<session-length>\n{body}\n</session-length>\n\n"
+        """One turn. The player's words are fenced in <player>…</player> so the DM never
+        mistakes an orchestrator message for the player's fiction, or the reverse."""
+        return self._play(f"<player>\n{player_input}\n</player>", player_input)
 
     def context_usage(self):
-        """The runner session's live context footprint — see
-        `Backend.context_usage`. Best-effort; `None` if the lookup fails (a
-        status-only signal, never worth failing a turn over)."""
+        """The DM session's live context footprint — best-effort, None if unavailable."""
         return self.backend.context_usage(self.runner_sid)
 
     def meta(self, question: str) -> str:
-        """An out-of-game question. The runner answers it (spoiler-free, per its
-        prompt); the orchestrator does NOT gate it — it isn't narration, and it
-        never reaches the transcript."""
-        self._correcting = False
+        """An out-of-game question. Answered by the DM, kept out of the transcript."""
         return self.backend.prompt(self.runner_sid, self.runner_agent, question)
 
     def handoff(self) -> Path | None:
-        """At session end, ask the still-live runner (its context warm from the whole
-        session) for its handoff notes — story-trajectory changes, new/changed entities,
-        threads touched — and write them to `campaign/sessions/<N>/notes.md`, which
-        the between-session pipeline folds in alongside the transcript.
-
-        The notes ride in `task_complete`'s `notes` argument (the same delivery as the
-        world overview at setup): a structured field code reads from the tool call, never
-        prose fished out of the reply, which text-part splits and trailing closers have
-        made unreliable. The reply text stays as a fallback for a runner that wrote the
-        notes but skipped the call even after the nudge.
-
-        Ungated (internal notes, not player-facing narration; never hits the transcript).
-        The runner has no write permission, so the orchestrator writes the file itself.
-        Idempotent: no-ops if the notes already exist, so a re-run/resume of the wrap
-        doesn't re-dispatch. Best-effort — a failure never blocks the wrap."""
+        """Make sure the session's handoff notes are on disk. They normally arrived with the
+        closing `task_complete`; if they didn't, ask the still-warm DM for them once (the
+        `handoff-brief`). Idempotent and best-effort — a failure never blocks the wrap."""
         if not self.session:
             return None
         notes_path = paths.notes(self.campaign, self.session)
         if notes_path.is_file():
             return notes_path
-        self._correcting = False
         try:
-            with self.backend.patient(HEAVY_STALL_TIMEOUT, retries=HEAVY_RETRIES):  # re-reads the whole session
+            with self.backend.patient(HEAVY_STALL_TIMEOUT, retries=HEAVY_RETRIES):
                 reply = self.backend.prompt_full(self.runner_sid, self.runner_agent,
                                                  load("handoff-brief"), whole=True)
                 reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
                                                  tool="task_complete", args=("notes",),
                                                  nudge=_NUDGE_NOTES, whole=True)
         except BackendCancelled:
-            raise  # the player cancelled — unwind the wrap, don't paper over it
+            raise
         except BackendError:
-            return None  # notes are optional — the pipeline proceeds without them
+            return None
         notes = (reply.tool_inputs.get("task_complete", {}).get("notes") or "").strip()
-        notes = notes or reply.text.strip()
-        if not notes:
-            return None
-        try:
-            notes_path.parent.mkdir(parents=True, exist_ok=True)
-            notes_path.write_text(
-                f"# Session {self.session} — runner handoff notes\n\n{notes.strip()}\n",
-                encoding="utf-8")
-        except (OSError, ValueError):
-            return None
-        return notes_path
+        return self._write_notes(notes or reply.text.strip())
 
     def abort(self) -> bool:
-        """Cancel the model call in flight for the current turn (the UI's cancel
-        key, e.g. after a mistype). The blocked `start`/`turn`/`meta` raises
-        `BackendCancelled`, which unwinds before `_gated_turn` reaches the
-        transcript append — so a cancelled turn leaves no trace in canon or state.
-        Returns True if there was a live call to cancel."""
+        """Cancel the model call in flight (the UI's cancel key). The blocked call raises
+        `BackendCancelled` before the transcript is touched, so a cancelled turn leaves no
+        trace. Returns True if there was a live call to cancel."""
         return self.backend.abort()
 
     def revert_last_turn(self) -> bool:
-        """After a cancel, roll the runner session back over the abandoned turn (see
-        Backend.revert_to_recent_user). The transcript and state were never touched
-        (the cancel raised before they were written); this just clears the turn's
-        messages from the runner's own context so the next turn continues clean. Call
-        once the cancelled call has unwound.
-
-        Reverts to the player's own message — `back=2` if the cancel landed in the
-        correction pass (reaching past the correction brief), else `back=1`. Either
-        way the whole turn goes, never a half (the correction is bounded to one pass,
-        so a turn adds at most two user messages)."""
-        return self.backend.revert_to_recent_user(self.runner_sid, back=2 if self._correcting else 1)
+        """After a cancel, roll the DM session back over the abandoned turn."""
+        return self.backend.revert_to_recent_user(self.runner_sid, back=1)
 
     def _step(self, key: str) -> None:
-        """Announce a turn-step to a watcher (the TUI status bar). Never raises —
-        a UI failure must not break the turn (same contract as Setup._announce)."""
+        """Announce a turn-step to a watcher (the TUI status bar). Never raises."""
         if self.on_step:
             try:
                 self.on_step(key)
             except Exception:  # noqa: BLE001 — the watcher is best-effort by design
                 pass
 
-    def _gated_turn(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
-        self._correcting = False
+    def _play(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
         self._turn_no += 1
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, message)
-        draft = reply.text
-        # The runner ends a session by calling `task_complete` as its final act (after its
-        # closing beats). We read that off the draft's tool calls — never the opening, which
-        # is a scene-set, not an ending.
-        #
-        # Recovery for a draft that ends the session in *prose* (a "session complete"
-        # trailer) but forgot the call: one bounded nudge to make it. Fail-safe — if the
-        # tool still doesn't land, `session_complete` stays False and play continues
-        # unchanged; the marker match is conservative enough never to fire on ordinary
-        # narration. `draft` keeps the ORIGINAL narration (gated and shown); the nudge's
-        # reply only supplies the missing tool call, not new prose.
+        narration = reply.text  # the nudge's reply below only supplies the missing call
         close_nudged = False
-        if not opening and "task_complete" not in reply.tools and _looks_like_close(draft):
+        if not opening and "task_complete" not in reply.tools and _looks_like_close(reply.text):
             reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
                                              tool="task_complete", nudge=_NUDGE_CLOSE)
             close_nudged = True
         session_complete = (not opening) and ("task_complete" in reply.tools)
         if session_complete:
-            # A disk fact, not just this TurnResult — so a wrap the player never
-            # confirms still shows the same choice after a restart instead of
-            # quietly resuming into more play (see `session_is_complete`).
+            closing = reply.tool_inputs.get("task_complete", {})
+            narration = join_narration(narration, closing.get("player_message", ""))
+            self._write_notes((closing.get("notes") or "").strip())
+            # A disk fact, so a wrap the player never confirms still shows the same choice
+            # after a restart instead of resuming into more play.
             self._mark_complete()
-        final, result, corrected = self._run_gate(draft, player_msg)
         self._step("done")
-        # A start_encounter mid-narration flips the interface into the combat loop once
-        # this (player-driven) turn returns; end_encounter flips it back.
         self._combat_observe(reply)
-        self._observe_consult(reply)  # …and did it look anything up while writing it?
-        tr = TurnResult(player_msg, draft, final, result, corrected, session_complete,
+        tr = TurnResult(player_msg, narration, session_complete,
                         combat_started=("start_encounter" in reply.tools),
                         close_nudged=close_nudged, tools=frozenset(reply.tools))
-        self._append_transcript(player_msg, final, opening)  # the FINAL narration, never the draft
-        cu = self.backend.context_usage(self.runner_sid)  # one read, shared: countdown + archive
-        self._update_wrap_countdown(session_complete, cu)
+        self._append_transcript(player_msg, narration, opening)
         self._log(tr)
-        self._archive_turn(tr, opening, cu)
+        self._archive_turn(tr, opening)
         if self.on_turn:
             self.on_turn(tr)
         return tr
 
-    def _run_gate(self, draft: str, player_msg: str, in_combat: bool = False):
-        """Gate a draft and apply at most one bounded correction pass. Shared by the
-        play-driven turn and the combat loop. Returns (final, GateResult, corrected).
+    def _write_notes(self, notes: str) -> Path | None:
+        if not (notes and self.session):
+            return None
+        notes_path = paths.notes(self.campaign, self.session)
+        try:
+            notes_path.parent.mkdir(parents=True, exist_ok=True)
+            notes_path.write_text(f"# Session {self.session} — DM handoff notes\n\n{notes}\n",
+                                  encoding="utf-8")
+        except (OSError, ValueError):
+            return None
+        return notes_path
 
-        `in_combat` chains `check-combat` into the gate (design/combat.md § Implementation map, the gate) — the combat
-        action paths pass True so the committed→pending delta is validated against the
-        narrated action; the play-driven turn and the combat *exit* beat leave it False.
-
-        Exactly one correction pass — we do NOT re-gate the revision (bounded by
-        construction; if it's still imperfect it goes out and the log shows it).
-        `_correcting` brackets the correction prompt: if it's cancelled it stays set, so
-        `revert_last_turn` rolls back past the brief to the player's own message."""
-        self._step("check")
-        result = self.gate.check(draft, player_msg, in_combat=in_combat)
-        final, corrected = draft, False
-        if result.violations:
-            self._correcting = True
-            self._step("correct")
-            final = self.backend.prompt(self.runner_sid, self.runner_agent, result.correction_brief())
-            self._correcting = False
-            corrected = True
-        return final, result, corrected
-
-    def _update_wrap_countdown(self, session_complete: bool, cu) -> None:
-        """After each turn, track how many turns until the runner should wrap. It stays
-        None until the runner session first reaches opencode's own compaction threshold
-        (the point opencode would have auto-summarized, which we disabled — see
-        `Backend.start`); then it latches to `_WRAP_WARN_TURNS` and floors at 1, so the
-        nudge in `_wrap_banner` keeps escalating until the runner ends the session rather
-        than quietly vanishing. A no-op once the runner has signalled the end (the session
-        is already closing) and whenever the context read is unavailable — best-effort,
-        never worth failing a turn over."""
-        if session_complete:
-            self._wrap_countdown = None
-            return
-        if self._wrap_countdown is not None:
-            self._wrap_countdown = max(1, self._wrap_countdown - 1)
-            return
-        if cu and cu.threshold and cu.tokens >= cu.threshold:
-            self._wrap_countdown = _WRAP_WARN_TURNS
-
-    # -- transcript (final messages only) -----------------------------------
+    # -- transcript -----------------------------------------------------------
 
     def _init_transcript(self) -> None:
         if not self.transcript_path:
@@ -432,7 +250,7 @@ class Game(CombatMixin):
         except (OSError, ValueError):
             pass
 
-    def _append_transcript(self, player_msg: str, final: str, opening: bool,
+    def _append_transcript(self, player_msg: str, narration: str, opening: bool,
                            dm_only: bool = False) -> None:
         if not self.transcript_path:
             return
@@ -440,7 +258,7 @@ class Game(CombatMixin):
         # No player line for the opening scene-set or an NPC combat beat (dm_only).
         if not opening and not dm_only:
             blocks += ["## Player", "", player_msg.strip(), ""]
-        blocks += ["## DM", "", final.strip(), ""]
+        blocks += ["## DM", "", narration.strip(), ""]
         try:
             with open(self.transcript_path, "a", encoding="utf-8") as f:
                 f.write("\n".join(blocks) + "\n")
@@ -457,22 +275,20 @@ class Game(CombatMixin):
             return ""
 
     def _runner_preload(self) -> str:
-        """The runner's prepared context block (plan + canon), via the gate's
-        preloader. Empty string if no preloader is wired (e.g. a mock gate) — the
-        runner then falls back to reading the files itself per its prompt."""
-        pre = getattr(self.gate, "preloader", None)
-        if pre is None:
+        """The DM's prepared context block (plan + canon), or '' with no preloader wired —
+        the DM then reads the files itself."""
+        if self.preloader is None:
             return ""
         try:
-            return pre.runner_preload(self.session)
+            return self.preloader.runner_preload(self.session)
         except Exception:
             return ""
 
-    # -- session-id persistence (for resume reattach) -----------------------
+    # -- session-id persistence (for resume reattach) -------------------------
 
     def _state_path(self) -> Path | None:
-        """Where we stash the runner session id — under `.opencode/.orchestrator/`,
-        which the campaign repo gitignores, so it never lands in a commit."""
+        """Where the DM session id is kept — under `.opencode/.orchestrator/`, which the
+        campaign repo ignores."""
         if not self.session:
             return None
         return _session_state_path(self.backend.directory, self.session)
@@ -497,41 +313,36 @@ class Game(CombatMixin):
             return None
 
     def _mark_complete(self) -> None:
-        """Persist that this session's runner has signalled the end (`task_complete`
-        fired) as a disk fact, not just this call's TurnResult — so `Lifecycle` can
-        see it on the next launch too, before ever touching the model, and show the
-        same wrap-or-quit choice again instead of quietly resuming into more play."""
+        """Persist that the DM signalled the end, so `Lifecycle` sees it on the next launch."""
         p = self._state_path()
         if not p:
             return
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(json.dumps({"runner_sid": self.runner_sid, "complete": True}),
-                        encoding="utf-8")
+                         encoding="utf-8")
         except (OSError, ValueError):
             pass
+
+    # -- logs and archive -------------------------------------------------------
 
     def _log(self, tr: TurnResult) -> None:
         if self.logs:
             append(self.logs.checks, _format_block(tr))
 
-    def _archive_turn(self, tr: TurnResult, opening: bool, cu) -> None:
-        """One `turn` score event — the DRAFT always rides along (the benchmark
-        scores the draft; the correction is its own signal). `tools`/`stale` carry the
-        recalibration signal: what the runner opened while drafting, and how many turns
-        it had then gone without opening anything (post-turn, so 0 means this turn)."""
+    def _archive_turn(self, tr: TurnResult, opening: bool, **extra) -> None:
+        """One `turn` event: what the player said, what the DM narrated, which tools it
+        called, and the context size — everything the after-play checker reads."""
         if not (self.logs and self.logs.archive):
             return
-        g = tr.gate
+        cu = self.backend.context_usage(self.runner_sid)
         self.logs.archive.emit(
             "turn", session=self.session, turn=self._turn_no, opening=opening,
-            player=tr.player_input, draft=tr.draft, final=tr.final,
-            corrected=tr.corrected, session_complete=tr.session_complete,
-            close_nudged=tr.close_nudged, tools=sorted(tr.tools), stale=self._since_consult,
-            verdicts=[verdict_fields(g.narrative), verdict_fields(g.conduct)],
-            canon_sections=g.canon_sections,
-            context=({"tokens": cu.tokens, "limit": cu.context_limit,
-                      "threshold": cu.threshold} if cu else None),
+            player=tr.player_input, narration=tr.final,
+            session_complete=tr.session_complete, close_nudged=tr.close_nudged,
+            tools=sorted(tr.tools),
+            context=({"tokens": cu.tokens, "limit": cu.context_limit} if cu else None),
+            **extra,
         )
 
 
@@ -540,11 +351,8 @@ def _session_state_path(directory: str, n: int) -> Path:
 
 
 def session_is_complete(directory: str, n: int) -> bool:
-    """Whether session `n`'s runner already signalled the end via `task_complete` —
-    read straight off disk, no model call. `Lifecycle` checks this before deciding
-    whether to resume play or show the wrap-or-quit choice again, so a session the
-    player closed the app on without confirming the wrap can't be resumed into more
-    play on the next launch."""
+    """Whether session `n`'s DM already signalled the end via `task_complete` — read off
+    disk, no model call."""
     try:
         data = json.loads(_session_state_path(directory, n).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -555,7 +363,6 @@ def session_is_complete(directory: str, n: int) -> bool:
 def _last_dm_beat(transcript: str) -> str:
     """The last `## DM` block in a transcript — the scene a resume continues from."""
     parts = re.split(r"(?m)^## (Player|DM)[ \t]*$", transcript)
-    # re.split with one capture group yields [pre, label, body, label, body, ...]
     last = ""
     for i in range(1, len(parts) - 1, 2):
         if parts[i] == "DM":
@@ -564,16 +371,11 @@ def _last_dm_beat(transcript: str) -> str:
 
 
 def _format_block(tr: TurnResult) -> str:
-    g = tr.gate
-    blocks = [
-        banner(f"TURN  {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ·  "
-               f"{'CORRECTED' if tr.corrected else 'clean'}  ·  canon {g.canon_sections} sections"),
+    tools = ", ".join(sorted(tr.tools)) or "none"
+    return "\n\n".join([
+        banner(f"TURN  ·  tools: {tools}"
+               + ("  ·  SESSION COMPLETE" if tr.session_complete else "")),
         section("PLAYER", tr.player_input),
-        section(f"CANON · {g.narrative.label}", g.narrative.report),
-        section(f"CONDUCT · {g.conduct.label}", g.conduct.report),
-    ]
-    if tr.corrected:
-        blocks.append(section("DRAFT (pre-correction)", tr.draft))
-    blocks.append(section("FINAL NARRATION", tr.final))
-    blocks.append("")
-    return "\n\n".join(blocks)
+        section("DM", tr.final),
+        "",
+    ])

@@ -48,9 +48,7 @@ class PlayerLine(Static):
 
 
 class DMBlock(Static):
-    """One DM narration beat. The gate's verdict attaches to the block itself
-    as a border subtitle (`✓ checked` / `✎ corrected (…)`), so the check that
-    guarded a beat is visually part of that beat."""
+    """One DM narration beat."""
 
     DEFAULT_CSS = """
     DMBlock {
@@ -65,11 +63,6 @@ class DMBlock(Static):
     def __init__(self, markup_text: str, meta: bool = False, **kwargs):
         super().__init__(markup_text, classes="meta" if meta else None, **kwargs)
         self.border_title = "DM (out-of-game)" if meta else "DM"
-
-    def set_gate(self, corrected: bool, fixed: list[str]) -> None:
-        self.border_subtitle = (
-            f"✎ corrected ({' + '.join(fixed) or 'gate'}) — ctrl+g for details"
-            if corrected else "✓ checked")
 
 
 class PendingBlock(Static):

@@ -1,16 +1,12 @@
 ---
 name: social-play
-description: Running social scenes and playing NPCs in live D&D — NPCs as independent agents with their own aims, show-don't-tell narration, keeping reads behind a player's Insight check, and calling for Charisma checks (persuade/deceive/intimidate/charm) even when success is likely. Loaded by dm-runner when a scene turns to conversation, negotiation, interrogation, or any beat driven by NPCs.
+description: Load when a scene turns to conversation, negotiation, interrogation, or any beat an NPC drives.
 ---
 
 # social-play — conversations and the people in them
 
 Load this when the scene is **people**: a conversation, a negotiation, an interrogation, a haggle, or
-any beat an NPC drives on their own aims. The core table craft in **session-run** still applies on
-every turn; this is how it lands when the scene is people talking.
-
-Before applying it, read `campaign/feedback/social-play.md` if it exists — accumulated, player-specific
-guidance. Treat it as binding and let it override the defaults here wherever they conflict.
+any beat an NPC drives on their own aims. Your table rules still apply; this is how they land when the scene is people talking.
 
 ## NPCs are independent agents — not satellites of the PC
 
@@ -64,8 +60,8 @@ Conversations — persuading, bargaining, lying, reading a room — are where th
   refused-with-a-door-left-open. A confident, well-phrased appeal doesn't stand in for the roll.
 - **You voice the world; the player voices their character.** Never speak the PC's lines or decide what
   they say — even mid-conversation, when it's tempting to keep the dialogue moving. The one carve-out —
-  rendering delivery the player hands you (content, not words) in the PC's voice — lives in
-  **session-run**'s Table craft; the same boundary holds here.
+  rendering delivery the player hands you (content, not words) in the PC's voice — is in your
+  table rules; the same boundary holds here.
 - **The NPC plays their own hand — and isn't uniformly kind.** A social scene is a negotiation between
   independent agents, not a lock the right words pop open. NPCs have aims, doubts, and limits; let what
   they want — and what they'll risk — shape each answer, and give them friction, suspicion, and personal

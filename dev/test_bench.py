@@ -23,7 +23,6 @@ import copy  # noqa: E402
 from gm_llm.bench import runner  # noqa: E402
 from gm_llm.orchestrator import Lifecycle  # noqa: E402
 from gm_llm.orchestrator.combat import CombatState  # noqa: E402
-from gm_llm.orchestrator.gate import GateResult, Verdict  # noqa: E402
 
 
 # ── fakes ─────────────────────────────────────────────────────────────────────
@@ -84,12 +83,9 @@ class FakeBackend:
 
 
 class FakeGate:
-    """Always-clean verdicts, so the loop never triggers a correction pass."""
+    """Play runs no checks; the lifecycle only reaches for the preloader."""
 
-    def check(self, narration, player_msg, in_combat=False):
-        return GateResult(Verdict("check-turn", True, ""),
-                          Verdict("check-conduct", True, ""),
-                          player_msg, canon_sections=7)
+    preloader = None
 
 
 class CombatFakeBackend:

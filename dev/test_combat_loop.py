@@ -34,7 +34,7 @@ sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
 from gm_llm.orchestrator import Game  # noqa: E402
 from gm_llm.orchestrator.combat import CombatState  # noqa: E402
-from gm_llm.orchestrator.gate import GateResult, Verdict  # noqa: E402
+from gm_llm.orchestrator.logs import Logs  # noqa: E402
 
 
 # ── fakes ───────────────────────────────────────────────────────────────────
@@ -94,22 +94,6 @@ class FakeBackend:
         return None
 
 
-class FakeGate:
-    """Always-clean verdicts. C1 tests the loop's commit boundaries; C2 additionally
-    records the `in_combat` flag each `check` was called with, so the combat action
-    paths can be asserted to chain the combat check while the entry/exit beats don't."""
-
-    def __init__(self):
-        self.in_combat_calls = []  # in_combat flag per check() call, in order
-
-    def check(self, narration, player_msg, in_combat=False):
-        self.in_combat_calls.append(in_combat)
-        v = Verdict("check-turn", True, "")
-        combat = Verdict("check-combat", True, "") if in_combat else None
-        return GateResult(v, Verdict("check-conduct", True, ""), player_msg,
-                          canon_sections=0, combat=combat)
-
-
 # ── state-file mutations the fake backend applies ─────────────────────────────
 
 def m_start(directory):
@@ -144,6 +128,10 @@ def m_end(directory):
 
 # ── assertions helpers ────────────────────────────────────────────────────────
 
+def hp_frame(frame, cid):
+    return frame["combatants"][cid]["hp"]
+
+
 def hp(st, frame, cid):
     return st.load()[frame]["combatants"][cid]["hp"]
 
@@ -176,8 +164,8 @@ def main():
         ("The last goblin turns and flees into the dark.", {"end_encounter"}, m_end),
     ]
     backend = FakeBackend(tmp, script)
-    gate = FakeGate()
-    game = Game(backend, gate, campaign_dir=tmp, session=1, transcript=False)
+    logs = Logs.under(base=Path(tmp) / "logs")
+    game = Game(backend, None, campaign_dir=tmp, session=1, transcript=False, logs=logs)
     st = CombatState(tmp)
 
     check(not game.in_combat, "not in combat before start_encounter")
@@ -229,13 +217,20 @@ def main():
     check(not st.exists(), "the tracker state file is gone after end_encounter")
     check(backend.i == len(script), "every scripted model call was consumed, in order")
 
-    # --- C2: check-combat chains only on the combat action beats ---------------
-    # entry turn (False), PC action (True), goblin-1 (True), interject (True),
-    # exit beat (False) — never the play-driven entry or the end_encounter beat.
-    check(gate.in_combat_calls == [False, True, True, True, False],
-          "check-combat runs on the three combat action beats, not entry/exit")
+    # --- every combat beat is archived with the tracker frames around it ------
+    import json
+    turns = [json.loads(l) for l in logs.archive.path.read_text().splitlines()
+             if json.loads(l)["event"] == "turn"]
+    beats = [e for e in turns if "combat" in e]
+    check([e["combat"]["combatant"] for e in beats] == ["pc", "goblin-1", "goblin-1", "goblin-2"],
+          "the PC action, goblin-1, its replay and the exit beat are archived as combat beats")
+    pc_beat = beats[0]["combat"]
+    check(pc_beat["before"] and pc_beat["after"]
+          and hp_frame(pc_beat["before"], "goblin-1") == 12
+          and hp_frame(pc_beat["after"], "goblin-1") == 7,
+          "a beat carries the committed frame before it and the pending frame after it")
 
-    print("\nC1+C2 combat loop: all boundaries correct, combat check wired.")
+    print("\ncombat loop: all boundaries correct, every beat archived with its frames.")
 
 
 # ── resume mid-combat recovery ────────────────────────────────────────────────
@@ -262,7 +257,7 @@ def resume_recovery():
     # One scripted reply: the fresh re-resolution of goblin-1's turn.
     script = [("The goblin's blade rakes your side.", {"damage", "advance_turn"}, m_act("pc", 6))]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, None, campaign_dir=tmp, session=1, transcript=False)
     st = CombatState(tmp)
 
     check(game.in_combat, "resume into a live tracker file flips in_combat True")

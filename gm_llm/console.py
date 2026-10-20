@@ -63,19 +63,10 @@ def verdict(label, v, *, extra="", show_report=True):
 
 
 def show_turn(tr):
-    """A play turn's gate summary (canon + conduct on one line, reports beneath)."""
-    g = tr.gate
-    nv = "passed" if g.narrative.passed else "violations"
-    cv = "passed" if g.conduct.passed else "violations"
-    status = "CORRECTED" if tr.corrected else "clean"
-    print(c("33", f"┄┄ gate: canon {nv} · conduct {cv} · {status} · "
-                  f"{g.canon_sections} canon sections ┄┄"), flush=True)
-    for label, v in (("CANON", g.narrative), ("CONDUCT", g.conduct)):
-        if not v.passed:
-            print(c("2", f"{label}:\n{v.report.strip()}"), flush=True)
-        if getattr(v, "defaulted", False):
-            print(c("1;31", f"┄┄ note: {v.check} gave no usable verdict — "
-                            f"passed by default ┄┄"), flush=True)
+    """A play turn's one-line summary: the tools the DM called."""
+    tools = ", ".join(sorted(tr.tools)) or "none"
+    print(c("33", f"┄┄ tools: {tools}{' · session complete' if tr.session_complete else ''} ┄┄"),
+          flush=True)
 
 
 def show_prep(pr, *, show_report=True):

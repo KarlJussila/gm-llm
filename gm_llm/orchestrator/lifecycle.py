@@ -46,7 +46,7 @@ class Lifecycle:
             self.game = None
             self.setup = Setup(backend, gate, directory, logs=logs)
         else:
-            self.game = Game(backend, gate, logs=logs, session=n)
+            self.game = Game(backend, gate.preloader, logs=logs, session=n)
             self.setup = None
             self.phase = "wrap_pending" if session_is_complete(directory, n) else "play"
 
@@ -110,7 +110,7 @@ class Lifecycle:
         finally:
             if tap:
                 tap.stop()
-        self.game = Game(self.backend, self.gate, logs=self.logs, session=n)
+        self.game = Game(self.backend, self.gate.preloader, logs=self.logs, session=n)
         self.phase = "play"
         self.setup = None
         return n
@@ -142,6 +142,6 @@ class Lifecycle:
         finally:
             if tap:
                 tap.stop()
-        self.game = Game(self.backend, self.gate, logs=self.logs, session=n + 1)
+        self.game = Game(self.backend, self.gate.preloader, logs=self.logs, session=n + 1)
         self.phase = "play"  # the new session hasn't signalled an end yet
         return n + 1

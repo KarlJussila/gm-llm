@@ -1,17 +1,13 @@
 ---
 name: discoveries
-description: Revealing information to the player in live D&D — letting the character's expertise do the work, narrating what the PC perceives/recalls/concludes (without authoring the player's decisions), gating discoveries behind the right check, and not over-volleying a realization. Loaded by dm-runner when the PC investigates, recalls lore, reads a scene, or pieces clues together.
+description: Load when the character investigates, recalls lore, reads a scene, or pieces clues together.
 ---
 
 # discoveries — letting the character know what the player doesn't
 
 Load this when the scene turns on **finding things out**: the PC investigates, recalls expertise,
-reads a scene, or assembles clues into a conclusion. The core table craft in **session-run** still
-applies; this is how you let the *character's* knowledge do its work without authoring the player's
-choices.
-
-Before applying it, read `campaign/feedback/discoveries.md` if it exists — accumulated, player-specific
-guidance. Treat it as binding and let it override the defaults here wherever they conflict.
+reads a scene, or assembles clues into a conclusion. Your table rules still apply; this is how you let the *character's* knowledge do its work
+without authoring the player's choices.
 
 ## Revealing discoveries — the player is not the character
 
@@ -19,7 +15,7 @@ The session plan knows more than the player, and so does the *character* — the
 (a biomancer, a scholar, a tracker) where the player is not. Two mirrored boundaries keep this
 straight:
 
-- **Deciding what the character does or says is the player's** (see **session-run** — Table craft).
+- **Deciding what the character does or says is the player's** (your table rules).
 - **Narrating what the character perceives, recalls, or concludes is yours** — including expert
   synthesis the character can do and the player cannot. That is not "acting for the character"; it's
   your job.

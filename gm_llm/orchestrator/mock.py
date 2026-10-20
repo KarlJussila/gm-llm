@@ -1,7 +1,7 @@
 """
 MockGame — a stand-in for the real Game so interfaces (the TUI, tests) can run
 without a backend or model calls. Duck-types Game's start()/turn()/meta() and
-returns scripted TurnResults, cycling through clean / corrected / violation states
+returns scripted TurnResults, including a combat episode and a session-complete ending,
 so the UI exercises every path. No opencode, no rate limit.
 
 The mock mirrors every seam the TUI wires: the per-turn `on_step` ticker, a
@@ -17,12 +17,11 @@ from pathlib import Path
 
 from .backend import BackendCancelled
 from .combat import CombatStep
-from .gate import GateResult, Verdict
 from .loop import TurnResult
 from .setup import SetupTurn
 from .status import CampaignStatus
 
-_WRAP_STAGES = ["digest", "assess", "feedback", "canon", "arcs", "state", "propagation", "prep"]
+_WRAP_STAGES = ["digest", "feedback", "canon", "arcs", "state", "propagation", "prep"]
 
 _SETUP_SCRIPT = [
     "Welcome — let's build a campaign. What kind would you like to play? You can describe what "
@@ -133,17 +132,14 @@ class MockGame:
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
         self._step("draft")
         self._sleep(1.0)
-        self._step("check")
-        self._sleep(0.5)
         self._step("done")
-        return self._result(_OPENING, kickoff, clean=True)
+        return self._result(_OPENING, kickoff)
 
     def resume(self) -> str | None:
         return None  # mock always opens fresh
 
     def turn(self, player_input: str) -> TurnResult:
         self._n += 1
-        corrected = self._n % 3 == 0   # every third turn exercises the correction path
         ending = self._n % 6 == 0      # every sixth turn ends the session (the wrap prompt)
         starting_combat = self._n == 2  # turn 2 kicks off the scripted combat episode
         try:
@@ -152,11 +148,6 @@ class MockGame:
                 self.backend.on_retry("dm-runner", 1, 5, "429 (mock)")
                 self._sleep(1.0)
             self._sleep(0.8)
-            self._step("check")
-            self._sleep(0.5)
-            if corrected:
-                self._step("correct")
-                self._sleep(0.5)
             self._step("done")
         except BackendCancelled:
             self._n -= 1  # a cancelled turn is reverted — it doesn't consume a script slot
@@ -164,13 +155,12 @@ class MockGame:
         if starting_combat:
             self._in_combat = True
             self._combat_phase = 0
-            return self._result(_COMBAT_ENTER, player_input, clean=True, combat_started=True)
+            return self._result(_COMBAT_ENTER, player_input, combat_started=True)
         narration = _CLOSING if ending else (
             f"Magren's gaze flicks to you, then the satchel. \"That glow,\" he says. \"Not the first "
             f"I've seen.\" He slides a mug across the bar. (mock reply to: “{player_input[:60]}”)"
         )
-        return self._result(narration, player_input, clean=not corrected,
-                            corrected=corrected, session_complete=ending)
+        return self._result(narration, player_input, session_complete=ending)
 
     # -- combat surface (scripted; drives the offline CombatDriver demo) -------
 
@@ -229,19 +219,11 @@ class MockGame:
     def revert_last_turn(self) -> bool:
         return False  # no backend session to roll back
 
-    def _result(self, narration, player_msg, clean=True, corrected=False,
-                session_complete=False, combat_started=False) -> TurnResult:
-        narrative = Verdict(
-            "check-turn", clean,
-            "" if clean else
-            "1. Magren's hair is grey-streaked, not black — fix the description "
-            "(source: world/npcs/magren-soley.md).",
-        )
-        conduct = Verdict("check-conduct", True, "")
-        gate = GateResult(narrative, conduct, player_msg, canon_sections=9)
-        draft = ("(pre-correction draft) " + narration) if corrected else narration
-        return TurnResult(player_msg, draft, narration, gate, corrected, session_complete,
-                          combat_started=combat_started)
+    def _result(self, narration, player_msg, session_complete=False,
+                combat_started=False) -> TurnResult:
+        tools = frozenset({"read"} if self._n % 3 == 0 else set())
+        return TurnResult(player_msg, narration, session_complete,
+                          combat_started=combat_started, tools=tools)
 
 
 class MockSetup:

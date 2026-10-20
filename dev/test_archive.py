@@ -18,7 +18,7 @@ sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 from gm_llm import __version__  # noqa: E402
 from gm_llm.orchestrator import Game, Logs, Planner  # noqa: E402
 from gm_llm.orchestrator.archive import SCHEMA, Archive  # noqa: E402
-from gm_llm.orchestrator.gate import GateResult, StageGateResult, Verdict  # noqa: E402
+from gm_llm.orchestrator.gate import StageGateResult, Verdict  # noqa: E402
 
 
 # ── fakes ───────────────────────────────────────────────────────────────────
@@ -74,24 +74,15 @@ class FakeBackend:
 
 
 class FakeGate:
-    """Scripted verdicts, one GateResult per runtime check in order."""
+    """A scripted plan-gate verdict."""
 
     def __init__(self, results):
         self.results = list(results)
-
-    def check(self, narration, player_msg, in_combat=False):
-        return self.results.pop(0)
 
     def check_plan(self, plan):
         return StageGateResult(
             narrative=Verdict("check-plan", False, "1. Plan names an unknown NPC."),
             prompt="plan", label="Canon", canon_sections=3)
-
-
-def _gate_result(player_msg, *, clean):
-    narrative = Verdict("check-turn", clean, "" if clean else "1. Wrong hair colour.")
-    conduct = Verdict("check-conduct", True, "")
-    return GateResult(narrative, conduct, player_msg, canon_sections=7)
 
 
 def _read_events(path):
@@ -119,35 +110,24 @@ def test_archive_lazy_header(tmp):
 def test_game_turn_events(tmp):
     logs = Logs.under(base=tmp / "logs")
     backend = FakeBackend(tmp, drafts=[_Reply("The inn is warm.", ("skill", "read")),
-                                       "His hair is black."])
-    gate = FakeGate([
-        _gate_result("Let's begin the session.", clean=True),
-        _gate_result("I look at the barkeep.", clean=False),
-    ])
-    game = Game(backend, gate, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
+                                       "His hair is grey."])
+    game = Game(backend, None, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
     game.start()
     tr = game.turn("I look at the barkeep.")
-    assert tr.corrected and tr.final == "corrected narration"
+    assert tr.final == "His hair is grey."
 
     events = _read_events(logs.archive.path)
     assert [e["event"] for e in events] == ["run", "turn", "turn"]
 
-    opening, corrected = events[1], events[2]
-    assert opening["opening"] and opening["turn"] == 1 and not opening["corrected"]
-    assert opening["session"] == 1 and opening["draft"] == opening["final"] == "The inn is warm."
-
-    assert corrected["turn"] == 2 and corrected["corrected"] and not corrected["opening"]
-    assert corrected["draft"] == "His hair is black."      # the draft is always archived
-    assert corrected["final"] == "corrected narration"
-    checks = {v["check"]: v for v in corrected["verdicts"]}
-    assert not checks["check-turn"]["passed"] and "hair" in checks["check-turn"]["report"]
-    assert checks["check-conduct"]["passed"] and not checks["check-conduct"]["defaulted"]
-    assert corrected["canon_sections"] == 7
-    assert corrected["context"] == {"tokens": 1200, "limit": 100_000, "threshold": 80_000}
-    # What the runner opened while drafting, and how stale it had gone — the recalibration
-    # signal, readable straight off the archive (design/runner-authority.md § Delivery).
-    assert opening["tools"] == ["read", "skill"] and opening["stale"] == 0
-    assert corrected["tools"] == [] and corrected["stale"] == 1
+    opening, turn = events[1], events[2]
+    assert opening["opening"] and opening["turn"] == 1 and opening["session"] == 1
+    assert opening["narration"] == "The inn is warm."
+    assert opening["tools"] == ["read", "skill"]
+    assert turn["turn"] == 2 and not turn["opening"]
+    assert turn["player"] == "I look at the barkeep." and turn["narration"] == "His hair is grey."
+    assert turn["tools"] == [] and turn["context"] == {"tokens": 1200, "limit": 100_000}
+    assert not ({"draft", "final", "verdicts", "corrected", "stale"} & turn.keys()), \
+        "no in-loop check fields — checks run after play"
 
 
 def test_planner_stage_event(tmp):
@@ -178,11 +158,7 @@ def test_close_nudge(tmp):
         _Reply("", tools=("task_complete",),                        # the nudge lands the call
                tool_inputs={"task_complete": {}}),
     ])
-    gate = FakeGate([
-        _gate_result("Let's begin the session.", clean=True),
-        _gate_result("I head out for the night.", clean=True),
-    ])
-    game = Game(backend, gate, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
+    game = Game(backend, None, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
     game.start()
     tr = game.turn("I head out for the night.")
 
@@ -204,11 +180,7 @@ def test_no_nudge_on_ordinary_prose(tmp):
         "The inn is warm.",                                    # opening
         _Reply("Magren pours a drink and the session goes on, the night still young."),
     ])
-    gate = FakeGate([
-        _gate_result("Let's begin the session.", clean=True),
-        _gate_result("I greet the barkeep.", clean=True),
-    ])
-    game = Game(backend, gate, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
+    game = Game(backend, None, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
     game.start()
     tr = game.turn("I greet the barkeep.")
 

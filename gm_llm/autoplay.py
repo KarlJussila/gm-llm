@@ -95,7 +95,7 @@ def run(args) -> None:
     character = read_character(args.dir, args.character)
 
     def body(backend, gate, logs):
-        game = Game(backend, gate, logs=logs)
+        game = Game(backend, gate.preloader, logs=logs)
         player_sid = backend.create_session("play-player")
         note(f"runner={game.runner_sid} player={player_sid} session={game.session}")
 

@@ -1,18 +1,32 @@
 ---
 name: combat-run
-description: Running a tracked combat in live D&D — the initiative loop where the combat-tracker owns HP, positions, conditions, initiative, the reaction economy, and timers, and you narrate downstream of it. Owns entering and leaving a fight (start_encounter/end_encounter), instantiating combatants from prepared stat blocks, the proactive-pause reaction discipline read off the PC's repertoire, the confirm/retcon safety net, NPC-nature morale, and real lethality. Loaded by dm-runner when a scene becomes a fight; session-run's table craft still holds every turn.
+description: Load when a fight is about to start — entering it with the tracker, running each initiative turn, reactions, morale and lethality, and ending it.
 ---
 
 # combat-run — running the fight
 
-Load this when a scene becomes a **fight** and initiative takes over. The core table craft in
-**session-run** still applies every turn — the player rolls their own character's attacks, saves, and
-checks; you never roll for them; spoilers stay behind the screen. This is how a turn lands when the
-scene is combat. The orchestrator drives the loop and re-sends the per-turn algorithm in
-`<combat-reminder>`; this is the craft behind it.
+Your table rules hold in a fight too: the player rolls their character's attacks, saves and checks,
+and spoilers stay behind the screen.
 
-Read `campaign/feedback/combat-run.md` first if it exists — binding, player-specific guidance that
-overrides the defaults here.
+## How a fight runs
+
+Once you call `start_encounter`, initiative drives instead of the player. The orchestrator sends you
+one combatant's turn at a time in `<combat-turn>`; on the PC's turn it carries the player's action
+too. Each turn:
+
+1. **One combatant, one action.** The tracker's turn pointer says whose turn it is; resolve exactly
+   their action — never batch several foes into one beat.
+2. **Reactions before they resolve.** If an NPC's action would trigger a PC reaction marked
+   `Stop: yes` in the repertoire, pause and offer it before resolving (below).
+3. **Resolve through the tracker and dice.** You roll NPC actions and hazards with `dice`; whether a
+   blow lands and how far a creature can move are your calls; every HP, condition, position and
+   reaction change is a tracker call.
+4. **Narrate from the tracker's roster**, positions as distance and direction from the PC.
+5. **End the turn with `advance_turn`.**
+
+After an NPC turn the player can confirm it or interject; an interjection arrives in
+`<combat-reaction>`, the tracker has been rolled back to the start of that combatant's turn, and you
+replay the turn with the reaction folded in.
 
 ## The tracker bookkeeps; you judge
 

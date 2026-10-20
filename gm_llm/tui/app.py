@@ -2,16 +2,16 @@
 PlayApp — the rich-TUI front-end over the orchestrator `Game`.
 
 Layout: a scene pane (the play — DM narration + your lines, one selectable
-block per beat), a behind-the-screen pane (live model stream + per-turn gate
-verdicts), a status bar (what the table is doing right now), a phase prompt
+block per beat), a behind-the-screen pane (live model stream + per-turn tool
+summary), a status bar (what the table is doing right now), a phase prompt
 bar (yes/no at phase boundaries), and an input that switches between ACTION
-mode (gated turn) and META mode (out-of-game question, ungated).
+mode (a turn) and META mode (an out-of-game question).
 
 The scene pane mounts one widget per beat (see tui/widgets.py) into a
 `VerticalScroll`, capped at `_SCENE_MAX_BLOCKS` — the full transcript is
 always on disk at `campaign/sessions/{N}/transcript.md`. The
 behind-the-screen pane is a `RichLog` — append-efficient, but not
-text-selectable; the full gate log is on disk under the project's log dir
+text-selectable; the full turn log is on disk under the project's log dir
 (`.opencode/logs/orchestrator-checks.log`).
 
 Play is `orchestrator.play_session`, run once per session on a worker thread
@@ -113,8 +113,6 @@ class PlayApp(App):
     # Spoiler-free labels for the per-turn steps `Game.on_step` announces.
     TURN_STEPS = {
         "draft": "the DM is writing",
-        "check": "checking canon & conduct",
-        "correct": "revising the narration",
         "done": "finishing up",
     }
 
@@ -177,7 +175,7 @@ class PlayApp(App):
             yield VerticalScroll(id="scene")
             # RichLog: append-efficient (no O(n²) re-render), handles its own
             # scrolling, parses console markup (so EventTap's markup dialect
-            # renders coloured). Not text-selectable — the full gate log is on
+            # renders coloured). Not text-selectable — the full turn log is on
             # disk under the project's .opencode/logs/.
             # min_width=0 overrides RichLog's default of 78 columns, which
             # otherwise forces the pane wider than its 1fr layout slot and
@@ -195,7 +193,7 @@ class PlayApp(App):
         self._status = self.query_one(StatusBar)
         self._prompt = self.query_one(PromptBar)
         self._header = self.query_one(BatchHeader)
-        self._write_screen("[b]behind the screen[/b] — live model stream · gate verdicts")
+        self._write_screen("[b]behind the screen[/b] — live model stream · tools per turn")
         if self._batch is not None:
             # Watching a batch: no player affordances to advertise, and the retry notice is
             # wired per run (each run boots its own backend).
@@ -321,9 +319,9 @@ class PlayApp(App):
         elif self._pending == "open":
             inp.border_title = "SESSION READY — start it, or quit"
         elif self.mode == "action":
-            inp.border_title = "ACTION — gated"
+            inp.border_title = "ACTION"
         else:
-            inp.border_title = "META — out-of-game, ungated"
+            inp.border_title = "META — out-of-game"
         inp.placeholder = ("Answer the DM…" if self.phase == "setup"
                            else "Y to wrap, N not yet, or /quit" if self._pending == "wrap"
                            else "Y to start the session, N not yet, or /quit" if self._pending == "open"
@@ -885,11 +883,8 @@ class PlayApp(App):
 
     def _render_turn(self, tr) -> None:
         self._clear_thinking()
-        block = self._scene_dm(inline(tr.final))
-        g = tr.gate
-        fixed = [n for n, v in (("canon", g.narrative), ("conduct", g.conduct)) if not v.passed]
-        block.set_gate(tr.corrected, fixed)
-        self._render_gate(tr)
+        self._scene_dm(inline(tr.final))
+        self._render_turn_detail(tr)
         self._spawn_context_refresh()
         if tr.combat_started:
             # The runner called start_encounter — the loop hands the fight to play_combat
@@ -1183,22 +1178,12 @@ class PlayApp(App):
         self._scene_status(f"  ▸ {label}…")
         self._status.set_phase(label)
 
-    # -- gate detail (behind the screen) --------------------------------------
+    # -- turn detail (behind the screen) --------------------------------------
 
-    def _render_gate(self, tr) -> None:
+    def _render_turn_detail(self, tr) -> None:
         self._turn += 1
-        g = tr.gate
-        # Standard Rich color names (not Textual $-tokens): the screen pane is a
-        # RichLog, which parses markup with Rich's parser — $-tokens like
-        # [$success] are Textual-specific and Rich sees the [/] closer as orphaned.
-        nv = "[green]passed[/]" if g.narrative.passed else "[red]violations[/]"
-        cv = "[green]passed[/]" if g.conduct.passed else "[red]violations[/]"
-        status = "[yellow]CORRECTED[/]" if tr.corrected else "[green]clean[/]"
-        self._write_screen(f"\n[b]turn {self._turn}[/b]  canon {nv} · conduct {cv} · {status} · {g.canon_sections} canon")
-        if not g.narrative.passed:
-            self._write_screen(f"[red]canon[/]\n{inline(g.narrative.report.strip())}")
-        if not g.conduct.passed:
-            self._write_screen(f"[red]conduct[/]\n{inline(g.conduct.report.strip())}")
+        tools = ", ".join(sorted(tr.tools)) or "none"
+        self._write_screen(f"\n[b]turn {self._turn}[/b]  tools: {tools}")
 
     # -- menu (esc) -----------------------------------------------------------
 

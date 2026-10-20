@@ -1,42 +1,40 @@
 ---
 name: session-close
-description: The procedure for ending a live D&D session — call the ending, award any planned level-up, collect player feedback, close spoiler-free, and signal the end with task_complete. Loaded by dm-runner when session-flow's pacing says it's time to land the session (the runner owns that timing, never the player). session-flow decides WHEN to close; this skill is HOW.
+description: Load when the session has had real substance and a good stopping point is at hand — how to land the ending and close the session.
 ---
 
 # session-close — end the session
 
-Load this the moment **session-flow's Pacing** tells you the session should land — it's had real
-substance and a good beat has arrived, the player diverged substantially, or play has drifted into
-heavily improvised territory. **You decide when to close; the player never does** — that judgment is
-session-flow's, and you act on it here on your own initiative, never waiting to be asked. This skill is
-the *how*: the closing procedure, run **in order, every session**. Don't let play trail off without it.
+You decide when the session ends; the player never has to ask. Run these in order.
 
-Before applying it, read `campaign/feedback/session-close.md` if it exists — accumulated,
-player-specific guidance on how sessions should land. Treat it as binding and let it override the
-defaults here wherever they conflict.
+1. **Land the ending.** Close on the beat in front of you — a satisfying resolution or a
+   cliffhanger — in the fiction.
+2. **Award advancement only if the plan schedules it.** Check the plan's session-end advancement
+   line. If it says a level-up lands now, set it in the fiction where it fits and then say it
+   plainly: the character has reached level N. The player builds the character in their own tools.
+   If the plan says no, don't invent one.
+3. **Ask for feedback.** Step out of character and ask a couple of short, open questions about how
+   the session felt. Then stop and wait for the answer. Listen; don't argue or fix anything live.
+4. **Close.** Thank the player in a line or two, confirming the ending only in the terms they
+   experienced it — never what it "means" for the story — and with no preview of what's next.
+5. **Signal the end** with one `task_complete` call, as your last act:
+   - `player_message` — your closing words to the player (step 4).
+   - `notes` — your handoff notes for the between-session pass, below.
 
-## The closing steps — in order, every session
+## The handoff notes
 
-1. **Call the ending yourself.** When the session has substance and a good beat arrives, land it — a
-   satisfying beat or a cliffhanger — on your **own initiative**. **Never wait to be asked**: the
-   player doesn't close the session, you do, and a session that keeps running because you're waiting
-   for their cue has failed. The one floor: a single-scene session almost never has the substance yet,
-   so don't wrap on the first beat. Past that, take the good beat when it comes rather than holding out
-   for a perfect one.
-2. **Award advancement if the plan calls for it.** Check the plan's **Session-end advancement** line.
-   If it schedules a level-up this session, hand it to the player as the session lands — set it in the
-   fiction where it fits, then say it plainly: their character has reached level N. Leave the actual
-   building/balancing to the player and their D&D tools (the system doesn't build sheets); you're just
-   marking that it happened. **Only award what the plan schedules** — if the plan says no level-up, don't
-   invent one, and never change the target level yourself.
-3. **Collect feedback.** Step out of character; ask the player a couple of short, open questions about
-   the session. Listen — don't argue or fix it live. **This step is not optional and not silent — it
-   happens at the end of every session.**
-4. **Close spoiler-free.** Confirm the ending beat only in the terms the player experienced it —
-   never characterized in terms of the campaign's design ("a turning point," what it "means" to the
-   arc). That hands the player the shape of the plot — exactly what spoiler discipline exists to
-   protect — whether said in-fiction or as plain fact. Thank them, and stop. No summary, no preview
-   of what's coming.
-5. **Signal the end.** As your very last act — after closing out — **call the `task_complete` tool**.
-   Telling the player the session is over is right and expected — say it plainly and stop there.
-   Only call it once steps 1–4 are done; never mid-scene.
+These are for the campaign's own record, not the player, so be direct, name names, and don't
+worry about spoilers. They are the second source beside the transcript — capture what a reader of
+the transcript alone would miss. Skip a heading that has nothing under it.
+
+- **Story trajectory** — how the arcs and threads moved, what shifted, where things now point, and
+  any clock that advanced.
+- **New entities** — every person, place, faction or item that first appeared or was named, with a
+  line on each.
+- **Changed entities** — anyone or anywhere already in canon whose state, disposition or situation
+  changed, and how.
+- **The character** — what the PC did, learned, gained or lost; a level-up if one landed.
+- **Secrets revealed** — each hidden fact the PC learned, with its `[hidden:<id>]` id where it has
+  one.
+- **Loose ends** — open questions, promises, dangling hooks, setups awaiting a payoff.
+- **Player feedback** — what the player said, verbatim.

@@ -2,7 +2,7 @@
 Combat mode — the initiative-driven loop that replaces the player-driven `turn()`
 while a fight is on (design/combat.md § The combat loop).
 
-Out of combat the *player* drives: one message → one gated DM response. In combat
+Out of combat the *player* drives: one message → one DM response. In combat
 *initiative* drives: the orchestrator pumps the loop, soliciting the player on the
 PC's turn and narrating one combatant per NPC turn. The runner signals entry/exit by
 calling the `start_encounter` / `end_encounter` tracker tools (observed off
@@ -39,7 +39,6 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .prompts import load
 
 
 def combat_state_path(directory: str) -> Path:
@@ -110,28 +109,22 @@ class CombatStep:
     """One pump of the combat loop. `kind` tells the interface what to do next:
 
       await_pc      — the PC's turn: solicit input, then call `combat_player_action`.
-      await_confirm — an NPC acted (`narration` is the gated beat): present it, then
+      await_confirm — an NPC acted (`narration` is the beat): present it, then
                       `combat_confirm()` on a bare Enter or `combat_interject(text)`.
       committed     — a PC action resolved and was committed (no confirm gate).
-      ended         — the runner called `end_encounter`; combat is over, resume play.
+      ended         — the DM called `end_encounter`; combat is over, resume play.
     """
     kind: str
     combatant: str | None = None
     round: int | None = None
     narration: str = ""
-    gate: "GateResult | None" = None  # noqa: F821 — annotation only
-    corrected: bool = False
 
 
-# --- briefs -----------------------------------------------------------------
-# Each combat step re-sends the per-turn algorithm — `combat-reminder`, injected in
-# combat's place of `turn-reminder` (C5) — in front of a small runtime context block
-# (whose turn / the player's action / the reaction). The durable play-craft lives in
-# the `combat-run` skill, loaded once on entry and held in the runner session; the
-# reminder re-states only the terse algorithm so it can't decay over a long fight.
-#
-# Every turn ends with advance_turn — that closing advance is what seats the next
-# combatant and fires their timers, and it is what a rollback rewinds on an interject.
+# --- messages ---------------------------------------------------------------
+# Each combat step tells the DM only what changed: whose turn it is, the player's action, or
+# the reaction being folded in. The craft lives in the `combat-run` skill. Every turn ends with
+# advance_turn — that closing advance seats the next combatant and fires their timers, and it is
+# what a rollback rewinds on an interject.
 
 _ADVANCE_NUDGE = (
     "You resolved the action but didn't end the turn — call `advance_turn` now to pass "
@@ -140,34 +133,25 @@ _ADVANCE_NUDGE = (
 
 
 def _npc_brief(combatant: str) -> str:
-    return (
-        f"{load('combat-reminder')}\n\n"
-        f"<combat-turn>\nIt is {combatant}'s turn.\n</combat-turn>"
-    )
+    return f"<combat-turn>\nIt is {combatant}'s turn.\n</combat-turn>"
 
 
 def _pc_brief(player_input: str) -> str:
-    return (
-        f"{load('combat-reminder')}\n\n"
-        f"<combat-turn>\nIt is the PC's turn — adjudicate the player's action.\n</combat-turn>\n"
-        f"<player>\n{player_input}\n</player>"
-    )
+    return ("<combat-turn>\nIt is the PC's turn — adjudicate the player's action.\n</combat-turn>\n"
+            f"<player>\n{player_input}\n</player>")
 
 
 def _replay_brief(combatant: str, text: str) -> str:
-    return (
-        f"{load('combat-reminder')}\n\n"
-        f"<combat-reaction>\nThe player interjects before {combatant}'s action resolves — treat it "
-        f"as a reaction. The tracker was rolled back to the start of {combatant}'s turn; replay the "
-        f"turn with the reaction folded in.\n<reaction>\n{text}\n</reaction>\n</combat-reaction>"
-    )
+    return (f"<combat-reaction>\nThe player interjects before {combatant}'s action resolves — treat "
+            f"it as a reaction. The tracker was rolled back to the start of {combatant}'s turn; "
+            f"replay the turn with the reaction folded in.\n<reaction>\n{text}\n</reaction>\n"
+            f"</combat-reaction>")
 
 
 class CombatMixin:
-    """The combat loop surface, mixed into `Game` (which supplies `backend`, `gate`,
-    `runner_sid`, `_step`, `_run_gate`, `_append_transcript`). Kept in its own module
-    so the play-driven `turn()` loop and the initiative-driven combat loop stay legible
-    side by side."""
+    """The combat loop surface, mixed into `Game` (which supplies `backend`, `runner_sid`,
+    `_step`, `_append_transcript`, `_archive_turn`). Kept in its own module so the
+    play-driven `turn()` loop and the initiative-driven combat loop stay legible side by side."""
 
     # These are initialised in Game.__init__; declared here for reference.
     _in_combat: bool
@@ -178,31 +162,50 @@ class CombatMixin:
         return self._in_combat
 
     def _combat_observe(self, reply) -> None:
-        """Flip mode on the runner's entry/exit signals, read off a turn's tool calls.
-        Called from `_gated_turn`, so a `start_encounter` mid-narration switches the
-        interface into the combat loop after this turn returns."""
+        """Flip mode on the DM's entry/exit signals, read off a turn's tool calls."""
         if "start_encounter" in reply.tools:
             self._in_combat = True
             self._combat_pending = None
         if "end_encounter" in reply.tools:
             self._in_combat = False
 
+    def _beat(self, message: str, player_line: str, combatant: str, st: CombatState):
+        """Send one combat message and archive the beat with the tracker frames on either
+        side of it — what the after-play combat check compares the narration against."""
+        before = st.load().get("committed") if st.exists() else None
+        self._turn_no += 1
+        self._step("draft")
+        reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, message)
+        if "end_encounter" not in reply.tools:
+            self._ensure_advanced(st, combatant)
+        self._step("done")
+        after = st.load().get("pending") if st.exists() else None
+        self._archive_combat(player_line, reply, combatant, before, after)
+        return reply
+
+    def _archive_combat(self, player_line, reply, combatant, before, after) -> None:
+        if not (self.logs and self.logs.archive):
+            return
+        cu = self.backend.context_usage(self.runner_sid)
+        self.logs.archive.emit(
+            "turn", session=self.session, turn=self._turn_no, opening=False,
+            player=player_line, narration=reply.text, session_complete=False,
+            close_nudged=False, tools=sorted(reply.tools),
+            context=({"tokens": cu.tokens, "limit": cu.context_limit} if cu else None),
+            combat={"combatant": combatant, "before": before, "after": after},
+        )
+
     def combat_step(self) -> CombatStep:
-        """Dispatch the current combatant: hand back to the player (PC turn) or resolve
-        one NPC action (awaiting confirm). The tracker's turn pointer — advanced by the
-        previous turn's closing `advance_turn` — is the loop's cursor; no advance happens
-        here."""
+        """Dispatch the current combatant: hand back to the player (PC turn) or resolve one
+        NPC action (awaiting confirm). The tracker's turn pointer is the loop's cursor."""
         st = CombatState(self.backend.directory)
         if not st.exists():
             self._in_combat = False
             return CombatStep(kind="ended")
 
-        # Resume recovery. Normal operation always re-enters here from a just-committed
-        # state; if `pending` still holds an uncommitted action (a crash between drafting
-        # an NPC/PC action and confirming it) with no in-memory step to present, roll it
-        # back to the last committed truth and re-resolve the interrupted combatant — the
-        # same retcon-is-replay move an interject makes, so no half-applied action survives
-        # and no confirm gate is skipped.
+        # Resume recovery: `pending` still holds an uncommitted action (a crash between
+        # resolving an action and confirming it) with no in-memory step to present — roll it
+        # back to the last committed truth and re-resolve the interrupted combatant.
         if self._combat_pending is None and st.in_flight():
             st.rollback()
 
@@ -211,32 +214,22 @@ class CombatMixin:
         if up == "pc":
             return CombatStep(kind="await_pc", combatant="pc", round=rnd)
 
-        # NPC turn: the runner resolves one combatant's action and ends it by advancing.
-        self._step("draft")
-        reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, _npc_brief(up))
+        reply = self._beat(_npc_brief(up), f"(combat: {up}'s turn)", up, st)
         if "end_encounter" in reply.tools:
             return self._combat_end(reply.text, player_line="")
-        self._ensure_advanced(st, up)
-        final, result, corrected = self._run_gate(reply.text, f"(combat: {up}'s turn)",
-                                                  in_combat=True)
-        self._step("done")
-        step = CombatStep(kind="await_confirm", combatant=up, round=rnd,
-                          narration=final, gate=result, corrected=corrected)
+        step = CombatStep(kind="await_confirm", combatant=up, round=rnd, narration=reply.text)
         self._combat_pending = step
         return step
 
     def _ensure_advanced(self, st: CombatState, acted: str) -> None:
-        """The runner ends its turn by calling `advance_turn`. If the pointer didn't move
-        off `acted`, it forgot — nudge once so initiative doesn't stall. (A missed advance
-        is benign and self-evident; the old separate advance step's failure mode — the
-        model over-acting on an 'advance only' prompt — does not exist here.)"""
-        if st.turn == acted:
+        """The DM ends its turn by calling `advance_turn`. If the pointer didn't move off
+        `acted`, it forgot — nudge once so initiative doesn't stall."""
+        if st.exists() and st.turn == acted:
             self.backend.prompt_full(self.runner_sid, self.runner_agent, _ADVANCE_NUDGE)
 
     def combat_confirm(self) -> CombatStep | None:
-        """Bare-Enter confirm of the NPC action awaiting confirm: harden it into
-        `committed` and record the beat. `combat_step` then reads the already-advanced
-        turn pointer to reach the next combatant."""
+        """Bare-Enter confirm of the NPC action awaiting confirm: harden it into `committed`
+        and record the beat."""
         CombatState(self.backend.directory).commit()
         step = self._combat_pending
         self._combat_pending = None
@@ -246,53 +239,36 @@ class CombatMixin:
 
     def combat_interject(self, text: str) -> CombatStep:
         """The player reacts before the NPC action resolves. Roll `pending` back to this
-        combatant's start (the turn pointer comes back with it), replay the turn with the
-        reaction folded in, gate, and present for confirm again — a missed pause stays
-        cheap."""
+        combatant's start, replay the turn with the reaction folded in, and present it for
+        confirm again."""
         st = CombatState(self.backend.directory)
         st.rollback()
-        up = st.turn  # rollback restored the pointer to the interrupted combatant
+        up = st.turn
         rnd = st.round
-        self._step("draft")
-        reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, _replay_brief(up, text))
-        self._ensure_advanced(st, up)
-        final, result, corrected = self._run_gate(reply.text, f"(combat reaction: {text})",
-                                                  in_combat=True)
-        self._step("done")
-        step = CombatStep(kind="await_confirm", combatant=up, round=rnd,
-                          narration=final, gate=result, corrected=corrected)
+        reply = self._beat(_replay_brief(up, text), f"(combat reaction: {text})", up, st)
+        step = CombatStep(kind="await_confirm", combatant=up, round=rnd, narration=reply.text)
         self._combat_pending = step
         return step
 
     def combat_player_action(self, player_input: str) -> CombatStep:
-        """The PC's turn: adjudicate the player's action, gate, and commit directly — a
-        player's own turn has no confirm gate (it is symmetric to an NPC turn for commit
-        purposes, retconnable within its window, but the player does not confirm their own
-        beat). The action ends by advancing, same as any turn."""
+        """The PC's turn: adjudicate the player's action and commit directly — a player's own
+        turn has no confirm gate."""
         st = CombatState(self.backend.directory)
         rnd = st.round
-        self._step("draft")
-        reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, _pc_brief(player_input))
+        reply = self._beat(_pc_brief(player_input), player_input, "pc", st)
         if "end_encounter" in reply.tools:
             return self._combat_end(reply.text, player_line=player_input)
-        self._ensure_advanced(st, "pc")
-        final, result, corrected = self._run_gate(reply.text, player_input, in_combat=True)
         st.commit()
-        self._append_transcript(player_input, final, opening=False)
-        self._step("done")
-        return CombatStep(kind="committed", combatant="pc", round=rnd,
-                          narration=final, gate=result, corrected=corrected)
+        self._append_transcript(player_input, reply.text, opening=False)
+        return CombatStep(kind="committed", combatant="pc", round=rnd, narration=reply.text)
 
     def _combat_end(self, narration: str, player_line: str) -> CombatStep:
-        """The runner called `end_encounter` (all foes down or withdrawn). Gate the final
-        beat, leave combat, and let the state file go (the plugin already deleted it)."""
-        final, result, corrected = self._run_gate(narration, player_line or "(combat ends)")
+        """The DM called `end_encounter`. Leave combat and let the state file go."""
         self._in_combat = False
         self._combat_pending = None
-        self._append_transcript(player_line, final, opening=False, dm_only=not player_line)
+        self._append_transcript(player_line, narration, opening=False, dm_only=not player_line)
         CombatState(self.backend.directory).delete()
-        return CombatStep(kind="ended", combatant=None, narration=final,
-                          gate=result, corrected=corrected)
+        return CombatStep(kind="ended", combatant=None, narration=narration)
 
 
 # --- driver -----------------------------------------------------------------
