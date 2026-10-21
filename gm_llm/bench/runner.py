@@ -461,7 +461,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
 
             def _mark(text, t):
                 progress["turns"] = t
-                note(f"turn {t}/{turn_cap}: dm (draft + gate)…")
+                note(f"turn {t}/{turn_cap}: dm…")
                 front.on_player(text, t)
 
             def _slot(event, t):

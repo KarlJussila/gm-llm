@@ -75,7 +75,7 @@ def _hooks() -> PlayHooks:
     return PlayHooks(
         on_prompt=lambda t: note(f"turn {t}: waiting on the player…"),
         on_player=lambda text, t: (speaker(f"PLAYER · turn {t}", "1;32", text),
-                                   note(f"turn {t}: waiting on the DM (draft + gate)…")),
+                                   note(f"turn {t}: waiting on the DM…")),
         on_turn=turn,
         on_slot=lambda ev, t: note(f"turn {t}: combat — PC slot (round {ev.round}), "
                                    f"waiting on the player…"),
