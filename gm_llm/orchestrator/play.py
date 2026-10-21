@@ -34,7 +34,7 @@ from typing import Callable
 
 from .backend import BackendError
 from .combat import play_combat
-from .prompts import player_combat_turn, player_turn
+from .prompts import load
 
 
 # ── where the next player message comes from ─────────────────────────────────
@@ -65,8 +65,7 @@ class PlayerSource:
 
     def next_message(self, scene: str, *, combat: bool = False) -> str | None:
         """The player's next message, given the scene they are responding to. `combat=True`
-        on a PC combat slot (the two differ only in which per-turn reminder an agent player
-        gets). Return `None` to end the session — the loop stops with outcome `"stopped"`."""
+        on a PC combat slot, which an agent player sees marked `<combat-turn>`. Return `None` to end the session — the loop stops with outcome `"stopped"`."""
         raise NotImplementedError
 
 
@@ -94,7 +93,7 @@ class AgentPlayer(PlayerSource):
     def next_message(self, scene: str, *, combat: bool = False) -> str | None:
         if self._stopped:
             return None
-        body = player_combat_turn(scene) if combat else player_turn(scene)
+        body = load("player-combat-turn" if combat else "player-turn").format(scene=scene)
         return self.backend.prompt(self.session_id, self.agent, self._prime(body))
 
     def _prime(self, body: str) -> str:
@@ -102,12 +101,9 @@ class AgentPlayer(PlayerSource):
         if self._primed:
             return body
         self._primed = True
-        parts = []
-        if self.character:
-            parts.append("[YOUR CHARACTER — read this, then stay in character for the rest "
-                         f"of the session]\n\n{self.character}")
+        parts = [self.character] if self.character else []
         if self.story:
-            parts.append(f"[This session is already underway. The story so far:]\n\n{self.story}")
+            parts.append(load("player-story").format(story=self.story))
         parts.append(body)
         return "\n\n".join(parts)
 

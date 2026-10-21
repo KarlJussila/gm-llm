@@ -152,10 +152,6 @@ def add_dev_parser(subparsers, common, engine) -> None:
                    help="start the session over, overwriting its transcript "
                         "(the default resumes an in-progress session)")
     p.add_argument("--kickoff", default="Let's begin the session.")
-    p.add_argument("--character", default=None,
-                   help="player packet injected into the player's first message "
-                        "(default: auto-discover *.player.md at the project root; "
-                        "'' to run blind)")
     p.add_argument("--ui", choices=("console", "tui"), default="console",
                    help="frontend to watch it through (default: console)")
     p.set_defaults(func=lambda a: _autoplay(a))

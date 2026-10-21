@@ -23,8 +23,8 @@ Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in th
 
 1. **B5 — conditions and tiers.** The tier as a real field, reasoning variants, subagents in the
    conditions, `--subject-model`.
-2. **B6 — autoplayer on Luna.** `player.md` and its two skills, the packet generated in code. The
-   story-so-far recap needs quota.
+2. **B6 — the story-so-far recap.** Generate the fixture's recap of sessions 1–2 once, review it by
+   hand and store it in the fixture; `bench run` primes the autoplayer with it. Needs quota.
 3. **B7 — after-play checker.** `bench check`: one rolling Luna session per run over the pristine
    start canon, structured findings.
 4. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject with file access,

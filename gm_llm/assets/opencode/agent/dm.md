@@ -18,7 +18,9 @@ permission:
   write: allow
   patch: allow
   todowrite: allow
-  skill: allow
+  skill:
+    '*': allow
+    'player-*': deny
   task_complete: allow
   task:
     '*': deny

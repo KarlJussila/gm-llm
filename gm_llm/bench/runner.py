@@ -123,7 +123,7 @@ class BatchHooks:
 def load_fixture(fixture_path) -> dict:
     """Read a fixture's `fixture.json`. `fixture_path` is the fixture dir (which holds
     `campaign/` and `fixture.json`); the returned dict carries at least `id`, `frozen`,
-    `provisional`, and `character_packet` (a path relative to the run dir)."""
+    and `provisional`."""
     fixture_path = Path(fixture_path)
     data = json.loads((fixture_path / "fixture.json").read_text(encoding="utf-8"))
     data.setdefault("id", fixture_path.name)
@@ -275,14 +275,13 @@ def _default_gate(backend, directory, logs):
     return Gate(backend, CanonPreloader(directory), logs=logs)
 
 
-def _default_lifecycle(backend, gate, directory, logs, *, character: str) -> Lifecycle:
+def _default_lifecycle(backend, gate, directory, logs) -> Lifecycle:
     """The campaign lifecycle a run is played through — the same object the TUI drives
     (design/frontends.md step 3). `player="auto"` makes `player_source()` hand back the
-    scripted `player` agent primed with the fixture's packet, and `wrap()` is the whole
+    scripted `player` agent primed with the PC's generated packet, and `wrap()` is the whole
     post-wrap tail (warm-runner handoff notes, then the between-session pass) behind one
     `on_stage` protocol a frontend can render."""
-    return Lifecycle(backend, gate, str(directory), logs=logs, player="auto",
-                     character=character)
+    return Lifecycle(backend, gate, str(directory), logs=logs, player="auto")
 
 
 def _handoff_done(game) -> bool:
@@ -327,23 +326,6 @@ def _post_wrap(lifecycle, *, reconcile: bool, note, on_stage=_noop) -> None:
 
 
 # ── one run ──────────────────────────────────────────────────────────────────
-
-def _character(run_dir: Path, fixture: dict, note) -> str:
-    """The player's character packet, read from the fixture path inside the run dir with
-    HTML comments stripped — the same handling `autoplay.read_character` gives a campaign's
-    own `*.player.md`. Two resolvers, one packet contract: unifying them is benchmark B1's
-    open player-end question, not this module's to settle."""
-    rel = fixture.get("character_packet")
-    if not rel:
-        return ""
-    path = run_dir / rel
-    if not path.is_file():
-        note(f"WARNING: no character packet at {rel} — player runs blind")
-        return ""
-    text = re.sub(r"<!--.*?-->", "", path.read_text(encoding="utf-8"), flags=re.DOTALL).strip()
-    note(f"player packet: {rel} ({len(text)} chars)")
-    return text
-
 
 def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = False,
              kickoff: str = "Let's begin the session.", port: int = 4181,
@@ -419,9 +401,8 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             tap = EventTap(backend).start()
         reconcile = not play_only
 
-        character = _character(run_dir, fixture, note)
         lifecycle = lifecycle_factory(backend, gate_factory(backend, run_dir, logs),
-                                      run_dir, logs, character=character)
+                                      run_dir, logs)
         if lifecycle.game is None:  # a fixture always ships session 1's plan
             raise ValueError(f"{run_dir}: no session plan under campaign/sessions — the "
                              f"fixture's campaign/ did not land; nothing to play")

@@ -179,18 +179,12 @@ def _launch_tui(args, *, mock: bool, player: str = "human") -> int:
     from .orchestrator.logs import debug_enabled
 
     auto = player == "auto"
-    # Read the packet before the screen is taken over — the resolver reports to stdout.
-    character = ""
-    if auto:
-        from .autoplay import read_character
-        character = read_character(str(directory), args.character)
-
     logs = Logs.under(project=directory, debug=debug_enabled())
     backend = Backend(str(directory), port=args.port, logs=logs).start()
     try:
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)
         lifecycle = Lifecycle(backend, gate, str(directory), logs=logs,
-                              player=player, character=character)
+                              player=player)
         app = PlayApp(lifecycle, cleanup=backend.stop, theme=args.theme,
                       turn_cap=args.turn_cap if auto else None)
         app.title = "gm-llm (live · autoplay)" if auto else "gm-llm (live)"
@@ -245,7 +239,6 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--turn-cap", type=int, default=30, help=argparse.SUPPRESS)
     p.add_argument("--fresh", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--kickoff", default="Let's begin the session.", help=argparse.SUPPRESS)
-    p.add_argument("--character", default=None, help=argparse.SUPPRESS)
     p.set_defaults(func=run_play)
 
     p = sub.add_parser("status", help="where the campaign stands (disk only, no model)")

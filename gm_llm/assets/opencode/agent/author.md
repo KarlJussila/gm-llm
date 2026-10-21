@@ -16,7 +16,9 @@ permission:
   write: allow
   patch: allow
   todowrite: allow
-  skill: allow
+  skill:
+    '*': allow
+    'player-*': deny
 ---
 
 You author campaign files for a long-running solo D&D campaign, on behalf of the campaign manager

@@ -15,7 +15,9 @@ permission:
   write: allow
   patch: allow
   todowrite: allow
-  skill: allow
+  skill:
+    '*': allow
+    'player-*': deny
 ---
 
 You turn a played session into its digest, `campaign/sessions/{N}/digest.md` — the record the rest

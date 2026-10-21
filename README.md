@@ -122,8 +122,8 @@ No opencode / no model? `gm-llm play --mock` runs the same
 UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
 Want to watch instead of play? `gm-llm play --player auto` hands the player's turns to a
-scripted agent and renders the session in the same TUI — the character packet comes from
-`--character` (or a `*.player.md` beside the campaign), and `--turn-cap` bounds the run.
+scripted agent and renders the session in the same TUI — its character packet is generated from
+the PC's sheet, state and knowledge ledger, and `--turn-cap` bounds the run.
 Add `--ui console` for the same thing as plain text.
 
 ### The TUI
@@ -157,7 +157,7 @@ checkout, reach them with `python -m gm_llm …`, which runs the checkout's code
 install step. They target a campaign via `--dir`:
 
 ```
-dev autoplay   [--turn-cap 6] [--fresh] [--character …]   the scripted player agent plays
+dev autoplay   [--turn-cap 6] [--fresh]                   the scripted player agent plays
 dev prep       [--session N] [--no-commit]                PRE: author + gate + commit the plan
 dev reconcile  [--session N] [--no-commit] [--no-prep] [--fresh]   POST: the staged pipeline
 dev lint                               entity-completeness lint, standalone

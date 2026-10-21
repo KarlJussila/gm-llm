@@ -13,7 +13,9 @@ permission:
   grep: allow
   list: allow
   todowrite: allow
-  skill: allow
+  skill:
+    '*': allow
+    'player-*': deny
   report_findings: allow
 ---
 

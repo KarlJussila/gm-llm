@@ -201,9 +201,8 @@ def _lifecycle_factory(on_reconcile=None):
             if on_reconcile is not None:
                 on_reconcile(n)
 
-    def factory(backend, gate, directory, logs, *, character):
-        return _FakeLifecycle(backend, gate, str(directory), logs=logs, player="auto",
-                              character=character)
+    def factory(backend, gate, directory, logs):
+        return _FakeLifecycle(backend, gate, str(directory), logs=logs, player="auto")
 
     return factory
 
@@ -242,17 +241,18 @@ def _make_template(root):
 
 
 def _make_fixture(root, *, fixture_id="hollowfell-test"):
-    """A minimal fixture dir: fixture.json + a campaign/ with a session-1 plan and a
-    character packet (mirrors the shipped hollowfell fixture's shape)."""
+    """A minimal fixture dir: fixture.json + a campaign/ with a session-1 plan and a PC
+    sheet to generate the packet from (mirrors the shipped hollowfell fixture's shape)."""
     campaign = root / "campaign"
     (campaign / "sessions" / "1").mkdir(parents=True, exist_ok=True)
-    (campaign / "documents").mkdir(parents=True, exist_ok=True)
+    (campaign / "characters").mkdir(parents=True, exist_ok=True)
     (campaign / "sessions" / "1" / "plan.md").write_text("# Session 1 plan\n", encoding="utf-8")
-    (campaign / "documents" / "pc.md").write_text(
-        "# Dallid\n<!-- a spoiler comment -->\nA wandering cleric.\n", encoding="utf-8")
+    (campaign / "characters" / "dallid.md").write_text(
+        "---\nslug: dallid\nname: Dallid\ntype: pc\nstatus: active\n---\n# Dallid\n\n"
+        "## Personality\nA wandering cleric.\n\n"
+        "## Character hooks (DM-side)\nA spoiler hook.\n", encoding="utf-8")
     (root / "fixture.json").write_text(json.dumps({
         "id": fixture_id, "frozen": "2026-07-17", "provisional": True,
-        "character_packet": "campaign/documents/pc.md",
     }), encoding="utf-8")
     return root
 
@@ -422,10 +422,10 @@ def test_player_source_comes_from_the_lifecycle(tmp):
 
     player = [m for agent, m in said if agent == "player"]
     assert len(player) == 2, f"two player turns before the wrap — got {len(player)}"
-    assert "[YOUR CHARACTER" in player[0] and "A wandering cleric." in player[0], \
-        f"the fixture's packet primes the first message — got {player[0]!r}"
-    assert "<!-- a spoiler comment -->" not in player[0], "packet comments are stripped"
-    assert "[YOUR CHARACTER" not in player[1], "the packet is handed over once, not per turn"
+    assert "# You are Dallid" in player[0] and "A wandering cleric." in player[0], \
+        f"the packet generated from the PC sheet primes the first message — got {player[0]!r}"
+    assert "spoiler hook" not in player[0], "the sheet's DM-side hooks stay out of the packet"
+    assert "# You are Dallid" not in player[1], "the packet is handed over once, not per turn"
 
 
 def test_post_wrap_reconcile_failure_stays_complete(tmp):

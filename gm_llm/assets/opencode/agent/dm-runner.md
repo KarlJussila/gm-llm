@@ -12,7 +12,9 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  skill: allow
+  skill:
+    '*': allow
+    'player-*': deny
   todowrite: allow
   dice: allow
   task_complete: allow

@@ -27,19 +27,3 @@ def load(name: str) -> str:
     """Return the prompt text for `name` (file `prompts/{name}.md`), trailing
     newlines stripped. Cached — prompts don't change within a run."""
     return (_DIR / f"{name}.md").read_text(encoding="utf-8").rstrip("\n")
-
-
-def player_turn(scene: str) -> str:
-    """The autoplayer's per-turn message: the `player-reminder` brief riding in front
-    of the DM's beat, the beat fenced in <dm>…</dm> so instruction and narration can't
-    blur — the player-side mirror of `Game.turn`'s reminder + <player> fence. One
-    home for the format, shared by the dev play harness and the bench runner."""
-    return f"{load('player-reminder')}\n\n<dm>\n{scene}\n</dm>"
-
-
-def player_combat_turn(scene: str) -> str:
-    """The autoplayer's per-turn message during a fight — the `player-combat-reminder`
-    brief in front of the DM's combat beat, fenced in <dm>…</dm>. The combat mirror of
-    `player_turn` (declare one slot action, roll only when asked); one home for the
-    format, used by the dev play harness and the bench runner on a PC combat slot."""
-    return f"{load('player-combat-reminder')}\n\n<dm>\n{scene}\n</dm>"

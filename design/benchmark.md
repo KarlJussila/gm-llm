@@ -49,9 +49,9 @@ The subject is the DM playing well, never the checker catching it failing.
 - A `conditions` event stamps the fixture id, tier, turn cap, whether reconcile runs, every agent's
   and subagent's model and reasoning variant, the prompt fingerprint and the gm-llm version.
 - The autoplayer is Luna. `player.md` holds its rules, and two skills cover the situational parts:
-  `player-combat` (a fight is about to start) and `player-rolls` (the DM asked for a roll). Its first
+  `player-combat` (its turn in a fight) and `player-rolls` (the DM asked for a roll). Its first
   message carries the character packet and the fixture's story-so-far recap; every later message is
-  the DM's text in `<dm>…</dm>`.
+  the DM's text in `<dm>…</dm>`, marked `<combat-turn>` on the PC's slot in a fight.
 - Play runs to `task_complete`, with a hard turn cap as the safety net (each PC combat slot counts).
   Each combat beat archives the tracker's committed and pending frames.
 - Reconcile follows a natural close unless `--play-only`.
@@ -98,7 +98,7 @@ The subject is the DM playing well, never the checker catching it failing.
 `dev/fixtures/hollowfell`: a campaign with sessions 1–2 played and session 3 planned, so a run plays
 session 3 against real prior canon. It is converted to the [luna.md](luna.md) layout by script.
 
-- **The character packet is generated in code** from the PC sheet and the knowledge ledger — one
+- **The character packet is generated in code** from the PC sheet, state and knowledge ledger — one
   generation path for `bench` and `--player auto`, never a hand-merged file.
 - **The story so far** is a recap of the past transcripts, generated once, reviewed by hand and stored
   in the fixture. Transcripts are exactly what the player saw, so the recap cannot leak a secret.

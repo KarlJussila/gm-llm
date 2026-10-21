@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .packet import character_packet
 from .paths import latest_session
 from .loop import Game, session_is_complete
 from .play import AgentPlayer, KeyboardPlayer, PlayerSource
@@ -27,7 +28,7 @@ from .stream import EventTap
 
 class Lifecycle:
     def __init__(self, backend, gate, directory: str, logs=None,
-                 player: str = "human", character: str = ""):
+                 player: str = "human"):
         self.backend = backend
         self.gate = gate
         self.directory = directory
@@ -35,7 +36,6 @@ class Lifecycle:
         # Who supplies player turns (`--player`). The frontend asks for a source per session
         # and drives one loop either way — see `player_source`.
         self.player = player
-        self.character = character
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
         # that needs setup; a session whose runner already signalled the end (even in
         # a prior run the player never confirmed the wrap on) ⇒ show that choice again,
@@ -64,7 +64,7 @@ class Lifecycle:
         if self.player != "auto":
             return KeyboardPlayer()
         return AgentPlayer(self.backend, self.backend.create_session("play-player"),
-                           character=self.character)
+                           character=character_packet(Path(self.directory) / "campaign"))
 
     def status(self) -> CampaignStatus:
         """Where the campaign stands — disk only (lint + git), no model calls.

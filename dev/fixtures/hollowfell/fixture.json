@@ -3,6 +3,5 @@
   "frozen": "2026-07-18",
   "provisional": true,
   "description": "A gm-llm campaign at 'sessions 1-2 played + session-3 planned' state — the committed tree of Karl's BenchmarkCampaign, refreshed from steady-state canon (world, arcs, the Dallid PC with S1-2 player-known layer, two played sessions, the session-3 plan; no S3 transcript, so bench plays session 3 fresh with real prior canon). PROVISIONAL and NOT a baseline: the fixture is refreshed from the live campaign as it evolves and is only truly frozen at benchmark 1.0 (BENCHMARK.md). Do not bank a baseline against it.",
-  "source": "~/Desktop/BenchmarkCampaign @ 770095e",
-  "character_packet": "campaign/documents/dallid.player.md"
+  "source": "~/Desktop/BenchmarkCampaign @ 770095e"
 }
