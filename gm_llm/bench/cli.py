@@ -153,10 +153,15 @@ def cmd_bench_run(args) -> None:
     capped = sum(1 for r in records if r["outcome"] == "cap")
     incomplete = sum(1 for r in records if str(r["outcome"]).startswith("incomplete"))
     failed = sum(1 for r in records if str(r["outcome"]).startswith("failed"))
-    tail = " — resume with `python -m gm_llm bench run --resume`" if incomplete else ""
-    _note(f"batch done: {done} complete · {capped} capped · {incomplete} incomplete · "
+    pending = sum(1 for r in records if r["outcome"] == "complete" and r.get("archive")
+                  and runner.reconcile_pending(Path(args.out) / r["archive"]))
+    tail = (" — resume with `python -m gm_llm bench run --resume`"
+            if incomplete or pending else "")
+    held = f" ({pending} reconcile pending)" if pending else ""
+    _note(f"batch done: {done} complete{held} · {capped} capped · {incomplete} incomplete · "
           f"{failed} failed → {Path(args.out) / 'batch.jsonl'}{tail}")
-    sys.exit(1 if failed and not done else 0)
+    # Non-zero unless every run finished, so `bench run && bench check` stops at a stopped run.
+    sys.exit(1 if incomplete or failed or pending else 0)
 
 
 def cmd_bench_check(args) -> None:

@@ -822,6 +822,43 @@ def test_resume_noop_when_nothing_incomplete(tmp):
     assert records == [], "nothing to resume over an empty/complete batch"
 
 
+def test_run_exit_code(tmp):
+    """`bench run` exits non-zero unless every run finished, so `bench run && bench check`
+    stops at a run that still needs `--resume`."""
+    import argparse
+    from gm_llm.bench import cli
+
+    def arc(name, events):
+        p = tmp / name
+        p.write_text("\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8")
+        return name
+
+    wrap = {"event": "turn", "session_complete": True}
+    done = arc("done.jsonl", [{"event": "conditions", "reconcile": True}, wrap,
+                              {"event": "stage", "stage": "plan"}])
+    held = arc("held.jsonl", [{"event": "conditions", "reconcile": True}, wrap])
+    args = argparse.Namespace(turn_timeout=0, play_only=False, resume=False, runs=1, fixture="f",
+                              out=str(tmp), ui="console", turn_cap=50, tier="low",
+                              subject_model=None, subject_variant=None, kickoff=None, port=0,
+                              min_gap=0, stream=False)
+
+    def code(records):
+        real = runner.run_batch
+        runner.run_batch = lambda *a, **kw: records
+        try:
+            cli.cmd_bench_run(args)
+        except SystemExit as e:
+            return e.code
+        finally:
+            runner.run_batch = real
+
+    assert code([{"outcome": "complete", "archive": done}, {"outcome": "cap"}]) == 0
+    assert code([{"outcome": "complete", "archive": done},
+                 {"outcome": "incomplete: player failed after 4 retries"}]) == 1
+    assert code([{"outcome": "complete", "archive": held}]) == 1, "reconcile pending isn't done"
+    assert code([{"outcome": "failed: boom"}]) == 1
+
+
 def main():
     tests = (test_assemble_run, test_conditions_event, test_subject_model, test_prompt_fingerprint,
              test_prompt_change_is_a_mixed_condition, test_natural_close,
@@ -832,7 +869,7 @@ def main():
              test_classify_archive, test_batch_status, test_reconcile_pending,
              test_rate_limit_is_incomplete_not_failed,
              test_resume_continues_incomplete_run, test_resume_finishes_reconcile_only,
-             test_resume_noop_when_nothing_incomplete)
+             test_resume_noop_when_nothing_incomplete, test_run_exit_code)
     failures = 0
     for test in tests:
         with tempfile.TemporaryDirectory() as td:
