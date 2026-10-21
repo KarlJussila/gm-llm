@@ -100,22 +100,26 @@ def test_pricing_keeps_reasoning_separate(tmp):
     assert abs(u2.priced(0.14, 0.28, 0.0028, 1.0)["cache_write"] - 1.0) < 1e-9
 
 
-def test_batch_keeps_grading_out_of_play(tmp):
+def test_batch_keeps_the_instrument_out_of_play(tmp):
     out = tmp / "bench-out"
     run = out / "run-A"
-    ws = out / "grade-ws"
-    run.mkdir(parents=True)
-    ws.mkdir()
+    ws = out / "grade-ws" / "run-A"
+    check_ws = out / "check-ws" / "run-A"
+    for d in (run, ws, check_ws):
+        d.mkdir(parents=True)
     db = tmp / "opencode.db"
     _store(db, [(str(run), "dm-runner", 1000, 100, 0, 10000, 0, 1.0),
+                (str(check_ws), "play-checker", 200, 20, 0, 2000, 0, 0.0),
                 (str(ws), "grader", 10, 1, 0, 100, 0, 0.01)])
     batch = tokens.usage_for_batch(out, db=db)
-    assert set(batch["runs"]) == {"run-A"}, "grade-ws is not a run"
+    assert set(batch["runs"]) == {"run-A"}, "the instrument workspaces are not runs"
     assert batch["runs"]["run-A"].total.input == 1000
+    assert batch["checking"].total.input == 200
     assert batch["grading"].total.input == 10
 
     text = tokens.format_tokens(batch, prices=(0.14, 0.28, 0.0028))
-    assert "run-A" in text and "grading" in text
+    assert "run-A" in text and "grading" in text and "checking (check-ws)" in text
+    assert "1,210" in text, "everything sums play, checking and grading"
     assert "$0.0001" in text or "$0.00" in text, "a cost table renders"
     assert "hypothetical cost" in text
     # and without prices there is no cost table at all — no invented dollars
@@ -124,7 +128,7 @@ def test_batch_keeps_grading_out_of_play(tmp):
 
 def main():
     tests = (test_usage_is_scoped_and_split_by_agent, test_missing_store_and_schema_drift_degrade,
-             test_pricing_keeps_reasoning_separate, test_batch_keeps_grading_out_of_play)
+             test_pricing_keeps_reasoning_separate, test_batch_keeps_the_instrument_out_of_play)
     failures = 0
     for test in tests:
         with tempfile.TemporaryDirectory() as td:

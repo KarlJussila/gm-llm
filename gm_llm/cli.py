@@ -98,8 +98,8 @@ def _cmd_status(args) -> int:
 
 def _cmd_tokens(args) -> int:
     """Token + cost usage for any directory, read back out of opencode's own store. A batch
-    dir (one holding `run-*` subdirs) groups per run and splits grading out; a plain
-    campaign reports one set of per-agent totals."""
+    dir (one holding `run-*` subdirs) groups per run and splits checking and grading out; a
+    plain campaign reports one set of per-agent totals."""
     import json
 
     from . import tokens as tok
@@ -107,15 +107,15 @@ def _cmd_tokens(args) -> int:
     by_run = args.by_run or any(root.glob("run-*"))
     batch = (tok.usage_for_batch(root, data_dir=args.data_dir) if by_run
              else {"runs": {root.name or str(root): tok.usage_for(root, data_dir=args.data_dir)},
-                   "grading": tok.Reading(), "out_dir": str(root)})
+                   "checking": tok.Reading(), "grading": tok.Reading(), "out_dir": str(root)})
     if args.json:
         print(json.dumps({
             "out_dir": batch["out_dir"],
             "runs": {name: {"unavailable": r.unavailable, "total": vars(r.total),
                             "by_agent": {a: vars(u) for a, u in r.by_agent.items()}}
                      for name, r in batch["runs"].items()},
-            "grading": {"unavailable": batch["grading"].unavailable,
-                        "total": vars(batch["grading"].total)},
+            **{scope: {"unavailable": batch[scope].unavailable, "total": vars(batch[scope].total)}
+               for scope in ("checking", "grading")},
         }, ensure_ascii=False, indent=2))
         return 0
     prices = None

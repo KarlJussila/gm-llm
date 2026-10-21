@@ -164,15 +164,17 @@ def _has_any_table(path: Path) -> bool:
 
 
 def usage_for_batch(out_dir, *, db=None, data_dir=None) -> dict:
-    """A whole batch: one Reading per `run-*` dir, plus the grading workspace (`grade-ws`)
-    kept separate. Grading is the instrument scoring itself and belongs in its own column,
-    never folded into what play cost."""
+    """A whole batch: one Reading per `run-*` dir, plus the checking and grading workspaces
+    (`check-ws`, `grade-ws`) kept separate. They are the instrument measuring play and belong
+    in their own columns, never folded into what play cost."""
     out_dir = Path(out_dir)
     runs = {p.name: usage_for(p, db=db, data_dir=data_dir)
             for p in sorted(out_dir.glob("run-*")) if p.is_dir()}
-    ws = out_dir / "grade-ws"
-    return {"runs": runs,
-            "grading": usage_for(ws, db=db, data_dir=data_dir) if ws.is_dir() else Reading(),
+
+    def ws(name):
+        path = out_dir / name
+        return usage_for(path, db=db, data_dir=data_dir) if path.is_dir() else Reading()
+    return {"runs": runs, "checking": ws("check-ws"), "grading": ws("grade-ws"),
             "out_dir": str(out_dir)}
 
 
@@ -194,7 +196,7 @@ def format_tokens(batch: dict, *, prices: tuple[float, float, float] | None = No
          f"TOKEN USAGE — {batch['out_dir']}",
          "=" * 88]
 
-    reasons = {r.unavailable for r in list(batch["runs"].values()) + [batch["grading"]]
+    reasons = {r.unavailable for r in [*batch["runs"].values(), batch["checking"], batch["grading"]]
                if r.unavailable}
     if reasons:
         L += ["", "  (!) token data unavailable:"] + [f"      {r}" for r in sorted(reasons)]
@@ -210,13 +212,16 @@ def format_tokens(batch: dict, *, prices: tuple[float, float, float] | None = No
         L.append(_row("run total", reading.total))
         play = play + reading.total
 
-    grading = batch["grading"].total
+    checking, grading = batch["checking"].total, batch["grading"].total
+    if checking.sessions:
+        L += ["", "── checking (check-ws) " + "─" * 64, _HEAD, _row("checking total", checking)]
     if grading.sessions:
         L += ["", "── grading (grade-ws) " + "─" * 65, _HEAD, _row("grading total", grading)]
 
-    L += ["", "── batch total " + "─" * 72, _HEAD,
-          _row("play + reconcile", play), _row("grading", grading),
-          _row("everything", play + grading)]
+    everything = play + checking + grading
+    scopes = (("play + reconcile", play), ("checking", checking), ("grading", grading),
+              ("everything", everything))
+    L += ["", "── batch total " + "─" * 72, _HEAD, *(_row(label, u) for label, u in scopes)]
 
     if prices:
         per_in, per_out, per_cr = prices
@@ -224,16 +229,15 @@ def format_tokens(batch: dict, *, prices: tuple[float, float, float] | None = No
               f"  at ${per_in:g}/M input · ${per_out:g}/M output · ${per_cr:g}/M cache read",
               ""]
         L.append(f"  {'scope':<22}{'input':>11}{'output':>11}{'cache read':>13}{'TOTAL':>11}")
-        for label, u in (("play + reconcile", play), ("grading", grading),
-                         ("everything", play + grading)):
+        for label, u in scopes:
             p = u.priced(per_in, per_out, per_cr)
             L.append(f"  {label:<22}{'$%.4f' % p['input']:>11}{'$%.4f' % p['output']:>11}"
                      f"{'$%.4f' % p['cache_read']:>13}{'$%.4f' % p['total']:>11}")
-        surcharge = (play + grading).priced(per_in, per_out, per_cr)["reasoning_surcharge"]
+        surcharge = everything.priced(per_in, per_out, per_cr)["reasoning_surcharge"]
         L += ["",
-              f"  Reasoning tokens ({(play + grading).reasoning:,}) are counted in `output` above.",
+              f"  Reasoning tokens ({everything.reasoning:,}) are counted in `output` above.",
               f"  If your provider bills them on top instead, add ${surcharge:.4f}."]
-        recorded = play.cost + grading.cost
+        recorded = everything.cost
         L.append(f"  opencode recorded ${recorded:.4f} actually charged"
                  + (" (free tier)." if recorded == 0 else "."))
 
