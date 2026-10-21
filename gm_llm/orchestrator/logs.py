@@ -97,7 +97,7 @@ class Logs:
                 Popen redirect needs a real file).
       raw     — every model reply's full part structure, for debugging findings
                 split across parts. Only written when `debug` is set.
-      checks  — the per-turn / per-prep / per-reconcile summary blocks.
+      checks  — the per-setup / per-prep / per-reconcile summary blocks.
       detail  — the gate's per-check model output (one block per checker call).
       archive — the run's score-event stream (`archive.Archive`, one JSONL file
                 per run): the benchmark's ground truth. Created lazily on first

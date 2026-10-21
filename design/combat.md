@@ -96,13 +96,12 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
    replayed). The mutation vocabulary is **forward mutators + one `rollback`**; commit is
    orchestrator-owned, not a tool.
 
-6. **The combat check validates the `committed → pending` transition.** `check-combat` (a new
-   narrative-checker role, warm-chained before `check-conduct` when `_in_combat`) reads *both* blobs:
-   `committed` is the known-good baseline that makes the delta checkable — it confirms the HP/position/
-   condition changes in `pending` are exactly what the narrated action should produce (catching both
-   fabricated damage and narrated-but-unapplied damage, and a double-spent reaction), plus the usual
-   canon/spoiler/agency checks. **Read** access only (via preload of the state file) — never the
-   mutators. Per-combatant granularity makes this a tiny, high-confidence check.
+6. **The `committed → pending` transition is checkable, after play.** `committed` is the known-good
+   baseline that makes the delta checkable: the HP/position/condition changes in `pending` should be
+   exactly what the narrated action produces (catching fabricated damage, narrated-but-unapplied
+   damage, and a double-spent reaction). The archive records both frames for every combat beat, and
+   the benchmark's after-play check compares them with the narration — nothing checks at the table
+   ([luna.md](luna.md) § Combat). Per-combatant granularity keeps the check small.
 
 7. **Proactive pause is the clean path; the confirm gate and retcon are the safety net.** When the
    runner correctly pauses from the repertoire ledger, the player reacts before the action resolves and
@@ -119,7 +118,7 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
      their one reaction/round). **New reactions default `Stop: no`, and the runner never reminds the
      player of reactions they hold** — that's the player's game to play. The one config beat: the first
      time a reaction is used, the runner may ask *once* whether to make it stopping going forward, and
-     the player can retune any toggle anytime (captured post-session by the apply pass). `combat-reminder`
+     the player can retune any toggle anytime (captured post-session by the apply pass). `combat-run`
      reads the toggle; it never judges breadth itself, and never nags.
 
 8. **Combatants are living entities; the tracker surfaces mechanics, never morale — and PC death is a
@@ -143,14 +142,10 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
   surface distinct from `turn(player_input)`: roughly `combat_step()` (advance one combatant; returns
   "awaiting PC input" or "NPC acted, awaiting confirm" + the gated narration), `combat_confirm()`,
   `combat_interject(text)`, `combat_player_action(input)`. Commit/rollback bracketing lives here.
-- **`combat-reminder`** — `orchestrator/prompts/combat-reminder.md`, injected in combat's place of
-  `turn-reminder`: the strict per-combatant algorithm (whose turn → declare/resolve via tracker+dice →
-  narrate → confirm/advance), the proactive-pause discipline, the repertoire-ledger consult.
 - **`combat-run` skill** — `assets/opencode/skills/combat-run/SKILL.md` (the reserved `*-run` play-mode
-  slot the skill-naming convention reserves).
-  Loaded on entry; `session-run`'s universal craft still holds.
-- **`check-combat` skill** — `assets/opencode/skills/check-combat/SKILL.md`, wired into `gate.check()`
-  under `_in_combat`. Validates the transition against the preloaded tracker state.
+  slot the skill-naming convention reserves): the per-combatant algorithm (whose turn →
+  declare/resolve via tracker+dice → narrate → confirm/advance), the proactive-pause discipline and
+  the repertoire-ledger consult. Loaded on entry; the `dm-runner` prompt's table craft still holds.
 - **`combat-balance` skill** — `assets/opencode/skills/combat-balance/SKILL.md`. DM-facing at planning,
   runner-loadable for unplanned combat. Craft prose (see Balance), not a mechanism.
 - **Reaction/tactical repertoire ledger** — a new canon file kind (template under
@@ -223,7 +218,7 @@ A reaction is different: it's spent *off-turn*, interrupting someone else's turn
 eligibility question the confirm-gate/interject flow (principles 4–5) turns on. So each combatant
 carries one `reaction` boolean, reset to `true` on that combatant's own `advance_turn` and set `false`
 by `use_reaction(id)` — the one piece of economy worth a source of truth for the interject flow and
-`check-combat` to read.
+the after-play check to read.
 
 **Death is a single boolean, not a status enum.** `dead` is the only status bit a combatant has —
 "alive" is simply `!dead`. Ordinary damage reaching 0 HP does **not** auto-kill an NPC: whether a
@@ -332,7 +327,7 @@ advances its pointer, and an interject's `rollback` rewinds `pending` — pointe
 *this* combatant. Were `turn` top-level and shared, rollback couldn't rewind it and the replay would
 resolve the wrong combatant; that constraint (and the extra advance model call it forced) is why the
 pointer moved into the frame. A combatant's timers therefore fire on the *previous* turn's closing
-advance — one beat early in the transcript, resolved on the turn they belong to (a `combat-reminder`
+advance — one beat early in the transcript, resolved on the turn they belong to (a `combat-run`
 matter). `next_timer_id` stays top-level so a rolled-back timer id is never reused.
 
 ## Balance — a skill, not a mechanism
@@ -398,22 +393,6 @@ pointer) plus a `CombatMixin` on `Game` exposing `combat_step()`, `combat_confir
   `combat_step` rolls back to `committed` and re-resolves the interrupted combatant: the same
   retcon-is-replay move an interject makes, and it covers a PC mid-draft crash identically.
 
-**The gate** — `check-combat` is a narrative-checker role warm-chained **between** `check-turn` and
-`check-conduct`, so it inherits the canon/ledger context and stays sequenced in the correction brief.
-
-- **It runs only on the action beats.** `gate.check(narration, player_msg, in_combat)` carries the
-  flag; `combat.py` passes `in_combat=True` from `combat_step`/`combat_interject`/
-  `combat_player_action` only. The play-driven entry turn and the `end_encounter` exit beat stay
-  `False` — the entry seeds `committed == pending` (an empty delta) and the exit's state file is
-  already deleted, so neither has a transition to validate.
-- **Read-only preload, defensively guarded.** `gate._combat_blobs` reads the two frames as pretty
-  JSON into the brief; if the file is absent (the closing beat racing the delete) the check is
-  skipped and `GateResult.combat` is `None`. The gate never touches the mutators (principle 6).
-- **It validates the delta, not the frame** — diffing `committed → pending` on hp/dead/conditions/
-  reaction/position in both directions, catching narrated-but-unapplied and fabricated damage plus
-  reaction double-spend, and explicitly ignoring the closing advance's turn-pointer/round/timer
-  noise. Canon, spoiler and agency are the sibling checks' business.
-
 **The repertoire ledger** — the PC's fourth file, `characters/{slug}.repertoire.md`, from
 `pc-repertoire.template.md`; documented in `canon-conventions` §2 and §3.
 
@@ -424,34 +403,30 @@ pointer) plus a `CombatMixin` on `Game` exposing `combat_step()`, `combat_confir
   while the *knowledge* ledger stays apply-state's. The digest's section 13 (*Combat
   reactions & tactics*) captures the WHEN→THEN trigger rather than just an ability name; apply-canon
   reads it in; `check-propagation` audits that it landed.
-- `completeness.py` skips the `.repertoire.md` companion — only the sheet carries the Vitals
-  contract.
+- The canon lint checks the sheet's frontmatter vitals; the `.repertoire.md` companion has none.
 
 **Planning data** — one stat-block format, two homes, both file-backed.
 `stat-block.template.md` (HP·AC·speed / all six abilities as score-check-save / attacks / defenses &
 senses / special-incl-reactions / tactics & nature) is the sole format. Named and recurring creatures
 carry it as an optional `## Stat block` in their existing NPC file; **generic reusable creature types
-get their own stateless bestiary file** — `world/bestiary/{slug}.md`, `type: creature`, registered in
-INDEX's `## Bestiary` table and referenced by `[[slug]]`. Every combatant is therefore a
+get their own stateless bestiary file** — `world/bestiary/{slug}.md`, `type: creature`, listed in
+the generated INDEX's Bestiary table and referenced by `[[slug]]`. Every combatant is therefore a
 slug-addressed file, so `start_encounter` loads uniformly and a reused creature is not re-authored
 per session. (The first sketch inlined mook blocks in the session plan; this replaced it.) The
 intrinsic block holds HP; the *encounter seed* supplies count and starting position.
 
-- **The combat `## Stat block` is distinct from the required `## Stats (rough sketch)`**, which stays
-  a social/exploration capability gauge. The stat block is optional (combatants only), so
-  `completeness.py` leaves it alone, and its heading doesn't prefix-collide with the required
-  "Stats". Bestiary files are lint-exempt for free — `type: creature` isn't in `completeness.py`'s
-  map and `world/bestiary/` isn't a scanned dir.
+- **The combat `## Stat block` is distinct from an NPC's required `## Stats`**, which stays a
+  social/exploration capability gauge. On an NPC the stat block is optional (combatants only); a
+  bestiary file must carry one, and the canon lint checks it.
 - **`encounter-plan` gained a combat layer over its situations stance**, not instead of it: a combat
   seed still leads with situation/lever/complication, and additionally commits combatants, starting
   positions (egocentric — starting distance is a difficulty lever), and the objective, which is not
   always kill-them-all.
 
-**The craft — two homes, mirroring `session-run`/`turn-reminder`.** The durable craft is the
-**`combat-run` skill** (loaded on entry, held in the runner session); the terse per-turn algorithm is
-**`combat-reminder`** (`gm_llm/orchestrator/prompts/combat-reminder.md`, self-fenced), re-sent in
-front of every combat step so it cannot decay. They don't restate each other: the algorithm lives in
-the reminder, the judgment (pause discipline, morale, lethality, instantiation) in the skill.
+**The craft** lives in the **`combat-run` skill**, loaded on entry and held in the runner session:
+the per-turn algorithm and the judgment (pause discipline, morale, lethality, instantiation). Each
+combat step is fenced `<combat-turn>` or `<combat-reaction>`; no reminder rides with it
+([luna.md](luna.md) § Combat).
 
 - **The permission blocker, which would have failed at the table.** `dm-runner` is `'*': deny`, so
   plugin tools need an explicit allow — the runner literally could not call the tracker. Its
@@ -462,13 +437,12 @@ the reminder, the judgment (pause discipline, morale, lethality, instantiation) 
   verification cannot see.
 - **Entry and exit are wired at both ends.** `dm-runner` has a Combat section (load `combat-run` +
   `start_encounter` to enter, `end_encounter` to leave, orchestrator drives the fenced steps
-  between); `session-run`'s companion list and `turn-reminder` name `combat-run` as the fight-entry
-  mode.
+  between).
 - A combatant's timers fire on the *previous* turn's closing advance — one beat early in the
-  transcript, resolved on the turn they belong to. That is a `combat-reminder` matter, and it is the
+  transcript, resolved on the turn they belong to. That is a `combat-run` matter, and it is the
   cost of advance-at-end.
 
 **Verified by** `dev/test_combat_driver.py`, `dev/test_combat_loop.py` (including its
-`resume_recovery` scenario), `dev/test_combat_gate.py`, `dev/test_completeness.py`, and the tracker's
-own `test/combat-tracker.test.ts` — all under the mock backend, which is the limit named at the top
+`resume_recovery` scenario), `dev/test_lint.py`, and the tracker's own
+`assets/opencode/test/combat-tracker.test.ts` — all under the mock backend, which is the limit named at the top
 of this doc.

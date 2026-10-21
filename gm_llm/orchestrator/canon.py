@@ -1,15 +1,10 @@
 """
-Canon preload — ported from the turn-gate plugin (turn-gate.ts).
+Canon preload — campaign files read in code and handed to a model up front.
 
-The narrative-checker's latency is dominated by sequential file-read round-trips:
-a fixed baseline plus the entity files the draft touches, one model turn each. We
-do those reads here instead — fast, local, deterministic — and hand the checker
-the text up front, framed as a head start it must still extend (the match is by
-name and can miss an entity referenced indirectly). The check-turn skill reads
-this block and treats the `### <path>` headers as the already-loaded set.
-
-The orchestrator owns the draft, so this is plain library code with no opencode
-dependency: give it the campaign dir and a draft, get back the canon block.
+Two readers: the runner's `<prepared-context>` at the start of a session (the plan, the standing
+canon, the entities the plan names, the player's runner feedback), and the plan checker's canon
+block (`build`), framed as a head start it must still extend, since the match is by name and can
+miss an entity referenced indirectly. Plain library code: give it the campaign dir, get text back.
 """
 
 from __future__ import annotations
@@ -100,15 +95,9 @@ class CanonPreloader:
         return out
 
     def build(self, draft: str) -> str:
-        """The checker's canon block for this draft, or '' if nothing could be read.
-        Baseline + the entities the draft names + the current session's transcript tail."""
-        n = self.latest_session_number()
+        """The plan checker's canon block for this draft, or '' if nothing could be read:
+        the baseline plus the entities the draft names."""
         sections = self._render(self._baseline() + self._matched_entities(draft))
-        if n:
-            rel = paths.rel(n, "transcript")
-            t = self._read(rel)
-            if t:
-                sections.append(f"### {rel} (recent tail)\n{_tail(t, 4000)}")
         if not sections:
             return ""
         return load("canon-header") + "\n\n" + "\n\n".join(sections) + "\n\n--- end pre-loaded canon ---\n\n"
@@ -132,7 +121,3 @@ class CanonPreloader:
         # working set — canon read for it, not player-facing fiction to narrate back.
         return ("<prepared-context>\n" + load("runner-header") + "\n\n"
                 + "\n\n".join(blocks) + "\n</prepared-context>\n\n")
-
-
-def _tail(text: str, n: int) -> str:
-    return text if len(text) <= n else "…\n" + text[-n:]

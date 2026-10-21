@@ -1,23 +1,16 @@
 # gm-llm — a D&D campaign manager for opencode
 
 A framework that lets an LLM design, run, and maintain a long-running solo tabletop D&D
-campaign: guided campaign setup, macro-scale arc planning, live gated sessions, and a
+campaign: guided campaign setup, macro-scale arc planning, live sessions, and a
 post-session pipeline that folds what was played back into canon. It installs as a single
 `gm-llm` command that scaffolds a new campaign project and runs it — Linux, macOS, or
 native Windows.
 
 **The one principle:** *deterministic control in code; generative work in agents.* A Python
 orchestrator owns all sequencing — what runs, in what order, when it's checked, when it's
-committed. The models only ever see one focused brief at a time:
-
-```
-dispatch one focused brief → specialized check (narrative-checker, or a deterministic
-lint) → at most ONE bounded correction (never a re-gate loop) → checkpoint
-```
-
-The engine targets a modest model, so the win is structure over smarts: five small,
-individually-verified dispatches beat one ten-part marathon whose quality decays before
-the end.
+committed. Between sessions each stage is one brief, checked by code or the `narrative-checker`
+with at most one bounded correction, then committed. Live play goes straight from the player to
+the DM. It runs on GPT-6 Luna ([`design/luna.md`](design/luna.md)).
 
 ## Quick start
 
@@ -79,7 +72,9 @@ feedback-dir: ~/.gm-llm/feedback
 subagents: sequential
 ```
 
-The default feedback directory is shared across your campaigns. `feedback-dir` accepts an absolute
+After each session the `dm` curates the feedback you gave at its close into `feedback-dir`, one
+file per skill or agent, and the agents apply it from then on. The default directory is shared
+across your campaigns. `feedback-dir` accepts an absolute
 path, `~`, or a path relative to the project. Set `subagents: parallel` to let independent authoring
 subagents run concurrently. The default runs one at a time for rate-limited providers.
 
@@ -134,17 +129,14 @@ Add `--ui console` for the same thing as plain text.
 ### The TUI
 
 - **Header** — the current phase/mode (`SETUP`, `ACTION mode`, `META mode`) plus a live
-  `ctx 39% (78k/200k)` readout of how full the runner session's context is. As it approaches
-  the limit the DM is steered to bring the session to a close at a natural beat (it won't rush
-  the story to do so).
+  `ctx 39% (78k/200k)` readout of how full the runner session's context is.
 - **Scene pane** — the play itself: DM narration, your lines, spoiler-free progress
-  tickers (`▸ advancing the story…`) during setup and wraps, and a muted per-turn status
-  (`✓ checked` / `✎ corrected (canon)`) showing the gate at work.
+  tickers (`▸ advancing the story…`) during setup and wraps.
 - **Behind-the-screen pane** (`ctrl+g`) — the live model stream, tool calls, and full
-  gate verdicts. Closed by default; it accumulates, so opening it mid-turn shows
+  gate verdicts between sessions. Closed by default; it accumulates, so opening it mid-turn shows
   everything so far.
-- **Input bar** — ACTION mode (a gated play turn) or META mode (`ctrl+t`, an ungated
-  out-of-game question). `/roll 2d6+3` rolls locally; `ctrl+x` cancels a mistyped turn
+- **Input bar** — ACTION mode (a play turn) or META mode (`ctrl+t`, an out-of-game
+  question). `/roll 2d6+3` rolls locally; `ctrl+x` cancels a mistyped turn
   and puts your message back in the box.
 
 ### The CLI
@@ -185,7 +177,7 @@ played one (inferred from disk and printed before running), and both **commit by
 default** — `--no-commit` for a dry run.
 
 Logs land in the campaign's `.opencode/logs/` (gitignored, so they're never committed):
-`orchestrator-checks.log` (per-turn/per-stage summaries), `orchestrator-check-detail.log`
+`orchestrator-checks.log` (per-stage summaries), `orchestrator-check-detail.log`
 (every checker call in full), `orchestrator-serve.log` (the opencode server), and
 `orchestrator-raw.log` (`GM_LLM_DEBUG=1` reply dumps). Set `GM_LLM_LOG_DIR` to redirect them
 anywhere; with no campaign in play they fall back to a `gm-llm/` folder under the OS temp dir.
@@ -222,113 +214,60 @@ run with the project root as their working directory, so any plain `git` they do
 campaign repo rather than the framework's.
 
 All campaign state is human-readable markdown — see `templates/campaign/README.md` for the
-layout and the `canon-conventions` skill for the authoring contract (entity info/state file
-pairs, `[[slug]]` links, the `INDEX.md` registry, `[hidden]`/`Known to:` awareness flags, and
-the required `## Vitals` completeness block per entity).
+layout and the `canon-conventions` skill for the authoring contract (frontmatter vitals, entity
+info/state file pairs, `[[slug]]` links, `[hidden:<id>]` secrets and `Known to:` lines; code
+generates the `INDEX.md` registry).
+
+What the system is, its skills and its runtime seams are in [`design/README.md`](design/README.md);
+the agents and every workflow — setup, play, combat, reconcile, planning — are in
+[`design/luna.md`](design/luna.md).
 
 ### Agents (`agent/`)
 
 | Agent | Mode | Job |
 | --- | --- | --- |
-| `dm` | primary | The between-sessions brain: authors world, arcs, plans, and all canon. Never runs live sessions. |
-| `dm-runner` | primary | Runs one live session — narration, NPCs, dice — then stops. No planning, no note-taking (the transcript is auto-captured). |
-| `narrative-checker` | subagent | The verification engine, one skill per role (`check-*`). Reads and reports only; submits verdicts via the `report_findings` tool. |
-| `campaign-analyst` | subagent | Post-session assessment (`session-review`) and player-feedback curation (`feedback-curation`). |
-| `log-extractor` | subagent | Transcript → structured session digest (`log-extract`), lossless. |
-| `player` | primary | Test harness only — a scripted autoplayer for `gm-llm dev autoplay`. |
-
-Both primary agents hold **spoiler discipline**: the human is the player and hasn't read
-the planning files; secrets live in files, never in conversation. The boundary is data,
-not vibes — the PC knowledge ledger (`characters/{slug}.knowledge.md`) plus `[hidden]`
-flags decide what can be said.
-
-### Skills (`skills/`)
-
-Skills hold the procedures; agents stay thin. Groups:
-
-- **Authoring contract:** `canon-conventions` (+ its `templates/`) — the format every
-  canon writer follows.
-- **Setup:** `campaign-intake`,
-  `world-build`, `character-create`, `character-import`, `arc-design`, `state-init`.
-- **Planning:** `session-plan`, pulling `encounter-plan` / `investigation-plan` /
-  `npc-plan` / `pacing-plan` as the session needs them.
-- **Live play (dm-runner):** `session-run` (always-on core craft), `session-flow`
-  (open/pace), `session-close` (the end-of-session procedure), `social-play`, `discoveries`.
-- **Post-session:** `log-extract`, `session-review`, `apply-canon`, `apply-arcs`
-  (one arc per dispatch), `apply-state`, `feedback-curation`.
-- **Checks (narrative-checker roles):** `check-turn`, `check-conduct`, `check-plan`,
-  `check-digest`, `check-propagation`, `check-feedback`, `check-init`. The shared
-  protocol (task list, report-only, `report_findings` submission) lives once in the
-  agent prompt; each skill is just its role's checks.
+| `dm` | primary | Between sessions: setup, reconcile, planning. Writes every campaign file; never runs a session. |
+| `dm-runner` | primary | Runs one live session — narration, NPCs, dice, combat — then stops. Reads the campaign, never writes it. |
+| `author` | subagent | Focused authoring the `dm` delegates through `task`, such as one arc's reconcile. |
+| `log-extractor` | subagent | Transcript and notes → the session digest. |
+| `narrative-checker` | subagent | The between-session gates (`check-*`). Reads and reports only, via `report_findings`. |
+| `player` | primary | The autoplayer, for `--player auto` and the benchmark. |
 
 ### Orchestrator (`gm_llm/orchestrator/`)
 
-Backend-agnostic Python over `opencode serve`'s HTTP API. Stdlib-only.
+Python over `opencode serve`'s HTTP API.
 
 | Module | Owns |
 | --- | --- |
 | `backend.py` | HTTP client: sessions, prompts, pacing, cancel/revert, timeouts |
-| `loop.py` | `Game` — the gated per-turn loop, the transcript, the per-turn craft reminder |
-| `gate.py` | `Gate` — spawns the checker, reads its `report_findings` verdict; a missing verdict is nudged once, then passes by default (surfaced in the log) |
-| `canon.py` | `CanonPreloader` — reads canon in code and hands the checker/runner a pre-loaded context block |
-| `planner.py` | PRE: dm authors the plan → `check-plan` → ≤1 correction → commit |
-| `reconciler.py` | POST: the staged pipeline (below) with per-stage resume markers |
-| `setup.py` | INIT: the staged new-campaign flow (interactive stages signal completion via `task_complete`) |
-| `scaffold.py` | `scaffold_campaign` — lays down a project's `campaign/` from the templates (pure Python) |
+| `play.py`, `loop.py` | `play_session` — the one session loop — and `Game`, the turn: player message in, reply out, the transcript |
+| `combat.py` | The initiative-driven loop while a fight is on |
+| `canon.py` | `CanonPreloader` — the runner's `<prepared-context>` and the plan checker's canon block |
+| `setup.py` | INIT: the staged new-campaign flow (interactive stages end on `task_complete`) |
+| `planner.py` | PRE: the dm authors the plan → `check-plan` → ≤1 correction → commit |
+| `reconciler.py` | POST: the staged reconcile, with per-stage resume markers |
 | `lifecycle.py` | Ties setup → play → wrap → play into one object the TUI drives |
-| `phase.py` | The two shared invariants: `apply_one_correction`, code-owned `commit_campaign` |
-| `completeness.py` | Deterministic entity lint (required `## Vitals` fields per type) |
-| `status.py` | `campaign_status` — the disk-only campaign snapshot (the `status` command + TUI modal) |
+| `gate.py` | `Gate` — runs a checker in a fresh session and reads its `report_findings` verdict |
+| `phase.py` | Shared phase primitives: `correct_once`, the lint correction, `refresh_campaign`, `commit_campaign` |
+| `lint.py` | The canon lint, plus setup's and reconcile's coverage checks |
+| `registry.py`, `reveals.py` | The generated `INDEX.md`, and flipping secrets the knowledge ledger records |
+| `scaffold.py` | `scaffold_campaign` — lays down `campaign/` (pure Python) |
+| `paths.py` | Where a session's files live |
+| `status.py` | `campaign_status` — the disk-only snapshot behind `status` and the TUI modal |
+| `archive.py` | The score-event archive the benchmark reads |
 | `prompts.py` + `prompts/*.md` | Every brief the orchestrator sends a model, as reviewable prose files |
-| `stream.py` | `EventTap` — live SSE stream for the behind-the-screen pane |
-| `logs.py`, `textmarkup.py`, `mock.py` | Logging, safe markup rendering, offline mocks |
-
-**A runtime turn:** the runner drafts → one warm checker session runs `check-turn` then
-`check-conduct` → violations come back as one bounded correction → the final narration is
-appended to the transcript and shown to the player. Nothing reaches the player unchecked,
-and the model can't forget a step it never owned.
-
-**The post-session pipeline** (`reconcile_session(N)`), each stage its own dispatch with
-a `.orchestrator/` marker so a failure resumes where it died:
-
-```
-handoff   runner (warm) writes its session notes; code files them
-B digest  log-extractor: transcript → session-N.md          gate: check-digest
-C assess  analyst: digest → assessment                      (analysis, no gate)
-E feedback dm: curate player-level feedback                skipped when none was given
-D1 canon  dm: file new/changed entities                     deterministic completeness lint
-D2 arcs   dm: one dispatch PER ARC (code-enumerated;
-          untouched arcs are a cheap no-op) + a close pass
-          (new minor arcs, threads dashboard, sweep)
-D3 state  dm: knowledge ledger, reveal flags, snapshots
-          gate: check-propagation (the whole apply)
-commit    code
-F prep    dm (same warm thread): plan session N+1           gate: check-plan
-```
-
-**Setup** starts with a scaffold, then an interactive campaign brief and world proposal. The player
-can revise the world before approving it and creating a character. One background dispatch writes
-the arcs and initial state. Code checks the arc coverage and `S0` snapshots, runs the canon lint,
-then asks `check-init` to review duplicates, hidden layers and consistency. The orchestrator commits
-`campaign: init` and prepares session 1. Every phase announces its stages through `on_stage` for the
-TUI ticker.
+| `stream.py` | `EventTap` — the live SSE stream for the behind-the-screen pane |
+| `logs.py`, `textmarkup.py`, `mock.py` | Logging, safe markup rendering, an offline `Game` stand-in |
 
 ### Plugins (`plugin/`)
 
 - `dice-roller.ts` — the `dice` tool: a full TTRPG dice-expression evaluator (explode,
   keep/drop, reroll, success pools, `adv`/`dis`, …).
+- `combat-tracker.ts` — the combat tracker's tools ([`design/combat.md`](design/combat.md)).
 - `task-complete.ts` — `task_complete`: the model's explicit "this process is finished"
   signal; the orchestrator reads the call, never the prose.
 - `report-findings.ts` — `report_findings`: the checker's structured verdict
-  (`report` + `verdict`), read from the tool call — no text parsing.
-
-### The feedback loop
-
-The runner collects player feedback at session close. After the digest records it, the `dm`
-curates actionable points into the shared directory set by [player settings](#player-settings),
-one file per skill or agent. The runner's guidance is included in its prepared context; other
-guidance is read when the agent starts or loads the matching skill. These preferences override the
-defaults. Benchmark runs use a private copy of the fixture's feedback.
+  (`report` + `passed`), read from the tool call — no text parsing.
 
 ## Development
 
