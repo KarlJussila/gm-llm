@@ -242,15 +242,12 @@ def assemble_run(template_dir, fixture_campaign, run_dir, fixture_id: str) -> No
     run_dir = Path(run_dir)
     shutil.copytree(template_dir, run_dir)
     shutil.copytree(fixture_campaign, run_dir / "campaign", dirs_exist_ok=True)
-    # A run owns its feedback copy. Never inherit the template's personal directory.
-    feedback = run_dir / "feedback"
-    feedback.mkdir(exist_ok=True)
+    # The run reads and curates its own copy of the fixture's feedback, never the player's.
     fixture_feedback = Path(fixture_campaign).parent / "feedback"
     if fixture_feedback.is_dir():
-        shutil.copytree(fixture_feedback, feedback, dirs_exist_ok=True)
-    settings = load_settings(run_dir)
+        shutil.copytree(fixture_feedback, run_dir / "feedback")
     (run_dir / "gm-llm.yaml").write_text(yaml.safe_dump({
-        "feedback-dir": "feedback", "subagents": settings.subagents,
+        "feedback-dir": "feedback", "subagents": load_settings(run_dir).subagents,
     }, sort_keys=False), encoding="utf-8")
 
     gitignore = run_dir / ".gitignore"

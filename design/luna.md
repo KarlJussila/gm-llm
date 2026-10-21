@@ -95,8 +95,7 @@ wrong one the probe prompt gave it).
    level pacing), at least one minor arc hooked into it (subagents optional), and initial state.
    Code then verifies one major arc, at least one minor arc with `hooks-into`, and state stamped
    `S0` (`as-of: S<n>` means as of the end of session n, so state before play is `S0`), with one
-   nudge naming anything missing. If work remains incomplete, stop before committing so a resume
-   can finish it from the same disk facts.
+   nudge naming anything missing. Resume reads the same disk facts.
 5. **Canon lint** — one correction.
 6. **`check-init`** — the judgment half only: duplicates, a hidden layer on every entity, consistency
    with `campaign.md`. One correction.

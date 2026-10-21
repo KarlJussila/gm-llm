@@ -163,7 +163,7 @@ class Reconciler:
             self._announce("arcs")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("apply-arcs-brief").format(
                 n=n, arcs=_bullets(arcs_not_stamped(self.root, n)),
-                delegation=load_settings(self.root).delegation))
+                delegation=load(f"subagents-{load_settings(self.root).subagents}")))
             missed = arcs_not_stamped(self.root, n)
             if missed:
                 self.backend.prompt(self.dm_sid, self.dm_agent, load("arcs-missed").format(

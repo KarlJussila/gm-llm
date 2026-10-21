@@ -10,8 +10,7 @@ NPCs, new places, shifted truths. The record is the digest, `campaign/sessions/{
 chiefly *World canon*, *Items*, *Documents*, *PC capabilities* and *Combat reactions & tactics*.
 `canon-conventions` is the format.
 
-
-Apply the player feedback for `world-build` as well as this skill.
+The player's feedback for `world-build` applies here too.
 
 ## Entities
 

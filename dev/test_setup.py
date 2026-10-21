@@ -13,7 +13,7 @@ from gm_llm.orchestrator.backend import BackendError
 from gm_llm.orchestrator.gate import StageGateResult, Verdict
 from gm_llm.orchestrator.lint import setup_missing
 from gm_llm.orchestrator.scaffold import scaffold_campaign
-from gm_llm.orchestrator.setup import Setup, SetupError
+from gm_llm.orchestrator.setup import Setup
 
 
 def arc(root, slug, tier, hook=""):
@@ -73,6 +73,7 @@ def test_resume(root):
     backend = Backend(root, complete)
     assert Setup(backend, Gate(), str(root)).start().done
     assert len(backend.prompts) == 1, 'resume should dispatch once and skip completed stages'
+    assert 'Exactly one major arc' not in backend.prompts[0], 'resume lists only unfinished work'
     assert (root / 'campaign/arcs/crown.md').read_text(encoding='utf-8') == major
     assert setup_missing(root) == []
     # After all deliverables exist, a resume runs no more authoring.
@@ -87,16 +88,9 @@ def test_one_correction(root):
             arc(root, 'crown', 'major')
 
     backend = Backend(root, partial)
-    try:
-        Setup(backend, Gate(), str(root)).start()
-    except SetupError as error:
-        assert 'minor arc' in str(error)
-    else:
-        raise AssertionError('incomplete setup must not commit')
+    assert Setup(backend, Gate(), str(root)).start().done, 'setup moves on after one correction'
     assert len(backend.prompts) == 2, 'one authoring dispatch and one correction'
-    log = subprocess.run(['git', 'log', '--pretty=%s'], cwd=root, capture_output=True,
-                         text=True, encoding='utf-8', errors='replace')
-    assert 'campaign: init' not in log.stdout
+    assert 'minor arc' in backend.prompts[1]
 
 
 def test_coverage(root):
@@ -122,4 +116,4 @@ if __name__ == '__main__':
         for test in (test_resume, test_one_correction, test_coverage):
             test(root_at(Path(temp) / test.__name__))
             print(f'  ✓ {test.__name__}')
-    print('OK — setup coverage, one correction, and disk-based resume.')
+    print('OK — setup coverage, one correction, and resume of unfinished work.')

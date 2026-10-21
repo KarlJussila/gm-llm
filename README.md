@@ -71,7 +71,8 @@ what older versions left in `.opencode/` (`package.json`, `node_modules`), while
 
 ### Player settings
 
-`gm-llm init` creates `gm-llm.yaml` in the campaign project. `gm-llm update` preserves it.
+`gm-llm init` and `gm-llm update` create `gm-llm.yaml` in the campaign project if it's missing,
+and never overwrite it.
 
 ```yaml
 feedback-dir: ~/.gm-llm/feedback

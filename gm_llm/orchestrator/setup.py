@@ -57,14 +57,14 @@ _STAGE_KEYS = {
 }
 
 
+def _bullets(items: list[str]) -> str:
+    return "\n".join(f"- {i}" for i in items)
+
+
 @dataclass
 class SetupTurn:
     reply: str   # the dm's message to the player this exchange
     done: bool   # True once `campaign: init` is committed — time to finalize
-
-
-class SetupError(RuntimeError):
-    pass
 
 
 class Setup:
@@ -147,24 +147,22 @@ class Setup:
     # --- non-interactive pipeline ---
 
     def _run_pipeline(self) -> None:
-        """Arc design, state init, gate, and commit — no player turns."""
-        # Read the deliverables on every resume, even when a previous dispatch returned.
-        missing = setup_missing(self.root)
-        if missing:
+        """Arcs and state, lint, gate, and commit — no player turns."""
+        # One dispatch over what the disk still lacks (everything, unless a resume finds
+        # some of it done), then one nudge naming anything still missing.
+        if not self._setup_done("ARCS_STATE"):
             self._announce("ARCS_STATE")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-arcs-state-brief").format(
-                delegation=load_settings(self.root).delegation,
-                missing="\n".join(f"- {item}" for item in missing)))
+                missing=_bullets(setup_missing(self.root)),
+                delegation=load(f"subagents-{load_settings(self.root).subagents}")))
             missing = setup_missing(self.root)
             if missing:
                 self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-missing").format(
-                    missing="\n".join(f"- {item}" for item in missing)))
-            remaining = setup_missing(self.root)
+                    missing=_bullets(missing)))
             if self.logs and self.logs.archive:
-                self.logs.archive.emit("stage", stage="setup-coverage", missed=missing,
-                                       still_missing=remaining)
-            if remaining:
-                raise SetupError("Setup is incomplete after one correction:\n" + "\n".join(remaining))
+                self.logs.archive.emit("stage", stage="arcs-state", missed=missing,
+                                       still_missed=setup_missing(self.root))
+            self._mark_done("ARCS_STATE")
 
         if not self._setup_done("LINT"):
             self._announce("LINT")
@@ -191,13 +189,8 @@ class Setup:
     # --- stage tracking ---
 
     def _resume_stage(self) -> str:
-        """Interactive stages use completion markers; arcs and state use disk facts."""
-        for stage in ("INTAKE_WORLD", "CHAR"):
-            if not self._setup_done(stage):
-                return stage
-        if setup_missing(self.root):
-            return "ARCS_STATE"
-        for stage in ("LINT", "GATE"):
+        """First stage without a completion marker."""
+        for stage in ("INTAKE_WORLD", "CHAR", "ARCS_STATE", "LINT", "GATE"):
             if not self._setup_done(stage):
                 return stage
         return "COMMIT"

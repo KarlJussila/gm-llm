@@ -1,22 +1,26 @@
 ---
 name: feedback-curation
-description: Use when folding the player's session feedback into standing guidance.
+description: Load when folding the player's session feedback into the feedback files.
 ---
 
-# feedback-curation
+# feedback-curation — turn session feedback into standing guidance
 
-The player's words are under Player feedback in `campaign/sessions/{N}/digest.md`. Write guidance
-in the player feedback directory configured by `feedback-dir` in `gm-llm.yaml`, shared across
-campaigns. Relative paths start at the project root; `~` is the user's home.
+The player's feedback is how the system learns their preferences. Each point becomes durable
+guidance in the file that governs the behaviour it is about, so that skill or agent reads it next
+time. This is curation, not transcription: each file stays a short list of current guidance.
 
-Distil each actionable point into the behaviour the player wants and a brief why. Keep it
-campaign-agnostic: preferences go here; facts about this campaign belong in canon. Integrate with
-the current guidance, merge duplicates and remove what the new feedback supersedes.
+The player's words are under *Player feedback* in the digest, `campaign/sessions/{N}/digest.md`.
+The files are in the `feedback-dir` named in `gm-llm.yaml`, shared by all the player's campaigns:
+`<skill-name>.md` for behaviour a skill governs, otherwise `<agent-name>.md` — `dm-runner.md` for
+live play, `dm.md` for setup conversation and your reports.
 
-Use one `<skill-name>.md` per skill. Put conduct governed by an agent's prompt in `<agent-name>.md`.
-In particular, live narration, agency, rolls, spoilers, opening and pacing belong in `dm-runner.md`;
-closing and feedback collection belong in `session-close.md`; setup conversation and the campaign
-manager's reports belong in `dm.md`. Prefer a skill file when a skill owns the behaviour.
+- **Distil each point** into the behaviour the player wants and a brief why. A remark with nothing
+  to act on ("that was fun") needs no entry.
+- **Keep it campaign-agnostic.** Name no NPC, place, item or plotline: "Make information hard-won —
+  ask for rolls on uncertainty", not "the player wanted a roll to read the Cartographer". A
+  campaign specific belongs in canon.
+- **Integrate, don't append.** Refine or merge with what the file already says, drop what this
+  supersedes, and note the campaign and session each entry came from
+  ("(from <campaign> S{N})").
 
-Note the source campaign and session beside each entry so sessions from different campaigns stay
-distinguishable. Each file is a short list of current guidance, not a transcript or history.
+Write only in that directory.

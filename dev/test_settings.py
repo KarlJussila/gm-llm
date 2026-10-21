@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Settings survive asset updates; campaigns share feedback and benchmarks own a copy."""
 
+import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -60,7 +60,8 @@ def test_benchmark_copy(root):
 if __name__ == '__main__':
     with tempfile.TemporaryDirectory(prefix='gm-settings-') as temp:
         root = Path(temp)
-        with patch.object(Path, 'home', return_value=root / 'home'):
-            test_player_feedback(root)
-            test_benchmark_copy(root)
+        # `~` in the default feedback-dir expands from the environment, so sandbox it.
+        os.environ['HOME'] = os.environ['USERPROFILE'] = str(root / 'home')
+        test_player_feedback(root)
+        test_benchmark_copy(root)
     print('OK — shared feedback, preserved settings, and private benchmark feedback.')

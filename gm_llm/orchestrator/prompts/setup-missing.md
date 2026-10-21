@@ -1,3 +1,5 @@
-The setup dispatch returned, but disk checks still show these missing deliverables. Complete them now:
+These setup deliverables are still missing on disk:
 
 {missing}
+
+Complete them and report when done.

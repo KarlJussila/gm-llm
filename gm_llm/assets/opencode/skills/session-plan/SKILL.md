@@ -9,7 +9,6 @@ A session plan is a working document for the DM about to run the session: a flex
 advances at least one arc, commits every load-bearing fact, and leaves the player's path open. It
 goes in `campaign/sessions/{N}/plan.md`; `canon-conventions` is the format.
 
-
 ## The one rule
 
 **Commit every load-bearing fact. Leave open only the player's path.** Every identity, every reveal,

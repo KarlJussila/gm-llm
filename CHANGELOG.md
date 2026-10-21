@@ -16,7 +16,9 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   duplicates, hidden layers and consistency. The `campaign-setup` skill is removed.
 - Player feedback lives outside the campaign in a shared player directory. The runner receives
   its standing guidance in prepared context, and agents read matching feedback when loading skills.
-  Benchmark runs use private copies of the fixture's feedback.
+  Benchmark runs use private copies of the fixture's feedback. **Upgrading:** nothing reads
+  `campaign/feedback/` any more; move its files into `~/.gm-llm/feedback/` by hand, with
+  `session-run.md` becoming `dm-runner.md` and `session-flow.md` becoming `session-close.md`.
 - **Requires opencode 2.1 or newer.** The backend speaks opencode's v2 server API (opencode 2.0
   dropped the v1 API), and the plugins use the v2 plugin contract, which needs no npm install:
   `gm-llm init` no longer installs plugin dependencies, and `gm-llm update` removes the
@@ -24,8 +26,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   now installs opencode from `@opencode/cli`.
 
 ### Added
-- `gm-llm.yaml` configures `feedback-dir` and `subagents: sequential | parallel`. Asset updates
-  preserve these settings.
+- `gm-llm.yaml` configures `feedback-dir` and `subagents: sequential | parallel`. `gm-llm init`
+  and `update` write the defaults if the file is missing, and never overwrite it.
 - **Each archived turn records what the runner opened while drafting it** (`tools`, `stale`), so
   whether a session was played from canon or from memory is readable without the grader.
 - **`bench report` states its own precision.** The integrity score now carries a 95% confidence
