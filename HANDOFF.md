@@ -15,18 +15,20 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
 
 ## luna 6 in progress
 
-- `bench-out/luna6b/run-20261021T125839Z-fd89` played session 3 (28 turns, natural close) and
-  reconciled through propagation; the OpenAI usage limit hit during session 4's prep. Finish it
-  with `python -m gm_llm bench run --out bench-out/luna6b --resume` (it keeps its own pre-fix
-  skills), then `bench check` and `bench grade` on it, their first real-model run.
-- Then one or two fresh runs in a new out dir (`bench run` always plays session 3 from the
-  fixture), which pick up every fix below.
+- `bench-out/luna6b/run-20261021T125839Z-fd89` (pre-fix skills) is done: session 3 played (28
+  turns, natural close), reconciled, session 4 planned. `bench check` and `bench grade` ran on it,
+  their first real-model run; both tools work. 8 checker findings, all rejected by Sol (4 were
+  world rolls the checker took for PC rolls); 3 propagation gate findings confirmed (2 minor, 1
+  trivial) once the grader saw the correction as a correction (`b2bff0d`).
+- `bench-out/luna6c` is the fresh run with every fix below; check and grade it next.
 - Fixed from the runs: the dice tool's DM-directed reminder (`8541c1b`); `discoveries` says a
   check reveals details and conclusions only through them (`3eb602c`, `c8d2e6b`, Karl's
   wording); reconcile counts as done only once the next plan is archived (`a0a2f5f`);
   `canon-conventions` § What goes where, one home per fact (`c7b7eb5`), and the fixture's
-  locations no longer track who is where (`183c229`).
-- Watched, once each: the DM rolled a PC check itself, then discarded it and asked (s3t4).
+  locations no longer track who is where (`183c229`); the archive records the DM's dice rolls and
+  the grader reads a gate's correction diff as a correction, not as the judged draft (`b2bff0d`).
+- Watched, once each: the DM rolled a PC check itself (d20+10), then discarded it and asked
+  (luna6b s3t4). The checker couldn't see it then; with rolls archived it can.
 - `bench-out/luna6` is the aborted first attempt (the dice bug); ignore it.
 
 ## The benchmark pipeline as built
@@ -46,9 +48,6 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
 
 - The autoplayer (`player.md`, `player-rolls`, `player-combat`), a whole `bench run`, and
   `autoplay.run` end to end.
-- The `submit_checks` and `submit_grade` plugin tools. The `play-checker` and `grader` agents
-  load in `opencode serve` with the right model, variant and permissions (probed); the tools
-  registering and being called is unverified.
 - `opencode serve` loads a plain directory's `.opencode/` agents; only `opencode debug agents`
   wanted a git repo (so the check and grade workspaces aren't repos).
 
