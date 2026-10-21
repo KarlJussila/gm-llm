@@ -488,7 +488,7 @@ def test_batch_status(tmp):
     wrap = {"event": "turn", "session_complete": True}
     runs = {
         "run-a": [{"event": "conditions", "reconcile": True}, turn, wrap,
-                  {"event": "stage", "stage": "propagation"}],
+                  {"event": "stage", "stage": "propagation"}, {"event": "stage", "stage": "plan"}],
         "run-b": [{"event": "conditions", "reconcile": True}, turn, wrap],
         "run-c": [{"event": "conditions", "reconcile": True}, turn],
         "run-d": [{"event": "conditions", "reconcile": True}, turn, {"event": "cap"}],
@@ -508,7 +508,8 @@ def test_batch_status(tmp):
 
 
 def test_reconcile_pending(tmp):
-    """The post-wrap gap is read off the `propagation` stage event — reconcile's last gate —
+    """The post-wrap gap is read off the `plan` stage event — the next session's prep, the pass's
+    last step —
     and only under a condition that asked for reconcile at all."""
     def arc(events):
         p = tmp / f"rp-{len(list(tmp.glob('rp-*')))}.jsonl"
@@ -523,10 +524,14 @@ def test_reconcile_pending(tmp):
     assert runner.reconcile_pending(arc([
         {"event": "conditions", "reconcile": True}, wrap,
         {"event": "stage", "stage": "digest"}, {"event": "stage", "stage": "lint"}]))
-    # propagation gated → the pass got through its apply; nothing owed
-    assert not runner.reconcile_pending(arc([
+    # propagation gated but the next plan never came → still pending (a usage limit during prep)
+    assert runner.reconcile_pending(arc([
         {"event": "conditions", "reconcile": True}, wrap,
         {"event": "stage", "stage": "propagation"}]))
+    # the next session planned → the pass got all the way through; nothing owed
+    assert not runner.reconcile_pending(arc([
+        {"event": "conditions", "reconcile": True}, wrap,
+        {"event": "stage", "stage": "propagation"}, {"event": "stage", "stage": "plan"}]))
     # --play-only never wanted a reconcile; its absence is not a gap
     assert not runner.reconcile_pending(arc([{"event": "conditions", "reconcile": False}, wrap]))
 

@@ -602,11 +602,11 @@ def reconcile_pending(archive_path) -> bool:
     its signals with scoring.py: a wrapped run is `complete` whatever happened afterwards.
     This is the second, orthogonal question `--resume` asks.
 
-    The signal is the `propagation` stage event — the reconcile pipeline's last gate, so an
-    archive carrying it saw the whole apply (D1–D3) gated. Its absence under a
-    `reconcile: true` condition means the pass died somewhere in the middle, and the
-    stages that never ran contribute no findings — which the grader would read as clean
-    play rather than as missing data (the same failure `unmanifested_archives` guards).
+    The signal is the `plan` stage event — the next session's prep, the pass's last step, so
+    an archive carrying it saw the whole pass through. Its absence under a `reconcile: true`
+    condition means the pass died somewhere in the middle, and the stages that never ran
+    contribute no findings — which the grader would read as clean play rather than as
+    missing data (the same failure `unmanifested_archives` guards).
     Pure archive read, no backend."""
     path = Path(archive_path) if archive_path else None
     if not path or not path.is_file():
@@ -621,7 +621,7 @@ def reconcile_pending(archive_path) -> bool:
             continue
         if e.get("event") == "conditions":
             wanted = bool(e.get("reconcile"))
-        elif e.get("event") == "stage" and e.get("stage") == "propagation":
+        elif e.get("event") == "stage" and e.get("stage") == "plan":
             gated = True
     return wanted and not gated
 
