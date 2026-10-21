@@ -1,4 +1,5 @@
-"""The project's `gm-llm.yaml`: where the player's feedback lives, and how subagents run.
+"""The project's `gm-llm.yaml`: where the player's feedback lives, how subagents run, and
+which model the campaign plays on.
 
 The agents can't reach outside the project, so they never see `feedback-dir` itself: they read
 and curate the project's `feedback/`, which the orchestrator fills from the player's store and
@@ -19,6 +20,8 @@ _DEFAULTS = {"feedback-dir": "~/.gm-llm/feedback", "subagents": "sequential"}
 class Settings:
     feedback_dir: Path
     subagents: str   # sequential | parallel; the brief sentence is prompts/subagents-<value>.md
+    model: str | None = None     # every agent's model, instead of the one its file pins
+    variant: str | None = None   # and reasoning variant ('' for none)
 
 
 def load_settings(directory: str | Path) -> Settings:
@@ -28,7 +31,11 @@ def load_settings(directory: str | Path) -> Settings:
     data = {**_DEFAULTS, **(user or {})}
     if data["subagents"] not in ("sequential", "parallel"):
         raise ValueError(f"{path}: subagents must be sequential or parallel")
-    return Settings((root / Path(data["feedback-dir"]).expanduser()).resolve(), data["subagents"])
+    model, variant = data.get("model"), data.get("variant")
+    if model and "/" not in str(model):
+        raise ValueError(f"{path}: model must be provider/model, e.g. opencode/glm-5.3-flash-free")
+    return Settings((root / Path(data["feedback-dir"]).expanduser()).resolve(), data["subagents"],
+                    str(model) if model else None, None if variant is None else str(variant))
 
 
 def init_settings(directory: str | Path) -> None:

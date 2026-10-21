@@ -59,15 +59,17 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - **Archived turns record the DM's own dice rolls** (`rolls`: expression and total), and the
   checker sees them.
 - `gm-llm tokens` counts the checker's workspace (`check-ws`) as its own scope beside grading.
-- **`gm-llm play --model` / `--variant`** run every agent, the subagents included, on another
-  model or reasoning variant for that invocation, without editing the agent files. `dev
-  autoplay`, `dev prep` and `dev reconcile` take them too.
+- **A campaign can play on any model.** `model` and `variant` in `gm-llm.yaml` run every agent,
+  the subagents included, on another model or reasoning variant, without editing the agent
+  files, so `gm-llm update` keeps the choice. `gm-llm play --model` / `--variant` override them
+  for one invocation, as do `dev autoplay`, `dev prep` and `dev reconcile`.
 - **`bench run --subject-model` / `--subject-variant`** run the subject agents (`dm-runner`, `dm`,
   `author`, `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the
   product, is the only one yet). The `conditions` event stamps every agent's model and reasoning
   variant (no longer a temperature) and the `subagents` mode, and the report keys on them.
-- `gm-llm.yaml` configures `feedback-dir` and `subagents: sequential | parallel`. `gm-llm init`
-  and `update` write the defaults if the file is missing, and never overwrite it.
+- `gm-llm.yaml` configures `feedback-dir`, `subagents: sequential | parallel`, and optionally
+  `model` and `variant`. `gm-llm init` and `update` write the defaults if the file is missing,
+  and never overwrite it.
 - **Each archived turn records the tools the runner called while drafting it** (`tools`), so
   whether a session was played from canon or from memory is readable without the grader.
 - **`bench report` states its own precision.** The integrity score now carries a 95% confidence

@@ -223,13 +223,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
     engine = argparse.ArgumentParser(add_help=False, parents=[common, backend_flags])
 
-    # The campaign's model, for every agent in it. The bench sets its own (`--subject-model`).
+    # The campaign's model for one invocation, over gm-llm.yaml's. The bench sets its own
+    # (`--subject-model`).
     model_flags = argparse.ArgumentParser(add_help=False)
     model_flags.add_argument("--model", default=None, metavar="PROVIDER/MODEL",
-                             help="run every agent on this model instead of its pinned one")
+                             help="run every agent on this model (over gm-llm.yaml's model)")
     model_flags.add_argument("--variant", default=None,
                              help="reasoning variant ('' for none; default: none with --model, "
-                                  "else each agent's own)")
+                                  "else gm-llm.yaml's or each agent's own)")
 
     p = sub.add_parser("play", parents=[backend_flags, model_flags],
                        help="play a campaign (the default command)")

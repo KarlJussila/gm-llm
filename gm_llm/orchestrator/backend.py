@@ -36,6 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .logs import Logs, append
+from ..settings import load_settings
 from .registry import FrontmatterError, split_frontmatter
 
 
@@ -97,12 +98,18 @@ _SERVER_CONFIG = {"compaction": {"auto": False}}
 
 
 def agent_overrides(directory, model: str | None = None, variant: str | None = None) -> dict:
-    """`--model` / `--variant` as opencode's `agent` config, for every agent in the project's
-    `.opencode/agent/`: `model` (default: the agent's own) at `variant` (default: none with
-    `--model`, since a pinned variant belongs to the pinned model). The config reaches the
-    subagents opencode starts itself, which a per-session model wouldn't. opencode ignores an
-    entry that doesn't name the model, and an empty variant clears the pinned one; a null
-    voids the whole entry."""
+    """The campaign's model as opencode's `agent` config, for every agent in the project's
+    `.opencode/agent/`. `--model` / `--variant` win over `gm-llm.yaml`'s `model` / `variant`;
+    a model, from either, brings its own variant (none unless one is named), since a variant
+    belongs to the model it was set for. With neither, each agent keeps the model its file
+    pins. The config reaches the subagents opencode starts itself, which a per-session model
+    wouldn't. opencode ignores an entry that doesn't name the model, and an empty variant
+    clears the pinned one; a null voids the whole entry."""
+    if model is None:
+        settings = load_settings(directory)
+        model = settings.model
+        if variant is None:
+            variant = settings.variant
     if model is None and variant is None:
         return {}
     out = {}

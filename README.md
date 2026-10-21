@@ -76,8 +76,21 @@ After each session the `dm` curates the feedback you gave at its close into `fee
 file per skill or agent, and the agents apply it from then on. The default directory is shared
 across your campaigns. `feedback-dir` accepts an absolute path, `~`, or a path relative to the
 project. The agents work on a copy in the project's `feedback/`: gm-llm fills it from
-`feedback-dir` when a session starts and copies back what curation changed. Set `subagents: parallel` to let independent authoring
-subagents run concurrently. The default runs one at a time for rate-limited providers.
+`feedback-dir` when a session starts and copies back what curation changed.
+
+Set `subagents: parallel` to let independent authoring subagents run concurrently. The default
+runs one at a time for rate-limited providers.
+
+Every agent pins its model, GPT-6 Luna at `xhigh`. To play a campaign on another, add
+`model` (an opencode `provider/model`) and, optionally, `variant` (its reasoning level):
+
+```yaml
+model: opencode/glm-5.3-flash-free
+variant: high
+```
+
+A `model` without `variant` runs at the model's default. `variant` alone changes the level on
+the pinned model. The agent files stay as shipped, so `gm-llm update` keeps the choice.
 
 ### Windows (native) — one-line install
 
@@ -153,11 +166,8 @@ tokens  [dir] [--price-in …]           token + cost usage, from opencode's own
 init | update | doctor  [dir]
 ```
 
-Every agent pins its model (GPT-6 Luna at `xhigh`). `--model` runs them all on another one,
-e.g. `--model opencode/glm-5.3-flash-free`, with no reasoning variant unless `--variant` names
-one; `--variant` alone changes the variant on the pinned model. The flags apply to that one
-invocation and leave the agent files alone. `dev autoplay`, `dev prep` and `dev reconcile`
-take them too.
+`--model` and `--variant` override the campaign's model (see [Player settings](#player-settings))
+for one invocation. `dev autoplay`, `dev prep` and `dev reconcile` take them too.
 
 The `dev` and `bench` groups are workshop surfaces and appear **only when running from
 a source checkout** (`bench` needs `dev/fixtures/`, which isn't packaged). From a
