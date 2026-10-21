@@ -5,83 +5,59 @@ description: Load when designing a new arc — the campaign's major arc or a min
 
 # arc-design
 
-## What you're designing
+The campaign has one major arc and minor arcs that hook into it.
 
-The campaign has **one major arc and several minor arcs that hook into it**. You're designing one:
+- **The major arc** is the spine, `tier: major`. Its central conflict is personal: built on this
+  PC's backstory, goals and bonds, so it matters to this character.
+- **A minor arc** is a focused subplot, `tier: minor`, with `hooks-into:` set to the major. It earns
+  its place by feeding the major — escalating its clock, exposing one of its answers, complicating
+  its conflict — and the cross-references run both ways.
 
-- **The major arc** is the campaign's spine. Its central conflict is **personal** — built on this
-  PC's backstory, goals, and bonds, so it matters to *this* character. `tier: major`.
-- **A minor arc** is a focused subplot that **hooks into the major**: it earns its place by feeding
-  it — escalating its clock, exposing one of its answers, or complicating its conflict. `tier: minor`,
-  with `hooks-into:` set to the major and the cross-references wired **both ways**.
+## Commit every answer
 
-## The rule that matters most: commit every answer
-
-> **An arc commits its load-bearing answers at design time. Never "DM decides."**
-
-This is the arc's whole job in the system: the dm (when planning) and the runner (in play) **pull
-answers from the arc**. If the arc punts a load-bearing fact downstream, a downstream agent
-fabricates one — and a *different* one each time. So:
-
-- **Every turning point commits its answer** — the reveal, the identity, the consequence. Write the
-  real thing, tagged `[hidden:<id>]`.
-- **Gather the load-bearing facts in the committed-answers section** so they're trivial to pull. If
-  the campaign will raise a question that matters to the plot, its answer is in the arc.
-- **Never write "DM decides," "TBD," "as needed," or leave a load-bearing fact blank.** Decide it now.
-- The **only** thing you leave open is the **player's path** — that's what the engagement paths are
-  for. Fix the facts; leave the path free.
+Planning and play pull their answers from the arc; an answer the arc leaves open gets invented
+downstream, differently each time. So every turning point commits its reveal, identity or
+consequence, tagged `[hidden:<id>]`, and every question the campaign will raise that matters to the
+plot has its answer in the committed-answers section. The arc owns who its NPCs really are: nothing
+downstream casts a second identity for a role it filled. Only the player's path stays open — that's
+what the engagement paths are for.
 
 ## What a strong arc has
 
-Build the arc from the template's sections. What makes each good:
+Fill the template's sections:
 
-- **Premise & core conflict** — a real tension with tangible stakes. What concretely happens if it
-  goes unresolved.
-- **Stakes that bite** — make the cost concrete and tie it to what the PC cares about. Keep *how* the
-  arc exploits their backstory spoiler-side.
-- **Key NPCs & factions** — each with a committed identity and a want. The arc *owns* who these
-  people really are; nothing downstream invents a parallel identity for an already-cast NPC.
-- **Turning points (3–5)** — beats that shift direction or tension, each committing its answer.
-- **Tension curve** — pace build-up → rising action → climax → falling action → resolution. Flat too
-  long bores; spiking too often burns out.
-- **Engagement paths** — direct / indirect / avoidance / alternative. The open part: how the player
-  might come at it, including how it escalates on its own if ignored.
+- **Premise and core conflict** — a real tension, and what concretely happens if it goes unresolved.
+- **Stakes that bite** — a concrete cost tied to what the PC cares about. How the arc uses their
+  backstory stays behind the screen.
+- **Key NPCs and factions** — each with a committed identity and a want.
+- **Turning points**, three to five — beats that shift direction or tension, each with its answer.
+- **Tension curve** — build-up, rising action, climax, falling action, resolution. Flat too long
+  bores; spiking too often burns out.
+- **Engagement paths** — direct, indirect, avoidance, alternative: how the player might come at it,
+  and how it escalates on its own if ignored.
+- **A hook** that draws the player in naturally — a bond, curiosity, urgency, a moral obligation.
+- **Cross-arc dependencies**, flagged, so the arcs can be coordinated; intersections force harder
+  choices.
 
-## Level pacing — the major arc's advancement schedule
+Start from what the PC actually knows (the knowledge ledger), and record who's in on each secret
+with `Known to:`.
 
-The **major arc** owns the campaign's advancement schedule; a minor arc leaves it to the major. Lay
-out where the PC levels up along the arc's spine, so leveling is *planned* rather than forgotten (as
-it is, no one hands out level-ups because no one owns them — this is where that ownership lives):
+## Level pacing
 
-- **Milestone leveling, at a session's end.** A level-up lands when a session closes, never mid-scene.
-- **Cadence: every 2–5 sessions, scaled by level.** Fast at low levels (~every 2), slower as the PC
-  climbs (~every 4–5 by the teens). Pick the cadence for the PC's *current* level.
-- **Prefer a beat, but keep the cadence regardless.** Land a level-up just after a major turning point
-  when one is near — earned advancement feels best. But the cadence is a **floor that holds even when
-  no beat is close**: never stall leveling for want of a story beat, and never bunch two together to
-  catch up. Pace is maintained on the calendar and *decorated* by beats, not gated by them.
-- **Commit each milestone** in the arc's *Level pacing* section: the target level and the session it's
-  due, plus the beat it rides on when there is one. The dm pulls this when planning each session, and
-  reconsiders it every apply-arcs pass.
+The major arc owns the advancement schedule, in its *Level pacing* section; a minor arc has none.
 
-## Craft principles
-
-- **Every arc needs a hook** that draws the player in naturally — bond, curiosity, urgency, moral
-  obligation. Never force engagement.
-- **Flag the secrets and track who's in on them.** Turning points, the central truth, and villain
-  motives are spoilers: `[hidden:<id>]` + `Known to:`. Cross-check the PC knowledge ledger
-  (`characters/{slug}.knowledge.md`) so the arc starts from what the PC *actually* knows.
-- **Leave room for agency** — open *paths*, never undecided *facts*.
-- **Arcs can intersect.** Flag any cross-arc dependency so the dm can coordinate; intersections force
-  harder choices and richer moments.
+- **Milestone levelling, at a session's end** — never mid-scene.
+- **Every two to five sessions, scaled by level:** about every two at low levels, every four or five
+  by the teens. Pace from the PC's current level.
+- **Prefer a beat, keep the cadence.** Land a level-up just after a major turning point when one is
+  near, but the cadence holds when none is: never stall levelling for want of a beat, and never
+  bunch two together to catch up.
+- **Commit each milestone:** the target level, the session it's due, and the beat it rides on when
+  there is one.
 
 ## Before you write
 
-- **Gather:** `campaign/campaign.md` + `world/overview.md` (setting, tone, central conflict); `world/`
-  + `INDEX.md` (entities to reuse, not duplicate); `characters/{slug}.md` + `{slug}.knowledge.md` (the
-  PC's backstory, goals, and what they know); existing `arcs/` so a new arc complements rather than
-  collides — and, for a minor arc, the **major** it hooks into.
-- **Format** lives in **`canon-conventions`** and the `arc-design` template; they own the file
-  shape. Write `arcs/{slug}.md` and its `.state.md`, set `tier` and `hooks-into` in the frontmatter
-  (`INDEX.md` is built from it), link entities with `[[slug]]`, and tag secrets `[hidden:<id>]` with
-  `Known to:`.
+Read `campaign/campaign.md` and `world/overview.md`, the world and `INDEX.md` (to reuse entities,
+not duplicate them), the PC's sheet and ledger, and the existing arcs so a new one complements
+rather than collides — for a minor arc, above all the major it hooks into. Write `arcs/<slug>.md`
+and its `.state.md` from the templates in `canon-conventions`.

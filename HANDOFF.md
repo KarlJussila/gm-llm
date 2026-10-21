@@ -24,12 +24,10 @@ step was skipped because he was away, so he should look at the first commits' di
 Order (hot path first). Done is marked ✓.
 
 - ✓ `social-play`, `discoveries` (`e961feb`)
-- `combat-run`, `combat-balance`
-- planning: `npc-plan`, `investigation-plan` (align its *player-assembled* / *check-gated* terms
-  with `discoveries`), `encounter-plan`, `pacing-plan`, `check-plan` skill, `check-plan-brief`,
-  `correct-plan`
-- setup: `campaign-intake`, `world-build`, `character-create`, `character-import`, `arc-design`,
-  `setup-gate-brief`, `correct-init`
+- ✓ `combat-run` (now says to roll initiative), `combat-balance` (`035459f`)
+- ✓ planning: the four `*-plan` skills, `check-plan`, its brief and correction, `setup-gate-brief`,
+  `correct-init` (`c5e8073`)
+- setup: `campaign-intake`, `world-build`, `character-create`, `character-import`, `arc-design`
 - reconcile: `check-digest`
 - `dm.md` (partly MiMo), `resume-prime`
 - Out of scope here: `player.md`, `player-reminder`, `player-combat-reminder` belong to benchmark

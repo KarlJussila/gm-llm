@@ -5,115 +5,56 @@ description: Use when creating a player character with the player and fitting th
 
 # character-create
 
-## Who runs this, and format
+This interviews the player, so the `dm` runs it; a subagent can't. It's narrative integration, not a
+rules engine: record mechanics as the player gives them, and help turn a concept into a fitting
+class, race or background if they want — building, balancing and levelling stay with their D&D
+tools. `canon-conventions` is the format.
 
-This skill is **player-facing** — it interviews the player — so it is run by the **dm** (a primary).
-A subagent cannot use it (subagents can't touch the player). The dm authors the PC files here: the
-state file and knowledge ledger always, and the sheet — either from scratch or from a character file
-the player hands you to import (step 2).
+Match how much the player wants to drive: a finished character to place and tidy; a concept to build
+together (the default); or a seed to flesh out yourself, with choices put to them for approval.
 
-**Load `canon-conventions` and follow it for format**, and build from the PC templates:
-`pc-sheet.template` → `characters/{slug}.md`, `pc-state.template` → `characters/{slug}.state.md`,
-`pc-knowledge.template` → `characters/{slug}.knowledge.md`, `pc-repertoire.template` →
-`characters/{slug}.repertoire.md`. The PC is registered from its frontmatter.
+## The conversation
 
-This is a **narrative-integration tool, not a rules engine**: record mechanical details as the
-player provides them, and help translate a concept into a fitting class/race/background if they
-want it — but leave building, balancing, and leveling to the player's preferred D&D tools.
+1. **Open with hooks and the choice.** Building on the world the player just approved, devise two to
+   four spoiler-free character hooks, each a role plus a tie into the situation. In the same message,
+   offer the choice: take or adapt a hook, bring their own character file (a sheet export, PDF, JSON,
+   notes — anything), or build one together. Then wait, and continue from whatever they say.
+2. **Import a file** with `character-import`. A one-line "level 5 elf wizard" needs no import.
+3. **Fill the vitals** still missing: race or lineage, class (and subclass, if any), level, ability
+   scores, pronouns. Only the vitals — the full proficiency and spell list surfaces in play.
+4. **Backstory and place in the world.** Use a backstory that already fits; otherwise ask for a
+   rough idea or build one together. Then propose how they fit the setting — where they're from, why
+   they're here, ties to existing places, factions and NPCs. Anything you infer or fill in (a
+   hometown, a faction tie, a reason they came) is a proposal to confirm, never a fact to commit
+   silently.
+5. **DM-side hooks.** Distil one to three threads from the backstory the story can later pull — a
+   loss, a hunted past, a rival, a debt. Record the seams, not the plan.
 
-## Control dial
+Don't write the files until the player has seen and okayed the finished character: vitals, place in
+the world, the ties you drew, and anything you filled in. Match the weight to how much you added — a
+quick "here's where I've slotted you in — good?" for a complete sheet, a fuller walk-through for one
+you built together. On their screen use plain names ("Erasmus Venn"), never `[[slugs]]`.
 
-Match the player's preference:
-- **Player-led** — they hand you a finished character; you place them in the world and tidy the sheet.
-- **Collaborative** (default) — they bring a concept; you propose options and build it together.
-- **DM-led / "surprise me"** — they give a seed (or one of the offered hooks) and let you flesh it
-  out, presenting choices for approval.
+## The four PC files
 
-## Steps
+From the PC templates in `canon-conventions`:
 
-1. **Open — hooks and how do you want to make your character?** This is the skill's opening beat.
-   At campaign setup the DM has just given the player a world overview — build directly on it: devise
-   **2–4 character hooks** (each a role plus a tie into the situation, spoiler-free), present them,
-   and in the **same message** offer the character-creation choice: they can **take or adapt one of
-   these hooks**, **bring their own** (point you at any file — a sheet export, PDF, JSON, HTML dump,
-   notes doc, whatever they've got), or **build one together** from scratch at their chosen control
-   level. Hand off to the player and wait. Continue from whatever they say; don't re-ask from a standing start.
-2. **Import the file.** For any real character file they point you at — a JSON/HTML/PDF/sheet export
-   *or* a multi-section notes doc — **load the `character-import` skill and follow it** to parse it
-   into the sheet (`characters/{slug}.md`); it notes which vitals the file lacked so you know what to
-   ask. (A one-line "level 5 elf wizard" needs no import. No file → gather the vitals by talking.)
-3. **Fill the vital gaps.** Ask the player for any **vital** detail still missing after the import:
-   race/lineage, class (and subclass, if they have one), level, ability scores, pronouns. Just the
-   vitals — don't make them recite their whole proficiency and spell list; the rest gets documented
-   as it surfaces in play.
-4. **Backstory & place in the world — with the player, not behind their back.** If the file carried a
-   backstory that already fits the world, use it; otherwise ask for a rough idea of who they were, or
-   build one together. Then **propose** how they fit the setting — where they're from, why they're here
-   now, ties to existing locations, factions, and NPCs (`[[slug]]` links) — and run it past them.
-   Anything you infer, modify, or fill in (a hometown, a faction tie, a reason they came to the
-   frontier) is a **proposal to confirm**, not a fact to commit silently. Ask the questions that matter
-   to them and adjust to their answers. Author any new people or places as part of folding the
-   backstory into canon.
-5. **DM-side hooks.** Distill 1–3 threads from the backstory the story can later hook into (a loss,
-   a hunted past, a rival, a debt) and record them in the sheet's DM-side hooks. Keep *how* they'll
-   be used spoiler-side — record the seams, not the plan.
+- **`characters/<slug>.md`, the sheet** — every required frontmatter vital committed;
+  `## Known capabilities` (partial is fine, it grows in play); then appearance, personality,
+  backstory, connections, DM-side hooks.
+- **`characters/<slug>.state.md`** — starting location, any notable condition, key starting items,
+  the opening objective, stamped `as-of: S0`. Never HP, spell slots or money; the player tracks
+  those.
+- **`characters/<slug>.knowledge.md`, the ledger** — what the character holds true at the start
+  (their history, their goal, what someone of their background knows of the world), what they
+  believe that may be wrong, and the open questions they're motivated to chase. Never the campaign's
+  secrets: those stay tagged in the world and arc files, and enter the ledger only when play reveals
+  them.
+- **`characters/<slug>.repertoire.md`** — the PC's reaction-eligible moves as
+  `WHEN <trigger> THEN <reaction>` lines: an opportunity attack always, plus any reaction spell or
+  feature the sheet shows (Shield, Counterspell, Hellish Rebuke). Seed each at `Stop: no` — the toggle
+  is the player's to set in play, so don't ask about it now. Add a tactic or build wrinkle (a reach
+  weapon, a feat that changes opportunity attacks) only where the sheet makes it explicit.
 
-## Confirm before you commit
-Don't write the files or finish until the player has **seen and okayed** the finished character:
-their vitals, their place in the world, the ties you've drawn, and anything you filled in for them.
-Match the weight to how much you added: a quick "here's where I've slotted you in — good?" if they
-handed you a complete sheet, a fuller walk-through if you built a lot together. The character is
-theirs to sign off on; don't run ahead of what they've seen.
-
-When you talk to the player — here and anywhere — use plain names, not canon notation: write "Erasmus
-Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the files, not on their screen.
-
-## Write the four PC files
-
-- **`characters/{slug}.md`** (sheet) — from `pc-sheet.template` (or completing the imported
-  draft): the frontmatter vitals from the template, every required field a committed value,
-  **`## Known capabilities`** (the proficiencies/spells/
-  abilities/feats you gathered — partial is fine, it grows in play), then appearance, personality,
-  backstory, connections (`[[slug]]`), DM-side hooks, links.
-- **`characters/{slug}.state.md`** (initial state) — from `pc-state.template`: starting location,
-  any notable condition, key starting items, the opening objective. This is the session-1-start
-  snapshot. **Don't track HP, spell slots, or money** — the player owns granular resources; record
-  only what's narratively worth remembering.
-- **`characters/{slug}.knowledge.md`** (ledger) — from `pc-knowledge.template`, seeded from the
-  backstory and starting situation:
-  - **Knows** — what they'd hold as true at the start: their own history, their goal, and the
-    general, openly-known facts a person of their background would have about the world.
-  - **Believes (may be wrong)** — assumptions or secondhand beliefs the world may later complicate.
-  - **Open questions** — the mysteries they're already aware of and motivated to chase.
-
-  Keep it to what the *character* knows — **never** the campaign's secrets. Those stay `[hidden:<id>]`
-  in the world and arc files (see `canon-conventions`); this ledger is their mirror, flipped only when
-  a secret is actually revealed in play.
-- **`characters/{slug}.repertoire.md`** (combat repertoire) — from `pc-repertoire.template`, seeded
-  from the sheet's reactions and combat abilities. Distil the PC's **reaction-eligible moves** into
-  `WHEN <trigger> THEN <reaction>` lines (an opportunity attack always; plus any reaction spell or
-  feature the sheet shows — Shield, Counterspell, Hellish Rebuke). Seed every one at **`Stop: no`** —
-  the interrupt toggle is the player's to set in play, not yours to guess; don't ask them to configure
-  it up front. Add a signature tactic or a build wrinkle (reach 10 ft, or a feat that changes when an
-  opportunity attack triggers or what it does) only where the sheet makes it explicit. Seed what's
-  clear and leave the rest to grow —
-  a few good triggers beat a rules dump. A PC with no reactions yet gets just the opportunity-attack line.
-
-The orchestrator generates the PC's `INDEX.md` entry from the sheet's frontmatter.
-
-## Fold backstory canon
-
-For every new NPC/location/faction the backstory introduced, author and register it yourself
-(`world-build` + `canon-conventions`). **Gate.** Nothing the backstory names stays unfiled.
-
-## Finish — call `task_complete`
-
-The last step, every time. Once the PC is confirmed by the player, the four files are written and
-registered, and any backstory canon is folded in, **call the `task_complete` tool**. That signals
-the character is done and hands control back — the rest of setup proceeds on its own. Do **not** build
-or plan anything beyond the character yourself, and do **not** tell the player to start or launch
-anything; the table opens when it's ready.
-
-## Tone
-Collaborative and curious. The character is the player's; your job is to make them fit the world and
-give the story something to grab onto.
+Every person, place or faction the backstory introduced gets its own full file (`world-build`);
+nothing it names stays unfiled.

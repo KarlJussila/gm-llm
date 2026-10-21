@@ -5,41 +5,35 @@ description: Use when gathering the player's brief and content boundaries for a 
 
 # campaign-intake
 
-## Offer the choice
-Open with a single question that hands the player the wheel — something like:
+Open with one question that hands the player the wheel, something like:
 
-> "What kind of campaign would you like to play? You can describe what you're after to any level of
-> detail — a genre, a vibe, a full pitch — or we can do a guided setup where I ask you a few
-> questions. Just let me know what you'd prefer."
+> "What kind of campaign would you like to play? Describe what you're after at any level of detail
+> — a genre, a vibe, a full pitch — or I can ask you a few questions."
 
-Read their reply and pick the branch: did they **ask to be guided**, or **describe a campaign**?
+## If they describe a campaign
 
-## Free-form
-Take what they gave, at whatever specificity. **Don't interrogate.** Extract every dimension they
-named and leave the rest to your judgment — you'll commit the open ones as you build the world. Ask
-at most **one** short follow-up, and only if something load-bearing is genuinely missing *and* you
-can't reasonably decide it yourself.
+Take what they gave, at whatever specificity, and don't interrogate. Every dimension they left open
+is yours to decide when you build the world. Ask at most one short follow-up, and only if something
+load-bearing is missing that you can't reasonably decide yourself.
 
-## Guided
-Walk this list — one compact question or small group at a time, letting them defer any to you. Skip
-anything they already covered in their opener; never re-ask.
-- **Setting / genre** — the world and its feel.
-- **Tone** — gritty, heroic, comedic, horror, …
-- **Themes** — what the campaign is *about* underneath the events.
-- **Scope & scale** — local and personal vs. world-spanning; episodic vs. one long epic.
-- **Play-style mix** — the balance of combat / intrigue / exploration / social.
-- **Power level** — starting level; power-fantasy vs. scrappy underdog.
+## If they ask to be guided
 
-## Confirm content boundaries
-Either branch: establish the **lines & veils** — hard "never" content (lines) and "fade to black"
-content (veils) — if they haven't already given them. This is the one non-negotiable; you honor it
-everywhere after. A player who says "anything goes" has answered it.
+Ask one compact question or small group at a time, let them defer any to you, and skip what they
+already covered:
 
-## Carry the brief forward
-Hold the resolved picture: the dimensions the player set, the content boundaries, and **which
-dimensions are yours to decide** (everything they left open). The world step writes these into
-`campaign/campaign.md`; you don't write files here.
+- **Setting and genre** — the world and its feel.
+- **Tone** — gritty, heroic, comedic, horror…
+- **Themes** — what the campaign is about underneath the events.
+- **Scope** — local and personal or world-spanning; episodic or one long epic.
+- **Play-style mix** — combat, intrigue, exploration, social.
+- **Power level** — the starting level; power fantasy or scrappy underdog.
 
-## Done when
-You can state the campaign's setting/tone/themes/scope/play-style/power to the player's chosen depth,
-the content boundaries are confirmed, and you know which open dimensions you'll be committing yourself.
+## Content boundaries
+
+Either way, establish the lines (content that never appears) and veils (content that fades to black)
+if they haven't given them. This is the one thing you must ask, and you honor it everywhere after. A
+player who says "anything goes" has answered.
+
+The brief is done when you can state each dimension to the depth the player chose, the boundaries
+are confirmed, and you know which dimensions are yours. `world-build` records it in
+`campaign/campaign.md`.

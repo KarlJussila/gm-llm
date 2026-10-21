@@ -5,70 +5,41 @@ description: Use when authoring or revising the world, its entities or its under
 
 # world-build
 
-At setup, build the world's premise and central situation from the player's brief and record the
-setting, tone, themes, stakes and content boundaries in `campaign/campaign.md`.
-
-## Format is not your concern here — load canon-conventions
-
-**Load the `canon-conventions` skill and follow it for all format**: the file layout under
-`campaign/`, the entity info/state file pair and their frontmatter, `[[slug]]` linking, the
-`INDEX.md` registry, and awareness/`[hidden]` flags. This skill is purely about *what* to author
-and *what makes it good*. Where the two overlap, canon-conventions wins on format.
-
-The one rule from there that governs world authoring most: **commit every world-fact now; leave
-open only what the player decides.** An NPC's true allegiance, a faction's real goal, the secret a
-location holds — decide them at authoring time. Never write "DM decides."
+What to author and what makes it good; `canon-conventions` owns the format. At setup, build the
+world's premise and central situation from the player's brief, and record the setting, tone, themes,
+stakes and content boundaries in `campaign/campaign.md`.
 
 ## What the world is made of
 
-- **World truth** (`world/overview.md`, `world/cosmology.md`, `world/history.md`) — non-entity
-  setting prose. `overview` is the premise, central conflict, surface situation, themes, and the
-  **hidden layer** (what's *really* going on); `cosmology` is how reality works and the truth
-  beneath it; `history` is the world's **backstory** — the past that produced the present (distinct
-  from the live `state/calendar.md` clock). Non-stateful, not in `INDEX`. Use the `world-overview` /
-  `world-cosmology` / `world-history` templates.
-- **Regions** (`world/regions/`) — the places at map scale: geography, who holds them, notable
-  places within, culture, and **regional history** (a section in the region file, not a separate
-  entity), and how they connect.
-- **NPCs** (`world/npcs/`) — the people. Each an info/state pair.
-- **Factions** (`world/factions/`) — the organizations with goals and reach.
-- **Locations** (`world/locations/`) — the specific places play happens.
-- **Significant items** (`world/items/`) — campaign-weight objects and artifacts (not mundane
-  gear — that lives on the character sheet). Verbatim text of any written item goes in
-  `documents/`, referenced from the item file.
-- **Concepts** (`world/concepts/`) — load-bearing worldbuilding ideas that aren't people, places,
-  orgs, or objects: a cosmological force, a cataclysm, a magic system, a planar phenomenon. Give one
-  its own file (rather than burying it in `cosmology`/`history` prose) once other canon needs to
-  `[[link]]` it. Free-form — only `Kind` is required; organize the body however the concept needs.
+- **World truth** — `world/overview.md` (the premise, central conflict, surface situation, themes
+  and what's really going on), `cosmology.md` (how reality works, and the truth beneath it) and
+  `history.md` (the past that produced the present). Setting prose, not entities.
+- **Regions** — places at map scale: geography, who holds them, the notable places within, culture,
+  how they connect, and their history as a section of the region file.
+- **NPCs**, **factions** with goals and reach, and **locations** where play happens.
+- **Significant items** — campaign-weight objects, not mundane gear, which lives on the character
+  sheet. The verbatim text of a written item goes in `documents/`.
+- **Concepts** — load-bearing ideas that aren't people, places, organizations or objects: a
+  cosmological force, a cataclysm, a magic system. Give one its own file once other canon needs to
+  link it, rather than burying it in cosmology or history.
 
-## Design in two layers
+## Two layers
 
-The strongest world content has a **surface** (what anyone observes) and a **hidden layer** (the
-truth beneath). Author both, and tag hidden parts per `canon-conventions` so the system tracks who
-knows what.
+Strong world content has a surface — the public role, the apparent situation, what a newcomer sees —
+and a hidden layer: the true allegiance, the real motive, the secret a place keeps, the actual cause
+of the visible symptoms. That's where the tension lives. Write the hidden layer into the file, tagged
+as `canon-conventions` says, even when no one will find it soon: it's what keeps the runner and the
+checks consistent, and what stops a later author inventing a contradictory truth.
 
-- **Surface:** the public role, the apparent situation, what a newcomer perceives.
-- **Hidden:** the true allegiance, the real motive, the secret the place keeps, the actual cause of
-  the visible symptoms. This is where the campaign's tension lives.
+## Craft
 
-Commit the hidden layer to the file even when no one will discover it soon — that's what lets the
-runner and the checkers stay consistent, and what stops a downstream agent from inventing a
-contradictory "truth."
-
-## Craft principles
-
-- **Every location has a hook** — a concrete reason a player would go there.
-- **Every NPC wants something** — a flat NPC is forgettable. Give them an active agenda that
-  shapes how they act when the PC isn't steering.
-- **NPCs are not uniformly kind.** Kindness is a choice an NPC makes, not a default. Give them
-  friction, suspicion, self-interest, and their own agendas. A stranger's manner, methods, or
-  reputation can and should raise eyebrows.
-- **Factions have competing goals** — overlapping, conflicting aims are where interesting pressure
-  comes from. Map how each faction relates to the others and how it might intersect the PC.
-- **The world acts on its own.** Things happen whether or not the PC is present. Capture in-motion
-  situations and pressures (a faction's plan in progress, a deadline approaching) so the world
-  feels alive — and so they can become threads and clocks (`state/threads.md`, `state/clocks.md`).
-- **Tie to the campaign's themes.** Every piece should serve what the campaign is *about*.
-- **Stay internally consistent.** Read existing world files and `campaign.md` before adding
-  anything; never contradict established canon. Check `INDEX.md` before creating an entity so you
-  reuse what exists instead of spawning a near-duplicate.
+- **Every location has a hook** — a concrete reason to go there.
+- **Every NPC wants something**, and pursues it when the PC isn't steering. Kindness is a choice,
+  not the default: give them friction, suspicion and self-interest.
+- **Factions have competing goals.** Overlapping, conflicting aims are where pressure comes from; map
+  how each relates to the others and might cross the PC.
+- **The world acts on its own.** Capture situations in motion — a plan under way, a deadline closing
+  in — so they can become threads and clocks.
+- **Serve the themes.** Every piece should serve what the campaign is about.
+- **Stay consistent.** Read `campaign.md` and the existing world before adding to it, and check
+  `INDEX.md` so you reuse what exists instead of making a near-twin.
