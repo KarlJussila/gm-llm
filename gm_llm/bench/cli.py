@@ -13,6 +13,7 @@ aggregate with no model calls.
 from __future__ import annotations
 
 import json
+import queue
 import sys
 from pathlib import Path
 
@@ -138,7 +139,18 @@ def _watch_in_tui(args) -> list:
         finally:
             _note("stopping — letting the run in flight unwind (backend, manifest)…")
             client.close(timeout=None)
-    return app.batch_records
+    # The run that quitting stopped closes after the app is gone; its record is still queued.
+    records = list(app.batch_records)
+    while True:
+        try:
+            ev = client.events.get(timeout=10)
+        except queue.Empty:
+            break
+        if ev["type"] == "batch" and ev["event"] == "close":
+            records.append(ev["record"])
+        elif ev["type"] == "state" and ev["phase"] == "closed":
+            break
+    return records
 
 
 def _serve_batch(args, batch_kwargs) -> None:

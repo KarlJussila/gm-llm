@@ -118,7 +118,8 @@ class PlayApp(App):
             try:
                 self.call_from_thread(self._on_event, ev)
             except RuntimeError:
-                return  # the app stopped between the check and the call
+                self.client.events.put(ev)  # the app stopped first; leave it for the caller
+                return
             if ev["type"] == "state" and ev["phase"] == "closed":
                 return
 

@@ -37,17 +37,19 @@ class BatchEngine(Engine):
 
     def close(self) -> None:
         """Stop the run in flight — it ends `incomplete`, resumable — and wait for the batch
-        to unwind far enough to stop its backend and write its manifest line."""
-        with self._lock:
-            if self.phase == "closed":
-                return
-            self._closing = True
-            self._release_loop()
-        if self._thread is not None:
-            self._thread.join()
-        with self._lock:
-            self._stop_tap()
-            self._set(phase="closed", awaiting=None, busy=None)
+        to unwind far enough to stop its backend and write its manifest line. A second caller
+        waits for the first."""
+        with self._close_lock:
+            with self._lock:
+                if self._closing:
+                    return
+                self._closing = True
+                self._release_loop()
+            if self._thread is not None:
+                self._thread.join()
+            with self._lock:
+                self._stop_tap()
+                self._set(phase="closed", awaiting=None, busy=None)
 
     def _player(self) -> str:
         return "auto"
@@ -78,6 +80,8 @@ class BatchEngine(Engine):
         the run's own — two sources would mean two players."""
         with self._lock:
             self.lc, self._source, self._loop_live, self._turn = lifecycle, source, True, 0
+            if self._closing:
+                source.stop()  # a quit that came before the run opened still ends it
             lifecycle.backend.on_retry = self._retry
             if lifecycle.game is not None:
                 lifecycle.game.on_step = self._step

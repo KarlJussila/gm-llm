@@ -12,6 +12,9 @@ frontend drives it, and what is asserted is the event stream:
   - a meta question between turns;
   - a cancel mid-turn hands the message back and leaves the session playing;
   - `advance` during play takes the loop down, wraps, and offers the next session;
+  - a second `advance` before the first has started is refused, and `closed` is the last
+    event even with a wrap still running;
+  - a batch quit before its run opens still stops that run;
   - the same protocol over a real `gm-llm serve` child: JSON lines both ways, and the child
     is gone after `close`.
 """
@@ -25,6 +28,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
 from gm_llm.engine.core import Engine  # noqa: E402
+from gm_llm.bench.watch import BatchEngine  # noqa: E402
 from gm_llm.engine.client import LocalClient, ProcessClient  # noqa: E402
 from gm_llm.orchestrator.mock import MockLifecycle  # noqa: E402
 
@@ -177,6 +181,50 @@ def advance_wraps():
     print()
 
 
+def one_advance_and_a_terminal_close():
+    print("one_advance_and_a_terminal_close:")
+    d = _local(pace=0.3)
+    d.until("play opens", awaiting="turn", timeout=15)
+    d.send("advance")
+    d.until("the first wrap leaves session 2 ready", phase="ready", timeout=15)
+    d.send("advance")
+    d.send("advance")  # back to back, before the first has started opening
+    d.until("session 2 opens", awaiting="turn", session=2, timeout=15)
+    check([e["what"] for e in d.of("error")] == ["advance"], "the second advance is refused")
+    check(sum(1 for e in d.said("dm")) == 1, "the session opened once")
+    d.send("advance")
+    d.until("a wrap is under way", phase="wrapping")
+    d.client.close()
+    d.until("close posts closed mid-wrap", phase="closed")
+    time.sleep(2)  # the mock wrap would still be ticking through its stages
+    check(d.client.events.empty(), "nothing follows closed")
+    print()
+
+
+def a_batch_quit_before_its_run_opens():
+    print("a_batch_quit_before_its_run_opens:")
+    stopped = []
+
+    class Source:
+        human = False
+
+        def stop(self):
+            stopped.append(True)
+
+    def drive(hooks, note):
+        hooks.on_run(1, 1, "run-x")
+        while not engine._closing:
+            time.sleep(0.01)
+        hooks.on_open(MockLifecycle(pace=0), Source(), "The inn.")
+
+    engine = BatchEngine(drive)
+    d = Driver(LocalClient(engine))
+    d.until("the batch starts", busy="assembling the run")
+    d.client.close()
+    check(stopped == [True], "the run that opened after the quit was stopped")
+    print()
+
+
 def over_the_pipe():
     print("over_the_pipe:")
     client = ProcessClient(["serve", "--mock"])
@@ -196,5 +244,7 @@ if __name__ == "__main__":
     a_fight()
     cancel_hands_back()
     advance_wraps()
+    one_advance_and_a_terminal_close()
+    a_batch_quit_before_its_run_opens()
     over_the_pipe()
     print("OK — engine: setup, play, combat, meta, cancel, wrap, and the stdio protocol.")

@@ -21,10 +21,10 @@ dependencies = [
 gm-llm = "gm_llm.cli:main"
 
 [tool.setuptools]
-# One top-level package: the tool (gm_llm) with the engine (gm_llm.orchestrator) and
-# UI (gm_llm.tui) beneath it — nothing generic lands in site-packages. dev/ is
-# developer tooling and is not shipped.
-packages = ["gm_llm", "gm_llm.orchestrator", "gm_llm.tui"]
+# One top-level package: the tool (gm_llm) with the orchestrator, the engine and the
+# TUI beneath it — nothing generic lands in site-packages. dev/ is developer tooling
+# and is not shipped.
+packages = ["gm_llm", "gm_llm.orchestrator", "gm_llm.engine", "gm_llm.tui"]
 
 [tool.setuptools.dynamic]
 version = { attr = "gm_llm.__version__" }

@@ -89,6 +89,8 @@ class Engine:
         self._turn = 0
         self._activity_seen: set[str] = set()
         self._closing = False
+        self._terminal = False       # the closed state is out; nothing follows it
+        self._close_lock = threading.Lock()
 
     # -- the surface ---------------------------------------------------------
 
@@ -101,7 +103,7 @@ class Engine:
                    directory=self._directory, batch=False)
         if self.lc.phase == "setup":
             self._spawn(self._open_setup)
-        elif self.lc.phase == "wrap_pending":
+        elif self.lc.phase == "wrap_pending" and not self._fresh:
             n = self.lc.session
             self._notice(f"session {n} complete — reconcile and prep session {n + 1}, "
                          f"or quit and decide later", "rule")
@@ -145,21 +147,27 @@ class Engine:
         return acts
 
     def close(self) -> None:
-        with self._lock:
-            if self.phase == "closed":
-                return
-            self._closing = True
-            self._release_loop()
-            self._stop_tap()
-            self._set(phase="closed", awaiting=None, busy=None)
-        if self._cleanup:
-            self._cleanup()
+        """Release the loop, stop the backend, and post `closed` — the last event. A second
+        caller waits for the first to finish. A call still in flight on a worker fails once
+        the backend is gone, and anything it reports is dropped."""
+        with self._close_lock:
+            with self._lock:
+                if self._closing:
+                    return
+                self._closing = True
+                self._release_loop()
+                self._stop_tap()
+                self._set(phase="closed", awaiting=None, busy=None)
+            if self._cleanup:
+                self._cleanup()
 
     # -- state and events ------------------------------------------------------
 
     def _emit(self, type_: str, **fields) -> None:
         event = {"type": type_, **fields}
         with self._lock:
+            if self._terminal:
+                return
             for fn in list(self._subscribers):
                 try:
                     fn(event)
@@ -168,12 +176,15 @@ class Engine:
 
     def _set(self, **changes) -> None:
         with self._lock:
+            if self._terminal:
+                return
             for k, v in changes.items():
                 setattr(self, k, v)
             self._emit("state", phase=self.phase,
                        session=self.lc.session if self.lc is not None else None,
                        awaiting=self.awaiting, busy=self.busy, player=self._player(),
                        in_combat=self._in_combat(), actions=self.actions())
+            self._terminal = self.phase == "closed"
 
     def _say(self, speaker: str, text: str, *, meta: bool = False, combatant=None) -> None:
         self._emit("say", speaker=speaker, text=text, meta=meta, combatant=combatant)
@@ -194,6 +205,8 @@ class Engine:
     def _can_advance(self) -> bool:
         if self.phase in ("setup_done", "ready", "complete"):
             return not self.busy
+        if self.phase == "setup":  # idle with no question asked: the opening failed
+            return not self.busy and not self.awaiting
         if self.phase != "play" or self._in_combat() or self._after_loop:
             return False
         if self._loop_live:
@@ -276,11 +289,19 @@ class Engine:
         self._spawn(self._ask_meta, text)
 
     def _advance(self) -> None:
-        if self.phase == "setup_done":
+        """Runs under `send`'s lock. Every branch claims the table (`busy`, or the loop's
+        `_after_loop`) before it returns, so a second advance is refused."""
+        if self.phase == "setup":  # only offered after the opening failed: try it again
+            self._set(busy="the DM is thinking")
+            self._spawn(self._open_setup)
+        elif self.phase == "setup_done":
+            self._set(busy="planning session 1")
             self._spawn(self._plan_first)
         elif self.phase == "ready":
+            self._set(busy="the DM sets the scene")
             self._spawn(self._open_session)
         elif self.phase == "complete":
+            self._set(busy="wrapping the session")
             self._spawn(self._wrap)
         elif self._loop_live:
             # The loop still owns the game — take it down and let its exit run the wrap.
@@ -290,6 +311,7 @@ class Engine:
             self._release_loop()
             self._set(awaiting=None)
         else:
+            self._set(busy="wrapping the session")
             self._spawn(self._wrap)
 
     # -- setup -----------------------------------------------------------------
@@ -382,13 +404,15 @@ class Engine:
             # Resumed straight into a live fight: the loop enters combat on its first pass.
             self._notice("resuming mid-fight — initiative", "rule")
         self._context()
-        self._run_loop(scene)
+        # An agent player starts each loop with a fresh session, so on a resume it is told
+        # what has happened so far.
+        self._run_loop(scene, story=game._read_transcript() if resumed else None)
 
-    def _run_loop(self, scene: str) -> None:
+    def _run_loop(self, scene: str, story: str | None = None) -> None:
         with self._lock:
             if self._closing:
                 return
-            self._source = self.lc.player_source()
+            self._source = self.lc.player_source(story=story)
             self._loop_live = True
         try:
             result = play_session(self.lc.game, self._source, scene, hooks=self._hooks(),
@@ -474,13 +498,13 @@ class Engine:
         self._context()
 
     def _on_interrupt(self, stage: str, exc: Exception, message: str) -> bool:
-        """A model call raised. The session survives everything except a hard failure in a
-        fight: out of combat the loop's next act is to ask the player, but re-entering a
+        """A model call raised. A human's session survives everything except a hard failure
+        in a fight: out of combat the loop's next act is to ask the player, but re-entering a
         fight goes straight back to the model. Reverting the runner only applies to the
         stages that left a message in its context."""
         cancelled = isinstance(exc, BackendCancelled)
-        if stage == "combat" and not cancelled:
-            return False
+        if not cancelled and (stage == "combat" or not self._source.human):
+            return False  # with an agent playing, nobody is there to decide to try again
         if stage in ("turn", "combat"):
             self.lc.game.revert_last_turn()
         if not cancelled:
@@ -532,8 +556,9 @@ class Engine:
 
 
 def open_engine(directory: str | Path, *, player: str = "human", model=None, variant=None,
-                port: int = 4181, turn_cap: int | None = None, fresh: bool = False,
-                mock: bool = False, setup: bool = False) -> Engine:
+                port: int = 4181, min_gap: float = 1.0, turn_timeout: int = 0,
+                turn_cap: int | None = None, fresh: bool = False, mock: bool = False,
+                setup: bool = False) -> Engine:
     """An engine over a real backend rooted at `directory`, or over `MockLifecycle`
     (`setup` starts the mock in its setup phase)."""
     if mock:
@@ -546,7 +571,8 @@ def open_engine(directory: str | Path, *, player: str = "human", model=None, var
 
     directory = Path(directory).resolve()
     logs = Logs.under(project=directory, debug=debug_enabled())
-    backend = Backend(str(directory), port=port, logs=logs,
+    backend = Backend(str(directory), port=port, min_call_gap=min_gap,
+                      turn_timeout=turn_timeout or 360, logs=logs,
                       agents=agent_overrides(directory, model, variant)).start()
     try:
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)

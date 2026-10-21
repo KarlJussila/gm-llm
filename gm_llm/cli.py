@@ -155,7 +155,8 @@ def run_play(args) -> int:
 def _serve_args(args) -> list[str]:
     """`play`'s flags as `gm-llm serve` takes them — what a frontend spawns its engine with."""
     out = [str(Path(args.dir).resolve()), "--player", getattr(args, "player", "human"),
-           "--port", str(args.port)]
+           "--port", str(args.port), "--min-gap", str(args.min_gap),
+           "--turn-timeout", str(args.turn_timeout)]
     if args.mock:
         out += ["--mock"] + (["--setup"] if args.setup else [])
     if args.model is not None:
@@ -192,7 +193,8 @@ def _cmd_serve(args) -> int:
     try:
         from .engine.core import open_engine
         engine = open_engine(args.dir, player=args.player, model=args.model,
-                             variant=args.variant, port=args.port, turn_cap=args.turn_cap,
+                             variant=args.variant, port=args.port, min_gap=args.min_gap,
+                             turn_timeout=args.turn_timeout, turn_cap=args.turn_cap,
                              fresh=args.fresh, mock=args.mock, setup=args.setup)
     except Exception as e:  # noqa: BLE001 — the frontend shows it
         return fail(out, str(e))

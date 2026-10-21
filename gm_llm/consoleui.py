@@ -6,6 +6,9 @@ nothing else is queued, asks for a line. Ctrl+C while the table works cancels th
 flight; at the prompt, or on end of input, it quits.
 
 Commands at the prompt: `/meta <question>`, `/wrap`, `/status`, `/roll <dice>`, `/quit`.
+
+With the agent playing (`--player auto`) it runs unattended: when the session ends, hits its
+cap or fails, it says what's next and exits — non-zero if play failed.
 """
 
 from __future__ import annotations
@@ -106,6 +109,7 @@ def run(client, *, stream: bool = False) -> int:
     # Ask only once the engine has answered our last command: a state change, or an
     # `error`/`status` reply that leaves the state as it was.
     fresh = False
+    failed = False  # an error since the last state
     try:
         while True:
             try:
@@ -122,12 +126,21 @@ def run(client, *, stream: bool = False) -> int:
                     state, fresh = ev, True
                     if ev["phase"] == "closed":
                         return 0
+                    if ev.get("awaiting") or ev.get("busy"):
+                        failed = False
                 else:
                     _render(ev, stream=stream, human=state.get("player") != "auto")
                     fresh = fresh or ev["type"] in ("error", "status")
+                    failed = failed or ev["type"] == "error"
                 continue
             if not (fresh and _wants_player(state)):
                 continue
+            if state.get("player") == "auto" and state["phase"] in ("play", "complete"):
+                if state["phase"] == "complete":
+                    _print("— the session is complete — `gm-llm play` wraps it —")
+                    return 0
+                _print("— the session is still open — run this again to resume it —")
+                return 1 if failed else 0
             try:
                 line = input(_prompt(state))
             except (EOFError, KeyboardInterrupt):
