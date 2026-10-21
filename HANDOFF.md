@@ -35,6 +35,12 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
   locations no longer track who is where (`183c229`); the archive records the DM's dice rolls and
   the grader reads a gate's correction diff as a correction, not as the judged draft (`b2bff0d`);
   a place's state is the place's own, not who came and went (`ca24187`).
+- Found without quota: opencode's `read` doesn't expand `~` (probed on `glm-5.3-flash-free`), so
+  real campaigns never reached `~/.gm-llm/feedback`. The agents now work on the project's
+  `feedback/`, synced with `feedback-dir` (`9ef9f2c`). Bench runs were unaffected (their
+  `feedback-dir` is the run's own `feedback/`).
+- Free models (`opencode/glm-5.3-flash-free`, `opencode/deepseek-v4.1-flash-free`) are fine for
+  anything that just needs *a* model — wiring and tool checks, never Luna's measurements.
 - Watched, once each: the DM rolled a PC check itself (d20+10), then discarded it and asked
   (luna6b s3t4). The checker couldn't see it then; with rolls archived it can.
 - `bench-out/luna6` is the aborted first attempt (the dice bug); ignore it.
