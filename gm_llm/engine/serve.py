@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import signal
 import sys
 import threading
 
@@ -50,6 +51,8 @@ def serve(engine, out) -> int:
 
     writer = threading.Thread(target=write, daemon=True)
     writer.start()
+    # A kill must still stop the backend, or its opencode server outlives us.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     engine.subscribe(pending.put)
     engine.start()
     try:
