@@ -92,6 +92,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   invalidated.
 
 ### Fixed
+- **A reveal no longer splits a wrapped `Known to:` line.** The PC was added to the entry's first
+  line, mid-sentence; it now goes at the end of the entry.
 - **Setup no longer shows the DM's message twice.** Luna can say a line as commentary before a
   tool call and repeat it as its final answer; a reply is now its final answer when it has one.
 - **A turn that ends on a tool call no longer loses its narration.** opencode splits a turn at each

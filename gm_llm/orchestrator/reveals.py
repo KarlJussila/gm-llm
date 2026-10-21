@@ -78,8 +78,9 @@ def sync_reveals(campaign: Path) -> int:
 
 
 def _add_known_to(lines: list[str], i: int, pc: str) -> None:
-    """Add `[[pc]]` to the `Known to:` line of the secret that starts on line i (the first one
-    before the next list item or heading)."""
+    """Add `[[pc]]` to the end of the `Known to:` entry of the secret that starts on line i
+    (the first one before the next list item or heading). The entry may wrap onto indented
+    lines below it."""
     link = f"[[{pc}]]"
     for j in range(i, min(i + 16, len(lines))):
         if j > i and (_ITEM.match(lines[j]) or lines[j].lstrip().startswith("#")):
@@ -87,10 +88,17 @@ def _add_known_to(lines: list[str], i: int, pc: str) -> None:
         m = _KNOWN_TO.match(lines[j].rstrip("\n"))
         if not m:
             continue
-        if link in m.group(2):
+        last = j
+        while (last + 1 < len(lines) and lines[last + 1].startswith((" ", "\t"))
+               and lines[last + 1].strip() and not _ITEM.match(lines[last + 1])):
+            last += 1
+        if any(link in lines[k] for k in range(j, last + 1)):
             return
-        rest = m.group(2).strip().rstrip(".")
-        new = f"{rest}, {link}" if rest and rest not in ("—", "-", "nobody", "no one") else link
-        end = "\n" if lines[j].endswith("\n") else ""
-        lines[j] = f"{m.group(1)}{new}{end}"
+        end = "\n" if lines[last].endswith("\n") else ""
+        if last == j:
+            rest = m.group(2).strip().rstrip(".;,")
+            new = f"{rest}, {link}" if rest and rest not in ("—", "-", "nobody", "no one") else link
+            lines[j] = f"{m.group(1)}{new}{end}"
+        else:
+            lines[last] = f"{lines[last].rstrip().rstrip('.;,')}, {link}{end}"
         return

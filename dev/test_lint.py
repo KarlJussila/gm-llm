@@ -202,6 +202,19 @@ def t_reveal_sync(tmp):
     assert sync_reveals(c) == 0, "idempotent"
     assert issues(tmp) == [], issues(tmp)
 
+    # A Known to: entry that wraps gets the PC at its end, not mid-sentence (luna6d S3).
+    (c / "world/npcs/mira.md").write_text(
+        "- [hidden:mira-1] The mine sits on a node.\n"
+        "  Known to: [[lysa-fenn]] (partial: knows energy is drained,\n"
+        "  but not by whom); [[mira]] (does not know).\n"
+        "- Another fact.\n")
+    (c / "characters/bram.knowledge.md").write_text(
+        "## Knows\n- Lysa informs. [learned:fenn-informant S2]\n- The node. [learned:mira-1 S3]\n")
+    assert sync_reveals(c) == 1
+    lines = (c / "world/npcs/mira.md").read_text().splitlines()
+    assert lines[1] == "  Known to: [[lysa-fenn]] (partial: knows energy is drained,", lines
+    assert lines[2] == "  but not by whom); [[mira]] (does not know), [[bram]]", lines
+
 
 def t_index_and_paths(tmp):
     c = build(tmp)
