@@ -86,7 +86,7 @@ def test_dev_autoplay_and_play_auto_are_one_driver(tmp):
 def test_player_axis_selects_a_source_not_a_command(tmp):
     """Both TUI cells are the same app over one session loop — `--player` picks the
     `PlayerSource` the lifecycle hands it. The console frontend is a separate entry point:
-    the engine client for a human, autoplay for the agent player."""
+    the same client whoever plays."""
     routed = []
     real_tui, real_autoplay = cli._launch_tui, None
     cli._launch_tui = lambda args, *, mock, player="human": routed.append(("tui", player, mock))
@@ -98,22 +98,14 @@ def test_player_axis_selects_a_source_not_a_command(tmp):
         cli._launch_tui = real_tui
     assert routed == [("tui", "human", False), ("tui", "auto", False), ("tui", "human", True)], routed
 
-    from gm_llm import autoplay
-    real_autoplay = autoplay.run
-    autoplay.run = lambda args: routed.append(("console", args.player, args.mock))
-    try:
-        cli.run_play(_parse("play", "--player", "auto", "--ui", "console"))
-    finally:
-        autoplay.run = real_autoplay
-    assert routed[-1] == ("console", "auto", False), routed
-
     real_console = cli._run_console
     cli._run_console = lambda args: routed.append(("console", args.player, args.mock))
     try:
+        cli.run_play(_parse("play", "--player", "auto", "--ui", "console"))
         cli.run_play(_parse("play", "--ui", "console", "--mock"))
     finally:
         cli._run_console = real_console
-    assert routed[-1] == ("console", "human", True), routed
+    assert routed[-2:] == [("console", "auto", False), ("console", "human", True)], routed
 
 
 def test_unsupported_axis_combinations_refuse_by_name(tmp):

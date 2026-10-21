@@ -22,7 +22,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import autoplay
 from .console import banner, c, fail, note, sessions_dir, show_prep, verdict, with_engine
 from .orchestrator import Planner, Reconciler
 from .orchestrator import paths
@@ -151,7 +150,6 @@ def add_dev_parser(subparsers, common, engine) -> None:
     p.add_argument("--fresh", action="store_true",
                    help="start the session over, overwriting its transcript "
                         "(the default resumes an in-progress session)")
-    p.add_argument("--kickoff", default="Let's begin the session.")
     p.add_argument("--ui", choices=("console", "tui"), default="console",
                    help="frontend to watch it through (default: console)")
     p.set_defaults(func=lambda a: _autoplay(a))

@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-"""Standalone check for the TUI's side of the session loop — no pytest; run me directly.
+"""Standalone check for the TUI as a client of the engine — no pytest; run me directly.
 
-Drives the real `PlayApp` headlessly (Textual's own `run_test` pilot) over `MockLifecycle`,
-so this is the app's actual event loop, workers, threads and key handling — only the model
-is fake. It exists because frontends 2 moved the TUI from a worker per turn to one
-`play_session` worker per session, with the keyboard as a `PlayerSource`: everything that
-used to be straight-line code in `_do_turn` is now a hand-off between two threads, and
-nothing else in the suite would notice if a hand-off stopped arriving.
+Drives the real `PlayApp` headlessly (Textual's own `run_test` pilot) over an `Engine` on
+`MockLifecycle` — so this is the app's actual event pump, key handling and rendering, and
+the engine's actual threads; only the model is fake.
 
 What it pins, end to end through the keyboard:
 
-  - the opening scene, then a typed turn: the line is echoed once (by the loop's `on_player`,
-    not by the input handler) and the DM's beat lands;
-  - a turn that starts a fight enters combat *from the loop*, and the confirm gate takes a
-    bare Enter for confirm and a typed line for a reaction;
-  - the fight's exit beat is rendered and normal turns resume;
-  - the runner's `task_complete` offers the wrap, the wrap runs, and the next session opens
-    on a fresh loop;
-  - ctrl+x cancels the turn in flight, hands the message back to the box, and leaves the
-    loop playing (the interrupt hook's whole point).
+  - the opening scene, then a typed turn: the line is echoed once (by the engine's `say`)
+    and the DM's beat lands;
+  - a fight: the PC's slot takes a typed action, the confirm gate a bare Enter or a
+    reaction, and normal turns resume;
+  - the runner's close offers the wrap on the prompt bar, `y` runs it, and `y` again opens
+    the next session;
+  - ctrl+x cancels the turn in flight and the message comes back to the box;
+  - the frontends import nothing of the orchestrator's or the bench's.
 
 The mock's scripted delays are scenery, so it runs at `pace=0` — except the cancel scenario,
 which needs a call actually in flight to cancel.
@@ -34,6 +30,8 @@ sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
 from textual.widgets import Input  # noqa: E402
 
+from gm_llm.engine.client import LocalClient  # noqa: E402
+from gm_llm.engine.core import Engine  # noqa: E402
 from gm_llm.orchestrator.mock import MockLifecycle  # noqa: E402
 from gm_llm.tui.app import PlayApp  # noqa: E402
 from gm_llm.tui.widgets import DMBlock, PlayerLine  # noqa: E402
@@ -79,14 +77,21 @@ def player_lines(app):
     return len(app.query(PlayerLine))
 
 
+def _app(pace=0.0):
+    return PlayApp(LocalClient(Engine(MockLifecycle(pace=pace))))
+
+
+def awaiting(app):
+    return app.state.get("awaiting")
+
+
 # ── scenarios ─────────────────────────────────────────────────────────────────
 
 async def a_whole_session_through_the_keyboard():
-    app = PlayApp(MockLifecycle(pace=0.0))
+    app = _app()
     async with app.run_test() as pilot:
-        await until(pilot, lambda: dm_beats(app) >= 1, "the opening scene lands")
-        check(app._loop_live, "the session loop is running behind it")
-        check(app._source.human, "the keyboard is the player source")
+        await until(pilot, lambda: dm_beats(app) >= 1 and awaiting(app) == "turn",
+                    "the opening scene lands and the engine asks for a turn")
 
         # -- turn 1: a plain typed turn --------------------------------------
         await submit(pilot, "I look around the common room.")
@@ -95,26 +100,26 @@ async def a_whole_session_through_the_keyboard():
 
         # -- turn 2: the mock starts a fight ---------------------------------
         await submit(pilot, "I draw my blade.")
-        await until(pilot, lambda: app._combat_awaiting == "pc",
+        await until(pilot, lambda: awaiting(app) == "pc_action",
                     "the fight is entered and stops at the PC's slot")
-        check(app.game.in_combat, "the game is in combat")
+        check(app.state["in_combat"], "the state says the fight is on")
 
         await submit(pilot, "I strike the nearer thug.")
-        await until(pilot, lambda: app._combat_awaiting == "confirm",
+        await until(pilot, lambda: awaiting(app) == "confirm",
                     "the PC beat resolves and an NPC beat awaits confirm")
 
         # a typed line at the confirm gate is a reaction, not a turn
         beats_before = dm_beats(app)
         await submit(pilot, "I raise my shield!")
-        await until(pilot, lambda: dm_beats(app) > beats_before and
-                    app._combat_awaiting == "confirm", "a reaction replays the beat, re-armed")
+        await until(pilot, lambda: dm_beats(app) > beats_before and awaiting(app) == "confirm",
+                    "a reaction replays the beat, re-armed")
 
         await submit(pilot)  # bare Enter confirms
-        await until(pilot, lambda: app._combat_awaiting == "confirm",
+        await until(pilot, lambda: awaiting(app) == "confirm",
                     "the next NPC beat comes up for confirm")
         await submit(pilot)
-        await until(pilot, lambda: not app.game.in_combat and app._combat_awaiting is None,
-                    "the fight ends and the loop returns to normal turns")
+        await until(pilot, lambda: not app.state["in_combat"] and awaiting(app) == "turn",
+                    "the fight ends and normal turns resume")
 
         # -- turns 3-6: the mock wraps the session on its sixth turn ----------
         for i in range(3, 7):
@@ -122,44 +127,54 @@ async def a_whole_session_through_the_keyboard():
             await submit(pilot, f"I keep going ({i}).")
             await until(pilot, lambda beats=beats: dm_beats(app) > beats, f"turn {i} plays")
 
-        await until(pilot, lambda: app._pending == "wrap",
+        await until(pilot, lambda: app.state["phase"] == "complete" and app._prompt.active,
                     "the runner's close offers the wrap instead of running it")
-        check(not app._loop_live, "the session loop ended with the session")
 
-        # -- the wrap, then the next session on a fresh loop -----------------
+        # -- the wrap, then the next session -----------------------------------
         # `ask()` takes focus, so the phase prompt answers to a bare y (see PromptBar).
         await pilot.press("y")
-        await until(pilot, lambda: app._pending == "open" and not app._wrapping,
+        await until(pilot, lambda: app.state["phase"] == "ready" and app._prompt.active,
                     "the pipeline runs and session 2 is planned")
         await pilot.press("y")
-        await until(pilot, lambda: app._loop_live and app.lc.session == 2,
-                    "session 2 opens on a new loop")
-        check(app._source is not None and app._source.human,
-              "with a fresh source — a stopped one would never wake")
+        await until(pilot, lambda: awaiting(app) == "turn" and app.state["session"] == 2,
+                    "session 2 opens and asks for a turn")
         app.exit()
+    app.client.close()
     print("a_whole_session_through_the_keyboard: play, fight, wrap, next session.\n")
 
 
 async def cancel_hands_the_message_back_and_plays_on():
-    app = PlayApp(MockLifecycle(pace=1.0))  # a real delay, so there is a call to cancel
+    app = _app(pace=1.0)  # a real delay, so there is a call to cancel
     async with app.run_test() as pilot:
-        await until(pilot, lambda: dm_beats(app) >= 1, "the opening scene lands")
+        await until(pilot, lambda: awaiting(app) == "turn", "the opening scene lands")
         await submit(pilot, "I mistype something.")
-        await until(pilot, lambda: app._working, "the turn is in flight")
+        await until(pilot, lambda: "cancel" in app.state["actions"], "the turn is in flight")
         await pilot.press("ctrl+x")
-        await until(pilot, lambda: not app._working,
+        await until(pilot, lambda: awaiting(app) == "turn",
                     "the cancel unwinds the turn instead of waiting it out")
         check(app.query_one("#cmd", Input).value == "I mistype something.",
               "the cancelled message is back in the box")
-        check(app._loop_live, "the session loop survived the cancel")
 
         await submit(pilot, "I try again.")
         await until(pilot, lambda: dm_beats(app) == 2, "and the next turn plays normally")
         app.exit()
+    app.client.close()
     print("cancel_hands_the_message_back_and_plays_on: an interrupt is not an ending.\n")
+
+
+def the_frontends_import_no_workflow():
+    import subprocess
+    probe = ("import sys, gm_llm.tui.app, gm_llm.consoleui, gm_llm.engine.client; "
+             "print(' '.join(m for m in sys.modules if m.startswith("
+             "('gm_llm.orchestrator', 'gm_llm.bench', 'gm_llm.engine.core'))))")
+    out = subprocess.run([sys.executable, "-c", probe], cwd=REPO, capture_output=True,
+                         text=True, check=True).stdout.strip()
+    check(out == "", f"the TUI and console import only the engine client — got: {out}")
+    print()
 
 
 if __name__ == "__main__":
     asyncio.run(a_whole_session_through_the_keyboard())
     asyncio.run(cancel_hands_the_message_back_and_plays_on())
-    print("OK — TUI: one session loop, keyboard source, combat gate, wrap, cancel.")
+    the_frontends_import_no_workflow()
+    print("OK — TUI over the engine: turns, combat gate, wrap, cancel, the import boundary.")

@@ -41,9 +41,12 @@ def serve(engine, out) -> int:
     pending: queue.Queue = queue.Queue()
 
     def write() -> None:
-        while (ev := pending.get()) is not None:
-            out.write(json.dumps(ev, ensure_ascii=False) + "\n")
-            out.flush()
+        try:
+            while (ev := pending.get()) is not None:
+                out.write(json.dumps(ev, ensure_ascii=False) + "\n")
+                out.flush()
+        except OSError:
+            pass  # the frontend is gone; stdin's end closes the engine
 
     writer = threading.Thread(target=write, daemon=True)
     writer.start()
@@ -65,4 +68,8 @@ def serve(engine, out) -> int:
         engine.close()
         pending.put(None)
         writer.join(timeout=5)
+        try:
+            out.close()
+        except OSError:
+            pass
     return 0

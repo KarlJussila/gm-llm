@@ -144,10 +144,6 @@ def run_play(args) -> int:
         from .devcmds import unavailable
         unavailable("--player auto needs a real backend (the mock has no gate to score).")
 
-    if player == "auto" and ui == "console":
-        from . import autoplay
-        return autoplay.run(args)          # exits via with_engine
-
     if ui == "console":
         return _run_console(args)
 
@@ -168,6 +164,8 @@ def _serve_args(args) -> list[str]:
         out += ["--variant", args.variant]
     if getattr(args, "player", "human") == "auto":
         out += ["--turn-cap", str(args.turn_cap)]
+    if getattr(args, "fresh", False):
+        out += ["--fresh"]
     return out
 
 
@@ -185,58 +183,46 @@ def _run_console(args) -> int:
     from .engine.client import ProcessClient
     if not _has_assets(args):
         return 1
-    return consoleui.run(ProcessClient(_serve_args(args)), stream=args.stream)
+    return consoleui.run(ProcessClient(["serve", *_serve_args(args)]), stream=args.stream)
 
 
 def _cmd_serve(args) -> int:
     from .engine.serve import claim_stdout, fail, serve
     out = claim_stdout()
     try:
-        from .engine import open_engine
+        from .engine.core import open_engine
         engine = open_engine(args.dir, player=args.player, model=args.model,
                              variant=args.variant, port=args.port, turn_cap=args.turn_cap,
-                             mock=args.mock, setup=args.setup)
+                             fresh=args.fresh, mock=args.mock, setup=args.setup)
     except Exception as e:  # noqa: BLE001 — the frontend shows it
         return fail(out, str(e))
     return serve(engine, out)
 
 
 def _launch_tui(args, *, mock: bool, player: str = "human") -> int:
-    """The Textual app, in-process. Live boots a real backend rooted at `dir`; mock runs
-    against `MockLifecycle` so the UI can be worked on with no opencode and no rate limit."""
+    """The Textual app over a `gm-llm serve` child. The engine's stderr goes to a log file:
+    the terminal belongs to Textual."""
+    import tempfile
+
+    from .engine.client import ProcessClient
     from .tui.app import PlayApp
 
-    if mock:
-        from .orchestrator.mock import MockLifecycle
-        app = PlayApp(MockLifecycle(start_in_setup=args.setup), cleanup=None, theme=args.theme)
-        app.title = "gm-llm (MOCK)"
-        app.run()
-        return 0
-
-    directory = Path(args.dir).resolve()
-    if not (directory / ".opencode" / "agent").is_dir():
-        print(f"no .opencode assets in {directory} — run `gm-llm init` here first.",
-              file=sys.stderr)
+    if not _has_assets(args):
         return 1
-
-    from .orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
-    from .orchestrator.backend import agent_overrides
-    from .orchestrator.logs import debug_enabled
-
-    auto = player == "auto"
-    logs = Logs.under(project=directory, debug=debug_enabled())
-    backend = Backend(str(directory), port=args.port, logs=logs,
-                      agents=agent_overrides(directory, args.model, args.variant)).start()
-    try:
-        gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)
-        lifecycle = Lifecycle(backend, gate, str(directory), logs=logs,
-                              player=player)
-        app = PlayApp(lifecycle, cleanup=backend.stop, theme=args.theme,
-                      turn_cap=args.turn_cap if auto else None)
-        app.title = "gm-llm (live · autoplay)" if auto else "gm-llm (live)"
-        app.run()
-    finally:
-        backend.stop()
+    if mock:
+        log_dir = Path(tempfile.gettempdir())
+    else:
+        log_dir = Path(args.dir).resolve() / ".opencode" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+    with open(log_dir / "engine.log", "w", encoding="utf-8") as log:
+        client = ProcessClient(["serve", *_serve_args(args)], stderr=log)
+        app = PlayApp(client, theme=getattr(args, "theme", "dracula"))
+        app.title = ("gm-llm (MOCK)" if mock else
+                     "gm-llm (live · autoplay)" if player == "auto" else "gm-llm (live)")
+        try:
+            app.run()
+        finally:
+            client.close()
     return 0
 
 
@@ -293,7 +279,6 @@ def _build_parser() -> argparse.ArgumentParser:
     # autoplay's flags, accepted here too so `play --player auto` is the same command
     p.add_argument("--turn-cap", type=int, default=30, help=argparse.SUPPRESS)
     p.add_argument("--fresh", action="store_true", help=argparse.SUPPRESS)
-    p.add_argument("--kickoff", default="Let's begin the session.", help=argparse.SUPPRESS)
     p.set_defaults(func=run_play)
 
     p = sub.add_parser("serve", parents=[backend_flags, model_flags],
@@ -305,6 +290,8 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--mock", action="store_true", help="mock backend — no opencode")
     p.add_argument("--setup", action="store_true",
                    help="with --mock: start in the new-campaign setup phase")
+    p.add_argument("--fresh", action="store_true",
+                   help="open the session over instead of resuming its transcript")
     p.set_defaults(func=_cmd_serve)
 
     p = sub.add_parser("status", help="where the campaign stands (disk only, no model)")

@@ -44,7 +44,7 @@ class LocalClient(Client):
 
 
 class ProcessClient(Client):
-    """`gm-llm serve <args>` in a child process. The child gets its own process group, so
+    """`python -m gm_llm <args>` in a child process — `serve …`, or `bench run --ui serve …`. The child gets its own process group, so
     the terminal's Ctrl+C reaches only the frontend, which turns it into a `cancel`. If the
     engine exits without closing, the client reports it and posts a `closed` state."""
 
@@ -53,7 +53,7 @@ class ProcessClient(Client):
         group = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt"
                  else {"start_new_session": True})
         self._proc = subprocess.Popen(
-            [sys.executable, "-m", "gm_llm", "serve", *args],
+            [sys.executable, "-m", "gm_llm", *args],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr,
             encoding="utf-8", bufsize=1, **group)
         self._lock = threading.Lock()

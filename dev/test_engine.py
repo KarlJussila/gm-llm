@@ -24,7 +24,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
-from gm_llm.engine import Engine  # noqa: E402
+from gm_llm.engine.core import Engine  # noqa: E402
 from gm_llm.engine.client import LocalClient, ProcessClient  # noqa: E402
 from gm_llm.orchestrator.mock import MockLifecycle  # noqa: E402
 
@@ -179,7 +179,7 @@ def advance_wraps():
 
 def over_the_pipe():
     print("over_the_pipe:")
-    client = ProcessClient(["--mock"])
+    client = ProcessClient(["serve", "--mock"])
     d = Driver(client)
     d.until("the engine speaks JSON lines from a child process", awaiting="turn", timeout=30)
     d.send("input", "I look around")

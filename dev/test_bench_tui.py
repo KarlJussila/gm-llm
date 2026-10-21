@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Standalone check for a bench batch watched in the TUI — no pytest; run me directly.
 
-Drives the real `PlayApp` headlessly (Textual's `run_test` pilot) over a real
-`bench.runner.run_batch`, with only the expensive seams faked (the fakes are
+Drives the real `PlayApp` headlessly (Textual's `run_test` pilot) over a `BatchEngine` on a
+real `bench.runner.run_batch`, with only the expensive seams faked (the fakes are
 `dev/test_bench.py`'s, imported rather than re-spelled). So this is the app's actual event
-loop, workers and threads, the actual batch, and the actual archives — frontends step 4.
+pump, the engine's threads, the actual batch, and the actual archives.
 
 What it pins:
 
@@ -13,8 +13,8 @@ What it pins:
     into the watching app, which must reach nothing. This is the comparability invariant
     (design/frontends.md § Constraints), which until now had nothing enforcing it.
   - **The chrome exists.** The batch header tracks run *k* of *N* and tallies the outcomes,
-    and each run's play renders into the scene through the lifecycle the app attaches per
-    run — the thing `PlayApp` could not do while it assumed one campaign dir for life.
+    and each run's play renders into the scene through the lifecycle the engine attaches
+    per run.
   - **Quitting stops the batch honestly.** The run in flight ends `incomplete` and
     *resumable* — no `cap` event, which would archive a ceiling it never hit — the batch
     opens no further runs, and the thread unwinds far enough to write the manifest line.
@@ -35,6 +35,8 @@ sys.path.insert(0, str(REPO / "dev"))  # …and the bench fakes next door
 import test_bench as tb  # noqa: E402
 
 from gm_llm.bench import runner  # noqa: E402
+from gm_llm.bench.watch import BatchEngine  # noqa: E402
+from gm_llm.engine.client import LocalClient  # noqa: E402
 from gm_llm.tui.app import PlayApp  # noqa: E402
 from gm_llm.tui.widgets import BatchHeader, DMBlock, PlayerLine  # noqa: E402
 
@@ -131,15 +133,17 @@ async def watching_a_batch_changes_nothing_about_it():
 
         gate, watched = threading.Event(), []
 
-        def drive(hooks):
+        def drive(hooks, note):
             watched.extend(runner.run_batch(
                 fixture, watched_out, runs=2, turn_cap=10, hooks=hooks,
-                **{**_fakes(complete_after=2, gate=gate), "note": app.note}))
+                **{**_fakes(complete_after=2, gate=gate), "note": note}))
 
-        app = PlayApp(batch=drive)
+        engine = BatchEngine(drive)
+        app = PlayApp(LocalClient(engine))
         async with app.run_test() as pilot:
             # Run 1 is parked on its first turn's draft, so what follows is deterministic.
-            await until(pilot, lambda: app.lc is not None, "run 1 attaches its lifecycle")
+            await until(pilot, lambda: engine.lc is not None and len(app.query(DMBlock)) == 1,
+                        "run 1 attaches its lifecycle and its opening renders")
             check("run 1/2" in header_text(app), f"the header says which run — {header_text(app)}")
 
             # Read-only: typing at a watched batch must reach nothing. If it did, the
@@ -151,7 +155,8 @@ async def watching_a_batch_changes_nothing_about_it():
             gate.set()
 
             await until(pilot, lambda: len(watched) == 2, "both runs play and record")
-            await until(pilot, lambda: app.lc is None, "the last run detaches on close")
+            await until(pilot, lambda: len(app.batch_records) == 2,
+                        "the frontend hears both runs close")
 
             check(len(app.query(DMBlock)) == 6,
                   f"every run's opening + 2 turns render — {len(app.query(DMBlock))} beats")
@@ -160,7 +165,7 @@ async def watching_a_batch_changes_nothing_about_it():
             check("2 complete" in header_text(app),
                   f"the header tallies the finished runs — {header_text(app)}")
             app.exit()
-        app.join_batch(timeout=30)
+        app.client.close()
 
         check([r["outcome"] for r in watched] == [r["outcome"] for r in headless],
               f"same outcomes as headless — {[r['outcome'] for r in watched]}")
@@ -183,16 +188,16 @@ async def quitting_stops_the_batch_and_leaves_the_run_resumable():
         # complete_after=None: the run never wraps, so it is still playing when we quit.
         fakes = _fakes(delay=0.05, reconciled=reconciled)
 
-        def drive(hooks):
+        def drive(hooks, note):
             records.extend(runner.run_batch(fixture, out, runs=2, turn_cap=50, hooks=hooks,
-                                            **{**fakes, "note": app.note}))
+                                            **{**fakes, "note": note}))
 
-        app = PlayApp(batch=drive)
+        app = PlayApp(LocalClient(BatchEngine(drive)))
         async with app.run_test() as pilot:
             await until(pilot, lambda: len(app.query(DMBlock)) >= 3,
                         "run 1 is playing (opening + two turns)")
             app.exit()
-        app.join_batch(timeout=30)
+        app.client.close()  # what the CLI does after the app comes down
 
         check(len(records) == 1, f"the batch stopped instead of opening run 2 — {len(records)}")
         rec = records[0]

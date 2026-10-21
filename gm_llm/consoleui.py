@@ -19,6 +19,8 @@ _ASK = {
     "setup_done": "Setup complete — plan and start session 1?",
     "ready": "Session {n} planned — start playing it?",
     "complete": "Session {n} complete — reconcile and prep session {next}?",
+    # play with nothing awaited and nothing in flight: the loop stopped (a cap, a failure)
+    "play": "The session has stopped — wrap it now?",
 }
 
 
@@ -58,7 +60,8 @@ def _render(ev: dict, *, stream: bool, human: bool) -> None:
 
 def _wants_player(state: dict) -> bool:
     return bool(state.get("awaiting")) or (
-        state.get("phase") in _ASK and "advance" in state.get("actions", ()))
+        state.get("phase") in _ASK and not state.get("busy")
+        and "advance" in state.get("actions", ()))
 
 
 def _prompt(state: dict) -> str:

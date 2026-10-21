@@ -57,9 +57,10 @@ def add_bench_parser(subparsers, engine) -> None:
                           "instead of starting fresh ones (ignores --runs)")
     run.add_argument("--out", default="bench-out",
                      help="output dir for template + run dirs + batch.jsonl (default: bench-out)")
-    run.add_argument("--ui", choices=("console", "tui"), default="console",
+    run.add_argument("--ui", choices=("console", "tui", "serve"), default="console",
                      help="watch the batch in the play TUI instead of streaming notes to "
-                          "stdout (read-only; the archives are unaffected)")
+                          "stdout (read-only; the archives are unaffected); `serve` speaks "
+                          "the engine protocol on stdio, for a frontend to watch")
     run.add_argument("--kickoff", default="Let's begin the session.")
     run.set_defaults(func=cmd_bench_run)
 
@@ -102,34 +103,52 @@ def add_bench_parser(subparsers, engine) -> None:
 
 
 
-def _watch_in_tui(args, batch_kwargs) -> list:
-    """`--ui tui`: the same batch, rendered in the play TUI instead of as stdout notes.
+def _serve_argv(args) -> list[str]:
+    """This `bench run` as the child a TUI spawns: the same batch, with `--ui serve`."""
+    argv = ["bench", "run", "--ui", "serve", "--fixture", str(args.fixture),
+            "--runs", str(args.runs), "--tier", args.tier, "--turn-cap", str(args.turn_cap),
+            "--out", str(args.out), "--kickoff", args.kickoff, "--port", str(args.port),
+            "--min-gap", str(args.min_gap), "--turn-timeout", str(args.turn_timeout)]
+    for flag, value in (("--subject-model", args.subject_model),
+                        ("--subject-variant", args.subject_variant)):
+        if value is not None:
+            argv += [flag, value]
+    return argv + [f for f, on in (("--play-only", args.play_only),
+                                   ("--resume", args.resume)) if on]
 
-    `run_batch` stays where it is — the app drives it on its own thread and attaches to each
-    run's lifecycle through `BatchHooks`, so what lands in the archives is what a headless
-    batch lands (design/frontends.md § Constraints). Two consequences worth naming:
 
-      * `--stream` is dropped — the behind-the-screen pane *is* the stream, and a second
-        EventTap would write into a screen Textual owns.
-      * The batch outlives the screen by design. Quitting stops the loop, and this joins the
-        batch thread afterwards so the run in flight finishes unwinding (its backend
-        stopped, its manifest line written) before the summary is printed."""
+def _watch_in_tui(args) -> list:
+    """`--ui tui`: the same batch in a `--ui serve` child, rendered in the play TUI.
+
+    `--stream` is dropped — the behind-the-screen pane *is* the stream. Quitting stops the
+    run in flight, and closing waits for the child, so the run unwinds (its backend
+    stopped, its manifest line written) before the summary is printed."""
+    from ..engine.client import ProcessClient
     from ..tui.app import PlayApp
     if args.stream:
         _note("--stream is what --ui tui already does (ctrl+g for the pane) — ignoring it.")
-    records: list = []
+    log = Path(args.out) / "watch.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with open(log, "w", encoding="utf-8") as err:
+        client = ProcessClient(_serve_argv(args), stderr=err)
+        app = PlayApp(client)
+        app.title = "gm-llm (bench)"
+        try:
+            app.run()
+        finally:
+            _note("stopping — letting the run in flight unwind (backend, manifest)…")
+            client.close(timeout=None)
+    return app.batch_records
 
-    def drive(hooks):
-        records.extend(runner.run_batch(args.fixture, args.out, hooks=hooks,
-                                        note=app.note, **batch_kwargs))
 
-    app = PlayApp(batch=drive)
-    app.title = "gm-llm (bench)"
-    app.run()
-    if app.batch_running():
-        _note("stopping — letting the run in flight unwind (backend, manifest)…")
-    app.join_batch()
-    return records
+def _serve_batch(args, batch_kwargs) -> None:
+    """`--ui serve`: host the batch behind the engine protocol on stdio."""
+    from ..engine.serve import claim_stdout, serve
+    from .watch import BatchEngine
+    out = claim_stdout()
+    engine = BatchEngine(lambda hooks, note: runner.run_batch(
+        args.fixture, args.out, hooks=hooks, note=note, **batch_kwargs))
+    sys.exit(serve(engine, out))
 
 
 def cmd_bench_run(args) -> None:
@@ -137,15 +156,17 @@ def cmd_bench_run(args) -> None:
     session dm pass, so the per-call timeout defaults generous (1800s) unless the run is
     play-only or the user overrode `--turn-timeout`."""
     timeout = args.turn_timeout or (360 if args.play_only else 1800)
-    mode = "resume" if args.resume else f"runs={args.runs}"
-    _note(f"fixture={args.fixture} {mode} out={args.out} ui={args.ui} "
-          f"turn-cap={args.turn_cap} reconcile={not args.play_only}")
     kw = dict(runs=args.runs, tier=args.tier, subject_model=args.subject_model,
               subject_variant=args.subject_variant, turn_cap=args.turn_cap,
               play_only=args.play_only,
               kickoff=args.kickoff, resume=args.resume, port=args.port,
               min_gap=args.min_gap, turn_timeout=timeout)
-    records = (_watch_in_tui(args, kw) if args.ui == "tui"
+    if args.ui == "serve":
+        _serve_batch(args, kw)
+    mode = "resume" if args.resume else f"runs={args.runs}"
+    _note(f"fixture={args.fixture} {mode} out={args.out} ui={args.ui} "
+          f"turn-cap={args.turn_cap} reconcile={not args.play_only}")
+    records = (_watch_in_tui(args) if args.ui == "tui"
                else runner.run_batch(args.fixture, args.out, stream=args.stream,
                                      note=_note, **kw))
 
