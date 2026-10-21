@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from gm_llm.settings import load_settings
+from gm_llm.settings import project_feedback
 
 from . import paths
 from .prompts import load
@@ -112,7 +112,7 @@ class CanonPreloader:
         if plan:
             blocks.append(f"### {paths.rel(n, 'plan')}\n{plan.strip()}")
         blocks += self._render(self._baseline() + self._matched_entities(plan or ""))
-        feedback = load_settings(self.campaign.parent).feedback_dir / "dm-runner.md"
+        feedback = project_feedback(self.campaign.parent) / "dm-runner.md"
         if feedback.is_file():
             blocks.append(f"### Player feedback: dm-runner\n{feedback.read_text(encoding='utf-8').strip()}")
         if not blocks:

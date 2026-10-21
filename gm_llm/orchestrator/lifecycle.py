@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..settings import pull_feedback
 from .packet import character_packet
 from .paths import latest_session
 from .loop import Game, session_is_complete
@@ -36,6 +37,7 @@ class Lifecycle:
         # Who supplies player turns (`--player`). The frontend asks for a source per session
         # and drives one loop either way — see `player_source`.
         self.player = player
+        pull_feedback(directory)
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
         # that needs setup; a session whose runner already signalled the end (even in
         # a prior run the player never confirmed the wrap on) ⇒ show that choice again,

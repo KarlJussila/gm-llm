@@ -20,6 +20,7 @@ from pathlib import Path
 from .orchestrator import Backend, BackendError, CanonPreloader, Gate, Logs
 from .orchestrator.logs import debug_enabled
 from .orchestrator.stream import EventTap
+from .settings import pull_feedback
 
 _COLOR = sys.stdout.isatty()
 
@@ -99,6 +100,7 @@ def with_engine(args, body, *, default_timeout=360):
     tap = None
     code = 0
     try:
+        pull_feedback(args.dir)
         backend.start()
         if args.stream:
             tap = EventTap(backend).start()

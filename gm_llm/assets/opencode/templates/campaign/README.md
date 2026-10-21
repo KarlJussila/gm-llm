@@ -98,8 +98,9 @@ home tag `[revealed:<id> S<n>]` and adds the PC to its `Known to:`. Full detail 
 ## Player feedback loop
 
 The runner collects player feedback at session end, recorded verbatim in the digest. The `dm`
-curates it into the shared player directory configured by `feedback-dir` in the project's
-`gm-llm.yaml`. Feedback is outside `campaign/`; routing belongs to the `feedback-curation` skill.
+curates it into the project's `feedback/`, a copy of the player directory set by `feedback-dir`
+in `gm-llm.yaml` that gm-llm syncs both ways. Feedback is outside `campaign/`; routing belongs to
+the `feedback-curation` skill.
 
 ## Document file format (`documents/{slug}.md`)
 

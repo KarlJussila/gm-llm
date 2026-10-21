@@ -10,7 +10,7 @@ guidance in the file that governs the behaviour it is about, so that skill or ag
 time. This is curation, not transcription: each file stays a short list of current guidance.
 
 The player's words are under *Player feedback* in the digest, `campaign/sessions/{N}/digest.md`.
-The files are in the `feedback-dir` named in `gm-llm.yaml`, shared by all the player's campaigns:
+The files are in `feedback/`, the player's guidance across all their campaigns:
 `<skill-name>.md` for behaviour a skill governs, otherwise `<agent-name>.md` — `dm-runner.md` for
 live play, `dm.md` for setup conversation and your reports.
 

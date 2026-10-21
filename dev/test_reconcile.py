@@ -138,6 +138,20 @@ def test_feedback_curated_when_given(tmp):
     assert agents == {"dm"}, "feedback curation runs on the dm thread"
 
 
+def test_curated_feedback_reaches_the_store(tmp):
+    """The dm curates the project's `feedback/`; what it wrote goes back to the player's store."""
+    _campaign(tmp, '"More rolls, please."')
+    (tmp / "gm-llm.yaml").write_text("feedback-dir: player-store\n", encoding="utf-8")
+
+    def curate(root):
+        (root / "feedback" / "dm-runner.md").write_text("Ask for more rolls.\n", encoding="utf-8")
+    backend = FakeBackend(tmp, on={"Reconcile the campaign's arcs": _stamp("crown", "rivals"),
+                                   "The player gave feedback": curate})
+    _run(tmp, backend, FakeGate())
+    store = tmp / "player-store" / "dm-runner.md"
+    assert store.read_text(encoding="utf-8") == "Ask for more rolls.\n"
+
+
 def test_arc_coverage_nudge(tmp):
     _campaign(tmp, "None.")
     logs = Logs.under(base=tmp / "logs")
@@ -188,6 +202,7 @@ def main():
     test_player_feedback()
     print("  ✓ test_player_feedback")
     for test in (test_feedback_skipped_without_any, test_feedback_curated_when_given,
+                 test_curated_feedback_reaches_the_store,
                  test_arc_coverage_nudge, test_resume_briefs_only_unstamped_arcs,
                  test_corrections_archive_their_diff):
         with tempfile.TemporaryDirectory() as td:

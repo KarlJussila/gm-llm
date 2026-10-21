@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from gm_llm.settings import load_settings
+from gm_llm.settings import feedback_snapshot, load_settings, project_feedback, push_feedback
 
 from . import paths
 from .archive import verdict_fields
@@ -139,9 +139,11 @@ class Reconciler:
         if not self._done(n, "feedback"):
             if player_feedback(self._read_campaign(paths.rel(n, "digest"))):
                 self._announce("feedback")
-                load_settings(self.root).feedback_dir.mkdir(parents=True, exist_ok=True)
+                project_feedback(self.root).mkdir(exist_ok=True)
+                before = feedback_snapshot(self.root)
                 self.backend.prompt(self.dm_sid, self.dm_agent,
                                     load("curate-feedback-brief").format(n=n))
+                push_feedback(self.root, before)
             self._mark(n, "feedback")
 
         # Canon: new and changed entities, then the canon lint.

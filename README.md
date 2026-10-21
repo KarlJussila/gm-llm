@@ -74,8 +74,9 @@ subagents: sequential
 
 After each session the `dm` curates the feedback you gave at its close into `feedback-dir`, one
 file per skill or agent, and the agents apply it from then on. The default directory is shared
-across your campaigns. `feedback-dir` accepts an absolute
-path, `~`, or a path relative to the project. Set `subagents: parallel` to let independent authoring
+across your campaigns. `feedback-dir` accepts an absolute path, `~`, or a path relative to the
+project. The agents work on a copy in the project's `feedback/`: gm-llm fills it from
+`feedback-dir` when a session starts and copies back what curation changed. Set `subagents: parallel` to let independent authoring
 subagents run concurrently. The default runs one at a time for rate-limited providers.
 
 ### Windows (native) — one-line install
