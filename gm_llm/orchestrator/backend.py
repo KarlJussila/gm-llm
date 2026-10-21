@@ -303,16 +303,28 @@ class Backend:
         pinned model (and reasoning variant) is set alongside it."""
         if self._agents.get(session_id) == agent:
             return
-        self._request("POST", f"/session/{session_id}/agent", {"agent": agent})
         model = self._agent_model(agent)
+        self._request("POST", f"/session/{session_id}/agent", {"agent": agent})
         if model:
             self._request("POST", f"/session/{session_id}/model", {"model": model})
         self._agents[session_id] = agent
 
     def _agent_model(self, agent: str) -> dict | None:
-        """The model an agent file pins (`id`, `providerID`, `variant`), fetched once per agent."""
+        """The model an agent file pins (`id`, `providerID`, `variant`), fetched once per agent.
+
+        A freshly started server answers before it has read the project's agent files, so an
+        agent that isn't there yet gets a short wait to appear rather than failing the call."""
         if agent not in self._agent_models:
-            info = (self._request("GET", f"/agent/{urllib.parse.quote(agent)}") or {}).get("data") or {}
+            deadline = time.time() + 30
+            while True:
+                try:
+                    info = (self._request("GET", f"/agent/{urllib.parse.quote(agent)}")
+                            or {}).get("data") or {}
+                    break
+                except urllib.error.HTTPError as e:
+                    if e.code != 404 or time.time() > deadline:
+                        raise
+                    time.sleep(0.5)
             self._agent_models[agent] = info.get("model")
         return self._agent_models[agent]
 
