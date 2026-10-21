@@ -20,13 +20,19 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
   their first real-model run; both tools work. 8 checker findings, all rejected by Sol (4 were
   world rolls the checker took for PC rolls); 3 propagation gate findings confirmed (2 minor, 1
   trivial) once the grader saw the correction as a correction (`b2bff0d`).
-- `bench-out/luna6c` is the fresh run with every fix below; check and grade it next.
+- `bench-out/luna6c` (every fix through `b2bff0d`): 21 turns, natural close, full reconcile and
+  plan. No DM dice calls at all; the checker found nothing in play; Sol confirmed all 5 gate
+  findings (all trivial record slips) — integrity 97.7. Uncaught by any gate: `greyhaven.state.md`
+  logged Dallid arriving and `hollowfell-mine.state.md` his leaving (fixed, `ca24187`).
+- `bench-out/luna6d` is the third run, with `ca24187`; read its place state files first. If they
+  hold, luna 6 is done.
 - Fixed from the runs: the dice tool's DM-directed reminder (`8541c1b`); `discoveries` says a
   check reveals details and conclusions only through them (`3eb602c`, `c8d2e6b`, Karl's
   wording); reconcile counts as done only once the next plan is archived (`a0a2f5f`);
   `canon-conventions` § What goes where, one home per fact (`c7b7eb5`), and the fixture's
   locations no longer track who is where (`183c229`); the archive records the DM's dice rolls and
-  the grader reads a gate's correction diff as a correction, not as the judged draft (`b2bff0d`).
+  the grader reads a gate's correction diff as a correction, not as the judged draft (`b2bff0d`);
+  a place's state is the place's own, not who came and went (`ca24187`).
 - Watched, once each: the DM rolled a PC check itself (d20+10), then discarded it and asked
   (luna6b s3t4). The checker couldn't see it then; with rolls archived it can.
 - `bench-out/luna6` is the aborted first attempt (the dice bug); ignore it.
