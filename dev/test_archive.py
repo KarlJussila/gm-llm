@@ -19,11 +19,14 @@ from gm_llm import __version__  # noqa: E402
 from gm_llm.orchestrator import Game, Logs, Planner  # noqa: E402
 from gm_llm.orchestrator.archive import SCHEMA, Archive  # noqa: E402
 from gm_llm.orchestrator.gate import StageGateResult, Verdict  # noqa: E402
+from gm_llm.bench.workspace import turn_message  # noqa: E402
 
 
 # ── fakes ───────────────────────────────────────────────────────────────────
 
 class _Reply:
+    rolls = ()
+
     def __init__(self, text, tools=(), tool_inputs=None):
         self.text = text
         self.tools = set(tools)
@@ -109,8 +112,9 @@ def test_archive_lazy_header(tmp):
 
 def test_game_turn_events(tmp):
     logs = Logs.under(base=tmp / "logs")
-    backend = FakeBackend(tmp, drafts=[_Reply("The inn is warm.", ("skill", "read")),
-                                       "His hair is grey."])
+    rolled = _Reply("His hair is grey.", ("dice",))
+    rolled.rolls = ("d20 = 4",)
+    backend = FakeBackend(tmp, drafts=[_Reply("The inn is warm.", ("skill", "read")), rolled])
     game = Game(backend, None, logs=logs, campaign_dir=str(tmp / "campaign"), session=1)
     game.start()
     tr = game.turn("I look at the barkeep.")
@@ -125,7 +129,9 @@ def test_game_turn_events(tmp):
     assert opening["tools"] == ["read", "skill"]
     assert turn["turn"] == 2 and not turn["opening"]
     assert turn["player"] == "I look at the barkeep." and turn["narration"] == "His hair is grey."
-    assert turn["tools"] == [] and turn["context"] == {"tokens": 1200, "limit": 100_000}
+    assert opening["rolls"] == [] and turn["rolls"] == ["d20 = 4"], "the DM's own rolls ride along"
+    assert turn["tools"] == ["dice"] and turn["context"] == {"tokens": 1200, "limit": 100_000}
+    assert "<rolls>d20 = 4</rolls>" in turn_message(turn) and "<rolls>" not in turn_message(opening)
     assert not ({"draft", "final", "verdicts", "corrected", "stale"} & turn.keys()), \
         "no in-loop check fields — checks run after play"
 

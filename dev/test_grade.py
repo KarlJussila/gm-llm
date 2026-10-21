@@ -30,6 +30,8 @@ from gm_llm.bench import grade, scoring  # noqa: E402
 # ── fakes ─────────────────────────────────────────────────────────────────────
 
 class _Reply:
+    rolls = ()
+
     def __init__(self, text, tools=(), tool_inputs=None):
         self.text = text
         self.tools = frozenset(tools)
@@ -165,7 +167,8 @@ def test_findings_in_play_order(tmp):
     assert [f["ref"] for f in found] == ["s3t2#1", "s3t2#2", "s3t3#1", "s3:lint",
                                          "s3:propagation#1", "s3:propagation#2"], found
     prop = found[4]
-    assert prop["kind"] == "stage" and prop["draft"] == "--- a\n+++ b", "the gate's draft rides along"
+    assert prop["kind"] == "stage" and prop["correction"] == "--- a\n+++ b", \
+        "the correction rides along as a correction, not as the draft the gate judged"
     assert "indented" in prop["report"], "an indented sub-list belongs to its item"
     assert "2 entity file" in found[3]["report"] and found[3]["check"] == "lint"
 
@@ -174,7 +177,8 @@ def test_findings_in_play_order(tmp):
     assert "Claim: Wrong hair colour." in turn_msg and "Continues: s3t2#1" in turn_msg
     assert '<turn ref="s3t3">' in turn_msg and "The inn is warm." in turn_msg, "the turn rides along"
     stage_msg = grade.finding_message(prop)
-    assert 'from="gate"' in stage_msg and "<draft>" in stage_msg and "Ledger missed" in stage_msg
+    assert 'from="gate"' in stage_msg and "Ledger missed" in stage_msg
+    assert "<correction>" in stage_msg and "<draft>" not in stage_msg
 
 
 def test_split_report(tmp):

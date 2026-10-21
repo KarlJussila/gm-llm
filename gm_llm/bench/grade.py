@@ -156,11 +156,11 @@ def findings_for_run(events: list[dict], checks: list[dict]) -> list[dict]:
             if not _flagged(v):
                 continue
             items = split_report(v.get("report", ""))
-            draft = e.get("draft") or e.get("diff") or ""
             for i, text in enumerate(items, 1):
                 ref = f"{where}:{stage}" + (f"#{i}" if len(items) > 1 else "")
                 out.append({**base, "ref": ref, "check": v.get("check", stage),
-                            "report": text, "draft": draft})
+                            "report": text, "draft": e.get("draft") or "",
+                            "correction": e.get("diff") or ""})
     return out
 
 
@@ -181,6 +181,8 @@ def finding_message(f: dict) -> str:
                  "<report>", f.get("report") or "", "</report>"]
         if f.get("draft"):
             lines += ["<draft>", f["draft"], "</draft>"]
+        if f.get("correction"):
+            lines += ["<correction>", f["correction"], "</correction>"]
     lines.append("</finding>")
     return "\n".join(lines)
 

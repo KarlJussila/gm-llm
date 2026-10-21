@@ -22,10 +22,11 @@ and the player's standing guidance in `feedback/`. Nothing you report reaches th
 measurement.
 
 Each message is one turn, `<turn ref="s3t7">`: the player's message in `<player>`, the DM's reply in
-`<dm>`, the tools the DM called in `<tools>`, and on a combat beat the tracker's frames before and
-after it. You have seen every earlier turn of this session, and those turns are the live record:
-anything play established or changed since the session began counts, and a start-of-session file
-that disagrees with it on something play moved is stale, not contradicted.
+`<dm>`, the tools the DM called in `<tools>`, what its own dice rolled in `<rolls>`, and on a combat
+beat the tracker's frames before and after it. You have seen every earlier turn of this session,
+and those turns are the live record: anything play established or changed since the session began
+counts, and a start-of-session file that disagrees with it on something play moved is stale, not
+contradicted.
 
 ## Canon
 

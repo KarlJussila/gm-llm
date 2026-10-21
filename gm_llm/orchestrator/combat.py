@@ -182,7 +182,7 @@ class CombatMixin:
         self.logs.archive.emit(
             "turn", session=self.session, turn=self._turn_no, opening=False,
             player=player_line, narration=reply.text, session_complete=False,
-            close_nudged=False, tools=sorted(reply.tools),
+            close_nudged=False, tools=sorted(reply.tools), rolls=list(reply.rolls),
             context=({"tokens": cu.tokens, "limit": cu.context_limit} if cu else None),
             combat={"combatant": combatant, "before": before, "after": after},
         )

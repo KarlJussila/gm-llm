@@ -41,6 +41,8 @@ def turn_message(turn: dict) -> str:
         lines += ["<player>", turn["player"], "</player>"]
     lines += ["<dm>", turn.get("narration") or "", "</dm>",
               f"<tools>{', '.join(turn.get('tools') or []) or 'none'}</tools>"]
+    if turn.get("rolls"):
+        lines.append(f"<rolls>{'; '.join(turn['rolls'])}</rolls>")
     combat = turn.get("combat")
     if combat:
         lines += [f'<tracker-before combatant="{combat.get("combatant")}">',

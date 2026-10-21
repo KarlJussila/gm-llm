@@ -44,10 +44,12 @@ class Reply:
     their input args. `tools` lets a caller detect an explicit signal the model raised via a
     tool (e.g. `task_complete`) without prose-parsing. `tool_inputs` maps each tool name to its
     input dict (last call wins if called twice), so a caller can read structured fields — e.g.
-    the `report_findings` tool's `passed` and `report`."""
+    the `report_findings` tool's `passed` and `report`. `rolls` is each dice call this turn as
+    "expression = total", in order — what the archive shows the after-play checker."""
     text: str
     tools: frozenset[str] = field(default_factory=frozenset)
     tool_inputs: dict[str, dict] = field(default_factory=dict)
+    rolls: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -427,7 +429,7 @@ class Backend:
                         inputs: dict[str, dict] = {}
                         for name, inp in calls:
                             inputs[name] = inp  # last call wins (fine for signal tools)
-                        return Reply(out, frozenset(inputs), inputs)
+                        return Reply(out, frozenset(inputs), inputs, dice_rolls(msgs))
                     else:
                         reason = "empty reply (likely a rate-limited/errored stream)"
                 except BackendCancelled:
@@ -610,6 +612,20 @@ def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str 
         elif kind == "idle" and m.get("outcome") != "succeeded":
             error = _error_text(m.get("error")) if m.get("error") else f"turn {m.get('outcome')}"
     return texts, calls, error
+
+
+def dice_rolls(msgs: list[dict]) -> tuple[str, ...]:
+    """A turn's completed dice calls, in order, each as "expression = total"."""
+    rolls = []
+    for m in msgs:
+        if m.get("type") != "assistant":
+            continue
+        for c in m.get("content") or []:
+            state = c.get("state") or {}
+            if c.get("type") == "tool" and c.get("name") == "dice" and state.get("status") == "completed":
+                total = (state.get("metadata") or {}).get("total")
+                rolls.append(f"{(state.get('input') or {}).get('expression')} = {total}")
+    return tuple(rolls)
 
 
 def _error_text(err) -> str:

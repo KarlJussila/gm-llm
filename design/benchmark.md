@@ -63,8 +63,8 @@ The subject is the DM playing well, never the checker catching it failing.
 - **One rolling Luna checker session per run.** Its workspace is a pristine copy of the fixture's
   start-of-session campaign, because reconcile has since rewritten the run directory. The canon is
   loaded once.
-- Turns are fed in play order: the player's message, the DM's text, the tools it called, and for a
-  combat beat the tracker frames. The checker therefore sees the transcript only up to and including
+- Turns are fed in play order: the player's message, the DM's text, the tools it called, what its
+  own dice rolled, and for a combat beat the tracker frames. The checker therefore sees the transcript only up to and including
   the turn it is judging.
 - For each turn it submits structured findings through a tool — which check (canon, conduct or
   combat), the claim, the evidence, a category guess — or an empty list. A mistake it already
@@ -78,6 +78,9 @@ The subject is the DM playing well, never the checker catching it failing.
 - `openai/gpt-6.1-sol` at `high` reasoning, **one session per run**, with read access to the pristine
   start canon, the run's transcript and its checks, and the campaign at the end of the run for the
   stage findings. A run that hasn't been checked is not graded.
+- A stage finding carries the gate's report, the draft it judged where the stage archives one (the
+  digest, the plan), and the diff of the one correction it sent back — `after/` includes that
+  correction, so the gate judged the state before it.
 - Each finding is **confirmed or rejected**. A confirmed finding gets a severity, a category, a
   one-line rationale and `duplicate_of`; a rejection is a checker false positive. Stage-gate
   findings and canon-lint misses are graded the same way.

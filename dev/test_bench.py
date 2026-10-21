@@ -28,6 +28,8 @@ from gm_llm.orchestrator.combat import CombatState  # noqa: E402
 # ── fakes ─────────────────────────────────────────────────────────────────────
 
 class _Reply:
+    rolls = ()
+
     def __init__(self, text, tools=(), tool_inputs=None):
         self.text = text
         self.tools = frozenset(tools)

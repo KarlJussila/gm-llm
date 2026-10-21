@@ -23,6 +23,8 @@ from gm_llm.orchestrator.loop import join_narration, session_is_complete  # noqa
 
 
 class _Reply:
+    rolls = ()
+
     def __init__(self, text, tools=(), tool_inputs=None):
         self.text = text
         self.tools = frozenset(tools)
@@ -163,6 +165,29 @@ def a_turn_reads_back_whole():
     print("a_turn_reads_back_whole\n")
 
 
+def dice_calls_come_back_as_rolls():
+    """Each completed dice call, in order, as "expression = total" — the shape opencode
+    stores (the plugin's metadata carries the total)."""
+    def dice(expr, total, status="completed"):
+        return {"type": "tool", "name": "dice",
+                "state": {"status": status, "input": {"expression": expr},
+                          "metadata": {"total": total}}}
+    tmp = tempfile.mkdtemp()
+    turn = [
+        {"type": "assistant", "content": [dice("d20+10", 20), dice("2d6", 7),
+                                          dice("d4", None, status="error")]},
+        {"type": "assistant", "content": [{"type": "text", "text": "The flecks hold still."}]},
+        {"type": "idle", "outcome": "succeeded"},
+    ]
+    backend = Backend(directory=tmp, min_call_gap=0.0)
+    backend._use_agent = lambda sid, agent: None
+    backend._send = lambda sid, text: "msg_1"
+    backend._await_turn = lambda sid, user_id: turn
+    reply = backend.prompt_full("sid", "dm-runner", "go")
+    check(reply.rolls == ("d20+10 = 20", "2d6 = 7"), f"completed rolls, in order: {reply.rolls}")
+    print("dice_calls_come_back_as_rolls\n")
+
+
 def a_failed_turn_is_an_error():
     texts, calls, error = read_turn([
         {"type": "assistant", "content": [{"type": "text", "text": "partial"}]},
@@ -180,5 +205,6 @@ if __name__ == "__main__":
     missing_notes_fall_back_to_one_request()
     join_narration_dedupes()
     a_turn_reads_back_whole()
+    dice_calls_come_back_as_rolls()
     a_failed_turn_is_an_error()
     print("OK — runner turn: the message, the close, and the reply coming back whole.")

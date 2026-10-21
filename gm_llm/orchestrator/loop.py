@@ -70,6 +70,7 @@ class TurnResult:
     combat_started: bool = False    # the DM called start_encounter this turn
     close_nudged: bool = False      # the reply ended in prose; a close nudge was dispatched
     tools: frozenset[str] = frozenset()  # every tool the DM called this turn
+    rolls: tuple[str, ...] = ()     # the DM's dice calls this turn, "expression = total"
 
 
 class Game(CombatMixin):
@@ -186,6 +187,7 @@ class Game(CombatMixin):
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, message)
         narration = reply.text  # the nudge's reply below only supplies the missing call
+        rolls = reply.rolls
         close_nudged = False
         if not opening and "task_complete" not in reply.tools and _looks_like_close(reply.text):
             reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
@@ -203,7 +205,7 @@ class Game(CombatMixin):
         self._combat_observe(reply)
         tr = TurnResult(player_msg, narration, session_complete,
                         combat_started=("start_encounter" in reply.tools),
-                        close_nudged=close_nudged, tools=frozenset(reply.tools))
+                        close_nudged=close_nudged, tools=frozenset(reply.tools), rolls=rolls)
         self._append_transcript(player_msg, narration, opening)
         self._log(tr)
         self._archive_turn(tr, opening)
@@ -325,7 +327,7 @@ class Game(CombatMixin):
             "turn", session=self.session, turn=self._turn_no, opening=opening,
             player=tr.player_input, narration=tr.final,
             session_complete=tr.session_complete, close_nudged=tr.close_nudged,
-            tools=sorted(tr.tools),
+            tools=sorted(tr.tools), rolls=list(tr.rolls),
             context=({"tokens": cu.tokens, "limit": cu.context_limit} if cu else None),
             **extra,
         )

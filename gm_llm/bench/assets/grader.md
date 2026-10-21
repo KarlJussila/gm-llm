@@ -27,8 +27,10 @@ Your workspace:
   it for a stage finding; for a turn finding, play happened against `campaign/`.
 
 Each finding comes from the after-play checker (its claim, evidence and category guess, and the
-turn it is about) or a between-session gate (the gate's report and the draft it judged). Read
-whatever you need to decide it, then call `submit_grade` once:
+turn it is about) or a between-session gate (the gate's report, and the draft it judged when there
+is one). A gate's report was sent back for one correction, shown as a diff in `<correction>`;
+`after/` already includes it, so the gate judged `after/` with that diff undone. Read whatever you
+need to decide it, then call `submit_grade` once:
 
 - **confirmed** — the DM (or the record) really did this wrong. Give a severity, a category, a
   one-sentence rationale, and `duplicate_of` when the rubric says so.
