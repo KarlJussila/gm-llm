@@ -1,6 +1,6 @@
 ---
 name: check-init
-description: Use when reviewing the authored campaign before its first session.
+description: Load when reviewing the authored campaign before its first session.
 ---
 
 # check-init

@@ -1,6 +1,6 @@
 ---
 name: character-create
-description: Use when creating a player character with the player and fitting them into the campaign.
+description: Load when creating a player character with the player and fitting them into the campaign.
 ---
 
 # character-create

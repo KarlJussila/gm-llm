@@ -1,6 +1,6 @@
 ---
 name: world-build
-description: Use when authoring or revising the world, its entities or its underlying truths.
+description: Load when authoring or revising the world, its entities or its underlying truths.
 ---
 
 # world-build

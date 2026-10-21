@@ -1,6 +1,6 @@
 ---
 name: character-import
-description: Use when importing a player-provided character file during character creation.
+description: Load when importing a player-provided character file during character creation.
 ---
 
 # character-import

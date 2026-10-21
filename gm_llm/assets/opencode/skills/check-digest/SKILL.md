@@ -1,50 +1,25 @@
 ---
 name: check-digest
-description: The narrative-checker's POST role, first gate — verify the session digest (N/digest.md) faithfully captures the play transcript: nothing load-bearing dropped, nothing invented or distorted. Source-fidelity only (transcript vs. digest, not canon).
+description: Load when verifying a session digest against the transcript it was extracted from.
 ---
 
-# check-digest — verify the digest faithfully captures the transcript
+# check-digest
 
-Digest-fidelity role. The digest is a structured extraction of the play transcript, and it's the
-record the rest of the post-session work builds on — so it must faithfully reflect what was played.
-Confirm the digest is a faithful, complete extraction of the transcript.
+The digest is the record the rest of reconcile builds on, so it must be a faithful, complete
+extraction of the transcript. Compare it with the transcript only — not with canon, and not for
+writing quality. Read the whole transcript; don't skim. The DM's notes (`notes.md`) count as a
+source too: a claim they support is not an invention.
 
-This is **source-fidelity**: compare the digest against the **transcript** only — not canon, and
-not authoring quality.
+Flag two kinds of finding:
 
-## The checks
+- **A drop** — something load-bearing the transcript establishes that the digest lost: a named
+  entity introduced in play, a fact the PC learned, a secret revealed, a consequential decision, a
+  thread opened, advanced or resolved, a departure from the plan, a document read out (copied
+  exactly, not paraphrased), the player's feedback (verbatim). Small talk that establishes nothing
+  is rightly left out.
+- **An invention or distortion** — a beat, fact, name, number or reveal the transcript doesn't
+  support, or one changed from what it shows: a name, a quantity, a quoted document, who learned
+  what.
 
-### 1. Pull both files
-- Read all of `campaign/sessions/{N}/transcript.md` — the raw play record, your **source of
-  truth**. Do not skim.
-- Read `campaign/sessions/{N}/notes.md` if present — the DM's own account. A digest claim the notes
-  support but the transcript only implies is not an invention.
-- Read `campaign/sessions/{N}/digest.md` — the digest under review.
-- The digest is organized into standard sections — Narrative, Knowledge gained, Secrets & awareness,
-  World canon, Items, Documents, Character state, PC capabilities, Threads, Engagement, Plan vs.
-  actual, Player feedback, Combat reactions & tactics. You're checking those against what the
-  transcript actually shows.
-
-### 2. Check coverage — transcript → digest
-Walk the transcript and confirm every **load-bearing** thing it contains made it into the digest:
-- Every **named entity** introduced in play (NPC, location, faction, item) — captured under World
-  canon / Items.
-- Every **fact the PC learned** and every **secret revealed** — captured under Knowledge gained /
-  Secrets & awareness.
-- Every **consequential decision**, **thread** opened/advanced/resolved, and **plan divergence**.
-- Any **verbatim document** read aloud — copied into Documents (exact text, not paraphrased).
-- The **player feedback** exchange, if the session ended with one — copied verbatim.
-Flag anything the transcript establishes that the digest dropped. Trivial conversational back-and-
-forth that establishes nothing is *correctly* omitted — don't flag it.
-
-### 3. Check fidelity — digest → transcript
-Walk the digest and confirm every claim traces back to the transcript:
-- No **invented** beat, fact, name, number, or reveal that the transcript doesn't support.
-- No **distortion** — a name, a quantity, a quoted document, or who-learned-what changed from what
-  the transcript actually shows.
-- Flag each unsupported or altered claim, with the digest line and what the transcript actually says.
-
-## Report
-Per finding: whether it's a **drop** (in transcript, missing from digest) or an
-**invention/distortion** (in digest, unsupported by transcript), the **transcript evidence** (a
-quote or beat), and the **digest location** it should be fixed at.
+For each, say which kind it is, quote the transcript evidence, and name where in the digest it
+belongs.

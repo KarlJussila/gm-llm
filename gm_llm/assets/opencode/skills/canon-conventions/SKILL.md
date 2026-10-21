@@ -1,6 +1,6 @@
 ---
 name: canon-conventions
-description: Load before you create or edit any file under campaign/ — the file layout, frontmatter, links, secret tags and the commit-every-fact rule.
+description: Load before you create or edit any file under campaign/.
 ---
 
 # canon-conventions

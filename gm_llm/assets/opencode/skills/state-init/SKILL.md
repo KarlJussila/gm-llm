@@ -1,6 +1,6 @@
 ---
 name: state-init
-description: Use when writing a new campaign's state before its first session.
+description: Load when writing a new campaign's state before its first session.
 ---
 
 # state-init

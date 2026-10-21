@@ -1,6 +1,6 @@
 ---
 name: check-plan
-description: Use when reviewing a draft session plan before it is finalized.
+description: Load when reviewing a draft session plan before it is finalized.
 ---
 
 # check-plan

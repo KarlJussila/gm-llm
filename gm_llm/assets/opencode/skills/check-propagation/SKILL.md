@@ -1,6 +1,6 @@
 ---
 name: check-propagation
-description: The narrative-checker's POST role — after a session's updates have been applied, judge whether what was played actually landed in canon and state.
+description: Load when judging whether a session's updates landed in canon and state.
 ---
 
 # check-propagation — did what was played land?

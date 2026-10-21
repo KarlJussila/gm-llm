@@ -1,6 +1,6 @@
 ---
 name: session-close
-description: Load when the session has had real substance and a good stopping point is at hand — how to land the ending and close the session.
+description: Load when the session has had real substance and a good stopping point is at hand.
 ---
 
 # session-close — end the session

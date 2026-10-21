@@ -1,6 +1,6 @@
 ---
 name: campaign-intake
-description: Use when gathering the player's brief and content boundaries for a new campaign.
+description: Load when gathering the player's brief and content boundaries for a new campaign.
 ---
 
 # campaign-intake
