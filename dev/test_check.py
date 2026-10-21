@@ -103,7 +103,6 @@ def main(root):
         "the workspace is the pre-play campaign, not the reconciled run dir"
     assert (ws / ".opencode" / "agent" / "play-checker.md").is_file()
     assert (ws / ".opencode" / "plugin" / "submit-checks.ts").is_file()
-    assert (ws / ".git").is_dir(), "opencode only loads the workspace agents in a repo"
 
     assert fake.sessions == ["bench-check"], "one rolling session per run"
     turns = [m for _, _, m in fake.messages if m.startswith("<turn ")]

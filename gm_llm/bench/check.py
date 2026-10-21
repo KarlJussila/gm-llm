@@ -47,7 +47,6 @@ def assemble_check_ws(run_dir, ws, *, model: str | None = None) -> Path:
     archive = subprocess.run(["git", "archive", "--format=zip", root], cwd=run_dir,
                              capture_output=True, check=True).stdout
     zipfile.ZipFile(io.BytesIO(archive)).extractall(ws)
-    _git(ws, "init", "-q")   # opencode loads a directory's .opencode/ agents only in a repo
 
     agent_dir, plugin_dir = ws / ".opencode" / "agent", ws / ".opencode" / "plugin"
     agent_dir.mkdir(parents=True)

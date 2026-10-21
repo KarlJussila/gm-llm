@@ -48,7 +48,6 @@ import json
 import re
 import shutil
 import statistics
-import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -114,8 +113,6 @@ def assemble_grade_ws(out_dir, *, model: str | None = None, note=_quiet) -> Path
     fresh = not opencode.is_dir()
     agent_dir.mkdir(parents=True, exist_ok=True)
     plugin_dir.mkdir(parents=True, exist_ok=True)
-    if not (ws / ".git").exists():  # opencode loads a directory's .opencode/ agents only in a repo
-        subprocess.run(["git", "init", "-q"], cwd=ws, capture_output=True)
 
     grader_md = _apply_model((ASSETS / "grader.md").read_text(encoding="utf-8"), model)
     (agent_dir / f"{GRADER_AGENT}.md").write_text(grader_md, encoding="utf-8")
