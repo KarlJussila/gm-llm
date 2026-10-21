@@ -32,6 +32,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   now installs opencode from `@opencode/cli`.
 
 ### Added
+- **`bench run --subject-model` / `--subject-variant`** run the subject agents (`dm-runner`, `dm`,
+  `author`, `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the
+  product, is the only one yet). The `conditions` event stamps every agent's model and reasoning
+  variant (no longer a temperature) and the `subagents` mode, and the report keys on them.
 - `gm-llm.yaml` configures `feedback-dir` and `subagents: sequential | parallel`. `gm-llm init`
   and `update` write the defaults if the file is missing, and never overwrite it.
 - **Each archived turn records what the runner opened while drafting it** (`tools`, `stale`), so

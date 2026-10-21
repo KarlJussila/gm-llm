@@ -12,7 +12,7 @@ Two invariants this module owns:
 
   * **Conditions before play.** Each run emits a `conditions` archive event — fixture
     id/frozen/provisional, tier, turn cap, whether reconcile runs, and the per-agent
-    model+temperature parsed from the run dir's own `.opencode/agent/*.md` — *before*
+    model and variant parsed from the run dir's own `.opencode/agent/*.md` — *before*
     the first turn. Emitting it first also writes the lazy `run` header, so every
     archive opens `run, conditions, turn, …`: a comparison across mismatched conditions
     is impossible to make by accident.
@@ -52,15 +52,19 @@ from ..orchestrator import (
 from ..orchestrator import paths
 from ..orchestrator.backend import BackendCancelled
 from ..orchestrator.logs import debug_enabled
+from ..orchestrator.registry import FrontmatterError, split_frontmatter
 from ..project import init_project
 from ..settings import load_settings
 
-# Which agents' model/temperature get stamped into the conditions event. dm-runner and
-# narrative-checker are the live subject+instrument; player is the autoplayer; dm is the
-# between-session author the reconcile pass drives. Enough to reconstruct the condition.
-_CONDITION_AGENTS = ("dm-runner", "player", "narrative-checker", "dm")
+# Every agent a run can call, whose model and reasoning variant the conditions event stamps.
+_CONDITION_AGENTS = ("dm-runner", "dm", "author", "log-extractor", "narrative-checker", "player")
 
-TIER = "low"  # the product IS the low tier (design/benchmark.md); bench run only plays it today.
+# The subject (design/benchmark.md § Principles): the agents `--subject-model` rewrites.
+_SUBJECT_AGENTS = ("dm-runner", "dm", "author", "log-extractor")
+
+# A tier is the set of model-facing files placed in the run directory. `low` is the shipped
+# assets — the product itself; the others are defined once `low` has a baseline (B9).
+TIERS = ("low",)
 
 
 def _now() -> str:
@@ -136,29 +140,37 @@ def load_fixture(fixture_path) -> dict:
 
 
 def agent_conditions(run_dir, agents=_CONDITION_AGENTS) -> dict:
-    """Parse `{model, temperature}` from each agent's YAML frontmatter in the run dir's
-    `.opencode/agent/*.md`. A tiny manual parser — the repo carries no yaml dep, and
-    `completeness._frontmatter_type` reads frontmatter the same hand-rolled way. A
-    missing file or field yields `None` rather than raising: the archive records what it
-    could read, and a gap is itself a signal worth seeing."""
+    """`{model, variant}` from each agent's frontmatter in the run dir's
+    `.opencode/agent/*.md`. A missing file or field yields `None` rather than raising: the
+    archive records what it could read, and a gap is itself a signal worth seeing."""
     agent_dir = Path(run_dir) / ".opencode" / "agent"
     out: dict[str, dict] = {}
     for name in agents:
-        model, temp = None, None
         try:
-            text = (agent_dir / f"{name}.md").read_text(encoding="utf-8")
-        except OSError:
-            text = ""
-        if text.startswith("---"):
-            end = text.find("\n---", 3)
-            block = text[3:end] if end != -1 else ""
-            for line in block.splitlines():
-                if (m := re.match(r"\s*model:\s*(\S+)", line)):
-                    model = m.group(1).strip()
-                elif (m := re.match(r"\s*temperature:\s*([0-9.]+)", line)):
-                    temp = float(m.group(1))
-        out[name] = {"model": model, "temperature": temp}
+            fm = split_frontmatter((agent_dir / f"{name}.md").read_text(encoding="utf-8"))[0] or {}
+        except (OSError, FrontmatterError):
+            fm = {}
+        out[name] = {"model": fm.get("model"), "variant": fm.get("variant")}
     return out
+
+
+def set_subject_model(run_dir, model: str | None, variant: str | None = None) -> None:
+    """Rewrite the subject agents' `model:` (and `variant:`, if given; `""` drops it) in a run
+    dir's agent files — `--subject-model`. The instrument and the autoplayer keep theirs."""
+    if model is None and variant is None:
+        return
+    for name in _SUBJECT_AGENTS:
+        path = Path(run_dir) / ".opencode" / "agent" / f"{name}.md"
+        head, sep, body = path.read_text(encoding="utf-8").partition("\n---\n")
+        lines = head.splitlines()
+        if model is not None:
+            lines = [f"model: {model}" if ln.startswith("model:") else ln for ln in lines]
+        if variant is not None:
+            lines = [ln for ln in lines if not ln.startswith("variant:")]
+            if variant:
+                at = next(i for i, ln in enumerate(lines) if ln.startswith("model:"))
+                lines.insert(at + 1, f"variant: {variant}")
+        path.write_text("\n".join(lines) + sep + body, encoding="utf-8")
 
 
 # The model-facing prose, as three roots (see CLAUDE.md "The prompts"). The first two are
@@ -175,7 +187,7 @@ def _prompt_roots(run_dir: Path) -> list[tuple[str, Path]]:
 def prompt_fingerprint(run_dir) -> dict:
     """A content hash over every prompt a run played under — the tier-0 subject itself.
 
-    The rest of the condition (fixture, tier, models, temperatures) can be identical across
+    The rest of the condition (fixture, tier, models, variants) can be identical across
     two batches that ran materially different prose, because the prompts ARE the thing being
     measured at tier `low`. Without this, `_identity` would pool a pre-edit and a post-edit
     batch as one condition and average their scores; with it, the report's mixed-conditions
@@ -202,7 +214,7 @@ def prompt_fingerprint(run_dir) -> dict:
     return {"sha256": h.hexdigest()[:16], "files": files}
 
 
-def _emit_conditions(logs, fixture: dict, *, turn_cap: int, reconcile: bool,
+def _emit_conditions(logs, fixture: dict, *, tier: str, turn_cap: int, reconcile: bool,
                      run_dir: Path) -> None:
     """The `conditions` event — the first emit on the archive, so it rides right behind
     the lazy `run` header (which already carries the gm-llm version)."""
@@ -212,8 +224,9 @@ def _emit_conditions(logs, fixture: dict, *, turn_cap: int, reconcile: bool,
         "conditions",
         fixture={"id": fixture.get("id"), "frozen": fixture.get("frozen"),
                  "provisional": fixture.get("provisional")},
-        tier=TIER, turn_cap=turn_cap, reconcile=reconcile,
+        tier=tier, turn_cap=turn_cap, reconcile=reconcile,
         agents=agent_conditions(run_dir),
+        subagents=load_settings(run_dir).subagents,
         prompts=prompt_fingerprint(run_dir),
     )
 
@@ -234,7 +247,8 @@ def prepare_template(out_dir, *, init=init_project, note=_quiet) -> Path:
     return template
 
 
-def assemble_run(template_dir, fixture_campaign, run_dir, fixture_id: str) -> None:
+def assemble_run(template_dir, fixture_campaign, run_dir, fixture_id: str, *,
+                 subject_model: str | None = None, subject_variant: str | None = None) -> None:
     """Stamp out one run project: copytree the template (the `.opencode/` scaffold), lay
     the fixture's frozen `campaign/` over it, gitignore `.opencode/` (as the scaffolder
     does), then `git init` + commit the initial state. The reconcile pipeline commits
@@ -254,6 +268,7 @@ def assemble_run(template_dir, fixture_campaign, run_dir, fixture_id: str) -> No
     (run_dir / "gm-llm.yaml").write_text(yaml.safe_dump({
         "feedback-dir": "feedback", "subagents": load_settings(run_dir).subagents,
     }, sort_keys=False), encoding="utf-8")
+    set_subject_model(run_dir, subject_model, subject_variant)
 
     gitignore = run_dir / ".gitignore"
     if ".opencode/" not in (gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""):
@@ -332,7 +347,8 @@ def _post_wrap(lifecycle, *, reconcile: bool, note, on_stage=_noop) -> None:
 
 # ── one run ──────────────────────────────────────────────────────────────────
 
-def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = False,
+def run_once(run_dir, fixture: dict, *, tier: str = "low", turn_cap: int = 50,
+             play_only: bool = False,
              kickoff: str = "Let's begin the session.", port: int = 4181,
              min_gap: float = 1.0, turn_timeout: int = 360, stream: bool = False,
              resume: bool = False, backend_factory=_default_backend,
@@ -427,7 +443,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
         source = lifecycle.player_source(story=story)
         note(f"runner={game.runner_sid} player={source.session_id} session={game.session}")
         if not resuming:
-            _emit_conditions(logs, fixture, turn_cap=turn_cap, reconcile=reconcile,
+            _emit_conditions(logs, fixture, tier=tier, turn_cap=turn_cap, reconcile=reconcile,
                              run_dir=run_dir)
             scene = game.start(kickoff).final
 
@@ -715,7 +731,9 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
     return records
 
 
-def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
+def run_batch(fixture_path, out_dir, *, runs: int = 1, tier: str = "low",
+              subject_model: str | None = None, subject_variant: str | None = None,
+              turn_cap: int = 50,
               play_only: bool = False, kickoff: str = "Let's begin the session.",
               port: int = 4181, min_gap: float = 1.0, turn_timeout: int = 360,
               stream: bool = False, resume: bool = False, init=init_project,
@@ -765,11 +783,12 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
         run_dir = out_dir / f"run-{runid}"
         note(f"── run {i + 1}/{runs} · {runid} ──")
         hooks.on_run(i + 1, runs, runid)
-        assemble_run(template, fixture_campaign, run_dir, fixture.get("id", "fixture"))
+        assemble_run(template, fixture_campaign, run_dir, fixture.get("id", "fixture"),
+                     subject_model=subject_model, subject_variant=subject_variant)
         started = _now()
         try:
             result = run_once(
-                run_dir, fixture, turn_cap=turn_cap, play_only=play_only, kickoff=kickoff,
+                run_dir, fixture, tier=tier, turn_cap=turn_cap, play_only=play_only, kickoff=kickoff,
                 port=port, min_gap=min_gap, turn_timeout=turn_timeout, stream=stream,
                 backend_factory=backend_factory, gate_factory=gate_factory,
                 lifecycle_factory=lifecycle_factory, hooks=hooks, note=note)

@@ -221,21 +221,23 @@ def _combat_fakes(*, end_after=1, reconcile_calls=None):
 
 
 AGENTS = {
-    "dm-runner": ("opencode/mimo-v2.5-free", "0.3"),
-    "player": ("opencode/mimo-v2.5-free", "0.8"),
-    "narrative-checker": ("opencode/mimo-v2.5-free", "0.1"),
-    "dm": ("opencode/mimo-v2.5-free", "0.2"),
+    "dm-runner": ("openai/gpt-6-luna", "xhigh"),
+    "dm": ("openai/gpt-6-luna", "xhigh"),
+    "author": ("openai/gpt-6-luna", "xhigh"),
+    "log-extractor": ("openai/gpt-6-luna", "xhigh"),
+    "narrative-checker": ("openai/gpt-6-luna", "high"),
+    "player": ("openai/gpt-6-luna", "medium"),
 }
 
 
 def _make_template(root):
-    """A minimal template project: `.opencode/agent/*.md` with model+temperature
+    """A minimal template project: `.opencode/agent/*.md` with model and variant
     frontmatter (what the conditions event parses)."""
     agent_dir = root / ".opencode" / "agent"
     agent_dir.mkdir(parents=True, exist_ok=True)
-    for name, (model, temp) in AGENTS.items():
+    for name, (model, variant) in AGENTS.items():
         (agent_dir / f"{name}.md").write_text(
-            f"---\nmode: primary\nmodel: {model}\ntemperature: {temp}\n---\nbody\n",
+            f"---\nmode: primary\nmodel: {model}\nvariant: {variant}\n---\nbody\n",
             encoding="utf-8")
     return root
 
@@ -316,10 +318,30 @@ def test_conditions_event(tmp):
     assert cond["fixture"]["id"] == "hollowfell-test" and cond["fixture"]["provisional"] is True
     assert cond["tier"] == "low" and cond["turn_cap"] == 5 and cond["reconcile"] is True
     dmr = cond["agents"]["dm-runner"]
-    assert dmr["model"] == "opencode/mimo-v2.5-free" and dmr["temperature"] == 0.3
-    assert cond["agents"]["player"]["temperature"] == 0.8
+    assert dmr == {"model": "openai/gpt-6-luna", "variant": "xhigh"}, dmr
+    assert cond["agents"]["player"]["variant"] == "medium"
+    assert set(cond["agents"]) == set(AGENTS), "every agent a run can call is stamped"
+    assert cond["subagents"] == "sequential", "the subagents mode is part of the condition"
     assert cond["prompts"]["sha256"] and cond["prompts"]["files"] >= len(AGENTS), \
         f"the prose the run played under is fingerprinted — got {cond['prompts']}"
+
+
+def test_subject_model(tmp):
+    """`--subject-model` moves the subject agents and nothing else: the checker and the
+    autoplayer are the instrument and the player, pinned on their own."""
+    template = _make_template(tmp / "template")
+    fixture = _make_fixture(tmp / "fixture")
+    run_dir = tmp / "run"
+    runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test",
+                        subject_model="opencode/mimo-v2.6-flash-free", subject_variant="")
+    agents = runner.agent_conditions(run_dir)
+    for name in ("dm-runner", "dm", "author", "log-extractor"):
+        assert agents[name] == {"model": "opencode/mimo-v2.6-flash-free", "variant": None}, \
+            (name, agents[name])
+    assert agents["narrative-checker"] == {"model": "openai/gpt-6-luna", "variant": "high"}
+    assert agents["player"] == {"model": "openai/gpt-6-luna", "variant": "medium"}
+    body = (run_dir / ".opencode" / "agent" / "dm.md").read_text(encoding="utf-8")
+    assert body.endswith("---\nbody\n"), "the prompt body is untouched"
 
 
 def test_prompt_fingerprint(tmp):
@@ -352,7 +374,7 @@ def test_prompt_change_is_a_mixed_condition(tmp):
     the report must refuse to pool them, since the prose is what tier 0 measures."""
     from gm_llm.bench import scoring
     cond = {"event": "conditions", "fixture": {"id": "hollowfell"}, "tier": "low",
-            "turn_cap": 50, "agents": {"dm": {"model": "m", "temperature": 0.2}}}
+            "turn_cap": 50, "agents": {"dm": {"model": "m", "variant": "xhigh"}}}
     a = scoring._condition_signature({**cond, "prompts": {"sha256": "aaaa", "files": 9}})
     b = scoring._condition_signature({**cond, "prompts": {"sha256": "bbbb", "files": 9}})
     assert scoring._identity(a) != scoring._identity(b), "different prose = different condition"
@@ -768,7 +790,7 @@ def test_resume_noop_when_nothing_incomplete(tmp):
 
 
 def main():
-    tests = (test_assemble_run, test_conditions_event, test_prompt_fingerprint,
+    tests = (test_assemble_run, test_conditions_event, test_subject_model, test_prompt_fingerprint,
              test_prompt_change_is_a_mixed_condition, test_natural_close,
              test_post_wrap_is_lifecycle_wrap, test_player_source_comes_from_the_lifecycle,
              test_post_wrap_reconcile_failure_stays_complete,

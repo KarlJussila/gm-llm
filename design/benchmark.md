@@ -44,7 +44,8 @@ The subject is the DM playing well, never the checker catching it failing.
 ### Run — `bench run`
 
 - Copy the template and the fixture's campaign into a fresh run directory and `git init` it. The
-  tier's assets go in; `--subject-model` rewrites the DM agents' model.
+  tier's assets go in; `--subject-model` and `--subject-variant` rewrite the subject agents'
+  model and reasoning variant.
 - Player feedback points at the fixture's copy, never the user's own.
 - A `conditions` event stamps the fixture id, tier, turn cap, whether reconcile runs, every agent's
   and subagent's model and reasoning variant, the prompt fingerprint and the gm-llm version.

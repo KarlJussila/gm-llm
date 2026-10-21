@@ -18,18 +18,16 @@ Design: [`design/luna.md`](design/luna.md). Tasks 6–8 need model quota.
 
 Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in that doc.
 
-1. **B5 — conditions and tiers.** The tier as a real field, reasoning variants, subagents in the
-   conditions, `--subject-model`.
-2. **B7 — after-play checker.** `bench check`: one rolling Luna session per run over the pristine
+3. **B7 — after-play checker.** `bench check`: one rolling Luna session per run over the pristine
    start canon, structured findings.
-3. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject with file access,
+4. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject with file access,
    checker precision in the report.
-4. **`bench status`.** Batch state by outcome without a throwaway script.
-5. **B3 — the `low` baseline.** After luna 6 and benchmark 1–3: a Luna pilot sizes the batch, then
+5. **`bench status`.** Batch state by outcome without a throwaway script.
+6. **B3 — the `low` baseline.** After luna 6 and benchmark 1–4: a Luna pilot sizes the batch, then
    bank the distribution.
-6. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the
+7. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the
    baseline shows.
-7. **B10 — benchmark proper.** Batches per condition and the methodology writeup.
+8. **B10 — benchmark proper.** Batches per condition and the methodology writeup.
 
 ## packaging
 

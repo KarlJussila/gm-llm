@@ -41,6 +41,13 @@ def add_bench_parser(subparsers, engine) -> None:
     run.add_argument("--fixture", default=str(DEFAULT_FIXTURE),
                      help=f"fixture dir (default: {DEFAULT_FIXTURE})")
     run.add_argument("--runs", type=int, default=1, help="how many plays (default: 1)")
+    run.add_argument("--tier", choices=runner.TIERS, default="low",
+                     help="the scaffolding tier to play (default: low, the product)")
+    run.add_argument("--subject-model", default=None,
+                     help="run the subject agents (dm-runner, dm, author, log-extractor) on "
+                          "this model instead of their pinned one")
+    run.add_argument("--subject-variant", default=None,
+                     help="the subject agents' reasoning variant ('' for none)")
     run.add_argument("--turn-cap", type=int, default=50,
                      help="hard turn cap — the safety net past a natural wrap (default: 50)")
     run.add_argument("--play-only", action="store_true",
@@ -118,7 +125,9 @@ def cmd_bench_run(args) -> None:
     mode = "resume" if args.resume else f"runs={args.runs}"
     _note(f"fixture={args.fixture} {mode} out={args.out} ui={args.ui} "
           f"turn-cap={args.turn_cap} reconcile={not args.play_only}")
-    kw = dict(runs=args.runs, turn_cap=args.turn_cap, play_only=args.play_only,
+    kw = dict(runs=args.runs, tier=args.tier, subject_model=args.subject_model,
+              subject_variant=args.subject_variant, turn_cap=args.turn_cap,
+              play_only=args.play_only,
               kickoff=args.kickoff, resume=args.resume, port=args.port,
               min_gap=args.min_gap, turn_timeout=timeout)
     records = (_watch_in_tui(args, kw) if args.ui == "tui"
