@@ -188,6 +188,26 @@ def dice_calls_come_back_as_rolls():
     print("dice_calls_come_back_as_rolls\n")
 
 
+def a_final_answer_is_the_reply():
+    """Seen in setup (luna7): the question said as commentary, a tool call, then said again
+    as the final answer. Joined whole, the player read it twice."""
+    q = "What kind of campaign would you like to play?"
+    texts, calls, _ = read_turn([
+        {"type": "assistant", "content": [
+            {"type": "text", "text": q, "native": {"phase": "commentary"}},
+            {"type": "tool", "name": "task_complete", "state": {"input": {}}}]},
+        {"type": "assistant", "content": [
+            {"type": "text", "text": q, "native": {"phase": "final_answer"}}]},
+        {"type": "idle", "outcome": "succeeded"},
+    ])
+    check(texts == [q], "only the final answer is the reply")
+    check([n for n, _ in calls] == ["task_complete"], "the tool call still comes back")
+    texts, _, _ = read_turn([{"type": "assistant", "content": [
+        {"type": "text", "text": "No phases here.", "native": {}}]}])
+    check(texts == ["No phases here."], "a turn without a final answer reads as before")
+    print("a_final_answer_is_the_reply\n")
+
+
 def a_failed_turn_is_an_error():
     texts, calls, error = read_turn([
         {"type": "assistant", "content": [{"type": "text", "text": "partial"}]},
@@ -200,6 +220,7 @@ def a_failed_turn_is_an_error():
 
 
 if __name__ == "__main__":
+    a_final_answer_is_the_reply()
     a_turn_is_the_player_and_nothing_else()
     the_closing_call_carries_narration_and_notes()
     missing_notes_fall_back_to_one_request()

@@ -633,6 +633,7 @@ def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str 
     The error is the turn's failure as opencode reported it — a failed or interrupted idle, or
     an assistant message carrying an error."""
     texts: list[str] = []
+    finals: list[str] = []
     calls: list[tuple[str, dict]] = []
     error = None
     for m in msgs:
@@ -641,12 +642,18 @@ def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str 
             for c in m.get("content") or []:
                 if c.get("type") == "text" and c.get("text"):
                     texts.append(c["text"])
+                    if (c.get("native") or {}).get("phase") == "final_answer":
+                        finals.append(c["text"])
                 elif c.get("type") == "tool" and c.get("name"):
                     calls.append((c["name"], (c.get("state") or {}).get("input") or {}))
             if m.get("error"):
                 error = _error_text(m["error"])
         elif kind == "idle" and m.get("outcome") != "succeeded":
             error = _error_text(m.get("error")) if m.get("error") else f"turn {m.get('outcome')}"
+    # Luna can say a line as `commentary` before a tool call and then repeat it as its
+    # `final_answer`; when a turn has a final answer, that is the reply.
+    if any(t.strip() for t in finals):
+        texts = finals
     return texts, calls, error
 
 

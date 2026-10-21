@@ -92,6 +92,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   invalidated.
 
 ### Fixed
+- **Setup no longer shows the DM's message twice.** Luna can say a line as commentary before a
+  tool call and repeat it as its final answer; a reply is now its final answer when it has one.
 - **A turn that ends on a tool call no longer loses its narration.** opencode splits a turn at each
   tool call and returns only the last message, so prose written *before* a trailing tool call came
   back empty — a blank scene to the gate and the player. The draft is now recovered from the
