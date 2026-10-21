@@ -16,9 +16,7 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   duplicates, hidden layers and consistency. The `campaign-setup` skill is removed.
 - Player feedback lives outside the campaign in a shared player directory. The runner receives
   its standing guidance in prepared context, and agents read matching feedback when loading skills.
-  Benchmark runs use private copies of the fixture's feedback. **Upgrading:** nothing reads
-  `campaign/feedback/` any more; move its files into `~/.gm-llm/feedback/` by hand, with
-  `session-run.md` becoming `dm-runner.md` and `session-flow.md` becoming `session-close.md`.
+  Benchmark runs use private copies of the fixture's feedback.
 - **Requires opencode 2.1 or newer.** The backend speaks opencode's v2 server API (opencode 2.0
   dropped the v1 API), and the plugins use the v2 plugin contract, which needs no npm install:
   `gm-llm init` no longer installs plugin dependencies, and `gm-llm update` removes the

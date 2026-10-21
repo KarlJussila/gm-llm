@@ -8,8 +8,9 @@ lands — git history is the record.
 
 Design: [`design/luna.md`](design/luna.md). Task 5 needs no model quota; 6–8 do.
 
-5. **Tag the clean slate.** Once the sweep is reviewed, tag it `luna-clean-slate` — the baseline the
-   `refine-prompts` skill protects everything after.
+5. **Finish the prompt rework, then tag the clean slate.** Rewrite every model-facing prompt still in
+   its MiMo form to `design/luna.md` § Principles. When none is left and the product is ready to
+   test, tag `luna-clean-slate` — the baseline the `refine-prompts` skill protects everything after.
 6. **Live shakedown.** Two or three Hollowfell sessions on Luna; fix only failures the runs show.
 7. **Between-session and combat shakedown.** Reconcile and plan from those runs, a fresh campaign
    through setup, and the first real fight. Read the gates' before/after and cut the ones that

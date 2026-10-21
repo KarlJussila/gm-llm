@@ -153,7 +153,9 @@ story-so-far recap.
 
 ### B7 — After-play checker
 
-`bench check` as specified above, with checker prompts written for that role.
+`bench check` as specified above, with checker prompts written for that role. The retired in-play
+check skills hold the canon, conduct and combat checks to start from:
+`git show 74fb69b^:gm_llm/assets/opencode/skills/<check-turn|check-conduct|check-combat>/SKILL.md`.
 
 ### B8 — Grader rework
 
