@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 
 from .orchestrator import Backend, BackendError, CanonPreloader, Gate, Logs
+from .orchestrator.backend import agent_overrides
 from .orchestrator.logs import debug_enabled
 from .orchestrator.stream import EventTap
 from .settings import pull_feedback
@@ -94,7 +95,8 @@ def with_engine(args, body, *, default_timeout=360):
     note(f"starting opencode serve on :{args.port} (dir={args.dir}, call-timeout={timeout}s)")
     logs = Logs.under(project=args.dir, debug=debug_enabled())
     backend = Backend(args.dir, port=args.port, min_call_gap=args.min_gap,
-                      turn_timeout=timeout, logs=logs)
+                      turn_timeout=timeout, logs=logs,
+                      agents=agent_overrides(args.dir, args.model, args.variant))
     backend.on_retry = lambda agent, attempt, wait, reason: warn(
         f"{agent} call failed: {reason} — retry {attempt} in {wait}s")
     tap = None

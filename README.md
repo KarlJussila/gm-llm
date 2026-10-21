@@ -147,10 +147,17 @@ player-facing and takes the campaign as a path (default: the current directory):
 
 ```
 play    [dir] [--player human|auto] [--ui tui|console] [--mock] [--setup]
+        [--model PROVIDER/MODEL] [--variant V]
 status  [dir]                          where the campaign stands (disk only, no model)
 tokens  [dir] [--price-in …]           token + cost usage, from opencode's own store
 init | update | doctor  [dir]
 ```
+
+Every agent pins its model (GPT-6 Luna at `xhigh`). `--model` runs them all on another one,
+e.g. `--model opencode/glm-5.3-flash-free`, with no reasoning variant unless `--variant` names
+one; `--variant` alone changes the variant on the pinned model. The flags apply to that one
+invocation and leave the agent files alone. `dev autoplay`, `dev prep` and `dev reconcile`
+take them too.
 
 The `dev` and `bench` groups are workshop surfaces and appear **only when running from
 a source checkout** (`bench` needs `dev/fixtures/`, which isn't packaged). From a

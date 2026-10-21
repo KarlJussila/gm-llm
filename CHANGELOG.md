@@ -59,6 +59,9 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - **Archived turns record the DM's own dice rolls** (`rolls`: expression and total), and the
   checker sees them.
 - `gm-llm tokens` counts the checker's workspace (`check-ws`) as its own scope beside grading.
+- **`gm-llm play --model` / `--variant`** run every agent, the subagents included, on another
+  model or reasoning variant for that invocation, without editing the agent files. `dev
+  autoplay`, `dev prep` and `dev reconcile` take them too.
 - **`bench run --subject-model` / `--subject-variant`** run the subject agents (`dm-runner`, `dm`,
   `author`, `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the
   product, is the only one yet). The `conditions` event stamps every agent's model and reasoning

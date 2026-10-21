@@ -36,6 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .logs import Logs, append
+from .registry import FrontmatterError, split_frontmatter
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,27 @@ _USER = "opencode"
 _SERVER_CONFIG = {"compaction": {"auto": False}}
 
 
+def agent_overrides(directory, model: str | None = None, variant: str | None = None) -> dict:
+    """`--model` / `--variant` as opencode's `agent` config, for every agent in the project's
+    `.opencode/agent/`: `model` (default: the agent's own) at `variant` (default: none with
+    `--model`, since a pinned variant belongs to the pinned model). The config reaches the
+    subagents opencode starts itself, which a per-session model wouldn't. opencode ignores an
+    entry that doesn't name the model, and an empty variant clears the pinned one; a null
+    voids the whole entry."""
+    if model is None and variant is None:
+        return {}
+    out = {}
+    for path in sorted((Path(directory) / ".opencode" / "agent").glob("*.md")):
+        try:
+            fm = split_frontmatter(path.read_text(encoding="utf-8"))[0] or {}
+        except (OSError, FrontmatterError):
+            continue
+        if (model and fm) or fm.get("model"):
+            out[path.stem] = {"model": model or fm["model"],
+                              "variant": variant if variant is not None else ""}
+    return out
+
+
 class Backend:
     def __init__(
         self,
@@ -105,8 +127,11 @@ class Backend:
         min_call_gap: float = 1.0,
         stall_timeout: int = 180,
         logs: Logs | None = None,
+        agents: dict | None = None,
     ):
         self.directory = str(Path(directory).resolve())
+        # Per-agent model overrides (`agent_overrides`), applied when we start the server.
+        self.agents = agents or {}
         self.port = port
         self.base = f"http://127.0.0.1:{port}"
         # The server's password: ours when we start it, the environment's when we attach.
@@ -149,7 +174,7 @@ class Backend:
         log = open(self.logs.serve, "w")
         exe = shutil.which("opencode") or "opencode"
         env = {**os.environ, "OPENCODE_SERVER_PASSWORD": self.password,
-               "OPENCODE_CONFIG_CONTENT": json.dumps(_SERVER_CONFIG)}
+               "OPENCODE_CONFIG_CONTENT": json.dumps(self.server_config())}
         if os.name == "nt":
             # From `npm i -g`, `opencode` is an `opencode.cmd` shim that CreateProcess can't
             # launch directly, so run it through the shell. A new process group isolates it
@@ -168,6 +193,10 @@ class Backend:
         self._wait_until_ready(ready_timeout)
         self._start_liveness()
         return self
+
+    def server_config(self) -> dict:
+        """The config we start the server with: ours, plus any per-agent model overrides."""
+        return {**_SERVER_CONFIG, **({"agent": self.agents} if self.agents else {})}
 
     def attach(self) -> "Backend":
         """Use an already-running server on this port (its password from

@@ -176,11 +176,13 @@ def _launch_tui(args, *, mock: bool, player: str = "human") -> int:
         return 1
 
     from .orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
+    from .orchestrator.backend import agent_overrides
     from .orchestrator.logs import debug_enabled
 
     auto = player == "auto"
     logs = Logs.under(project=directory, debug=debug_enabled())
-    backend = Backend(str(directory), port=args.port, logs=logs).start()
+    backend = Backend(str(directory), port=args.port, logs=logs,
+                      agents=agent_overrides(directory, args.model, args.variant)).start()
     try:
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)
         lifecycle = Lifecycle(backend, gate, str(directory), logs=logs,
@@ -221,7 +223,15 @@ def _build_parser() -> argparse.ArgumentParser:
 
     engine = argparse.ArgumentParser(add_help=False, parents=[common, backend_flags])
 
-    p = sub.add_parser("play", parents=[backend_flags],
+    # The campaign's model, for every agent in it. The bench sets its own (`--subject-model`).
+    model_flags = argparse.ArgumentParser(add_help=False)
+    model_flags.add_argument("--model", default=None, metavar="PROVIDER/MODEL",
+                             help="run every agent on this model instead of its pinned one")
+    model_flags.add_argument("--variant", default=None,
+                             help="reasoning variant ('' for none; default: none with --model, "
+                                  "else each agent's own)")
+
+    p = sub.add_parser("play", parents=[backend_flags, model_flags],
                        help="play a campaign (the default command)")
     p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")
     p.add_argument("--player", choices=("human", "auto"), default="human",
@@ -279,7 +289,8 @@ def _build_parser() -> argparse.ArgumentParser:
     if _is_checkout():
         from .bench.cli import add_bench_parser
         from .devcmds import add_dev_parser
-        add_dev_parser(sub, common, engine)
+        add_dev_parser(sub, common,
+                       argparse.ArgumentParser(add_help=False, parents=[engine, model_flags]))
         add_bench_parser(sub, engine)
 
     return ap
