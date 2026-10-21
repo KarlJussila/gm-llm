@@ -65,7 +65,6 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
   while you were away: `e961feb`, `035459f`, `c5e8073`, `38768b3`, `6d3cd2f`, `e2a20f1`, `54f1203`.
 - Review `dev/fixtures/hollowfell/story.md`, the story-so-far recap Claude wrote from the S1–S2
   transcripts (it leaves out the Concordance records slip on purpose).
-- Token usage for `check-ws` isn't counted by `gm-llm tokens` (only `run-*` and `grade-ws`).
 
 ## Open, outside the repo
 
