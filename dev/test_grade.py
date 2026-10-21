@@ -172,6 +172,7 @@ def test_findings_in_play_order(tmp):
     turn_msg = grade.finding_message(found[2])
     assert 'ref="s3t3#1"' in turn_msg and 'turn="s3t3"' in turn_msg
     assert "Claim: Wrong hair colour." in turn_msg and "Continues: s3t2#1" in turn_msg
+    assert '<turn ref="s3t3">' in turn_msg and "The inn is warm." in turn_msg, "the turn rides along"
     stage_msg = grade.finding_message(prop)
     assert 'from="gate"' in stage_msg and "<draft>" in stage_msg and "Ledger missed" in stage_msg
 

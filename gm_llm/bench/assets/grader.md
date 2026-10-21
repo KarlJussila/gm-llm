@@ -26,8 +26,8 @@ Your workspace:
 - `after/` — the campaign at the end of the run, after reconcile and the next session's plan. Read
   it for a stage finding; for a turn finding, play happened against `campaign/`.
 
-Each finding comes from the after-play checker (a turn, with its claim, evidence and category
-guess) or a between-session gate (a stage, with the gate's report and the draft it judged). Read
+Each finding comes from the after-play checker (its claim, evidence and category guess, and the
+turn it is about) or a between-session gate (the gate's report and the draft it judged). Read
 whatever you need to decide it, then call `submit_grade` once:
 
 - **confirmed** — the DM (or the record) really did this wrong. Give a severity, a category, a

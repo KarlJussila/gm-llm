@@ -140,7 +140,8 @@ def findings_for_run(events: list[dict], checks: list[dict]) -> list[dict]:
                 out.append({"ref": f["ref"], "kind": "turn", "check": f.get("check"),
                             "session": e.get("session"), "turn": e.get("turn"),
                             "claim": f.get("claim"), "evidence": f.get("evidence"),
-                            "category": f.get("category"), "continues": f.get("continues")})
+                            "category": f.get("category"), "continues": f.get("continues"),
+                            "played": turn_message(e)})
         elif e.get("event") == "stage":
             stage, session = e.get("stage"), e.get("session")
             base = {"kind": "stage", "stage": stage, "session": session}
@@ -172,6 +173,8 @@ def finding_message(f: dict) -> str:
                  f"Category guess: {f.get('category')}"]
         if f.get("continues"):
             lines.append(f"Continues: {f['continues']}")
+        if f.get("played"):
+            lines.append(f["played"])
     else:
         lines = [f'<finding ref="{f["ref"]}" from="gate" check="{f.get("check")}" '
                  f'stage="{f.get("stage")}" session="{f.get("session")}">',
