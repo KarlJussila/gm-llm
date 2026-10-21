@@ -16,7 +16,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import grade, runner, scoring
+from . import check, grade, runner, scoring
 
 # The fixtures live under dev/, resolved from this file's location so the default holds
 # regardless of the invoker's cwd (bench/cli.py → gm_llm → repo root).
@@ -62,6 +62,16 @@ def add_bench_parser(subparsers, engine) -> None:
                           "stdout (read-only; the archives are unaffected)")
     run.add_argument("--kickoff", default="Let's begin the session.")
     run.set_defaults(func=cmd_bench_run)
+
+    check_p = bsub.add_parser("check", parents=[engine],
+                              help="check each run's turns after play, one rolling session per run")
+    check_p.add_argument("--out", default="bench-out",
+                         help="batch dir to check (default: bench-out)")
+    check_p.add_argument("--model", default=None,
+                         help="override the checker's pinned model (checks are derived data)")
+    check_p.add_argument("--force", action="store_true",
+                         help="re-check runs already checked with this checker and instrument")
+    check_p.set_defaults(func=cmd_bench_check)
 
     grade_p = bsub.add_parser("grade", parents=[engine],
                               help="grade the flagged violations in a batch's archives (B2)")
@@ -147,6 +157,17 @@ def cmd_bench_run(args) -> None:
     _note(f"batch done: {done} complete · {capped} capped · {incomplete} incomplete · "
           f"{failed} failed → {Path(args.out) / 'batch.jsonl'}{tail}")
     sys.exit(1 if failed and not done else 0)
+
+
+def cmd_bench_check(args) -> None:
+    """Check every run in `--out` with the after-play checker. A whole session's turns go
+    through one session per run, so the per-call timeout defaults generous (600s)."""
+    _note(f"checking out={args.out} model={args.model or '(pinned)'} force={args.force}")
+    written = check.check_batch(args.out, model=args.model, force=args.force, port=args.port,
+                                min_gap=args.min_gap, turn_timeout=args.turn_timeout or 600,
+                                note=_note)
+    _note(f"checked {len(written)} run(s).")
+    sys.exit(0)
 
 
 def cmd_bench_grade(args) -> None:
