@@ -1,1 +1,1 @@
-Role: check-init. Campaign init is complete — all world entities, the character, arcs, and state have been authored. Verify the full `campaign/` directory against your `check-init` skill. Read the files you need from disk; report gaps.
+Role: check-init. Setup has authored the world, the character, the arcs and the initial state. Review the campaign under `campaign/` before its first session; read what you need from disk.

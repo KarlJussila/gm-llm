@@ -1,1 +1,1 @@
-Notes on the session plan you just wrote. Apply these fixes to the plan file in place — re-author the affected parts, ground or fill what's flagged, change nothing else, and report only when done.
+The check found problems in the session plan you just wrote. Fix each one in the plan file, change nothing else, and report only that it is done.

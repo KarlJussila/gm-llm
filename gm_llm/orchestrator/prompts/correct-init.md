@@ -1,1 +1,1 @@
-Notes on the campaign init you just authored. Apply the fixes listed below — update the relevant files in place, resolve each gap, and report when done.
+The check found problems in the new campaign. Fix each one in the files it names, change nothing else, and report when done.

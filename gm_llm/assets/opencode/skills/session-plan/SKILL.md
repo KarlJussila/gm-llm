@@ -51,7 +51,8 @@ investigation.
 - **Pacing and exits** — expected scope, natural stopping points, a cliffhanger to build toward.
   `pacing-plan` covers this.
 - **Advancement** — whether a level-up lands at the end of this session, from the major arc's level
-  pacing and the PC's level: an explicit yes-to-level-N or no.
+  pacing and the PC's `level`: an explicit yes-to-level-N, with the beat it rides on if one is near,
+  or no. A due level-up lands at the close even without a big beat.
 
 **New entities.** Every entity the plan introduces gets a full file from its template, not a stub.
 Check `INDEX.md` for name and role overlap first, and reuse or differentiate rather than make a
