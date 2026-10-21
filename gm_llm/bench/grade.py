@@ -29,6 +29,7 @@ from pathlib import Path
 
 from ..orchestrator import Backend, Logs
 from ..orchestrator.logs import debug_enabled
+from .runner import classify_archive, reconcile_pending
 from .workspace import agent_meta, apply_model, extract_commit, turn_message
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -289,6 +290,22 @@ def _batch_archives(out_dir: Path) -> list[Path]:
             if rec.get("archive")]
 
 
+def finished_archives(out_dir: Path, note=_quiet) -> list[Path]:
+    """The batch's archives whose runs are done — capped, or wrapped with the between-session
+    pass through. An unfinished run is skipped with a note: checks or grades written now would
+    stand for the whole run once `bench run --resume` finished it."""
+    done = []
+    for archive in _batch_archives(out_dir):
+        state, _ = classify_archive(archive)
+        if state == "complete" and reconcile_pending(archive):
+            state = "reconcile pending"
+        if state in ("complete", "capped"):
+            done.append(archive)
+        else:
+            note(f"skipping {archive.parents[2].name}: {state} — `bench run --resume` it first.")
+    return done
+
+
 def unmanifested_archives(out_dir) -> list[Path]:
     """Archives in a batch's run dirs that `batch.jsonl` doesn't point at. The grader and the
     report read only the manifest, so such an archive would score as play that never happened.
@@ -310,9 +327,9 @@ def grade_batch(out_dir, *, model: str | None = None, force: bool = False,
     for stray in unmanifested_archives(out_dir):
         note(f"WARNING: {stray.relative_to(out_dir)} is not in batch.jsonl — NOT graded. "
              f"Its violations are missing from the score, not zero.")
-    archives = _batch_archives(out_dir)
+    archives = finished_archives(out_dir, note)
     if not archives:
-        note(f"no archives found under {out_dir} (need a batch.jsonl with archives).")
+        note(f"no finished runs under {out_dir} (need a batch.jsonl with archives).")
         return {"graded": [], "double": None}
 
     rubric_text = (ASSETS / f"rubric-{RUBRIC}.md").read_text(encoding="utf-8")

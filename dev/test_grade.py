@@ -243,7 +243,8 @@ def test_grade_batch_workspace_and_double(tmp):
     (run / "campaign" / "INDEX.md").write_text("after reconcile\n", encoding="utf-8")
     subprocess.run(["git", "commit", "-qam", "post-session"], cwd=run, check=True,
                    capture_output=True)
-    _write_run(out, "x", [_turn(1, 1, narration="Rain on the shutters.", complete=True)],
+    _write_run(out, "x", [_turn(1, 1, narration="Rain on the shutters.", complete=True),
+                          _stage("plan", 2)],
                {"s1t1": [_finding("s1t1#1")]})
 
     result = grade.grade_batch(

@@ -70,7 +70,7 @@ def make_batch(out):
          "combat": {"combatant": "pc", "before": {"goblin-1": {"hp": 7}},
                     "after": {"goblin-1": {"hp": 7}}}},
         {"event": "turn", "session": 1, "turn": 3, "player": "I search the body.",
-         "narration": "A sealed letter.", "tools": []},
+         "narration": "A sealed letter.", "tools": [], "session_complete": True},
     ]
     archive = logs / "archive-1.jsonl"
     archive.write_text("".join(json.dumps(e) + "\n" for e in
@@ -123,10 +123,23 @@ def main(root):
                                "category": "rules-error", "continues": None}]
     assert t3["defaulted"] is True and t3["findings"] == []
 
-    check.check_batch(out, backend_factory=factory, note=lambda m: None)
-    assert not backends[1].messages, "an already-checked run is skipped"
+    # A run that stopped mid-session: checks written now would stand for the whole run
+    # once it resumed, so it waits.
+    stopped = out / "run-2" / ".opencode" / "logs" / "archive-2.jsonl"
+    stopped.parent.mkdir(parents=True)
+    stopped.write_text("".join(json.dumps(e) + "\n" for e in [
+        {"event": "run", "run_id": "r2"},
+        {"event": "turn", "session": 1, "turn": 1, "player": "Hi.", "narration": "Rain."}]),
+        encoding="utf-8")
+    with (out / "batch.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"run_dir": "run-2", "archive": "run-2/.opencode/logs/archive-2.jsonl"})
+                + "\n")
+    notes = []
+    check.check_batch(out, backend_factory=factory, note=notes.append)
+    assert len(backends) == 2 and not backends[1].messages, "an already-checked run is skipped"
+    assert any("run-2" in n and "resumable" in n for n in notes), "an unfinished run is skipped"
     check.check_batch(out, force=True, backend_factory=factory, note=lambda m: None)
-    assert backends[2].messages, "--force checks it again"
+    assert backends[2].messages and len(backends) == 3, "--force checks it again, and only it"
     print("OK — after-play check: rolling session, play order, pristine workspace, checks file.")
 
 

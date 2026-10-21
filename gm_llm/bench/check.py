@@ -25,7 +25,7 @@ from pathlib import Path
 
 from ..orchestrator import Logs
 from ..orchestrator.logs import debug_enabled
-from .grade import (ASSETS, _batch_archives, _default_backend, _quiet, _read_events, _run_id_of,
+from .grade import (ASSETS, finished_archives, _default_backend, _quiet, _read_events, _run_id_of,
                     checks_path, instrument_fingerprint)
 from .workspace import agent_meta, apply_model, extract_commit, turn_message, turn_ref
 
@@ -105,9 +105,9 @@ def check_batch(out_dir, *, model: str | None = None, force: bool = False, port:
     """Check every run in a batch `out_dir`, each in its own workspace and backend (the
     workspace is that run's pre-play campaign)."""
     out_dir = Path(out_dir)
-    archives = _batch_archives(out_dir)
+    archives = finished_archives(out_dir, note)
     if not archives:
-        note(f"no archives found under {out_dir} (need a batch.jsonl with archives).")
+        note(f"no finished runs under {out_dir} (need a batch.jsonl with archives).")
         return []
     instrument = instrument_fingerprint()
     written = []

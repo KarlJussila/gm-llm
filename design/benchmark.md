@@ -72,6 +72,8 @@ The subject is the DM playing well, never the checker catching it failing.
   rolling context is what makes that possible. A turn with no submission after one nudge is recorded
   `defaulted`.
 - Output goes to its own `checks-<run>.jsonl`; the play archive is never rewritten.
+- Check and grade skip a run that isn't finished (resumable, or reconcile pending): what they wrote
+  would otherwise stand for the whole run once `--resume` finished it.
 
 ### Grade — `bench grade`
 
