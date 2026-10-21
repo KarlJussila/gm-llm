@@ -251,7 +251,7 @@ class MockSetup:
         if self._n == 2:
             self._announce("char")
         if done:
-            for key in ("arc-major", "arc-minor", "state", "gate", "commit"):
+            for key in ("arcs-state", "lint", "gate", "commit"):
                 self._announce(key)
                 time.sleep(0.4)  # let the ticker breathe, like the mock wrap
         return SetupTurn(_SETUP_SCRIPT[i], done)
@@ -306,36 +306,36 @@ class MockLifecycle:
         from .play import KeyboardPlayer
         return KeyboardPlayer()
 
-    def setup_stream(self, stream_write, on_tool=None):
+    def setup_stream(self, stream, on_tool=None):
         return _NoTap()
 
-    def play_stream(self, stream_write):
-        if not stream_write:
+    def play_stream(self, stream):
+        if not stream:
             return None
         return _NoTap()
 
-    def finish_setup(self, on_stage=None, stream_write=None) -> int:
+    def finish_setup(self, on_stage=None, stream=None) -> int:
         if on_stage:
             on_stage("prep")
-        if stream_write:
-            stream_write("[bold cyan]\n──── planning session 1 ────\n[/]")
-            stream_write("  (mock) writing the session-1 plan…\n")
+        if stream:
+            stream("heading", "\n──── planning session 1 ────\n")
+            stream("text", "  (mock) writing the session-1 plan…\n")
         time.sleep(0.6 * self.pace)
         self.phase = "play"
         self.game = MockGame(self.backend, pace=self.pace)
         self.setup = None
         return self._session
 
-    def wrap(self, on_stage=None, stream_write=None, commit: bool = True) -> int:
+    def wrap(self, on_stage=None, stream=None, commit: bool = True) -> int:
         for key in _WRAP_STAGES:
             if on_stage:
                 on_stage(key)
-            if stream_write:
-                # Mirror the live EventTap's markup dialect so the offline demo shows
-                # the same coloured headings / tool lines the real stream produces.
-                stream_write(f"[bold cyan]\n──── {key} ────\n[/]")
-                stream_write(f"  (mock) working {key}…\n")
-                stream_write(f"[yellow]  ⚙ {key}: write  world/notes/{key}.md[/]\n")
+            if stream:
+                # The same kinds the live EventTap emits, so the offline demo shows
+                # headings and tool lines the way the real stream does.
+                stream("heading", f"\n──── {key} ────\n")
+                stream("text", f"  (mock) working {key}…\n")
+                stream("tool", f"  ⚙ {key}: write  world/notes/{key}.md\n")
             time.sleep(0.6 * self.pace)  # let the ticker breathe so the flow is visible
         self._session += 1
         self.game = MockGame(self.backend, pace=self.pace)

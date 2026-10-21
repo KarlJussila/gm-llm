@@ -1,15 +1,14 @@
 """
 Campaign lifecycle — set up a new campaign, play a session, wrap it (reconcile + prep
-the next), play the next, all from one front-end. Backend-agnostic: the caller (the TUI)
+the next), play the next, all from one object. Backend-agnostic: the caller (the engine)
 supplies callbacks for the between-phases progress ticker and the live model stream.
 
 `Setup` (setup.py) owns init, `Game` (loop.py) owns live play, `play_session` (play.py) owns
 the turn loop over it, `Reconciler` owns the post-session pipeline. This ties them into one
-moving object the UI can drive:
+moving object the engine drives:
   - an empty directory opens in the **setup** phase; `finish_setup()` plans session 1 and
     rolls into play(1);
   - `wrap()` reconciles the just-played session and rolls `self.game` to the next.
-So the screen never leaves the app across the whole campaign lifecycle.
 """
 
 from __future__ import annotations
@@ -75,38 +74,28 @@ class Lifecycle:
         Blocking (subprocesses); the TUI runs it off the UI thread."""
         return campaign_status(self.directory)
 
-    def _tap(self, stream_write):
-        """An EventTap routing the live model stream to the behind-the-screen pane —
-        markup dialect for the Textual sink. None when no sink is wired."""
-        if not stream_write:
+    def _tap(self, stream, on_tool=None):
+        """An EventTap handing the live model stream to `stream(kind, text)` (see
+        `EventTap`), or None when no sink is wired. The caller stops it."""
+        if not stream:
             return None
-        return EventTap(self.backend, write=stream_write, markup=True).start()
+        return EventTap(self.backend, sink=stream, on_tool=on_tool).start()
 
-    def setup_stream(self, stream_write, on_tool=None):
-        """Stream the setup conversation's authoring behind the screen for its whole
-        duration. The caller starts this when setup opens and stops it at the transition.
-        `on_tool(name, arg)` fires per tool call — the TUI turns it into a spoiler-free
-        progress ticker in the main scene."""
-        if not stream_write:
-            return None
-        return EventTap(self.backend, write=stream_write, markup=True, on_tool=on_tool).start()
+    def setup_stream(self, stream, on_tool=None):
+        """Stream setup's authoring for the whole conversation. `on_tool(name, arg)` fires
+        per tool call — the engine turns it into spoiler-free progress labels."""
+        return self._tap(stream, on_tool)
 
-    def play_stream(self, stream_write):
-        """Stream live model output during a play turn or meta call. The caller
-        starts this before the blocking call (so the stream is live for the
-        whole turn — runner draft, checker tool calls, correction if any) and
-        stops it when the call returns. Routes into the behind-the-screen pane;
-        the pane stays closed by default — the stream accumulates so opening it
-        mid-turn reveals what's happened so far. Returns the EventTap (or None
-        if no sink is wired)."""
-        return self._tap(stream_write)
+    def play_stream(self, stream):
+        """Stream live model output for a session: turns, fights and meta questions."""
+        return self._tap(stream)
 
-    def finish_setup(self, on_stage=None, stream_write=None) -> int:
+    def finish_setup(self, on_stage=None, stream=None) -> int:
         """Once setup reports done: plan session 1 (the one code-gated artifact at init),
         then roll into play(1). Returns the new session number (1)."""
         if on_stage:
             on_stage("prep")
-        tap = self._tap(stream_write)
+        tap = self._tap(stream)
         try:
             n = self.setup.finalize()
         finally:
@@ -125,15 +114,14 @@ class Lifecycle:
         Reconciler(self.backend, self.gate, on_stage=on_stage,
                    logs=self.logs).reconcile_session(n, commit=commit)
 
-    def wrap(self, on_stage=None, stream_write=None, commit: bool = True) -> int:
+    def wrap(self, on_stage=None, stream=None, commit: bool = True) -> int:
         """Reconcile the just-played session (digest → … → prep N+1), then roll the
         game forward to session N+1; returns the new session number.
 
-        `on_stage(key)` fires as each pipeline stage starts (drives the ticker);
-        `stream_write(text)` receives the live model output via an EventTap (drives the
-        behind-the-screen pane). Both are called from worker/daemon threads."""
+        `on_stage(key)` fires as each pipeline stage starts; `stream(kind, text)` receives
+        the live model output. Both are called from worker/daemon threads."""
         n = self.game.session
-        tap = self._tap(stream_write)
+        tap = self._tap(stream)
         try:
             # First, while the runner session is still warm, capture its handoff notes —
             # the between-session pipeline folds them in alongside the transcript.

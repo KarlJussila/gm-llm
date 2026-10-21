@@ -4,6 +4,7 @@ One CLI, two audiences. The top level is player-facing and ships in the wheel:
 
     gm-llm                      play the campaign in the current directory
     gm-llm play [dir]           --player human|auto  --ui tui|console  --mock  --setup
+    gm-llm serve [dir]          the engine over stdio, for a frontend to drive
     gm-llm status [dir]         where the campaign stands (disk only, no model)
     gm-llm tokens [dir]         token + cost usage, read back from opencode's own store
     gm-llm init | update | doctor
@@ -148,13 +149,56 @@ def run_play(args) -> int:
         return autoplay.run(args)          # exits via with_engine
 
     if ui == "console":
-        from .devcmds import unavailable
-        unavailable("a human-facing console frontend isn't implemented — the human "
-                    "frontend is the TUI. Use `--ui tui` (the default).")
+        return _run_console(args)
 
     # Both TUI cells, human and auto, are the same app over one session loop — the axis
     # is which `PlayerSource` the lifecycle hands it (design/frontends.md, step 2).
     return _launch_tui(args, mock=mock, player=player)
+
+
+def _serve_args(args) -> list[str]:
+    """`play`'s flags as `gm-llm serve` takes them — what a frontend spawns its engine with."""
+    out = [str(Path(args.dir).resolve()), "--player", getattr(args, "player", "human"),
+           "--port", str(args.port)]
+    if args.mock:
+        out += ["--mock"] + (["--setup"] if args.setup else [])
+    if args.model is not None:
+        out += ["--model", args.model]
+    if args.variant is not None:
+        out += ["--variant", args.variant]
+    if getattr(args, "player", "human") == "auto":
+        out += ["--turn-cap", str(args.turn_cap)]
+    return out
+
+
+def _has_assets(args) -> bool:
+    directory = Path(args.dir).resolve()
+    if args.mock or (directory / ".opencode" / "agent").is_dir():
+        return True
+    print(f"no .opencode assets in {directory} — run `gm-llm init` here first.",
+          file=sys.stderr)
+    return False
+
+
+def _run_console(args) -> int:
+    from . import consoleui
+    from .engine.client import ProcessClient
+    if not _has_assets(args):
+        return 1
+    return consoleui.run(ProcessClient(_serve_args(args)), stream=args.stream)
+
+
+def _cmd_serve(args) -> int:
+    from .engine.serve import claim_stdout, fail, serve
+    out = claim_stdout()
+    try:
+        from .engine import open_engine
+        engine = open_engine(args.dir, player=args.player, model=args.model,
+                             variant=args.variant, port=args.port, turn_cap=args.turn_cap,
+                             mock=args.mock, setup=args.setup)
+    except Exception as e:  # noqa: BLE001 — the frontend shows it
+        return fail(out, str(e))
+    return serve(engine, out)
 
 
 def _launch_tui(args, *, mock: bool, player: str = "human") -> int:
@@ -251,6 +295,17 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fresh", action="store_true", help=argparse.SUPPRESS)
     p.add_argument("--kickoff", default="Let's begin the session.", help=argparse.SUPPRESS)
     p.set_defaults(func=run_play)
+
+    p = sub.add_parser("serve", parents=[backend_flags, model_flags],
+                       help="the engine over stdio, for a frontend to drive")
+    p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")
+    p.add_argument("--player", choices=("human", "auto"), default="human")
+    p.add_argument("--turn-cap", type=int, default=None,
+                   help="stop an agent-played session after this many turns")
+    p.add_argument("--mock", action="store_true", help="mock backend — no opencode")
+    p.add_argument("--setup", action="store_true",
+                   help="with --mock: start in the new-campaign setup phase")
+    p.set_defaults(func=_cmd_serve)
 
     p = sub.add_parser("status", help="where the campaign stands (disk only, no model)")
     p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")
