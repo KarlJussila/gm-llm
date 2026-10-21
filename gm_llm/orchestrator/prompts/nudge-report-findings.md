@@ -1,0 +1,1 @@
+You ended your turn without submitting your verdict. Call `report_findings` now as your only action: your findings in `report` (empty if there are none) and `passed` set to whether you found nothing to flag.

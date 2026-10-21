@@ -33,21 +33,6 @@ from .logs import append, banner, section
 from .paths import latest_session
 from .prompts import load
 
-# Sent if the DM ended the session without delivering its notes in task_complete's `notes`
-# argument — the only channel the orchestrator files.
-_NUDGE_NOTES = (
-    "You ended the session without handoff notes. Call `task_complete` now with the complete "
-    "notes in its `notes` argument."
-)
-
-# Sent when a reply ends the session in prose (a bare "session complete" trailer) but never
-# calls `task_complete` — the only signal that actually closes a session. One bounded nudge;
-# if it doesn't land, play continues unchanged.
-_NUDGE_CLOSE = (
-    "You wrote an ending but didn't signal it — an ending in narration closes nothing. "
-    "If the session is over, call `task_complete` now; if it isn't, keep playing."
-)
-
 # A bare end-of-session trailer: a line whose ONLY content is a "session complete/ends here"
 # marker, optionally wrapped in markdown emphasis or a rule. Matched against the narration's
 # last non-empty line, so it can't fire on ordinary prose.
@@ -170,7 +155,7 @@ class Game(CombatMixin):
                                                  load("handoff-brief"), whole=True)
                 reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
                                                  tool="task_complete", args=("notes",),
-                                                 nudge=_NUDGE_NOTES, whole=True)
+                                                 nudge=load("nudge-notes"), whole=True)
         except BackendCancelled:
             raise
         except BackendError:
@@ -204,7 +189,7 @@ class Game(CombatMixin):
         close_nudged = False
         if not opening and "task_complete" not in reply.tools and _looks_like_close(reply.text):
             reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
-                                             tool="task_complete", nudge=_NUDGE_CLOSE)
+                                             tool="task_complete", nudge=load("nudge-close"))
             close_nudged = True
         session_complete = (not opening) and ("task_complete" in reply.tools)
         if session_complete:

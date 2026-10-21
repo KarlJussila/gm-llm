@@ -39,6 +39,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from .prompts import load
 
 
 def combat_state_path(directory: str) -> Path:
@@ -126,26 +127,17 @@ class CombatStep:
 # advance_turn — that closing advance seats the next combatant and fires their timers, and it is
 # what a rollback rewinds on an interject.
 
-_ADVANCE_NUDGE = (
-    "You resolved the action but didn't end the turn — call `advance_turn` now to pass "
-    "initiative to the next combatant, and nothing else."
-)
-
 
 def _npc_brief(combatant: str) -> str:
-    return f"<combat-turn>\nIt is {combatant}'s turn.\n</combat-turn>"
+    return load("combat-npc-turn").format(combatant=combatant)
 
 
 def _pc_brief(player_input: str) -> str:
-    return ("<combat-turn>\nIt is the PC's turn — adjudicate the player's action.\n</combat-turn>\n"
-            f"<player>\n{player_input}\n</player>")
+    return load("combat-pc-turn").format(player_input=player_input)
 
 
 def _replay_brief(combatant: str, text: str) -> str:
-    return (f"<combat-reaction>\nThe player interjects before {combatant}'s action resolves — treat "
-            f"it as a reaction. The tracker was rolled back to the start of {combatant}'s turn; "
-            f"replay the turn with the reaction folded in.\n<reaction>\n{text}\n</reaction>\n"
-            f"</combat-reaction>")
+    return load("combat-replay").format(combatant=combatant, text=text)
 
 
 class CombatMixin:
@@ -225,7 +217,7 @@ class CombatMixin:
         """The DM ends its turn by calling `advance_turn`. If the pointer didn't move off
         `acted`, it forgot — nudge once so initiative doesn't stall."""
         if st.exists() and st.turn == acted:
-            self.backend.prompt_full(self.runner_sid, self.runner_agent, _ADVANCE_NUDGE)
+            self.backend.prompt_full(self.runner_sid, self.runner_agent, load("nudge-advance-turn"))
 
     def combat_confirm(self) -> CombatStep | None:
         """Bare-Enter confirm of the NPC action awaiting confirm: harden it into `committed`

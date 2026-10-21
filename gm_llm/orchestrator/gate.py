@@ -64,16 +64,6 @@ class StageGateResult:
         return f"{head}\n\n— {self.label} —\n" + self.narrative.report.strip()
 
 
-# Safety-hatch nudge: sent if a checker ends its turn without submitting report_findings,
-# so a forgotten tool call is reminded once before the content passes by default.
-_NUDGE_REPORT_FINDINGS = (
-    "You ended your turn without submitting your verdict. Call the `report_findings` tool "
-    "now as your only action — put your findings in `report` (an empty string if there are "
-    "none) and set `passed` (true if you found no violations, false if you found any). "
-    "Output nothing else."
-)
-
-
 def _parse_passed(tool_input: dict) -> bool | None:
     """The verdict from a report_findings call. `passed` is schema-typed boolean, but
     tolerate the string forms a modest model may produce. None → no usable verdict
@@ -168,7 +158,7 @@ class Gate:
         reply = self.backend.prompt_full(sid, "narrative-checker", brief, whole=True)
         reply = self.backend.ensure_tool(sid, "narrative-checker", reply,
                                          tool="report_findings", args=("passed",),
-                                         nudge=_NUDGE_REPORT_FINDINGS, whole=True)
+                                         nudge=load("nudge-report-findings"), whole=True)
         tool_input = reply.tool_inputs.get("report_findings")
         if tool_input:
             passed = _parse_passed(tool_input)
