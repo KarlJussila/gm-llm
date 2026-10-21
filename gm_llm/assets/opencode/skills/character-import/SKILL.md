@@ -1,13 +1,9 @@
 ---
 name: character-import
-description: Parse a player-provided character file (any format — exported sheet, JSON, HTML, PDF text, notes) into the PC sheet's structured format. Extract every detail the file actually contains, never invent, and report which required vitals it lacked. Loaded by the dm during character creation to parse an imported character file.
+description: Use when importing a player-provided character file during character creation.
 ---
 
 # character-import
-
-## Read first
-Read `campaign/feedback/character-import.md` if it exists — accumulated guidance on how this player's
-sheets tend to be laid out (e.g. where they keep subclass). Treat it as binding.
 
 ## What this does
 Turn a player's character file — an exported sheet, JSON, HTML, PDF text, a notes doc, anything — into
@@ -35,7 +31,7 @@ that you were unable to parse it, so the dm gets those details from the player d
 
 ## Map it onto the sheet
 Load `canon-conventions` and build from the `pc-sheet` template. Write what you find into:
-- **`## Vitals`** — Race / lineage, Class, Subclass *(only if the file has one)*, Level, Ability
+- **Frontmatter vitals** — Race / lineage, Class, Subclass *(only if the file has one)*, Level, Ability
   scores, Pronouns. This is the completeness contract; fill every line the source supports.
 - **`## Known capabilities`** — Proficiencies, Spells & abilities, Feats, as far as the file lists
   them. Partial is fine — this section grows in play.

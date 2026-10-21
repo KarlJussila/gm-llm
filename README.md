@@ -69,6 +69,19 @@ gm-llm update path/to/my-campaign
 what older versions left in `.opencode/` (`package.json`, `node_modules`), while leaving your
 `campaign/` data and `.orchestrator` markers untouched. `gm-llm --version` shows what the tool is on.
 
+### Player settings
+
+`gm-llm init` creates `gm-llm.yaml` in the campaign project. `gm-llm update` preserves it.
+
+```yaml
+feedback-dir: ~/.gm-llm/feedback
+subagents: sequential
+```
+
+The default feedback directory is shared across your campaigns. `feedback-dir` accepts an absolute
+path, `~`, or a path relative to the project. Set `subagents: parallel` to let independent authoring
+subagents run concurrently. The default runs one at a time for rate-limited providers.
+
 ### Windows (native) — one-line install
 
 The simplest path. Open **PowerShell** and paste:
@@ -234,7 +247,7 @@ Skills hold the procedures; agents stay thin. Groups:
 
 - **Authoring contract:** `canon-conventions` (+ its `templates/`) — the format every
   canon writer follows.
-- **Setup:** `campaign-setup` (cross-cutting standards), `campaign-intake`,
+- **Setup:** `campaign-intake`,
   `world-build`, `character-create`, `character-import`, `arc-design`, `state-init`.
 - **Planning:** `session-plan`, pulling `encounter-plan` / `investigation-plan` /
   `npc-plan` / `pacing-plan` as the session needs them.
@@ -281,7 +294,7 @@ a `.orchestrator/` marker so a failure resumes where it died:
 handoff   runner (warm) writes its session notes; code files them
 B digest  log-extractor: transcript → session-N.md          gate: check-digest
 C assess  analyst: digest → assessment                      (analysis, no gate)
-E feedback analyst: curate campaign/feedback/*              gate: check-feedback
+E feedback dm: curate player-level feedback                skipped when none was given
 D1 canon  dm: file new/changed entities                     deterministic completeness lint
 D2 arcs   dm: one dispatch PER ARC (code-enumerated;
           untouched arcs are a cheap no-op) + a close pass
@@ -292,10 +305,12 @@ commit    code
 F prep    dm (same warm thread): plan session N+1           gate: check-plan
 ```
 
-**Setup** mirrors it: scaffold (pure Python) → interactive intake/world and character
-stages (the dm signals completion with the `task_complete` tool) → arc/state dispatches →
-`check-init` gate → `campaign: init` commit → session-1 prep. Every phase announces its
-stages over one `on_stage` protocol, which is what the TUI's ticker renders.
+**Setup** starts with a scaffold, then an interactive campaign brief and world proposal. The player
+can revise the world before approving it and creating a character. One background dispatch writes
+the arcs and initial state. Code checks the arc coverage and `S0` snapshots, runs the canon lint,
+then asks `check-init` to review duplicates, hidden layers and consistency. The orchestrator commits
+`campaign: init` and prepares session 1. Every phase announces its stages through `on_stage` for the
+TUI ticker.
 
 ### Plugins (`plugin/`)
 
@@ -308,10 +323,11 @@ stages over one `on_stage` protocol, which is what the TUI's ticker renders.
 
 ### The feedback loop
 
-The runner collects player feedback at every session close (verbatim, into the digest);
-the analyst distills it into `campaign/feedback/{skill}.md` standing guidance
-(`check-feedback`-gated); every skill and primary agent reads its own file as binding.
-The system adapts to the player without the framework changing.
+The runner collects player feedback at session close. After the digest records it, the `dm`
+curates actionable points into the shared directory set by [player settings](#player-settings),
+one file per skill or agent. The runner's guidance is included in its prepared context; other
+guidance is read when the agent starts or loads the matching skill. These preferences override the
+defaults. Benchmark runs use a private copy of the fixture's feedback.
 
 ## Development
 

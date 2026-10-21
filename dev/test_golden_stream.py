@@ -335,15 +335,13 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
         # correction, then the reconcile stages and the next session's plan.
         "dm": [
             Resp("Welcome — tell me the kind of world you want to run."),           # intake brief
+            Resp("A rain-soaked harbour city of rival guilds. Does that fit?"),      # world proposal
+            Resp("A hopeful harbour city of rival guilds. Better?"),                # revision
             _task_complete(                                                          # intake done
-                "The world is built.",
-                player_message="A rain-soaked harbour city of rival guilds — "
-                               "hard-boiled, with room to breathe."),
+                "The world is agreed."),
             Resp("Now let's make your character."),                                  # char brief
             _task_complete("Your rogue Dallid is ready."),                           # char done
-            Resp("Major arc drafted."),                                              # arc-major brief
-            Resp("Minor arc drafted."),                                              # arc-minor brief
-            Resp("Opening state initialised."),                                      # state brief
+            Resp("Arcs and opening state written."),                                 # arcs + state
             Resp("Session 1 plan written."),                                         # author-brief(1)
             Resp("Plan corrected."),                                                 # plan correction
             Resp("Feedback folded in."),                                             # curate-feedback(1)
@@ -386,10 +384,9 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
 # The setup-stage writes are attached to the dm replies that stand in for them; the
 # constant queue above keeps `writes=None` on those slots, so wire them here by index.
 _DM_STAGE_WRITES = {
-    1: "world",       # intake done -> world/npcs/factions/locations + INDEX
-    3: "char",        # char done   -> pc sheet + knowledge
-    4: "arc_major",   # arc-major   -> the-sunken-crown
-    5: "arc_minor",   # arc-minor   -> guild-rivalry
+    3: "world",       # world approved -> world files
+    5: "char",        # character confirmed -> PC files
+    6: "arcs_state",  # one dispatch -> both arcs and their initial state
     7: "plan_1",      # author-brief(1)      -> session-1-plan.md
     8: "plan_1_fix",  # plan correction      -> corrected session-1-plan.md
     11: "arcs_1",     # apply-arcs(1)        -> both arcs stamped S1
@@ -517,6 +514,8 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     """Drive setup -> prep -> play -> handoff -> reconcile over the fake backend and
     the real Gate/preloader; return the recorded stream and a few flow assertions."""
     writes = _writes(root)
+    writes["arcs_state"] = writes["arc_major"] | writes["arc_minor"]
+    (root / "gm-llm.yaml").write_text("feedback-dir: feedback\n", encoding="utf-8")
     script = _script(writes)
     for i, key in _DM_STAGE_WRITES.items():
         script["dm"][i].writes = writes[key]
@@ -531,7 +530,12 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     setup = Setup(backend, gate, str(root), logs=None)
     st = setup.start()
     assert not st.done, "setup should not finish on the intake brief"
-    setup.turn("A rain-soaked harbour city of rival guilds.")   # completes INTAKE_WORLD
+    proposal = setup.turn("A rain-soaked harbour city of rival guilds.")
+    assert "Does that fit?" in proposal.reply
+    assert setup._stage == "INTAKE_WORLD", "a proposal must wait for the player"
+    revised = setup.turn("Make it more hopeful.")
+    assert "hopeful" in revised.reply and setup._stage == "INTAKE_WORLD"
+    setup.turn("Yes, that world works for me.")              # completes INTAKE_WORLD
     st = setup.turn("A half-elf rogue named Dallid.")           # completes CHAR -> runs pipeline
     assert st.done, "setup should be done once init is committed"
 

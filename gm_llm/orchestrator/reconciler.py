@@ -7,7 +7,7 @@ correction per gate.
 
   reconcile_session(N):
     digest      log-extractor: transcript + notes -> digest     gate: check_digest
-    feedback    dm: the digest's player feedback -> feedback/    (skipped when there is none)
+    feedback    dm: the digest's player feedback -> player store (skipped when there is none)
     canon       dm: new and changed entities, the PC, documents canon lint
     arcs        dm: every arc, each through the `author` subagent, then the close-out;
                 code checks every arc is stamped `as-of: S<N>`, one nudge for any missed
@@ -27,6 +27,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+from gm_llm.settings import load_settings
 
 from . import paths
 from .archive import verdict_fields
@@ -137,6 +139,7 @@ class Reconciler:
         if not self._done(n, "feedback"):
             if player_feedback(self._read_campaign(paths.rel(n, "digest"))):
                 self._announce("feedback")
+                load_settings(self.root).feedback_dir.mkdir(parents=True, exist_ok=True)
                 self.backend.prompt(self.dm_sid, self.dm_agent,
                                     load("curate-feedback-brief").format(n=n))
             self._mark(n, "feedback")
@@ -159,7 +162,8 @@ class Reconciler:
         if not self._done(n, "arcs"):
             self._announce("arcs")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("apply-arcs-brief").format(
-                n=n, arcs=_bullets(arcs_not_stamped(self.root, n))))
+                n=n, arcs=_bullets(arcs_not_stamped(self.root, n)),
+                delegation=load_settings(self.root).delegation))
             missed = arcs_not_stamped(self.root, n)
             if missed:
                 self.backend.prompt(self.dm_sid, self.dm_agent, load("arcs-missed").format(

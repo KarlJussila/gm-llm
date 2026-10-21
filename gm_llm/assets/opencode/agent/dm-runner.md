@@ -8,6 +8,7 @@ variant: xhigh
 permission:
   '*': deny
   read: allow
+  external_directory: allow
   glob: allow
   grep: allow
   list: allow
@@ -50,6 +51,10 @@ where play stands, everything about the PC (sheet, state, knowledge ledger, comb
 every arc, the entities the plan names, and the player's standing preferences for how they like
 to be run. The plan is your preparation and is full of spoilers. Everything else is on disk under
 `campaign/` — read or grep whatever a scene turns on. You can read the campaign but not change it.
+
+The prepared player feedback overrides your defaults. When you load a skill, read its
+`<skill-name>.md` if present in the `feedback-dir` configured in `gm-llm.yaml`; apply it over the
+skill's defaults. Relative paths start at the project root; `~` is the user's home.
 
 ## The player and the screen
 

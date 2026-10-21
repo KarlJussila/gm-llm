@@ -5,8 +5,8 @@ Setup drives the dm through campaign init as a staged pipeline:
   1. scaffold_campaign()  — pure Python, no LLM
   2. INTAKE_WORLD         — dm does intake + world build (interactive with player)
   3. CHAR                 — dm does character creation (interactive with player)
-  4. ARC_MAJOR, ARC_MINOR, STATE — single-turn dispatches, no player
-  5. GATE                 — init-gate checker in a fresh session
+  4. ARCS_STATE           — one dispatch, disk-based coverage check
+  5. LINT, GATE           — canon lint, then judgment in a fresh session
   6. COMMIT               — git commit in code
 
   s = Setup(backend, gate, directory)
@@ -29,28 +29,20 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from gm_llm.settings import load_settings
+
 from .archive import verdict_fields
 from . import paths
-from .phase import commit_campaign, correct_once
+from .lint import setup_missing
+from .loop import join_narration
+from .phase import apply_lint_correction, commit_campaign, correct_once, refresh_campaign
 from .planner import Planner
 from .prompts import load
 from .scaffold import scaffold_campaign
 
-# Safety-hatch nudge: sent if the DM completes worldbuilding without putting the overview
-# in task_complete's `player_message` (the only channel that reaches the player).
-_NUDGE_OVERVIEW = (
-    "You finished worldbuilding but didn't include the world overview, so the player has "
-    "not seen one — the `player_message` argument of `task_complete` is the only way to show "
-    "it to them. Call `task_complete` again now with a spoiler-free overview (premise, tone, "
-    "surface situation — never hidden truths) in `player_message`."
-)
-
 _STAGE_BRIEFS = {
     "INTAKE_WORLD": "setup-intake-world-brief",
     "CHAR":         "setup-char-brief",
-    "ARC_MAJOR":    "setup-arc-major-brief",
-    "ARC_MINOR":    "setup-arc-minor-brief",
-    "STATE":        "setup-state-brief",
 }
 
 # Stage → the key announced to a watcher (the TUI's ticker) — the same on_stage
@@ -58,9 +50,8 @@ _STAGE_BRIEFS = {
 _STAGE_KEYS = {
     "INTAKE_WORLD": "intake",
     "CHAR":         "char",
-    "ARC_MAJOR":    "arc-major",
-    "ARC_MINOR":    "arc-minor",
-    "STATE":        "state",
+    "ARCS_STATE":   "arcs-state",
+    "LINT":         "lint",
     "GATE":         "gate",
     "COMMIT":       "commit",
 }
@@ -70,6 +61,10 @@ _STAGE_KEYS = {
 class SetupTurn:
     reply: str   # the dm's message to the player this exchange
     done: bool   # True once `campaign: init` is committed — time to finalize
+
+
+class SetupError(RuntimeError):
+    pass
 
 
 class Setup:
@@ -118,29 +113,24 @@ class Setup:
         self._announce(self._stage)
         reply = self.backend.prompt(self.dm_sid, self.dm_agent,
                                     load(_STAGE_BRIEFS[self._stage]), whole=True)
+        refresh_campaign(self.root)
         return SetupTurn(reply, False)
 
     def turn(self, player_input: str) -> SetupTurn:
         reply = self.backend.prompt_full(self.dm_sid, self.dm_agent, player_input, whole=True)
-        text, done = reply.text, "task_complete" in reply.tools
+        refresh_campaign(self.root)
+        text = join_narration(reply.text,
+                              reply.tool_inputs.get("task_complete", {}).get("player_message", ""))
+        done = "task_complete" in reply.tools
 
         if self._stage == "INTAKE_WORLD" and done:
             self._mark_done("INTAKE_WORLD")
             self._stage = "CHAR"
             self._announce("CHAR")
-            # The spoiler-free overview rides in task_complete's `player_message` arg
-            # (structured, read from history — the message text isn't reliably surfaced past
-            # a tool-split turn). If the DM completed without it, nudge once rather than
-            # guessing from prose.
-            reply = self.backend.ensure_tool(self.dm_sid, self.dm_agent, reply,
-                                             tool="task_complete", args=("player_message",),
-                                             nudge=_NUDGE_OVERVIEW, whole=True)
-            overview = (reply.tool_inputs.get("task_complete", {}).get("player_message") or "").strip()
-            # Open character creation and APPEND it, so the player sees the overview and the
-            # character opening together — never overwrite the dm's closing beat.
             char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
                                             load("setup-char-brief"), whole=True)
-            return SetupTurn(f"{overview}\n\n{char_open}" if overview else char_open, False)
+            refresh_campaign(self.root)
+            return SetupTurn(join_narration(text, char_open), False)
         if self._stage == "CHAR" and done:
             self._mark_done("CHAR")
             self._run_pipeline()
@@ -158,15 +148,31 @@ class Setup:
 
     def _run_pipeline(self) -> None:
         """Arc design, state init, gate, and commit — no player turns."""
-        for stage, brief_key in [
-            ("ARC_MAJOR", "setup-arc-major-brief"),
-            ("ARC_MINOR", "setup-arc-minor-brief"),
-            ("STATE",     "setup-state-brief"),
-        ]:
-            if not self._setup_done(stage):
-                self._announce(stage)
-                self.backend.prompt(self.dm_sid, self.dm_agent, load(brief_key))
-                self._mark_done(stage)
+        # Read the deliverables on every resume, even when a previous dispatch returned.
+        missing = setup_missing(self.root)
+        if missing:
+            self._announce("ARCS_STATE")
+            self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-arcs-state-brief").format(
+                delegation=load_settings(self.root).delegation,
+                missing="\n".join(f"- {item}" for item in missing)))
+            missing = setup_missing(self.root)
+            if missing:
+                self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-missing").format(
+                    missing="\n".join(f"- {item}" for item in missing)))
+            remaining = setup_missing(self.root)
+            if self.logs and self.logs.archive:
+                self.logs.archive.emit("stage", stage="setup-coverage", missed=missing,
+                                       still_missing=remaining)
+            if remaining:
+                raise SetupError("Setup is incomplete after one correction:\n" + "\n".join(remaining))
+
+        if not self._setup_done("LINT"):
+            self._announce("LINT")
+            issues = apply_lint_correction(self.backend, self.dm_sid, self.dm_agent, self.root)
+            if self.logs and self.logs.archive:
+                self.logs.archive.emit("stage", stage="lint", incomplete=len(issues),
+                                       corrected=bool(issues))
+            self._mark_done("LINT")
 
         if not self._setup_done("GATE"):
             self._announce("GATE")
@@ -185,10 +191,13 @@ class Setup:
     # --- stage tracking ---
 
     def _resume_stage(self) -> str:
-        """First stage without a completion marker. Markers are the single source of
-        truth (matches the reconciler) — the interactive stages mark done when the dm
-        signals `task_complete`, so there's no canon-file guessing here anymore."""
-        for stage in ("INTAKE_WORLD", "CHAR", "ARC_MAJOR", "ARC_MINOR", "STATE", "GATE"):
+        """Interactive stages use completion markers; arcs and state use disk facts."""
+        for stage in ("INTAKE_WORLD", "CHAR"):
+            if not self._setup_done(stage):
+                return stage
+        if setup_missing(self.root):
+            return "ARCS_STATE"
+        for stage in ("LINT", "GATE"):
             if not self._setup_done(stage):
                 return stage
         return "COMMIT"

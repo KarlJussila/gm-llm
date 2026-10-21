@@ -43,6 +43,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+import yaml
+
 from ..orchestrator import (
     Archive, Backend, BackendError, CanonPreloader, Gate, Lifecycle, Logs, PlayHooks,
     play_session,
@@ -51,6 +53,7 @@ from ..orchestrator import paths
 from ..orchestrator.backend import BackendCancelled
 from ..orchestrator.logs import debug_enabled
 from ..project import init_project
+from ..settings import load_settings
 
 # Which agents' model/temperature get stamped into the conditions event. dm-runner and
 # narrative-checker are the live subject+instrument; player is the autoplayer; dm is the
@@ -239,6 +242,16 @@ def assemble_run(template_dir, fixture_campaign, run_dir, fixture_id: str) -> No
     run_dir = Path(run_dir)
     shutil.copytree(template_dir, run_dir)
     shutil.copytree(fixture_campaign, run_dir / "campaign", dirs_exist_ok=True)
+    # A run owns its feedback copy. Never inherit the template's personal directory.
+    feedback = run_dir / "feedback"
+    feedback.mkdir(exist_ok=True)
+    fixture_feedback = Path(fixture_campaign).parent / "feedback"
+    if fixture_feedback.is_dir():
+        shutil.copytree(fixture_feedback, feedback, dirs_exist_ok=True)
+    settings = load_settings(run_dir)
+    (run_dir / "gm-llm.yaml").write_text(yaml.safe_dump({
+        "feedback-dir": "feedback", "subagents": settings.subagents,
+    }, sort_keys=False), encoding="utf-8")
 
     gitignore = run_dir / ".gitignore"
     if ".opencode/" not in (gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""):

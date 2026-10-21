@@ -7,7 +7,6 @@ involved. Idempotent: skips silently if campaign/ already exists.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -22,14 +21,11 @@ def _skill_templates() -> Path:
     return opencode_assets_dir() / "skills" / "canon-conventions" / "templates"
 
 
-def _campaign_templates() -> Path:
-    return opencode_assets_dir() / "templates" / "campaign"
-
 _SUBDIRS = [
     "world/npcs", "world/factions", "world/locations",
     "world/items", "world/regions", "world/concepts", "world/bestiary",
     "arcs", "state", "characters", "sessions",
-    "documents", "feedback",
+    "documents",
 ]
 
 _STATE_FILES = [
@@ -49,10 +45,6 @@ def scaffold_campaign(directory: Path) -> None:
 
     for subdir in _SUBDIRS:
         (campaign / subdir).mkdir(parents=True, exist_ok=True)
-
-    templates = _campaign_templates()
-    shutil.copy(templates / "feedback" / "README.md",
-                campaign / "feedback" / "README.md")
 
     _write_index(campaign)
     _write_state_files(campaign)

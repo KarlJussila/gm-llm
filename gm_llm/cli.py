@@ -56,7 +56,7 @@ def _cmd_update(args) -> int:
         return 1
     dest = init_project(directory, force=True)   # overwrite the framework assets
     print(f"updated framework assets in {dest} (to gm-llm {__version__})")
-    print("your campaign/ data and .orchestrator markers were left untouched.")
+    print("your campaign/ data, gm-llm.yaml settings and .orchestrator markers were left untouched.")
     return 0
 
 

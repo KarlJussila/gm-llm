@@ -13,7 +13,7 @@ in context — don't reload them. Canon consistency was `check-turn`'s job; here
 are the focus. Lean on the warm context only where it sharpens a conduct call — e.g. a metagame
 leak that's also a ledger violation — otherwise stay on the conduct rails.
 
-Before checking, read `campaign/feedback/session-run.md` if it exists — accumulated player guidance
+Before checking, read `dm-runner.md` in the `feedback-dir` configured in `gm-llm.yaml` if it exists — accumulated player guidance
 on table conduct. Use it **only to hold your fire**: where it explains or sanctions something you'd
 otherwise flag, let that pass. **Never treat it as a new rule to enforce** — guidance that the runner
 *do* something (offer X, vary Y) is craft advice for the runner, not grounds for you to flag its

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .registry import (FrontmatterError, TYPE_DIRS, as_text, dashboard_slugs, entity_files,
-                       scan, split_frontmatter)
+                       read_frontmatter, scan, split_frontmatter)
 from .reveals import HIDDEN, LEARNED, REVEALED, campaign_files
 
 # Every registry file's frontmatter carries these.
@@ -233,6 +233,31 @@ def arcs_not_stamped(root: Path | str, n: int) -> list[str]:
         if as_text((fm or {}).get("as-of")) != f"S{n}":
             out.append(e.slug)
     return out
+
+
+def setup_missing(root: Path | str) -> list[str]:
+    """Setup deliverables, read from disk so a resume only authors unfinished work."""
+    campaign = Path(root) / "campaign"
+    entries = scan(campaign)
+    arcs = [e for e in entries if e.type == "arc"]
+    majors = [e for e in arcs if e.meta.get("tier") == "major"]
+    minors = [e for e in arcs if e.meta.get("tier") == "minor"]
+    missing = []
+    if len(majors) != 1:
+        missing.append(f"Exactly one major arc is required; found {len(majors)}.")
+    if not minors:
+        missing.append("At least one minor arc hooked into the major arc is required.")
+    for arc in minors:
+        if len(majors) == 1 and arc.meta.get("hooks-into") != majors[0].slug:
+            missing.append(f"arcs/{arc.slug}.md needs `hooks-into: {majors[0].slug}`.")
+    states = {e.path.with_name(e.path.stem + ".state.md") for e in entries if e.type in STATEFUL}
+    states.update(campaign.glob("**/*.state.md"))
+    states.update(campaign / "state" / f"{name}.md"
+                  for name in ("current", "calendar", "threads", "clocks"))
+    for path in sorted(states):
+        if as_text((read_frontmatter(path) or {}).get("as-of")) != "S0":
+            missing.append(f"{path.relative_to(campaign).as_posix()} needs initial state stamped `as-of: S0`.")
+    return missing
 
 
 def brief(issues: list[Issue]) -> str:

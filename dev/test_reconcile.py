@@ -34,6 +34,7 @@ def _arc_state(slug, n):
 
 
 def _campaign(root: Path, feedback: str) -> None:
+    (root / "gm-llm.yaml").write_text("feedback-dir: feedback\n", encoding="utf-8")
     c = root / "campaign"
     for slug, tier in (("crown", "major"), ("rivals", "minor")):
         (c / "arcs").mkdir(parents=True, exist_ok=True)

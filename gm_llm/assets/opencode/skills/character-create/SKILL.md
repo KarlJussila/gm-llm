@@ -1,15 +1,9 @@
 ---
 name: character-create
-description: Collaboratively create a player character with the player — concept, mechanical details, placement in the world, backstory — then write the PC's four files (sheet, state, knowledge ledger, combat repertoire) and register the PC. Use during campaign setup, or later when a new PC joins. Player-facing, so it is run by the dm (a primary), never a subagent. Records DM-side story hooks in the sheet and folds in any backstory canon the world must absorb.
+description: Use when creating a player character with the player and fitting them into the campaign.
 ---
 
 # character-create
-
-## Player feedback — read first
-
-Before building a character, read `campaign/feedback/character-create.md` if it exists. It holds
-accumulated, player-specific guidance distilled from past sessions. Treat it as binding and let it
-override the defaults here wherever they conflict.
 
 ## Who runs this, and format
 
@@ -21,7 +15,7 @@ the player hands you to import (step 2).
 **Load `canon-conventions` and follow it for format**, and build from the PC templates:
 `pc-sheet.template` → `characters/{slug}.md`, `pc-state.template` → `characters/{slug}.state.md`,
 `pc-knowledge.template` → `characters/{slug}.knowledge.md`, `pc-repertoire.template` →
-`characters/{slug}.repertoire.md`. The PC is a registered entity — add its row to `INDEX.md` (PC).
+`characters/{slug}.repertoire.md`. The PC is registered from its frontmatter.
 
 This is a **narrative-integration tool, not a rules engine**: record mechanical details as the
 player provides them, and help translate a concept into a fitting class/race/background if they
@@ -36,8 +30,6 @@ Match the player's preference:
   out, presenting choices for approval.
 
 ## Steps
-
-Use your `todowrite` tool to create entries for steps 1–5 plus Confirm, Write the four PC files, Fold backstory canon, and **Finish — call `task_complete`**, then work them in order. That last entry is not optional: the process always ends with the `task_complete` tool call.
 
 1. **Open — hooks and how do you want to make your character?** This is the skill's opening beat.
    At campaign setup the DM has just given the player a world overview — build directly on it: devise
@@ -60,9 +52,8 @@ Use your `todowrite` tool to create entries for steps 1–5 plus Confirm, Write 
    now, ties to existing locations, factions, and NPCs (`[[slug]]` links) — and run it past them.
    Anything you infer, modify, or fill in (a hometown, a faction tie, a reason they came to the
    frontier) is a **proposal to confirm**, not a fact to commit silently. Ask the questions that matter
-   to them and adjust to their answers. Where the backstory needs **new** people or places, note them
-   (see *Hand back to setup*) — don't author full world files here; the dm folds those in afterward
-   (its *fold backstory canon* step).
+   to them and adjust to their answers. Author any new people or places as part of folding the
+   backstory into canon.
 5. **DM-side hooks.** Distill 1–3 threads from the backstory the story can later hook into (a loss,
    a hunted past, a rival, a debt) and record them in the sheet's DM-side hooks. Keep *how* they'll
    be used spoiler-side — record the seams, not the plan.
@@ -80,8 +71,8 @@ Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the f
 ## Write the four PC files
 
 - **`characters/{slug}.md`** (sheet) — from `pc-sheet.template` (or completing the imported
-  draft): the **`## Vitals`** block (race/lineage, class, subclass if any, level, ability scores,
-  pronouns — every line a committed value), **`## Known capabilities`** (the proficiencies/spells/
+  draft): the frontmatter vitals from the template, every required field a committed value,
+  **`## Known capabilities`** (the proficiencies/spells/
   abilities/feats you gathered — partial is fine, it grows in play), then appearance, personality,
   backstory, connections (`[[slug]]`), DM-side hooks, links.
 - **`characters/{slug}.state.md`** (initial state) — from `pc-state.template`: starting location,
@@ -95,8 +86,8 @@ Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the f
   - **Believes (may be wrong)** — assumptions or secondhand beliefs the world may later complicate.
   - **Open questions** — the mysteries they're already aware of and motivated to chase.
 
-  Keep it to what the *character* knows — **never** the campaign's secrets. Those stay `[hidden]`
-  in the world and arc files (canon-conventions §5); this ledger is their mirror, flipped only when
+  Keep it to what the *character* knows — **never** the campaign's secrets. Those stay `[hidden:<id>]`
+  in the world and arc files (see `canon-conventions`); this ledger is their mirror, flipped only when
   a secret is actually revealed in play.
 - **`characters/{slug}.repertoire.md`** (combat repertoire) — from `pc-repertoire.template`, seeded
   from the sheet's reactions and combat abilities. Distil the PC's **reaction-eligible moves** into
@@ -108,7 +99,7 @@ Venn," never the `[[erasmus-venn]]` link. The `[[slug]]` syntax belongs in the f
   clear and leave the rest to grow —
   a few good triggers beat a rules dump. A PC with no reactions yet gets just the opportunity-attack line.
 
-Then **register the PC** in `INDEX.md` (PC section).
+The orchestrator generates the PC's `INDEX.md` entry from the sheet's frontmatter.
 
 ## Fold backstory canon
 

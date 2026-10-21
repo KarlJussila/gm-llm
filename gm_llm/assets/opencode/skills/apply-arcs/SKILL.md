@@ -11,8 +11,8 @@ revision of the design body, not a status bump. The record is the digest,
 *Knowledge gained*. The arc is `campaign/arcs/{slug}.md` with its `{slug}.state.md`;
 `canon-conventions` is the format.
 
-Read `campaign/feedback/arc-design.md` if it exists: the player's standing guidance on how arcs
-should feel, which wins over the defaults here.
+
+Apply the player feedback for `arc-design` as well as this skill.
 
 ## Two principles
 

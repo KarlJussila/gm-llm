@@ -1,1 +1,0 @@
-Load `arc-design` and `canon-conventions` and follow their task lists to add at least one minor arc. Report when done.

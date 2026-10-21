@@ -1,5 +1,6 @@
 """`gm-llm init` — lay the opencode assets into a target project so opencode can run
-there. After init the project holds a `.opencode/` with the agents, skills, and plugin;
+there. After init the project holds `gm-llm.yaml` settings and a `.opencode/` with the agents,
+skills, and plugin;
 the campaign data itself (`campaign/`) is created on the first `gm-llm play` (setup).
 """
 
@@ -9,6 +10,7 @@ import shutil
 from pathlib import Path
 
 from .assets import OPENCODE_ASSET_NAMES, opencode_assets_dir
+from .settings import init_settings
 
 # What older gm-llm versions put in `.opencode/` and this one no longer uses: the plugins
 # needed an npm install under opencode 1.x, and need nothing under 2.x.
@@ -24,6 +26,7 @@ def init_project(directory: Path, *, force: bool = False) -> Path:
     src = opencode_assets_dir()
     dest = directory / ".opencode"
     dest.mkdir(parents=True, exist_ok=True)
+    init_settings(directory)
 
     for name in OPENCODE_ASSET_NAMES:
         s = src / name

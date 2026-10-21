@@ -17,6 +17,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from gm_llm.settings import load_settings
+
 from . import paths
 from .prompts import load
 from .registry import scan
@@ -121,6 +123,9 @@ class CanonPreloader:
         if plan:
             blocks.append(f"### {paths.rel(n, 'plan')}\n{plan.strip()}")
         blocks += self._render(self._baseline() + self._matched_entities(plan or ""))
+        feedback = load_settings(self.campaign.parent).feedback_dir / "dm-runner.md"
+        if feedback.is_file():
+            blocks.append(f"### Player feedback: dm-runner\n{feedback.read_text(encoding='utf-8').strip()}")
         if not blocks:
             return ""
         # Fenced in <prepared-context>…</prepared-context> so the runner reads it as its

@@ -6,11 +6,8 @@ lands — git history is the record.
 
 ## luna — rebuild the product for GPT-6 Luna
 
-Design: [`design/luna.md`](design/luna.md). Tasks 4–5 need no model quota; 6–8 do.
+Design: [`design/luna.md`](design/luna.md). Task 5 needs no model quota; 6–8 do.
 
-4. **Setup and player-level feedback.** A world proposal the player can revise before character
-   creation; one arcs-and-state dispatch with code checks; `check-init` reduced to its judgment half;
-   `campaign-setup` deleted; the player-level feedback store and the `subagents` setting.
 5. **Sweep out what MiMo left.** Delete the agents, skills, briefs and tests nothing calls any more,
    and `design/runner-authority.md`; bring `README.md` and `design/README.md`'s architecture in line
    with the rebuilt product. Then tag the commit `luna-clean-slate` — the baseline the
@@ -26,7 +23,7 @@ Design: [`design/luna.md`](design/luna.md). Tasks 4–5 need no model quota; 6�
 Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in that doc.
 
 1. **B5 — conditions and tiers.** The tier as a real field, reasoning variants, subagents in the
-   conditions, `--subject-model`, feedback isolation.
+   conditions, `--subject-model`.
 2. **B6 — autoplayer on Luna.** `player.md` and its two skills, the packet generated in code. The
    story-so-far recap needs quota.
 3. **B7 — after-play checker.** `bench check`: one rolling Luna session per run over the pristine

@@ -50,7 +50,6 @@ slots, coin); the player tracks those.
 | `sessions/{N}/notes.md` | The runner's end-of-session handoff notes | orchestrator (runner authors, code files) |
 | `sessions/{N}/digest.md` | Structured session digest, extracted from the transcript | `log-extractor` |
 | `documents/{slug}.md` | **Verbatim** text of in-world written materials | `dm` (apply pass) |
-| `feedback/{target}.md` | Distilled player guidance, loaded by the named skill/agent | `dm` (feedback pass) |
 
 **Not registered in `INDEX.md`:** the world-truth singletons (`overview`/`cosmology`/`history`) and
 the `state/*` docs sit at fixed paths; clocks and threads live in their dashboards.
@@ -64,7 +63,7 @@ pipeline, one dispatch per step:
 
 1. `log-extractor` reads the whole transcript and the notes and writes the digest
    `sessions/{N}/digest.md` (checked against the transcript);
-2. the `dm` folds any player feedback into `feedback/*`;
+2. the `dm` folds any player feedback into the player-level store;
 3. the `dm` files new and changed canon (then the canon lint), reconciles every arc through the
    `author` subagent plus the threads dashboard, and brings the knowledge ledger and every state
    file up to date — the whole apply audited by the propagation check;
@@ -98,9 +97,9 @@ home tag `[revealed:<id> S<n>]` and adds the PC to its `Known to:`. Full detail 
 
 ## Player feedback loop
 
-The runner collects player feedback at session end (recorded verbatim in the digest). The `dm`
-distils it into `feedback/{target}.md` files, which the matching skill or agent loads as binding
-guidance, baking feedback into behavior without editing the framework. See `feedback/README.md` for routing.
+The runner collects player feedback at session end, recorded verbatim in the digest. The `dm`
+curates it into the shared player directory configured by `feedback-dir` in the project's
+`gm-llm.yaml`. Feedback is outside `campaign/`; routing belongs to the `feedback-curation` skill.
 
 ## Document file format (`documents/{slug}.md`)
 

@@ -1,23 +1,12 @@
 ---
 name: world-build
-description: The craft of authoring D&D world content — cosmology, regions, NPCs, factions, locations, significant items, and concepts — as layered, living, internally consistent canon. Covers WHAT makes good world content and HOW to design it; the file format/layout/linking is owned by the canon-conventions skill, which you load alongside this. Loaded by the dm to author world content at campaign init and whenever canon changes.
+description: Use when authoring or revising the world, its entities or its underlying truths.
 ---
 
 # world-build
 
-## Player feedback — read first
-
-Before creating world content, read `campaign/feedback/world-build.md` if it exists. It holds
-accumulated, player-specific guidance distilled from past sessions. Treat it as binding and let it
-override the defaults here wherever they conflict.
-
-## Build your task list
-
-Use your `todowrite` tool to create exactly these entries, then work them in order:
-
-1. Synthesize the brief into the world's premise and central situation
-2. Author the world entities (regions, factions, NPCs, items, world-truth singletons); load `canon-conventions` for file format; register each in `INDEX.md`
-3. Write `campaign/campaign.md` (setting, tone, themes, stakes; record content boundaries)
+At setup, build the world's premise and central situation from the player's brief and record the
+setting, tone, themes, stakes and content boundaries in `campaign/campaign.md`.
 
 ## Format is not your concern here — load canon-conventions
 
@@ -55,8 +44,8 @@ location holds — decide them at authoring time. Never write "DM decides."
 ## Design in two layers
 
 The strongest world content has a **surface** (what anyone observes) and a **hidden layer** (the
-truth beneath). Author both, and flag the hidden parts per canon-conventions §5 (`[hidden]` +
-`Known to:`) so the system tracks who knows what.
+truth beneath). Author both, and tag hidden parts per `canon-conventions` so the system tracks who
+knows what.
 
 - **Surface:** the public role, the apparent situation, what a newcomer perceives.
 - **Hidden:** the true allegiance, the real motive, the secret the place keeps, the actual cause of

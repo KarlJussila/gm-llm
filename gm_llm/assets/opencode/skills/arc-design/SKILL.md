@@ -5,11 +5,6 @@ description: Load when designing a new arc — the campaign's major arc or a min
 
 # arc-design
 
-## Read first
-
-Read `campaign/feedback/arc-design.md` if it exists — accumulated, player-specific guidance distilled
-from past sessions. Treat it as binding; let it override the defaults here wherever they conflict.
-
 ## What you're designing
 
 The campaign has **one major arc and several minor arcs that hook into it**. You're designing one:

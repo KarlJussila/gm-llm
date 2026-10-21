@@ -10,6 +10,13 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Changed
+- Campaign setup presents a world proposal the player can revise before character creation.
+  Arcs and initial state are authored in one dispatch, checked from disk with one correction and
+  resumable after interruption. The canon lint handles structural checks; `check-init` reviews
+  duplicates, hidden layers and consistency. The `campaign-setup` skill is removed.
+- Player feedback lives outside the campaign in a shared player directory. The runner receives
+  its standing guidance in prepared context, and agents read matching feedback when loading skills.
+  Benchmark runs use private copies of the fixture's feedback.
 - **Requires opencode 2.1 or newer.** The backend speaks opencode's v2 server API (opencode 2.0
   dropped the v1 API), and the plugins use the v2 plugin contract, which needs no npm install:
   `gm-llm init` no longer installs plugin dependencies, and `gm-llm update` removes the
@@ -17,6 +24,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   now installs opencode from `@opencode/cli`.
 
 ### Added
+- `gm-llm.yaml` configures `feedback-dir` and `subagents: sequential | parallel`. Asset updates
+  preserve these settings.
 - **Each archived turn records what the runner opened while drafting it** (`tools`, `stale`), so
   whether a session was played from canon or from memory is readable without the grader.
 - **`bench report` states its own precision.** The integrity score now carries a 95% confidence

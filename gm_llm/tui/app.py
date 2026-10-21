@@ -1153,9 +1153,8 @@ class PlayApp(App):
         "setup": {
             "intake": "gathering your brief · building the world",
             "char": "creating your character",
-            "arc-major": "shaping the story",
-            "arc-minor": "adding a subplot",
-            "state": "setting the opening scene",
+            "arcs-state": "shaping the story and opening scene",
+            "lint": "checking campaign files",
             "gate": "double-checking the campaign",
             "commit": "saving the campaign",
             "prep": "planning session 1",

@@ -1,1 +1,0 @@
-The character is confirmed. Load `arc-design` and `canon-conventions` and follow their task lists to design the major arc, built around this specific character. Report when done.
