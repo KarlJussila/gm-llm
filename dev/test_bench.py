@@ -407,8 +407,7 @@ def test_natural_close(tmp):
 def test_post_wrap_is_lifecycle_wrap(tmp):
     """The post-wrap tail is `Lifecycle.wrap`, not a private Game+Reconciler wiring: it
     captures the warm runner's handoff notes AND reports its stages through `on_stage` —
-    the protocol the TUI already renders, which is what makes watching a bench run's
-    reconcile nearly free (design/frontends.md step 3)."""
+    the protocol a watching frontend renders."""
     template = _make_template(tmp / "template")
     fixture = _make_fixture(tmp / "fixture")
     run_dir = tmp / "run"

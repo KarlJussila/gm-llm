@@ -10,7 +10,7 @@ workstream. For *how to use* gm-llm, read the root `README.md`; for what remains
 | [luna.md](luna.md) | The product on GPT-6 Luna — principles, agents, campaign layout, and every workflow (setup, play, combat, reconcile, planning). |
 | [benchmark.md](benchmark.md) | The benchmark — the tier ladder, the run → check → grade → report pipeline, and the B-numbered stages ROADMAP orders. |
 | [combat.md](combat.md) | Combat as a play mode — the tracker contract, the obligation channel, the loop, balance-as-a-skill. |
-| [frontends.md](frontends.md) | Frontend/mode modularity — one session loop for every frontend, and watching autoplay and bench runs in the TUI. |
+| [frontends.md](frontends.md) | The engine behind a JSON protocol, and the frontends that are its clients. |
 | [findings.md](findings.md) | Frozen history (Parts 1–11) — read it for *why* an earlier call was made. No longer appended. |
 
 ## The system in one paragraph
@@ -56,9 +56,10 @@ The parts of the design that are neither agent nor skill, and are easy to lose:
   `<player>`, and in a fight `<combat-turn>` / `<combat-reaction>` — keeping it distinct from the
   player's in-fiction input.
 - **One session loop, whoever is playing.** `play_session` (`orchestrator/play.py`) is the turn
-  loop for every frontend and every player; who supplies the next message is a `PlayerSource`
-  (keyboard or the scripted `player` agent) and what renders it is a set of hooks
-  ([frontends.md](frontends.md)).
+  loop for every player; who supplies the next message is a `PlayerSource` (the keyboard or the
+  scripted `player` agent).
+- **Frontends are clients.** The engine owns the workflow and speaks a JSON protocol; the TUI and
+  the console spawn `gm-llm serve` and only render and send ([frontends.md](frontends.md)).
 - **Transcripts are written by code**, to `campaign/sessions/<n>/transcript.md`, from each turn's
   player message and reply. Note-taking never depends on the model.
 - **No compaction.** The runner keeps one warm session for a whole game session. opencode's

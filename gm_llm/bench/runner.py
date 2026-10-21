@@ -296,8 +296,8 @@ def _default_gate(backend, directory, logs):
 
 
 def _default_lifecycle(backend, gate, directory, logs) -> Lifecycle:
-    """The campaign lifecycle a run is played through — the same object the TUI drives
-    (design/frontends.md step 3). `player="auto"` makes `player_source()` hand back the
+    """The campaign lifecycle a run is played through — the same object the engine drives.
+    `player="auto"` makes `player_source()` hand back the
     scripted `player` agent primed with the PC's generated packet, and `wrap()` is the whole
     post-wrap tail (warm-runner handoff notes, then the between-session pass) behind one
     `on_stage` protocol a frontend can render."""

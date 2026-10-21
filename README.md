@@ -138,7 +138,10 @@ UI against a scripted mock (`--setup` to demo the new-campaign flow).
 Want to watch instead of play? `gm-llm play --player auto` hands the player's turns to a
 scripted agent and renders the session in the same TUI — its character packet is generated from
 the PC's sheet, state and knowledge ledger, and `--turn-cap` bounds the run.
-Add `--ui console` for the same thing as plain text.
+
+Prefer plain text? `--ui console` plays (or watches) the same campaign at a terminal prompt:
+`/meta <question>`, `/wrap`, `/status`, `/roll 2d6+3`, `/quit`, and Ctrl+C cancels the call in
+flight.
 
 ### The TUI
 
@@ -161,6 +164,7 @@ player-facing and takes the campaign as a path (default: the current directory):
 ```
 play    [dir] [--player human|auto] [--ui tui|console] [--mock] [--setup]
         [--model PROVIDER/MODEL] [--variant V]
+serve   [dir] [--player human|auto] [--mock] [--model …]   the engine over stdio, for a frontend
 status  [dir]                          where the campaign stands (disk only, no model)
 tokens  [dir] [--price-in …]           token + cost usage, from opencode's own store
 init | update | doctor  [dir]
@@ -168,6 +172,10 @@ init | update | doctor  [dir]
 
 `--model` and `--variant` override the campaign's model (see [Player settings](#player-settings))
 for one invocation. `dev autoplay`, `dev prep` and `dev reconcile` take them too.
+
+Every frontend is a client of the engine: `play` spawns `gm-llm serve`, which speaks a JSON-lines
+protocol on stdio ([`design/frontends.md`](design/frontends.md)). Write your own frontend against
+it in any language.
 
 The `dev` and `bench` groups are workshop surfaces and appear **only when running from
 a source checkout** (`bench` needs `dev/fixtures/`, which isn't packaged). From a
@@ -211,7 +219,9 @@ gm_llm/                the pip-installable tool (cli, init, doctor, --version)
   assets/opencode/     the opencode assets it ships and copies into a project:
                          agent/  skills/  plugin/  templates/
   orchestrator/        the Python orchestrator (over `opencode serve`)
-  tui/                 the Textual app
+  engine/              the engine and its JSON protocol (`gm-llm serve`)
+  tui/                 the Textual frontend
+  consoleui.py         the console frontend
 dev/                   the developer CLI + test harness (not shipped)
 install.ps1            the native-Windows one-line installer
 ```
@@ -264,7 +274,7 @@ Python over `opencode serve`'s HTTP API.
 | `setup.py` | INIT: the staged new-campaign flow (interactive stages end on `task_complete`) |
 | `planner.py` | PRE: the dm authors the plan → `check-plan` → ≤1 correction → commit |
 | `reconciler.py` | POST: the staged reconcile, with per-stage resume markers |
-| `lifecycle.py` | Ties setup → play → wrap → play into one object the TUI drives |
+| `lifecycle.py` | Ties setup → play → wrap → play into one object the engine drives |
 | `gate.py` | `Gate` — runs a checker in a fresh session and reads its `report_findings` verdict |
 | `phase.py` | Shared phase primitives: `correct_once`, the lint correction, `refresh_campaign`, `commit_campaign` |
 | `lint.py` | The canon lint, plus setup's and reconcile's coverage checks |
@@ -275,7 +285,7 @@ Python over `opencode serve`'s HTTP API.
 | `archive.py` | The score-event archive the benchmark reads |
 | `prompts.py` + `prompts/*.md` | Every brief the orchestrator sends a model, as reviewable prose files |
 | `stream.py` | `EventTap` — the live SSE stream for the behind-the-screen pane |
-| `logs.py`, `textmarkup.py`, `mock.py` | Logging, safe markup rendering, an offline `Game` stand-in |
+| `logs.py`, `mock.py` | Logging, and an offline `Lifecycle` stand-in |
 
 ### Plugins (`plugin/`)
 
@@ -302,7 +312,7 @@ Model-facing `dev` commands target a `gm-llm init`-ed campaign project via
 `--dir` (default: the current directory).
 
 The mock layer (`gm_llm/orchestrator/mock.py`) duck-types `Game`/`Setup`/`Lifecycle` so the
-whole TUI runs offline.
+engine, and every frontend over it, runs offline.
 
 Contributing or picking the work back up: **`CLAUDE.md`** has the orientation and how to run the
 tests; **`ROADMAP.md`** is what remains, in order; **`design/`** is the design itself (start at

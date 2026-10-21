@@ -183,10 +183,8 @@ class BatchHeader(Static):
     """The batch chrome: which run of how many is playing, and how the finished ones went —
     `bench  run 2/5 · run-20260728T…  ·  1 complete`.
 
-    The one thing no per-session widget can say. A batch outlives every lifecycle the app
-    attaches (design/frontends.md step 4), so the tally lives here rather than being
-    re-derived from a campaign that is only the current run's. Hidden unless the app is
-    watching a batch.
+    The one thing no per-session widget can say: a batch outlives every run it watches, so
+    the tally lives here. Hidden unless the app is watching a batch.
 
     Outcomes are tallied by their head word — `incomplete: rate limited` and
     `incomplete: stopped from the frontend` are one column, not two."""

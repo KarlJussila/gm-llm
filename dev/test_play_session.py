@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Standalone check for the SESSION LOOP (design/frontends.md step 2 — `play_session` and the
-`PlayerSource` contract). No pytest, no opencode, no model — run me directly.
+"""Standalone check for the SESSION LOOP (`play_session` and the `PlayerSource` contract). No pytest, no opencode, no model — run me directly.
 
 This is the loop every frontend now plays through, so what it asserts is the contract the
 console harness, `bench run` and the TUI all depend on:

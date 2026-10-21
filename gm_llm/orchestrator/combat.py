@@ -301,7 +301,7 @@ class CombatDriver:
     reaction) to fold it in before the beat commits (the tracker rolls back, the turn
     replays, and the new beat is re-presented — a reaction to a reaction stays cheap), or
     return None/'' to confirm and advance. An agent player passes a render-only hook (always
-    None); the TUI's blocks for the human's Enter-or-react. A PC beat is rendered through the
+    None); the engine's blocks for the human's confirm or reaction. A PC beat is rendered through the
     hook too, with its return ignored (it commits directly). The **exit** beat is not: it
     rides back on the `ended` event, for the caller to hand to normal play.
 

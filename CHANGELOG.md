@@ -9,6 +9,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Added
+- **Frontends are clients of an engine.** The campaign workflow moved out of the TUI into an
+  engine that speaks JSON lines over stdio (`gm-llm serve`); the TUI and the console spawn it
+  and only render and send, so a frontend can be written in any language
+  (`design/frontends.md`). `play --ui console` is a plain-text frontend for a human player too.
+
 ### Changed
 - **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal, not the skills
   to load; skill descriptions say only when to load them; no prompt instructs a task list. The

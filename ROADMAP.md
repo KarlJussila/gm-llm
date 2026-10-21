@@ -24,16 +24,6 @@ Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in th
    baseline shows.
 8. **B10 — benchmark proper.** Batches per condition and the methodology writeup.
 
-## frontends — an engine behind a protocol
-
-Design: [`design/frontends.md`](design/frontends.md); each task is a step there.
-
-1. **Engine and protocol, headless**, with the console client.
-2. **stdio** — `gm-llm serve` and the spawning client.
-3. **The TUI as a client.**
-4. **Bench through the engine.**
-5. **Docs.**
-
 ## packaging
 
 The portability rules are `dev/MAINTAINING.md` § Portability.

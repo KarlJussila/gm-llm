@@ -71,7 +71,7 @@ class Lifecycle:
 
     def status(self) -> CampaignStatus:
         """Where the campaign stands — disk only (lint + git), no model calls.
-        Blocking (subprocesses); the TUI runs it off the UI thread."""
+        Blocking (subprocesses); the engine runs it on a thread of its own."""
         return campaign_status(self.directory)
 
     def _tap(self, stream, on_tool=None):

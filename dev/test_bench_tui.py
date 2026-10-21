@@ -11,7 +11,7 @@ What it pins:
   - **The frontend is inert.** A watched batch and a headless one produce the same outcomes,
     the same turn counts and the same archive event streams — including when someone types
     into the watching app, which must reach nothing. This is the comparability invariant
-    (design/frontends.md § Constraints), which until now had nothing enforcing it.
+    (design/frontends.md § Constraints).
   - **The chrome exists.** The batch header tracks run *k* of *N* and tallies the outcomes,
     and each run's play renders into the scene through the lifecycle the engine attaches
     per run.

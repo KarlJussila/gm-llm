@@ -175,7 +175,7 @@ class Game(CombatMixin):
         return self.backend.revert_to_recent_user(self.runner_sid, back=1)
 
     def _step(self, key: str) -> None:
-        """Announce a turn-step to a watcher (the TUI status bar). Never raises."""
+        """Announce a turn-step to a watcher (the engine's busy label). Never raises."""
         if self.on_step:
             try:
                 self.on_step(key)

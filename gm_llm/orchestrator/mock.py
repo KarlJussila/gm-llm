@@ -1,10 +1,10 @@
 """
-MockGame — a stand-in for the real Game so interfaces (the TUI, tests) can run
+MockGame — a stand-in for the real Game so the engine and its frontends (and tests) run
 without a backend or model calls. Duck-types Game's start()/turn()/meta() and
 returns scripted TurnResults, including a combat episode and a session-complete ending,
 so the UI exercises every path. No opencode, no rate limit.
 
-The mock mirrors every seam the TUI wires: the per-turn `on_step` ticker, a
+The mock mirrors every seam the engine wires: the per-turn `on_step` ticker, a
 `backend.on_retry` notice (turn 4), a session-complete ending (turn 6), and
 cancellable sleeps (`abort()` raises `BackendCancelled` out of the in-flight
 call, like the real Backend) — so the whole UI is testable offline.
@@ -78,7 +78,7 @@ _COMBAT_END = (
 
 
 class _MockBackend:
-    """Just enough backend surface for the TUI's unconditional wiring: a retry
+    """Just enough backend surface for the engine's unconditional wiring: a retry
     hook to render and an abort() for the cancel path (the real cancel signal
     lives on MockGame; this abort only reports nothing-in-flight)."""
 
@@ -94,7 +94,7 @@ class MockGame:
     def __init__(self, backend=None, *args, pace: float = 1.0, **kwargs):
         self.runner_sid = "mock-runner"
         self.backend = backend or _MockBackend()
-        self.on_step = None  # the TUI assigns this, same as on the real Game
+        self.on_step = None  # the engine assigns this, same as on the real Game
         # Every sleep below is scaled by `pace`: 1.0 is the watchable demo the offline TUI
         # is for, 0 runs the same script as fast as the machine will go (dev/test_tui_loop.py
         # drives the real app over it — a scripted delay is scenery, not behavior).
@@ -228,13 +228,13 @@ class MockGame:
 
 class MockSetup:
     """Stand-in for Setup: a scripted new-campaign conversation that reports done after
-    a few exchanges, so the TUI setup path runs offline. Speaks the same on_stage
+    a few exchanges, so the setup path runs offline. Speaks the same on_stage
     protocol as the real Setup so the ticker is exercised too."""
 
     def __init__(self, *args, **kwargs):
         self.dm_sid = "mock-setup"
         self._n = 0
-        self.on_stage = None  # the TUI assigns this, same as on the real Setup
+        self.on_stage = None  # the engine assigns this, same as on the real Setup
 
     def _announce(self, key: str) -> None:
         if self.on_stage:
@@ -267,7 +267,7 @@ class _NoTap:
 
 class MockLifecycle:
     """Stand-in for Lifecycle: a MockGame plus a simulated wrap() (and an optional
-    setup phase) so the TUI's full flow can be driven offline."""
+    setup phase) so the full flow can be driven offline."""
 
     def __init__(self, start_in_setup: bool = False, *args, pace: float = 1.0, **kwargs):
         self._session = 1

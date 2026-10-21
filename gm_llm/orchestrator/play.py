@@ -3,10 +3,6 @@ The session loop — one turn loop, whoever is playing and whatever is rendering
 
 A played session is one shape: ask the player for their next message, play the gated turn,
 render what came back, repeat until the runner wraps the session or the turn cap trips.
-That loop was written twice — push-driven in `autoplay` / `bench run` (a `for` around
-`backend.prompt`), pull-driven in the TUI (idle in `on_input_submitted`, then `run_worker`)
-— and the two could not be paired with each other's player: `--player auto --ui tui` was
-never a missing flag, it was two loops (design/frontends.md § What is actually in the way).
 
 `play_session` is the one loop. The only thing that differs between a human at a keyboard
 and the scripted `player` agent is **where the next message comes from** — a `PlayerSource`:
@@ -14,16 +10,15 @@ and the scripted `player` agent is **where the next message comes from** — a `
   * `AgentPlayer` — prompts the `player` agent. The character packet (and, on a resume, the
     story so far) rides in front of its first message; everything after is the per-turn
     reminder alone.
-  * `KeyboardPlayer` — blocks until a frontend hands a line in from its own thread.
+  * `KeyboardPlayer` — blocks until the engine hands a line in from another thread.
 
 Everything else is the loop's, once: the packet framing, turn-cap accounting, the handoff
-into `play_combat` when a fight breaks out, the wrap signal. Rendering is `PlayHooks` — one
-optional callback per event the loop produces — so a console dialect, a bench run's progress
-notes and a Textual pane are three sets of hooks over one loop instead of three loops.
+into `play_combat` when a fight breaks out, the wrap signal. What happens is reported through
+`PlayHooks` — one optional callback per event — which the engine turns into protocol events
+and a headless bench run into progress notes.
 
-**The loop blocks, deliberately.** A frontend whose event loop must stay live runs it in a
-worker thread and feeds a `KeyboardPlayer` from the UI thread — the same move the TUI
-already makes for combat's confirm gate.
+**The loop blocks, deliberately.** The engine runs it on a thread of its own and feeds the
+`KeyboardPlayer` and combat's confirm gate from the thread that receives commands.
 """
 
 from __future__ import annotations
@@ -42,9 +37,8 @@ from .prompts import load
 class PlayerSource:
     """The player end of the loop: one method to ask it for a message, one to end it.
 
-    `human` tells a frontend whether it must offer an input affordance while the source is
-    being asked — the TUI frees its input box for a `KeyboardPlayer` and shows "the player
-    is thinking" for an `AgentPlayer`. It is a rendering question, never a policy one; the
+    `human` tells the engine whether the player is asked for input while the source waits —
+    `awaiting` for a `KeyboardPlayer`, "the player is thinking" for an `AgentPlayer`. It is a rendering question, never a policy one; the
     loop itself treats every source identically."""
 
     human = False
@@ -183,8 +177,8 @@ class PlayResult:
       complete — the runner signalled the session's end (`task_complete`). The post-session
                  tail (handoff notes, reconcile) is the caller's, not the loop's.
       cap      — `turn_cap` turns played without a wrap. A safety net, not an ending.
-      stopped  — the source returned None: the player is done driving this loop (the TUI
-                 wrapping, or the app quitting). Nothing about the session is settled.
+      stopped  — the source returned None: the player is done driving this loop (a wrap
+                 asked for mid-play, or the engine closing). Nothing about the session is settled.
     """
 
     outcome: str

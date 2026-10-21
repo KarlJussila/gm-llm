@@ -19,7 +19,7 @@ is retired — v0.5.0 is its last release. The model-facing prompts were rewritt
 | `design/README.md` | What the system is, and the map of `design/` |
 | `design/luna.md` | The rebuild's design: principles, agents, layout, every workflow |
 | `design/benchmark.md` | The benchmark: tiers, the pipeline, the stages |
-| `design/combat.md`, `design/frontends.md` | Combat, and frontend/mode modularity |
+| `design/combat.md`, `design/frontends.md` | Combat, and the engine protocol frontends speak |
 | `design/findings.md` | Frozen history (Parts 1–11) — *why* earlier calls were made |
 | `dev/MAINTAINING.md` | Dev-side conventions: what an update delivers, Windows portability |
 
