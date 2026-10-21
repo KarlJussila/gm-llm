@@ -17,11 +17,15 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
 
 - `bench-out/luna6b/run-20261021T125839Z-fd89` played session 3 (28 turns, natural close) and
   reconciled through propagation; the OpenAI usage limit hit during session 4's prep. Finish it
-  with `python -m gm_llm bench run --out bench-out/luna6b --resume`, then `bench check` and
-  `bench grade` on it (their first real-model run), then play session 4.
-- Fixed from the runs: the dice tool's DM-directed reminder (`8541c1b`); `discoveries` now says a
-  check reveals details and conclusions only through them (`3eb602c`, `c8d2e6b`, Karl's wording);
-  reconcile counts as done only once the next plan is archived (`a0a2f5f`).
+  with `python -m gm_llm bench run --out bench-out/luna6b --resume` (it keeps its own pre-fix
+  skills), then `bench check` and `bench grade` on it, their first real-model run.
+- Then one or two fresh runs in a new out dir (`bench run` always plays session 3 from the
+  fixture), which pick up every fix below.
+- Fixed from the runs: the dice tool's DM-directed reminder (`8541c1b`); `discoveries` says a
+  check reveals details and conclusions only through them (`3eb602c`, `c8d2e6b`, Karl's
+  wording); reconcile counts as done only once the next plan is archived (`a0a2f5f`);
+  `canon-conventions` § What goes where, one home per fact (`c7b7eb5`), and the fixture's
+  locations no longer track who is where (`183c229`).
 - Watched, once each: the DM rolled a PC check itself, then discarded it and asked (s3t4).
 - `bench-out/luna6` is the aborted first attempt (the dice bug); ignore it.
 
