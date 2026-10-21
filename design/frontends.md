@@ -37,7 +37,8 @@ for per-turn steps, `on_tool` for setup. The TUI renders all three today via
 player session and reconciler: it builds the lifecycle (through an injectable
 `lifecycle_factory`), plays `lifecycle.player_source()`, and its post-wrap tail is
 `lifecycle.wrap(on_stage=…)` — so the run already emits the stage protocol a frontend
-renders (findings Part 5). What stays bench's is what is actually bench's: the run dir, the
+renders (findings Part 5). Console autoplay (`autoplay.run`) is a `Lifecycle` too, with its player from
+`player_source(story=…)`, so nothing constructs a `Game` directly any more. What stays bench's is what is actually bench's: the run dir, the
 conditions event, the archive continuation, and how an outcome is recorded.
 
 **A batch is a `Lifecycle` per run.** `PlayApp` no longer assumes one campaign directory for
@@ -55,23 +56,6 @@ one affordance that carries over verbatim — abort the call in flight, the loop
 from the same scene — because a cancelled turn provably leaves no trace in transcript, canon
 or archive. Quitting stops the loop, which ends that run `incomplete`/resumable (never a
 `cap`, which would archive a ceiling it never hit) and ends the batch.
-
-## What is actually in the way
-
-**Console autoplay still wires its own `Game`.** `autoplay.run()` is the last direct
-constructor. Nothing is blocked by it — the mode×frontend cell it serves works, and the TUI's
-auto cell already runs on the real lifecycle — so this is duplication to retire, not a gap to
-close. It needs `player_source()` to carry the resume story an `AgentPlayer` primes with,
-which is a contract question of its own. Step 5.
-
-## Sequence
-
-Contracts before consumers — the driver unification lands before anything renders it. Steps
-1–4 have landed (§ What is already in place); the numbering is stable, so ROADMAP's rows
-keep pointing at the same steps.
-
-5. **Route console autoplay through `Lifecycle`** — the last direct `Game` construction.
-   Unblocks nothing; retires the duplication.
 
 ## Constraints
 

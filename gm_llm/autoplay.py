@@ -8,9 +8,9 @@ runs unattended. `bench run` is this loop plus fixture scaffolding, condition st
 archive emission — the benchmark's harness, not a second implementation.
 
 Neither is *this* the loop: since frontends 2 the loop is `orchestrator.play_session`, and
-what lives here is the console dialect of it — an `AgentPlayer` for the player end and a set
-of `PlayHooks` for the output — plus the session opening and the post-wrap tail, which are
-per-mode. Watching the same player agent in the TUI is the same source under different hooks
+what lives here is the console dialect of it — the `Lifecycle`'s player source for the player
+end and a set of `PlayHooks` for the output — plus the session opening and the post-wrap tail,
+which are per-mode. Watching the same player agent in the TUI is the same source under different hooks
 (`gm-llm play --player auto --ui tui`).
 
 Resume is the default when a transcript exists: a fresh start would overwrite it, so that
@@ -24,8 +24,7 @@ import sys
 from pathlib import Path
 
 from .console import banner, fail, note, show_turn, speaker, with_engine
-from .orchestrator import AgentPlayer, Game, PlayHooks, play_session
-from .orchestrator.packet import character_packet
+from .orchestrator import Lifecycle, PlayHooks, play_session
 from .orchestrator.paths import latest_session
 from .orchestrator.loop import session_is_complete
 
@@ -61,14 +60,12 @@ def run(args) -> None:
              f"`python -m gm_llm dev reconcile` to fold it into canon, or --fresh to replay it")
         sys.exit(2)
 
-    character = character_packet(Path(args.dir) / "campaign")
-    note(f"player packet: {len(character)} chars" if character
-         else "WARNING: no PC sheet to build a packet from — player runs blind")
-
     def body(backend, gate, logs):
-        game = Game(backend, gate.preloader, logs=logs)
-        player_sid = backend.create_session("play-player")
-        note(f"runner={game.runner_sid} player={player_sid} session={game.session}")
+        lifecycle = Lifecycle(backend, gate, args.dir, logs=logs, player="auto")
+        game = lifecycle.game
+        if game is None:
+            fail("no session plan yet — set the campaign up with `gm-llm play` first")
+            sys.exit(2)
 
         scene, story = None, None
         if not args.fresh:
@@ -87,9 +84,12 @@ def run(args) -> None:
             speaker("DM", "1;36", scene)
             show_turn(tr)
 
-        # The cap covers combat slots too (`play_session`), which console autoplay used not
-        # to do: an endless fight is exactly the case a safety net is for.
-        source = AgentPlayer(backend, player_sid, character=character, story=story)
+        source = lifecycle.player_source(story=story)
+        note(f"runner={game.runner_sid} player={source.session_id} session={game.session}")
+        note(f"player packet: {len(source.character)} chars" if source.character
+             else "WARNING: no PC sheet to build a packet from — player runs blind")
+        # The cap covers combat slots too (`play_session`): an endless fight is exactly the
+        # case a safety net is for.
         result = play_session(game, source, scene, hooks=_hooks(), turn_cap=args.turn_cap)
 
         if result.outcome == "cap":

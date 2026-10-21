@@ -31,13 +31,6 @@ Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in th
    baseline shows.
 7. **B10 — benchmark proper.** Batches per condition and the methodology writeup.
 
-## frontends
-
-Design: [`design/frontends.md`](design/frontends.md).
-
-1. **Route console autoplay through `Lifecycle`.** The last direct `Game` construction — duplication
-   to retire, not a gap. `player_source(story=…)` now carries the resume story.
-
 ## packaging
 
 The portability rules are `dev/MAINTAINING.md` § Portability.
