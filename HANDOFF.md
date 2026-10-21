@@ -30,10 +30,11 @@ Order (hot path first). Done is marked ✓.
 - ✓ setup skills (`38768b3`); `dm.md`, `check-digest`, every skill description now "Load when …"
   (`6d3cd2f`); the orchestrator's nudges and combat briefs moved out of Python into `prompts/`, and
   `resume-prime` (`e2a20f1`)
-- ✓ B6, the autoplayer (`54f1203`): `player.md`, the `player-rolls` / `player-combat` skills
+- ✓ B6, the autoplayer (`54f1203`, recap in the next commit): `player.md`, the `player-rolls` / `player-combat` skills
   (scoped to the player agent by `skill` permissions, verified with `opencode debug agents` in a
   scratch project), and the packet generated in code (`orchestrator/packet.py`). Only the
-  story-so-far recap is left (ROADMAP benchmark 2).
+  story-so-far recap (`dev/fixtures/hollowfell/story.md`) was written from the two transcripts by
+  Claude, not Luna — Karl to review it by hand.
 
 Find what's left with `git log --format=%h 1f6879a..HEAD -- <file>`: a file touched only by
 `1974a4b` (the mechanical layout change) or not at all is still MiMo prose.

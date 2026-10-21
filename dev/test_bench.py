@@ -251,6 +251,8 @@ def _make_fixture(root, *, fixture_id="hollowfell-test"):
         "---\nslug: dallid\nname: Dallid\ntype: pc\nstatus: active\n---\n# Dallid\n\n"
         "## Personality\nA wandering cleric.\n\n"
         "## Character hooks (DM-side)\nA spoiler hook.\n", encoding="utf-8")
+    (root / "story.md").write_text("<!-- reviewer's note -->\nLast time, a storm.\n",
+                                   encoding="utf-8")
     (root / "fixture.json").write_text(json.dumps({
         "id": fixture_id, "frozen": "2026-07-17", "provisional": True,
     }), encoding="utf-8")
@@ -425,6 +427,8 @@ def test_player_source_comes_from_the_lifecycle(tmp):
     assert "# You are Dallid" in player[0] and "A wandering cleric." in player[0], \
         f"the packet generated from the PC sheet primes the first message — got {player[0]!r}"
     assert "spoiler hook" not in player[0], "the sheet's DM-side hooks stay out of the packet"
+    assert "Last time, a storm." in player[0] and "reviewer's note" not in player[0], \
+        "the fixture's recap primes the first message, its comment stripped"
     assert "# You are Dallid" not in player[1], "the packet is handed over once, not per turn"
 
 

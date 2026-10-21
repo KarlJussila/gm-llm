@@ -54,17 +54,19 @@ class Lifecycle:
     def session(self) -> int:
         return self.game.session if self.game else 0
 
-    def player_source(self) -> PlayerSource:
+    def player_source(self, story: str | None = None) -> PlayerSource:
         """A fresh `PlayerSource` for the session about to be played — the axis `--player`
         selects, resolved here so a frontend never builds backend sessions of its own.
 
         **One per session loop, never reused.** A `KeyboardPlayer`'s `stop()` latches, and an
         `AgentPlayer` gets its own opencode session so the packet is re-handed (and the
-        previous session's play isn't carried into the next one's context)."""
+        previous session's play isn't carried into the next one's context). `story` is what
+        an `AgentPlayer` is told has happened before it starts."""
         if self.player != "auto":
             return KeyboardPlayer()
         return AgentPlayer(self.backend, self.backend.create_session("play-player"),
-                           character=character_packet(Path(self.directory) / "campaign"))
+                           character=character_packet(Path(self.directory) / "campaign"),
+                           story=story)
 
     def status(self) -> CampaignStatus:
         """Where the campaign stands — disk only (lint + git), no model calls.

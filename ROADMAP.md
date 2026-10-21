@@ -23,25 +23,23 @@ Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in th
 
 1. **B5 — conditions and tiers.** The tier as a real field, reasoning variants, subagents in the
    conditions, `--subject-model`.
-2. **B6 — the story-so-far recap.** Generate the fixture's recap of sessions 1–2 once, review it by
-   hand and store it in the fixture; `bench run` primes the autoplayer with it. Needs quota.
-3. **B7 — after-play checker.** `bench check`: one rolling Luna session per run over the pristine
+2. **B7 — after-play checker.** `bench check`: one rolling Luna session per run over the pristine
    start canon, structured findings.
-4. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject with file access,
+3. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject with file access,
    checker precision in the report.
-5. **`bench status`.** Batch state by outcome without a throwaway script.
-6. **B3 — the `low` baseline.** After luna 6 and benchmark 1–4: a Luna pilot sizes the batch, then
+4. **`bench status`.** Batch state by outcome without a throwaway script.
+5. **B3 — the `low` baseline.** After luna 6 and benchmark 1–3: a Luna pilot sizes the batch, then
    bank the distribution.
-7. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the
+6. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the
    baseline shows.
-8. **B10 — benchmark proper.** Batches per condition and the methodology writeup.
+7. **B10 — benchmark proper.** Batches per condition and the methodology writeup.
 
 ## frontends
 
 Design: [`design/frontends.md`](design/frontends.md).
 
 1. **Route console autoplay through `Lifecycle`.** The last direct `Game` construction — duplication
-   to retire, not a gap. Needs `player_source()` to carry the resume story.
+   to retire, not a gap. `player_source(story=…)` now carries the resume story.
 
 ## packaging
 

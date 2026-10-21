@@ -123,10 +123,15 @@ class BatchHooks:
 def load_fixture(fixture_path) -> dict:
     """Read a fixture's `fixture.json`. `fixture_path` is the fixture dir (which holds
     `campaign/` and `fixture.json`); the returned dict carries at least `id`, `frozen`,
-    and `provisional`."""
+    and `provisional`, plus `story` — the hand-reviewed recap the autoplayer is primed with —
+    when the fixture has a `story.md`."""
     fixture_path = Path(fixture_path)
     data = json.loads((fixture_path / "fixture.json").read_text(encoding="utf-8"))
     data.setdefault("id", fixture_path.name)
+    story = fixture_path / "story.md"
+    if story.is_file():
+        data["story"] = re.sub(r"<!--.*?-->", "", story.read_text(encoding="utf-8"),
+                               flags=re.S).strip()
     return data
 
 
@@ -407,18 +412,20 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
             raise ValueError(f"{run_dir}: no session plan under campaign/sessions — the "
                              f"fixture's campaign/ did not land; nothing to play")
         game = lifecycle.game
-        # One source per session loop, from the lifecycle rather than built here — bench and
-        # the TUI's `--player auto` then prime the packet identically, by construction.
-        source = lifecycle.player_source()
-        note(f"runner={game.runner_sid} player={source.session_id} session={game.session}")
 
-        scene = None
+        scene, story = None, fixture.get("story")
         if resuming and not finish_only:
             game._turn_no = turns_done  # continue archive turn ids past what's on disk
             note(f"resuming from {turns_done} turn(s) on disk…")
             scene = game.resume()  # None if the transcript is gone → fall through to a clean open
             if scene is None:
                 resuming = False
+            else:  # the player picks up this session where it stood, after the recap
+                story = "\n\n".join(s for s in (story, game._read_transcript()) if s)
+        # One source per session loop, from the lifecycle rather than built here — bench and
+        # the TUI's `--player auto` then prime the packet identically, by construction.
+        source = lifecycle.player_source(story=story)
+        note(f"runner={game.runner_sid} player={source.session_id} session={game.session}")
         if not resuming:
             _emit_conditions(logs, fixture, turn_cap=turn_cap, reconcile=reconcile,
                              run_dir=run_dir)

@@ -300,7 +300,7 @@ class MockLifecycle:
             git_state="clean", last_commit=f"session {n or 1} plan",
         )
 
-    def player_source(self):
+    def player_source(self, story=None):
         """The mock is a UI harness — the player is always the keyboard (`--player auto`
         needs a real backend to prompt, and refuses the mock at the CLI)."""
         from .play import KeyboardPlayer
