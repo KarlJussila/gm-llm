@@ -1,5 +1,1 @@
-Extract session {n}'s play into the structured digest. Load the `log-extract` skill and follow it: read the transcript `campaign/sessions/{n}/transcript.md` in chunks and write the digest losslessly to `campaign/sessions/{n}/digest.md`.
-
-Also read the runner's handoff notes `campaign/sessions/{n}/notes.md` if it exists — the runner's own account of story trajectory, new and changed entities, and loose ends. Treat it as a second source: fold in anything it flags that the transcript alone would miss (an entity named in passing, a thread that shifted off-screen), and let it resolve ambiguity, but the transcript remains the record of what was actually said.
-
-Report when the digest is written.
+Write the digest of session {n}: read the whole transcript `campaign/sessions/{n}/transcript.md` and the DM's notes `campaign/sessions/{n}/notes.md`, and write `campaign/sessions/{n}/digest.md`.

@@ -52,7 +52,7 @@ CAMPAIGN_DIRNAME = "campaign-root"
 
 
 # ── synthetic campaign content (fixed bytes) ─────────────────────────────────
-# The dm/analyst/extractor don't really write files under a fake backend, so each
+# The dm and the extractor don't really write files under a fake backend, so each
 # scripted reply that the orchestrator reads back from disk carries the file writes it
 # stands in for (its `writes`). Kept minimal but real: complete enough that the
 # CanonPreloader has entities to match and the canon lint passes clean.
@@ -88,7 +88,7 @@ _NPC_STATE = """\
 ---
 slug: magren-soley
 layer: state
-as-of: S1
+as-of: S0
 ---
 # Magren Soley — state
 - Tending the bar at the Crossroads Inn as the session opens.
@@ -115,7 +115,7 @@ _FACTION_STATE = """\
 ---
 slug: harbor-guilds
 layer: state
-as-of: S1
+as-of: S0
 ---
 # The Harbor Guilds — state
 - Quietly feuding over the flooded lower wharf.
@@ -162,7 +162,7 @@ _PC_STATE = """\
 ---
 slug: dallid
 layer: state
-as-of: S1
+as-of: S0
 ---
 # Dallid — state
 - At the Crossroads Inn with the satchel.
@@ -196,7 +196,7 @@ _ARC_MAJOR_STATE = """\
 ---
 slug: the-sunken-crown
 layer: state
-as-of: S1
+as-of: S0
 ---
 # The Sunken Crown — state
 - Dormant. The satchel is the first thread.
@@ -220,7 +220,7 @@ _ARC_MINOR_STATE = """\
 ---
 slug: guild-rivalry
 layer: state
-as-of: S1
+as-of: S0
 ---
 # Guild Rivalry — state
 - Simmering. No open moves yet.
@@ -244,9 +244,20 @@ without naming it.
 _DIGEST_1 = """\
 # Session 1
 
+## Narrative
 Dallid entered the Crossroads Inn; Magren clocked the satchel's glow. Dallid pressed
 him and then left into the night.
+
+## Player feedback
+"More chances to roll, please."
 """
+
+_ARCS_RECONCILED = {
+    "campaign/arcs/the-sunken-crown.state.md": _ARC_MAJOR_STATE.replace(
+        "as-of: S0", "as-of: S1").replace("- Dormant. The satchel is the first thread.",
+                                          "- Stirring. Magren has seen the satchel's glow."),
+    "campaign/arcs/guild-rivalry.state.md": _ARC_MINOR_STATE.replace("as-of: S0", "as-of: S1"),
+}
 
 _PLAN_2 = """\
 # Session 2 plan
@@ -282,6 +293,7 @@ def _writes(root: Path) -> dict:
         "plan_1": {"campaign/sessions/1/plan.md": _PLAN_1},
         "plan_1_fix": {"campaign/sessions/1/plan.md": _PLAN_1_CORRECTED},
         "digest_1": {"campaign/sessions/1/digest.md": _DIGEST_1},
+        "arcs_1": _ARCS_RECONCILED,
         "plan_2": {"campaign/sessions/2/plan.md": _PLAN_2},
     }
 
@@ -320,7 +332,7 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
     """The whole run's replies, keyed per agent, each queue consumed in call order."""
     return {
         # The dm: setup conversation, non-interactive setup stages, plan authoring +
-        # correction, and the reconcile apply stages + next-session plan.
+        # correction, then the reconcile stages and the next session's plan.
         "dm": [
             Resp("Welcome — tell me the kind of world you want to run."),           # intake brief
             _task_complete(                                                          # intake done
@@ -334,10 +346,9 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
             Resp("Opening state initialised."),                                      # state brief
             Resp("Session 1 plan written."),                                         # author-brief(1)
             Resp("Plan corrected."),                                                 # plan correction
+            Resp("Feedback folded in."),                                             # curate-feedback(1)
             Resp("Entity canon updated for session 1."),                            # apply-canon(1)
-            Resp("Arc 'guild-rivalry' reconciled — no material change."),           # apply-arc guild-rivalry
-            Resp("Arc 'the-sunken-crown' advanced one beat."),                      # apply-arc the-sunken-crown
-            Resp("Threads dashboard and new minor arcs reconciled."),               # apply-arcs-close
+            Resp("Both arcs reconciled; threads updated."),                          # apply-arcs(1)
             Resp("Ledger and state updated."),                                       # apply-state(1)
             Resp("Session 2 plan written."),                                         # author-brief(2)
         ],
@@ -356,11 +367,6 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
                 notes="Dallid met Magren, who noticed the satchel's glow. Sunken "
                       "Crown seeded. Dallid left toward the wharf."),
         ],
-        # The analyst: assessment (ungated) + curated feedback (gated).
-        "campaign-analyst": [
-            Resp("Assessment written for session 1."),                              # assess-brief(1)
-            Resp("Feedback files curated for session 1."),                          # curate-feedback(1)
-        ],
         # The extractor: transcript -> digest (gated).
         "log-extractor": [
             Resp("Digest written for session 1.", writes=writes["digest_1"]),       # digest-brief(1)
@@ -371,7 +377,6 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
             _pass(),                                                                 # check-init
             _fail("1. Describe Magren's grey-streaked hair per canon, not unnamed."),  # check-plan s1
             _pass(),                                                                 # check-digest
-            _pass(),                                                                 # check-feedback
             _pass(),                                                                 # check-propagation
             _pass(),                                                                 # check-plan s2
         ],
@@ -387,7 +392,8 @@ _DM_STAGE_WRITES = {
     5: "arc_minor",   # arc-minor   -> guild-rivalry
     7: "plan_1",      # author-brief(1)      -> session-1-plan.md
     8: "plan_1_fix",  # plan correction      -> corrected session-1-plan.md
-    14: "plan_2",     # author-brief(2)      -> session-2-plan.md
+    11: "arcs_1",     # apply-arcs(1)        -> both arcs stamped S1
+    13: "plan_2",     # author-brief(2)      -> session-2-plan.md
 }
 
 
@@ -550,6 +556,7 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     # 5. Reconcile session 1 (+ prep session 2).
     rr = Reconciler(backend, gate, logs=None).reconcile_session(1, commit=True, prep=True)
     assert rr.prep and rr.prep.n == 2, "reconcile should prep session 2"
+    assert not rr.arcs_missed, "the arc pass should stamp every arc, so no nudge"
 
     # Every scripted queue must be fully drained — a leftover means the flow diverged.
     leftover = {a: len(q) for a, q in backend._script.items() if q}

@@ -1,24 +1,16 @@
 """
 PRE-session planning — orchestrated.
 
-The dm used to author the session plan and then *dispatch* the narrative-checker
-itself (`check-plan` via the `task` tool) — model volition, the same shape we pulled
-out of runtime. Here the orchestrator drives it deterministically, mirroring the
-per-turn loop one stage earlier:
-
   prep_session(N):
       dm authors campaign/sessions/N/plan.md                 # 1. the dm holds the pen
+      canon lint on what it wrote, one correction
       result = gate.check_plan(plan)                         # 2. ALWAYS gate, in code
       if result.violations: dm revises the file once         # 3. exactly ONE bounded pass
       commit "campaign: session N plan"                       # 4. deterministic commit
       return PrepResult
 
-The dm still authors and revises the file (it has write/edit); the orchestrator
-owns *when* the gate runs and *whether* to commit — not the model. The authoring
-brief tells the dm not to self-dispatch the checker or commit for this pass, so the
-dm's standalone PRE-SESSION flow (used at init / post-session) is left untouched.
-
-`Game` (loop.py) can then run the session the moment the plan exists — prep → play.
+The dm authors and revises the file; the orchestrator owns *when* the gate runs and
+*whether* to commit. `Game` (loop.py) can run the session the moment the plan exists.
 """
 
 from __future__ import annotations
@@ -30,7 +22,7 @@ from pathlib import Path
 from .archive import verdict_fields
 from .logs import append, banner, section
 from . import paths
-from .phase import apply_lint_correction, apply_one_correction, commit_campaign
+from .phase import apply_lint_correction, commit_campaign, correct_once
 from .prompts import load
 
 
@@ -42,6 +34,7 @@ class PrepResult:
     corrected: bool
     committed: bool
     draft: str = ""            # the plan as gated (== plan unless corrected)
+    diff: str = ""             # what the correction changed under campaign/
 
 
 class PlannerError(RuntimeError):
@@ -88,14 +81,15 @@ class Planner:
 
         # 3. Exactly one bounded correction (no re-gate). Re-read the file after.
         draft = plan  # the text the gate judged — archived even once corrected over
-        corrected = apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
+        diff = correct_once(self.backend, self.dm_sid, self.dm_agent, result, self.root)
+        corrected = diff is not None
         if corrected:
             plan = self._read_plan(n)
 
         # 4. Commit deterministically (the orchestrator owns git, not the model).
         committed = commit_campaign(self.root, f"campaign: session {n} plan") if commit else False
 
-        pr = PrepResult(n, plan, result, corrected, committed, draft=draft)
+        pr = PrepResult(n, plan, result, corrected, committed, draft=draft, diff=diff or "")
         self._log(pr)
         if self.on_prep:
             self.on_prep(pr)
@@ -114,7 +108,7 @@ class Planner:
                 verdict=verdict_fields(pr.gate.narrative),
                 corrected=pr.corrected, committed=pr.committed,
                 canon_sections=pr.gate.canon_sections,
-                draft=pr.draft, plan=pr.plan,
+                draft=pr.draft, plan=pr.plan, diff=pr.diff,
             )
 
 

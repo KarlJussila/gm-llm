@@ -1,3 +1,1 @@
-Prepare session {n}. Run your PRE-SESSION planning pass: read current state and the active arc(s), identify which arc(s) to advance, then author the plan yourself into `campaign/sessions/{n}/plan.md`. Load `session-plan` and `canon-conventions`, work the completeness loop (author -> self-expand -> verify), and author + register every new entity the plan needs as a full file. Commit every load-bearing fact; leave open only the player's path.
-
-When the plan file is written, stop and report only that it is ready — spoiler-free, no summary of its contents.
+Plan session {n} into `campaign/sessions/{n}/plan.md`. Work from the last session's digest if there is one, the threads dashboard, the arcs and the state. Advance at least one arc, and give every new entity the plan needs its own file. When the plan is written, report only that it is ready — nothing of what is in it.

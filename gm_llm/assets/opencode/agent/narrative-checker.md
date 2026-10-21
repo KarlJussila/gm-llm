@@ -7,8 +7,8 @@ description: >-
   tracker-delta fidelity), check-conduct (runtime, the same drafted turn's
   table-craft conduct — runs in the same warm session as check-turn),
   check-plan (PRE, a session plan), check-digest (POST, the digest vs. the
-  transcript), check-propagation (POST, the apply pass), check-feedback (POST,
-  curated player feedback). Reads and reports only; never writes, rewrites
+  transcript), check-propagation (POST, the apply pass). Reads and reports
+  only; never writes, rewrites
   content, or mutates canon.
 mode: subagent
 model: openai/gpt-6-luna
@@ -42,7 +42,6 @@ exactly:**
 - **`check-plan`** — PRE: a session plan, before it's finalized.
 - **`check-digest`** — POST: verify the session digest faithfully captures the transcript.
 - **`check-propagation`** — POST: verify a session's updates fully propagated into canon and state.
-- **`check-feedback`** — POST: verify the player's feedback was curated into `campaign/feedback/`.
 - **`check-init`** — INIT: verify all canon authored during setup is complete, registered, and consistent.
 
 ## How you work — every role, the same protocol

@@ -2,9 +2,8 @@
 Shared primitives for the orchestrated between-sessions phases (PRE planning,
 POST reconcile).
 
-Both phases have the same deterministic spine as the per-turn loop, one stage out:
-the `dm` authors, the orchestrator ALWAYS gates in code, applies exactly ONE bounded
-correction, then commits deterministically. The two invariants that make that safe —
+Both phases share one deterministic spine: the author writes, the orchestrator ALWAYS
+gates in code, applies exactly ONE bounded correction, then commits deterministically. The two invariants that make that safe —
 *one* correction (never a re-gate loop) and *code-owned* git — live here, in one
 place, so PRE and POST can't drift apart.
 """
@@ -20,15 +19,39 @@ from .registry import write_index
 from .reveals import sync_reveals
 
 
-def apply_one_correction(backend, session_id: str, agent: str, gate_result) -> bool:
-    """The bounded-correction primitive. If the gate found violations, hand the
-    agent its correction brief EXACTLY ONCE — no re-gate, no loop — and report that
-    a correction was made. `gate_result` is any *GateResult with `.violations` and
-    `.correction_brief()`. The caller re-reads whatever artifact it owns afterward."""
+def correct_once(backend, session_id: str, agent: str, gate_result, root: str | Path) -> str | None:
+    """The bounded-correction primitive. If the gate found violations, hand the agent its
+    correction brief EXACTLY ONCE — no re-gate, no loop. Returns None when no correction was
+    needed, else the diff the correction made under `campaign/` ('' if it changed nothing) —
+    the before/after every gate archives. The caller re-reads whatever artifact it owns."""
     if not gate_result.violations:
-        return False
+        return None
+    before = _campaign_tree(root)
     backend.prompt(session_id, agent, gate_result.correction_brief())
-    return True
+    after = _campaign_tree(root)
+    if not (before and after) or before == after:
+        return ""
+    return _git(root, "diff", "--src-prefix=a/campaign/", "--dst-prefix=b/campaign/",
+                before, after) or ""
+
+
+def _campaign_tree(root: str | Path) -> str | None:
+    """A git tree id for `campaign/` as it stands on disk, or None outside a repo. Stages
+    `campaign/` to get it, which the commit at the end of every phase does anyway."""
+    if _git(root, "add", "-A", "--", "campaign") is None:
+        return None
+    tree = _git(root, "write-tree", "--prefix=campaign/")
+    return tree.strip() if tree else None
+
+
+def _git(root: str | Path, *args: str) -> str | None:
+    """Run git in `root`; its stdout, or None on failure. Best-effort, never raises."""
+    try:
+        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return r.stdout if r.returncode == 0 else None
 
 
 def refresh_campaign(root: str | Path) -> None:

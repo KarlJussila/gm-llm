@@ -1,6 +1,6 @@
 ---
 name: arc-design
-description: The craft of designing a new narrative arc for a D&D campaign — premise, stakes, key NPCs, turning points, tension curve, and engagement paths — with every load-bearing answer committed at design time. Covers the major/minor arc model, WHAT makes a strong arc, and the discipline of committing its answers; the file format is owned by the canon-conventions skill and the arc templates. Loaded by the dm to design a new arc — the campaign's one major arc, or a minor arc hooked into it. Revising an existing arc after play is the apply-arcs pass, not this skill.
+description: Load when designing a new arc — the campaign's major arc or a minor arc hooked into it.
 ---
 
 # arc-design
@@ -9,15 +9,6 @@ description: The craft of designing a new narrative arc for a D&D campaign — p
 
 Read `campaign/feedback/arc-design.md` if it exists — accumulated, player-specific guidance distilled
 from past sessions. Treat it as binding; let it override the defaults here wherever they conflict.
-
-## Build your task list
-
-Use your `todowrite` tool to create exactly these entries, then work them in order:
-
-1. Gather context (see *Before you write*)
-2. Design the arc: premise, stakes, key NPCs/factions, turning points, engagement paths
-3. Lay out level pacing (major arc only — see *Level pacing*)
-4. Author the arc file + `.state.md`; register in `INDEX.md` with `tier` and `hooks-into` (if minor)
 
 ## What you're designing
 
@@ -38,7 +29,7 @@ answers from the arc**. If the arc punts a load-bearing fact downstream, a downs
 fabricates one — and a *different* one each time. So:
 
 - **Every turning point commits its answer** — the reveal, the identity, the consequence. Write the
-  real thing, flagged `[hidden]`.
+  real thing, tagged `[hidden:<id>]`.
 - **Gather the load-bearing facts in the committed-answers section** so they're trivial to pull. If
   the campaign will raise a question that matters to the plot, its answer is in the arc.
 - **Never write "DM decides," "TBD," "as needed," or leave a load-bearing fact blank.** Decide it now.
@@ -83,7 +74,7 @@ it is, no one hands out level-ups because no one owns them — this is where tha
 - **Every arc needs a hook** that draws the player in naturally — bond, curiosity, urgency, moral
   obligation. Never force engagement.
 - **Flag the secrets and track who's in on them.** Turning points, the central truth, and villain
-  motives are spoilers: `[hidden]` + `Known to:`. Cross-check the PC knowledge ledger
+  motives are spoilers: `[hidden:<id>]` + `Known to:`. Cross-check the PC knowledge ledger
   (`characters/{slug}.knowledge.md`) so the arc starts from what the PC *actually* knows.
 - **Leave room for agency** — open *paths*, never undecided *facts*.
 - **Arcs can intersect.** Flag any cross-arc dependency so the dm can coordinate; intersections force
@@ -95,7 +86,7 @@ it is, no one hands out level-ups because no one owns them — this is where tha
   + `INDEX.md` (entities to reuse, not duplicate); `characters/{slug}.md` + `{slug}.knowledge.md` (the
   PC's backstory, goals, and what they know); existing `arcs/` so a new arc complements rather than
   collides — and, for a minor arc, the **major** it hooks into.
-- **Format** lives in **`canon-conventions`** and the `arc-design` template — load them; they own the
-  file shape. Write `arcs/{slug}.md`, set `tier` and `hooks-into` in the frontmatter, register the arc
-  in `INDEX.md` (Arcs) with its tier, link entities with `[[slug]]`, and flag spoilers `[hidden]` +
+- **Format** lives in **`canon-conventions`** and the `arc-design` template; they own the file
+  shape. Write `arcs/{slug}.md` and its `.state.md`, set `tier` and `hooks-into` in the frontmatter
+  (`INDEX.md` is built from it), link entities with `[[slug]]`, and tag secrets `[hidden:<id>]` with
   `Known to:`.

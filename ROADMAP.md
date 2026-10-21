@@ -6,12 +6,8 @@ lands — git history is the record.
 
 ## luna — rebuild the product for GPT-6 Luna
 
-Design: [`design/luna.md`](design/luna.md). Tasks 3–5 need no model quota; 6–8 do.
+Design: [`design/luna.md`](design/luna.md). Tasks 4–5 need no model quota; 6–8 do.
 
-3. **Reconcile and planning.** Whole-transcript digest; the assessment, `campaign-analyst` and
-   `check-feedback` deleted; feedback curation on the `dm` thread; arcs through Luna-pinned
-   subagents with code-verified coverage; `check-propagation` reduced to its judgment half;
-   before/after archived for every gate; `session-plan` without choreography.
 4. **Setup and player-level feedback.** A world proposal the player can revise before character
    creation; one arcs-and-state dispatch with code checks; `check-init` reduced to its judgment half;
    `campaign-setup` deleted; the player-level feedback store and the `subagents` setting.

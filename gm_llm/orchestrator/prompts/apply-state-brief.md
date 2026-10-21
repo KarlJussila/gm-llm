@@ -1,1 +1,1 @@
-Update state after session {n}. Load the `apply-state` skill and follow it: flip the knowledge ledger and reveal flags for what the PC learned, and bring every state snapshot up to the session boundary. Report when done.
+Bring state up to the end of session {n}, from the digest `campaign/sessions/{n}/digest.md`: what the PC learned goes into its knowledge ledger, every entity play moved gets a fresh state snapshot, and `campaign/state/current.md`, `calendar.md` and `clocks.md` show where the session left things. Report when done.

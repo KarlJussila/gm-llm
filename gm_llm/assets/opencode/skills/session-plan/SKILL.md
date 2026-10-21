@@ -1,130 +1,82 @@
 ---
 name: session-plan
-description: Prepare an upcoming D&D session — a flexible plan that advances at least one arc, commits every load-bearing fact, and leaves the player's path open. Orchestrates the focused plan skills (encounter-plan, investigation-plan, npc-plan, pacing-plan). Loaded by the dm, which authors the plan inline; the orchestrator then gates it with the narrative-checker's check-plan role.
+description: Load when planning an upcoming session.
 ---
 
 # Session Plan
 
-This skill assembles a single session plan. It owns the plan's spine and output; the design-heavy
-parts are focused skills you pull in as the session needs them.
+A session plan is a working document for the DM about to run the session: a flexible plan that
+advances at least one arc, commits every load-bearing fact, and leaves the player's path open. It
+goes in `campaign/sessions/{N}/plan.md`; `canon-conventions` is the format.
 
-## Player feedback — read first
-
-Before planning, read `campaign/feedback/session-plan.md` if it exists. It holds accumulated,
-player-specific guidance distilled from past sessions. Treat it as binding and let it override the
-defaults here and in the sub-skills wherever they conflict.
-
-## Format — load canon-conventions
-
-**Load `canon-conventions`** and follow it: reference every entity by `[[slug]]`, and when the plan
-needs an entity that doesn't exist yet, author it as a **full file** and register it in `INDEX.md`
-(see step 9). The plan itself goes in `campaign/sessions/{N}/plan.md`.
+Read `campaign/feedback/session-plan.md` if it exists: the player's standing guidance on how
+sessions are prepared, which wins over the defaults here.
 
 ## The one rule
 
-> **Commit every load-bearing fact in the plan. Leave open only the player's path.**
+**Commit every load-bearing fact. Leave open only the player's path.** Every identity, every reveal,
+the answer behind a mystery, what a check yields, what an NPC knows — fix it now. Never write "DM
+decides", "TBD", "as needed" or "the runner creates" for something the session leans on; that punt
+is what forces invention at the table. For anything the session needs, take the arc's committed
+answer if it has one, else existing canon, else decide it now and file it. Ambient colour (a passing
+vendor's name) is the runner's to improvise.
 
-Every identity, reveal, the answer behind a mystery, what a check yields, what an NPC knows — fix it
-now. The only thing you leave open is what the *player* decides. Never write "DM decides", "TBD",
-"as needed", or "the runner creates" for a load-bearing fact — that punt is what forces fabrication
-at the table. **Fact-resolution priority** for anything the session needs:
-1. the **arc's** committed answer, if it has one — pull it;
-2. else existing **canon** (`INDEX.md` → the file);
-3. else **decide it now** and author it as new canon (step 9).
+## What to work from
 
-Trivial ambient color (a passing vendor's name) is the runner's to improvise — don't pre-author it.
+- The last session's digest `campaign/sessions/{N-1}/digest.md`, if there was one: what happened,
+  where the plan was left, what the player leaned into.
+- `campaign/state/threads.md` — the open leads.
+- The arcs and their state files: where each stands, its committed answers, the major arc's level
+  pacing.
+- `campaign/state/current.md`, `calendar.md` and `clocks.md`.
+- The PC's sheet, state and knowledge ledger — plan every reveal against what the character
+  already knows.
 
-## Step 1 — Create your task list
+## What a plan holds
 
-Use your `todowrite` tool to create these entries, then work them in order:
+Include what this session calls for; a quiet social session may have no encounters, a journey no
+investigation.
 
-1. Opening State
-2. Likely Beats
-3. Encounter Seeds *(→ `encounter-plan`)*
-4. Discoveries & Investigations *(→ `investigation-plan`)*
-5. NPC Staging *(→ `npc-plan`)*
-6. Decision Points
-7. Contingencies
-8. Pacing & Exits *(→ `pacing-plan`)*
-9. Author & register new entities
-10. Self-check (arc / ledger / overlap / no-blanks)
+- **Opening state** — where the PC is, what just happened, who's present, what's at stake. The
+  anchor, from `state/current.md`.
+- **Likely beats** — three to five things that will probably happen or need addressing, ranked.
+- **Encounter seeds** — situations first; a combat seed also commits its combatants, footing and
+  objective for the tracker. `encounter-plan` covers designing them.
+- **Discoveries** — any revelation the session can deliver: the clues, how they combine, the
+  committed answer, and whether the player or the character puts it together.
+  `investigation-plan` covers this.
+- **NPCs** — the ones in play, by `[[slug]]`: disposition, agenda, what they know, how they react,
+  their tells. Their identities come from the arc and canon, never re-invented. `npc-plan` covers
+  staging them.
+- **Decision points** — moments where the player's choice changes the outcome: the choice and what
+  hangs on it, never which way they'll go.
+- **Contingencies** — if/then pairs for the two or three likeliest deviations.
+- **Pacing and exits** — expected scope, natural stopping points, a cliffhanger to build toward.
+  `pacing-plan` covers this.
+- **Advancement** — whether a level-up lands at the end of this session, from the major arc's level
+  pacing and the PC's level: an explicit yes-to-level-N or no.
 
-Skip a sub-skill's section if the session doesn't call for it (a quiet social session may have no
-encounters; a travel session no investigation). Pull a skill when its content is in play.
+**New entities.** Every entity the plan introduces gets a full file from its template, not a stub.
+Check `INDEX.md` for name and role overlap first, and reuse or differentiate rather than make a
+near-twin.
 
-## Input — read before planning
-- **Assessment** — the latest `campaign/assessment/session-{N}-assessment.md` (the analyst's
-  post-session read; its *Threads & next-session notes* section is your situation report).
-- **Active arcs** — `campaign/arcs/{slug}.md` + `.state.md`: where each stands and its committed answers.
-- **Current state** — `campaign/state/current.md`, `calendar.md`, `threads.md`, `clocks.md`.
-- **Entities in play** — their info/state files (via `INDEX.md`).
-- **PC** — `characters/{slug}.md` + `.state.md`, and the ledger `characters/{slug}.knowledge.md`
-  (what the PC knows/believes/chases — plan reveals against this).
+**Before you finish,** check the plan against the arc (no identity or reveal contradicts it, no
+parallel invented for an NPC it already cast), against the ledger (mark each clue known, a new
+reveal, or staying hidden; no beat assumes the PC knows what it doesn't), and for blanks.
 
-## What each entry entails
+## Principles
 
-1. **Opening State** — where the PC is now, what just happened, the immediate circumstances (time,
-   place, who's present, what's at stake). The session's anchor; pull it from `state/current.md`.
-2. **Likely Beats** — 3–5 things that will probably happen or need addressing, ranked. The expected
-   shape, not guarantees.
-3. **Encounter Seeds** → **`encounter-plan`**. 2–4 encounters as situations first; combat seeds also
-   commit their combatants, footing, and objective for the tracker.
-4. **Discoveries & Investigations** → **`investigation-plan`**. Any revelation the session delivers
-   — the clues, how they combine, **the committed answer**, and who assembles it.
-5. **NPC Staging** → **`npc-plan`**. The NPCs in play — disposition, agenda, what they know, how
-   they react, concealed tells. Each by `[[slug]]`; their identities are the arc's/canon's, never
-   re-invented.
-6. **Decision Points** — moments where player choice significantly affects the outcome. State the
-   choice and what hangs on it; **don't** plan which option they pick.
-7. **Contingencies** — for the likely beats, if/then pairs (*if the player does X, then Y*). Cover
-   the two or three most probable deviations. Safety rails, not alternate campaigns.
-8. **Pacing & Exits** → **`pacing-plan`**. Expected scope, natural stopping points, cliffhanger, and
-   the **session-end advancement check** (is a level-up due when this session closes? — pulled from the
-   major arc's *Level pacing* against the PC's current level).
-9. **Author & register new entities** — for every entity the plan introduces (resolution step 3
-   above), write a **full info file** via the matching `canon-conventions` template (not a stub),
-   register it in `INDEX.md`, and **check it against existing entities for name/role overlap** — if
-   it duplicates something, reuse or differentiate, don't spawn a near-twin. Free license to invent
-   the world forward; no license to invent thin or colliding entities.
-10. **Self-check** before handing off — verify, and fix:
-    - **Honor the arc:** no identity/reveal contradicts the arc or invents a parallel for an
-      already-cast NPC; the plan pulls the arc's answers.
-    - **Ledger:** every clue/reveal flagged `(known)` / `(new reveal)` / `(stays hidden)` against
-      `characters/{slug}.knowledge.md`; no beat assumes the PC knows what it doesn't.
-    - **Overlap:** every new entity dedup-checked (step 9).
-    - **No blanks:** no "DM decides / TBD / as needed" anywhere.
-    - **Advancement decided:** the plan states whether a level-up lands at this session's end (per the
-      major arc's *Level pacing* and the PC's current level) — an explicit yes-to-level-N or no.
+- **Plan situations, not plots** — problems and opportunities, not solutions.
+- **Never plan the player's decisions.** Plan what the world does.
+- **Leave 30–40% unplanned** for improvisation and the scenes the player drives. The openness is
+  the path, never the facts.
+- **Advance at least one arc**, even a little.
+- **The plan ends at the table.** No "post-session updates" or "what to file afterward" section:
+  canon is reconciled from what actually happened, and nothing that updates files reads the plan.
 
-## Cross-cutting principles
-- **Plan situations, not plots.** Problems and opportunities, not solutions.
-- **Never plan player decisions.** Plan what the world does; let the player respond.
-- **Keep 30–40% unplanned.** Leave room for improvisation and player-driven scenes — that openness
-  is the *path*, not the *facts*.
-- **Advance at least one active arc** — even small progress counts.
-- **The plan ends at the table.** Plan only what's needed to *run* the session. Don't write a
-  "post-session updates" or "what to file afterward" section: canon is reconciled from what
-  *actually* happened, never from a checklist written in advance, and nothing that updates files
-  reads the plan.
+## Telling the player
 
-## File output
-Write the plan to `campaign/sessions/{N}/plan.md`, where `{N}` is the next session number.
-
-## Handing off to the player — spoiler-free
-
-**The plan you just wrote IS the spoiler** — the player hasn't read it and doesn't want it. Don't
-summarize, paraphrase, or describe "the shape of it": naming the beats, encounter seeds, decision
-points, exit hook, NPC secrets, or a reveal is exactly what the file exists to keep behind the screen.
-A numbered "here's what happens" list is the failure mode, even softened with "roughly."
-
-The whole hand-off is **one or two sentences**, only what the character already knows:
-
-> Session 2 is planned and ready. You'll pick up right where you left off — [one spoiler-free line
-> of the character's current situation].
-
-The session opens on its own — don't tell the player to start anything. The test: would this sentence
-tell the player something their character doesn't already know? If yes, cut it.
-
-## Tone
-Tactical, flexible, anticipatory — a working document for a DM about to run a session. Clear,
-direct, grounded in this campaign's specifics.
+The plan is the spoiler. The whole hand-off is a sentence or two of what the character already
+knows — "Session 2 is ready; you pick up where you left off, [one line of the character's current
+situation]." Don't summarise or hint at beats, encounters, NPC secrets or the exit hook, and don't
+tell the player to start anything; the session opens on its own.

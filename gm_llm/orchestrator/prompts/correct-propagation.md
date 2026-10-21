@@ -1,1 +1,1 @@
-Gaps found verifying that session {session}'s updates propagated into canon and state. Backfill each one — file the entity, flip the flag, update the snapshot, revise the arc body, or fix the link as noted — change nothing else, and report only when done.
+The check found parts of session {session} that didn't land in canon and state. Fix each one where the note says, change nothing else, and report when done.

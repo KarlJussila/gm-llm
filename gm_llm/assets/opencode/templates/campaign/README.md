@@ -30,7 +30,7 @@ slots, coin); the player tracks those.
 
 | Path | Holds | Written by |
 | --- | --- | --- |
-| `INDEX.md` | Registry: every entity → its files, status, one-line. Slug resolver + dedup guard. | `dm` (init + apply passes) |
+| `INDEX.md` | Registry: every entity → its files, status, one-line. Slug resolver + dedup guard. | orchestrator (generated from frontmatter) |
 | `campaign.md` | Overview: premise, tone, themes, content boundaries | `dm` |
 | `world/overview.md` · `cosmology.md` · `history.md` | World-truth singletons: premise + hidden layer; how reality works; backstory | `dm` |
 | `world/{npcs,factions,locations,items,regions,concepts}/{slug}.md` | Entity **info** (canon) | `dm` |
@@ -49,30 +49,26 @@ slots, coin); the player tracks those.
 | `sessions/{N}/transcript.md` | Play transcript (final messages), written each turn | orchestrator |
 | `sessions/{N}/notes.md` | The runner's end-of-session handoff notes | orchestrator (runner authors, code files) |
 | `sessions/{N}/digest.md` | Structured session digest, extracted from the transcript | `log-extractor` |
-| `assessment/session-{N}-assessment.md` | Post-session analysis & arc recommendations | `campaign-analyst` |
 | `documents/{slug}.md` | **Verbatim** text of in-world written materials | `dm` (apply pass) |
-| `feedback/{target}.md` | Distilled player guidance, loaded by the named skill/agent | `campaign-analyst` (curation pass) |
+| `feedback/{target}.md` | Distilled player guidance, loaded by the named skill/agent | `dm` (feedback pass) |
 
 **Not registered in `INDEX.md`:** the world-truth singletons (`overview`/`cosmology`/`history`) and
 the `state/*` docs sit at fixed paths; clocks and threads live in their dashboards.
 
 ## How a session is captured
 
-Note-taking is **automatic** — the runner just plays. During the session the orchestrator writes the
-final player + DM messages of each turn to `sessions/{N}/transcript.md` (the corrected
-narration, not drafts). The runtime checkers only verify and report — they record nothing. After the
-session the **orchestrator** runs the staged post-session pipeline, one focused dispatch per stage,
-each checked before the next:
+Note-taking is **automatic** — the runner just plays. During the session the orchestrator writes
+each turn's player message and DM narration to `sessions/{N}/transcript.md`, and the runner's
+closing notes to `sessions/{N}/notes.md`. After the session the orchestrator runs the post-session
+pipeline, one dispatch per step:
 
-1. the still-warm runner authors handoff notes (code files them to `{N}/notes.md`);
-2. `log-extractor` writes the structured digest `sessions/{N}/digest.md` — a lossless extraction of
-   every notable change (checked against the transcript);
-3. `campaign-analyst` writes the assessment, then curates the player's feedback into `feedback/*`;
-4. the `dm` **applies** the digest to canonical state: entity info for new/changed canon (with a
-   completeness lint), one reconcile pass per arc plus the threads dashboard, then the knowledge
-   ledger (flipping `[hidden]` → `[revealed: S<n>]`), every `*.state.md` snapshot, the `state/*`
-   docs, the registry, and verbatim `documents/` — audited whole by the propagation check;
-5. the orchestrator commits and the `dm` plans session N+1.
+1. `log-extractor` reads the whole transcript and the notes and writes the digest
+   `sessions/{N}/digest.md` (checked against the transcript);
+2. the `dm` folds any player feedback into `feedback/*`;
+3. the `dm` files new and changed canon (then the canon lint), reconciles every arc through the
+   `author` subagent plus the threads dashboard, and brings the knowledge ledger and every state
+   file up to date — the whole apply audited by the propagation check;
+4. the orchestrator commits and the `dm` plans session N+1.
 
 Because the transcript is what gets extracted, the rule during play is **narrate it, don't just
 decide it** — names, read-aloud text, and what the character learns must actually appear in the
@@ -82,32 +78,29 @@ scene to become canon.
 
 The system tracks **who knows what**, so the DM never confuses what *it* knows (the whole campaign
 bible) with what the *character* knows. The rule the runner checks: **the PC knows only what's in
-their knowledge ledger, or what is openly perceivable — anything flagged `[hidden]` is off-limits
+their knowledge ledger, or what is openly perceivable — anything tagged `[hidden:<id>]` is off-limits
 until revealed.**
 
 Two mirrored layers:
 1. **The PC ledger** (`characters/{slug}.knowledge.md`) — the positive record: Knows / Believes /
    Open questions.
-2. **Awareness flags** at each fact's home (`world/**`, `arcs/**`): prefix a secret with `[hidden]`
-   (→ `[revealed: S<n>]` once learned) and add a `Known to:` line. Openly perceivable details need
-   no flag.
+2. **Awareness tags** at each fact's home (`world/**`, `arcs/**`): a secret carries an id,
+   `[hidden:<id>]`, and a `Known to:` line. Openly perceivable details need no tag.
 
 ```
-- [hidden] Lysa feeds the harbor patrol's rotation to the rebel cell.
+- [hidden:fenn-informant] Lysa feeds the harbor patrol's rotation to the rebel cell.
   Known to: [[lysa-fenn]], rebel leadership.
-- [revealed: S2] She knows the cell plans to move on the night tide.
-  Known to: [[lysa-fenn]], the PC.
 ```
 
-At the moment of reveal, update both layers in the same beat (ledger line + flag flip). Full detail
-is in the `canon-conventions` skill.
+A reveal is recorded once, in the ledger, as `[learned:<id> S<n>]`; the orchestrator then marks the
+home tag `[revealed:<id> S<n>]` and adds the PC to its `Known to:`. Full detail is in the
+`canon-conventions` skill.
 
 ## Player feedback loop
 
-The runner collects player feedback at session end (recorded verbatim in the digest). The
-`campaign-analyst` distills it into `feedback/{target}.md` files — checked for fidelity by the
-feedback gate — which the matching skill or agent loads as binding guidance, baking feedback into
-behavior without editing the framework. See `feedback/README.md` for routing.
+The runner collects player feedback at session end (recorded verbatim in the digest). The `dm`
+distils it into `feedback/{target}.md` files, which the matching skill or agent loads as binding
+guidance, baking feedback into behavior without editing the framework. See `feedback/README.md` for routing.
 
 ## Document file format (`documents/{slug}.md`)
 

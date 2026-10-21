@@ -155,7 +155,7 @@ retreats, whether a reaction applies → model. The tracker is never a rules eng
   runner-loadable for unplanned combat. Craft prose (see Balance), not a mechanism.
 - **Reaction/tactical repertoire ledger** — a new canon file kind (template under
   `canon-conventions/templates/`), one per PC. Seeded at character-create/level-up from the sheet;
-  grown post-session by the reconcile pipeline (`log-extract`/`apply-*`) capturing showcased reactions.
+  grown post-session by the reconcile pipeline (`log-extractor`/`apply-canon`) capturing showcased reactions.
 - **Planning: stat blocks + encounter prep** — a stat-block template (recurring/named creatures →
   canon entity files with a stat-block section, registered in `INDEX.md`; generic mooks →
   session-plan-scoped), consumed by `start_encounter`. `encounter-plan` keeps its "situations, not stat
@@ -421,7 +421,7 @@ pointer) plus a `CombatMixin` on `Game` exposing `combat_step()`, `combat_confir
   plus any reaction spell or feature the sheet shows), leaving the rest to grow from play.
 - **Grown in the *capability* pass, not the state pass.** The repertoire is capability-lineage, so
   it lives with the sheet in **apply-canon**, keeping the whole PC-capability signal in one pass,
-  while the *knowledge* ledger stays apply-state's. `log-extract` taxonomy item 13 (*Combat
+  while the *knowledge* ledger stays apply-state's. The digest's section 13 (*Combat
   reactions & tactics*) captures the WHEN→THEN trigger rather than just an ability name; apply-canon
   reads it in; `check-propagation` audits that it landed.
 - `completeness.py` skips the `.repertoire.md` companion — only the sheet carries the Vitals

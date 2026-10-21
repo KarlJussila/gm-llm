@@ -1,6 +1,6 @@
 ---
 name: npc-plan
-description: Stage the NPCs an upcoming session will feature — their disposition, agenda, what they know, how they react to each other and the PC, and any concealed tells gated behind player-initiated Insight. Use from session planning so the runner plays NPCs as independent agents instead of freezing them on the PC.
+description: Load when staging the NPCs a session will feature.
 ---
 
 # NPC Staging

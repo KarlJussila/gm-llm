@@ -19,7 +19,7 @@ Use your `todowrite` tool to create exactly these entries, then work them in ord
 ## Steps
 
 ### 1. Write entity and arc state files
-For every stateful entity and every arc, write `{slug}.state.md` (`as-of: S1`) from its starting
+For every stateful entity and every arc, write `{slug}.state.md` (`as-of: S0` — the state before the first session) from its starting
 facts: location/condition/what it's doing; arcs at their starting status (usually `dormant`).
 
 ### 2. Write `state/current.md`

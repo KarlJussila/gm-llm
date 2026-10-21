@@ -15,12 +15,15 @@ not authoring quality.
 ## The checks
 
 ### 1. Pull both files
-- Read `campaign/sessions/{N}/transcript.md` — the raw play record, your **source of
-  truth**. Read it in chunks if long; do not skim.
+- Read all of `campaign/sessions/{N}/transcript.md` — the raw play record, your **source of
+  truth**. Do not skim.
+- Read `campaign/sessions/{N}/notes.md` if present — the DM's own account. A digest claim the notes
+  support but the transcript only implies is not an invention.
 - Read `campaign/sessions/{N}/digest.md` — the digest under review.
 - The digest is organized into standard sections — Narrative, Knowledge gained, Secrets & awareness,
-  World canon, Items, Documents, Character state, Threads, Engagement, Plan vs. actual, Player
-  feedback. You're checking those against what the transcript actually shows.
+  World canon, Items, Documents, Character state, PC capabilities, Threads, Engagement, Plan vs.
+  actual, Player feedback, Combat reactions & tactics. You're checking those against what the
+  transcript actually shows.
 
 ### 2. Check coverage — transcript → digest
 Walk the transcript and confirm every **load-bearing** thing it contains made it into the digest:

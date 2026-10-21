@@ -1163,7 +1163,6 @@ class PlayApp(App):
         "wrap": {
             "handoff": "jotting down the runner's notes",
             "digest": "reading back the session",
-            "assess": "taking stock of what happened",
             "feedback": "noting your feedback",
             "canon": "filing what's new in the world",
             "arcs": "advancing the story",

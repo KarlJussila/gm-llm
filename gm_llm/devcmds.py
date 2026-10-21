@@ -73,13 +73,15 @@ def cmd_reconcile(args):
             n, commit=args.commit, prep=not args.no_prep, fresh=args.fresh)
 
         print(flush=True)
-        for label, g in (("check-digest", rr.digest), ("check-feedback", rr.feedback),
-                         ("check-propagation", rr.propagation)):
+        for label, g in (("check-digest", rr.digest), ("check-propagation", rr.propagation)):
             if g is not None:  # None = stage skipped this run (resumed past it)
                 verdict(label, g.narrative, show_report=not args.stream)
         if rr.lint_incomplete:
             print(c("33", f"┄┄ canon lint: {rr.lint_incomplete} issue(s) · "
                           f"correction dispatched ┄┄"), flush=True)
+        if rr.arcs_missed:
+            print(c("33", f"┄┄ arcs unstamped after the pass: {', '.join(rr.arcs_missed)} · "
+                          f"nudge sent ┄┄"), flush=True)
         banner(f"session {rr.n} reconciled{' · committed' if rr.committed else ''}")
         if rr.prep is not None:
             show_prep(rr.prep, show_report=not args.stream)

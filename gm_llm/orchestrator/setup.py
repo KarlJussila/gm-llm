@@ -31,7 +31,7 @@ from pathlib import Path
 
 from .archive import verdict_fields
 from . import paths
-from .phase import apply_one_correction, commit_campaign
+from .phase import commit_campaign, correct_once
 from .planner import Planner
 from .prompts import load
 from .scaffold import scaffold_campaign
@@ -171,11 +171,11 @@ class Setup:
         if not self._setup_done("GATE"):
             self._announce("GATE")
             result = self.gate.check_init()
-            corrected = apply_one_correction(self.backend, self.dm_sid, self.dm_agent, result)
+            diff = correct_once(self.backend, self.dm_sid, self.dm_agent, result, self.root)
             if self.logs and self.logs.archive:
                 self.logs.archive.emit("stage", stage="init",
                                        verdict=verdict_fields(result.narrative),
-                                       corrected=corrected)
+                                       corrected=diff is not None, diff=diff or "")
             self._mark_done("GATE")
 
         self._announce("COMMIT")

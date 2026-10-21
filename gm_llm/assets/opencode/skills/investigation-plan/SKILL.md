@@ -1,6 +1,6 @@
 ---
 name: investigation-plan
-description: Design a discovery, investigation, or mystery for an upcoming session — the clues to place, how they combine into a conclusion, and whether the player or the character (via a check) assembles it. Use from session planning when a session is meant to deliver a revelation, so the runner executes an investigation instead of architecting one mid-scene.
+description: Load when a session is meant to deliver a revelation — a discovery, investigation or mystery to plan.
 ---
 
 # Investigation Design

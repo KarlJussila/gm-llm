@@ -3,7 +3,7 @@ The score-event archive — the benchmark's capture layer (B0 in design/benchmar
 
 Play and the between-session stages already summarize every gate outcome into
 `orchestrator-checks.log` for humans; this is the same data, structured: one JSONL
-file per run, one event per runtime turn and per stage gate, drafts included. The
+file per run, one event per turn and per stage gate. The
 archive is the benchmark's ground truth — severity/category grading (`bench grade`)
 is a separate post-hoc pass over it, so a rubric revision re-grades history instead
 of invalidating it. The runtime CAPTURES here; it never judges.
@@ -12,10 +12,10 @@ Event stream shape (all events carry `ts`, ISO-8601 UTC):
   run    — the lazy header: run_id, schema version, gm-llm version. B1's bench
            runner follows it with a `conditions` event (models, temps, tier,
            fixture id) — emitted by the runner, not here.
-  turn   — one per gated runtime turn: player message, DRAFT, final, corrected,
-           both verdicts in full, canon section count, context usage.
-  stage  — one per stage gate (plan / digest / feedback / propagation / init /
-           lint), with its verdict and whether a correction was dispatched.
+  turn   — one per turn: player message, narration, tools called, context usage;
+           a combat beat adds the tracker frames around it.
+  stage  — one per stage gate (plan / digest / propagation / init / lint), with
+           its verdict, whether a correction was dispatched, and the diff it made.
   resume — a session resume; turn numbering restarts, so analysis can tell one
            run's turns from a continuation's.
 

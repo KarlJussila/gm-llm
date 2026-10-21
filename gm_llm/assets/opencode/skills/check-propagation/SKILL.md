@@ -1,53 +1,34 @@
 ---
 name: check-propagation
-description: The narrative-checker's POST role — after a session's updates have been applied, verify that everything from the session digest propagated correctly into canon and state (ledger flips, new-canon files + registry rows, state snapshots, arc bodies, documents).
+description: The narrative-checker's POST role — after a session's updates have been applied, judge whether what was played actually landed in canon and state.
 ---
 
-# check-propagation — verify the apply pass propagated everything
+# check-propagation — did what was played land?
 
-POST role. You're given a session number, after that session's updates have been applied to canon
-and state. Confirm that **everything the session established actually landed** — nothing dropped.
-The core risk you guard against: a named, load-bearing thing established in play must not silently
-vanish before it's filed.
+POST role. A session's updates have been applied. Judge whether what the session established made
+it from the record — the digest, `campaign/sessions/{N}/digest.md` — into canon and state. You
+audit propagation, not design: don't re-judge authoring choices.
 
-You audit **propagation**, not design: you're not re-judging the authoring choices, only whether
-every established fact made it from the record (the digest) into canon and state.
+Code already checks the mechanics, so leave them alone: frontmatter, links that resolve, `INDEX.md`,
+`named-only` stubs, `as-of` stamps, secret ids, and the reveal tags it flips from the ledger. Your
+job is the part code can't judge — whether the content says what play established.
 
 ## The checks
 
-### 1. Pull context
-- Read the digest `campaign/sessions/{N}/digest.md` — the structured extraction of what was played.
-  It is your **single source-of-truth record** for what the session established.
-- Read `campaign/INDEX.md` and the updated files (entity info/state, arcs, ledger, `state/*`,
-  `documents/`). You're checking the digest (the record) against the updated canon (what landed).
-
-### 2. Check new canon filed
-- For every **new or changed NPC/location/faction/event** in the digest's *World canon* section
-  (including anything the DM improvised): confirm it now has an `INDEX.md` row **and** a full file
-  built from its template — the POST pass files everything named in play; a lingering `named-only`
-  is a dropped-entity bug. Flag any that's still unfiled or stub-only.
-- For every **plan/arc divergence** in the digest's *Plan vs. actual* section: confirm it's reflected
-  in the arc body/`.state.md` (the body was actually revised, not just a status bump). Flag any
-  divergence left unreconciled.
-
-### 3. Check ledger propagation
-- For every reveal in the digest (something the PC learned): confirm the fact's home file flipped
-  `[hidden]` → `[revealed: S{N}]` with `Known to:` updated, **and** a matching line was added to
-  `campaign/characters/{pc}.knowledge.md`. Flag any reveal that updated only one layer or neither.
-- If the digest has a *Combat reactions & tactics* section (there was a fight): confirm each new
-  reaction trigger it records landed in `campaign/characters/{pc}.repertoire.md`. Flag any dropped.
-
-### 4. Check state propagation
-- For every entity whose situation changed in play (per the digest): confirm its `.state.md` was
-  updated to `as-of: S{N}`. Confirm `state/current.md` reflects the new scene, `state/calendar.md`
-  advanced, and any new/closed `threads`/`clocks` were applied. Flag stale snapshots.
-
-### 5. Check registry integrity
-- `grep` for `[[slug]]` links across `campaign/` and confirm each resolves in `INDEX.md`; confirm
-  every `INDEX.md` row points at a file that exists on disk (and vice-versa — no orphan files).
-  Flag dangling links and registry/disk mismatches.
+1. **New and changed canon.** Each NPC, place, faction and item in *World canon* and *Items* has a
+   file that says what play established about it — an improvised NPC filed with what the PC saw
+   and heard, a changed entity revised where its truth changed.
+2. **The arcs.** Each divergence in *Plan vs. actual* shows in the affected arc's body — turning
+   points, answers, position — not just in its state file.
+3. **The ledger.** Each fact in *Knowledge gained* is in the PC's knowledge ledger, a tagged secret
+   with its `[learned:<id> S{N}]`.
+4. **State.** Each entity whose situation changed has a snapshot that says so; `state/current.md`
+   is where the session ended; the calendar and clocks moved as play moved them; the threads play
+   opened, advanced or closed are reflected in `state/threads.md`.
+5. **The PC.** Capabilities in *PC capabilities* are on the sheet, a level-up included; after a
+   fight, the reaction triggers in *Combat reactions & tactics* are in the repertoire.
 
 ## Report
-Per finding: what's missing, the **source** (which digest entry it came from), the **target file**
-that should have it, and the **fix** (file the entity, flip the flag, update the snapshot, revise
-the arc body, fix the link).
+
+Per finding: what's missing, the digest entry it comes from, the file that should have it, and the
+fix.

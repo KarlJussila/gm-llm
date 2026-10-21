@@ -34,7 +34,7 @@ campaign/
 ```
 
 **State files.** NPCs, factions, arcs and the PC always have a `{slug}.state.md` beside the info
-file: where it stands *now*, as of the end of a session (`as-of: S<n>`). Locations, regions, items
+file: where it stands *now*, as of the end of a session (`as-of: S<n>`; `S0` before the first). Locations, regions, items
 and concepts get one only when they have live state that changes in play. State files are frozen
 during play and rewritten between sessions; the transcript is the live record in between. State is
 the now, not the history, and never HP, slots or coin — the player tracks those.

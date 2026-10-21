@@ -8,7 +8,7 @@ parsing. Live play has no gate (design/luna.md § Live play).
 
 Every gate returns a `StageGateResult` (one verdict + its correction prompt):
 `check_plan(plan)` — PRE, with the pre-loaded canon block; `check_digest(n)` /
-`check_feedback(n)` / `check_propagation(n)` — POST; and `check_init()` — INIT. The
+`check_propagation(n)` — POST; and `check_init()` — INIT. The
 POST/INIT checks take no preload — each is a whole-repo audit the checker reads from
 disk itself, not a single draft to match names against. Each runs as a fresh session.
 """
@@ -43,7 +43,7 @@ class Verdict:
 @dataclass
 class StageGateResult:
     """One verdict + its correction brief — every gate (plan, propagation, digest,
-    feedback, init) is this shape. What varies is only which `correct-*` prompt
+    init) is this shape. What varies is only which `correct-*` prompt
     the correction opens with and the report section's label; a session number formats
     into the prompt when the stage has one."""
     narrative: Verdict
@@ -96,10 +96,6 @@ def _propagation_brief(n: int) -> str:
 
 def _digest_brief(n: int) -> str:
     return load("check-digest-brief").format(n=n)
-
-
-def _feedback_brief(n: int) -> str:
-    return load("check-feedback-brief").format(n=n)
 
 
 def _log_check(path, label: str, verdict: "Verdict", reply, tool_input) -> None:
@@ -227,15 +223,6 @@ class Gate:
         return StageGateResult(
             narrative=self._run("check-digest", _digest_brief(n)),
             prompt="digest", label="Digest", session=n,
-        )
-
-    def check_feedback(self, n: int) -> StageGateResult:
-        """A POST gate: the curated feedback files vs. the player's actual words. No
-        preload — the checker reads the digest's feedback section and the feedback
-        files on demand."""
-        return StageGateResult(
-            narrative=self._run("check-feedback", _feedback_brief(n)),
-            prompt="feedback", label="Feedback", session=n,
         )
 
     def check_init(self) -> StageGateResult:

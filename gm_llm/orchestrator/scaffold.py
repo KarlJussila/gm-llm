@@ -83,6 +83,6 @@ def _write_state_files(campaign: Path) -> None:
     templates = _skill_templates()
     for name in _STATE_FILES:
         template = (templates / f"{name}.template.md").read_text(encoding="utf-8")
-        content = template.replace("S<n>", "S1")
+        content = template.replace("S<n>", "S0")
         out_name = name.removeprefix("state-") + ".md"
         (state_dir / out_name).write_text(content, encoding="utf-8")

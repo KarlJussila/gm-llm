@@ -1,6 +1,6 @@
 ---
 name: pacing-plan
-description: Shape an upcoming session's arc and ending — its likely scope, natural stopping points, and a cliffhanger to build toward. Use from session planning to give the runner a sense of how much session there is and where it can land, so it neither overruns nor ends after one scene.
+description: Load when shaping a session's scope, stopping points and cliffhanger.
 ---
 
 # Session Pacing

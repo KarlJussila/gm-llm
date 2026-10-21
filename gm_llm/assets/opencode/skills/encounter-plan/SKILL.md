@@ -1,6 +1,6 @@
 ---
 name: encounter-plan
-description: Design encounter seeds for an upcoming session as situations first — combat, social, exploration, or puzzle — each with a lever that makes it interesting and a complication. Combat seeds also carry a mechanical layer (combatants, starting positions, objective) the tracker loads via start_encounter, shaped for difficulty with combat-balance. Use from session planning to seed 2–4 encounters that can adapt to player choices.
+description: Load when designing a session's encounter seeds — combat, social, exploration or puzzle.
 ---
 
 # Encounter Design

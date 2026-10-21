@@ -294,7 +294,7 @@ class MockLifecycle:
             artifacts=[] if n is None else [
                 ("plan", True), ("transcript", True), ("notes", False),
                 ("digest", False)],
-            reconcile_stages=[] if (n is None or n < 2) else ["digest", "assess"],
+            reconcile_stages=[] if (n is None or n < 2) else ["digest", "feedback"],
             entities_total=12, entities_complete=11,
             incomplete=["campaign/world/npcs/magren-soley.md"],
             git_state="clean", last_commit=f"session {n or 1} plan",

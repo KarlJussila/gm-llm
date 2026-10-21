@@ -1,99 +1,48 @@
 ---
 name: apply-canon
-description: The post-session canon pass — from the session digest, author and register every new or changed entity to the completeness contract, and route verbatim documents. Loaded by the dm during the post-session apply, per-entity, once the digest exists.
+description: Load when filing a played session's new and changed entities, PC capabilities and documents into canon.
 ---
 
 # apply-canon — file the session's new and changed canon
 
-After a session, everything play established as a new or changed world-fact is brought into canon
-properly: a real, complete file for each, registered so nothing is silently re-invented later. This
-is where improvised NPCs, new locations, and shifted truths become committed canon.
+Everything play established about who or what things are becomes committed canon here: improvised
+NPCs, new places, shifted truths. The record is the digest, `campaign/sessions/{N}/digest.md` —
+chiefly *World canon*, *Items*, *Documents*, *PC capabilities* and *Combat reactions & tactics*.
+`canon-conventions` is the format.
 
-## Read first
-Read `campaign/feedback/world-build.md` if it exists — accumulated player guidance on world and
-entity quality. Treat it as binding over the defaults here.
+Read `campaign/feedback/world-build.md` if it exists: the player's standing guidance on world and
+entity quality, which wins over the defaults here.
 
-## Format and completeness are contracts — load canon-conventions
-Load `canon-conventions` and follow it for all format (frontmatter, slugs, `[[links]]`, the `INDEX`
-registry, `[hidden]`/`Known to:` flags). Every entity file must also meet the **completeness
-contract**: the required `## Vitals` block for its type, filled with committed values, plus the
-`## Stats` and `## Abilities` sections for an NPC. A file that leaves a required field blank or a
-`<placeholder>` in place is not done.
+## Entities
 
-## Input
-- The **session digest** `campaign/sessions/{N}/digest.md` — especially *World canon*, *Items*,
-  *Documents*, *Secrets & awareness*, *PC capabilities*, and *Combat reactions & tactics*.
-- The **registry** `campaign/INDEX.md` — to reuse existing slugs and resolve `named-only` entries
-  rather than duplicate.
+Every NPC, location, faction, region and significant item play introduced or changed gets filed,
+improvised ones included.
 
-## Step 1 — Create your task list
+- **Check `INDEX.md` first.** Reuse an existing slug, turn a `named-only` stub into a full file, and
+  extend a role-overlapping entity rather than create a near-twin.
+- **A new entity** gets a full file from its template: every vital filled with a committed value,
+  and an NPC's stats and abilities. Commit what the digest establishes, and decide now anything the
+  story leans on that play left open.
+- **A changed entity** — an allegiance flipped, a true nature surfaced — gets its file revised
+  where the truth changed. Where it stands now is the state pass's job, not this one.
 
-Use your `todowrite` tool to create exactly these entries, then work them in order:
+## The PC
 
-1. List the entities to file
-2. Author each entity *(one task per entity — see below)*
-3. Update the PC sheet
-4. Update the combat repertoire
-5. Route verbatim documents
-6. Self-check completeness
-7. Report
+- **Sheet.** Add to `## Known capabilities` every proficiency, spell, ability or feat the PC showed
+  or gained that isn't listed. A level-up also updates the frontmatter (level, and any subclass or
+  ability-score change).
+- **Combat repertoire**, only after a fight. Add a `WHEN … THEN …` line for each reaction trigger
+  the PC showed that isn't there yet, new entries at `Stop: no`, plus any signature tactic or rule
+  wrinkle play surfaced. Apply any prompting preference the player stated by setting that
+  reaction's `Stop:` as they asked — the toggle is theirs. Refine an entry rather than restate it,
+  and set the file's `as-of` to this session.
 
-### 1. List the entities to file
-From the digest's *World canon* and *Items*, list every new or changed NPC, location, faction,
-region, and significant item — including anything improvised at the table. Cross-check each against
-`INDEX.md`: reuse the existing slug if it's already there (and flesh out any `named-only` stub), and
-extend a role-overlapping entity rather than spawn a near-duplicate. Then **add one `Author <slug>`
-task per entity** and work them one at a time.
+## Documents
 
-### 2. Author each entity (one task per)
-- **New entity** — author the full info file `{slug}.md` from the matching `canon-conventions`
-  template, to the completeness contract: fill the `## Vitals` for its type, and an NPC's `## Stats`
-  + `## Abilities`. Commit every load-bearing fact the digest establishes, and decide + commit any
-  the plot leans on that play left implicit — never "DM decides." Add its `INDEX` row.
-- **Changed entity** — play shifted who or what it truly is (an allegiance flipped, a true nature
-  surfaced): update the info file where the truth changed, keeping it complete; update its `INDEX`
-  row if status or the one-line changed.
-- In both, link every referenced entity as a `[[slug]]` and flag any secret `[hidden]` + `Known to:`.
+Write each verbatim handout to `campaign/documents/` with its exact text, and link it from the
+entity it belongs to.
 
-### 3. Update the PC sheet
-From the digest's *PC capabilities*, append to the PC sheet's `## Known capabilities` every
-proficiency, spell, named/class ability, or feat the PC demonstrated or gained that isn't already
-listed — cross-check the current sheet so nothing duplicates. If *PC capabilities* records a level-up,
-update the `## Vitals` block (level, and any subclass or ability-score change it notes), keeping it
-complete. The **sheet** and the **repertoire** (next step) are the PC's *capability* record and both
-belong here; the PC's `.state.md` and **knowledge** ledger are reconciled by the state pass, not here.
+## Scope
 
-### 4. Update the combat repertoire
-Only if the session had a fight. From the digest's *Combat reactions & tactics*, update
-`characters/{pc}.repertoire.md` (its combat-facing sibling to the sheet — see `pc-repertoire`): add a
-`WHEN … THEN …` line for each reaction trigger the PC demonstrated that isn't already there — new
-entries at **`Stop: no`** — plus any new signature tactic or build wrinkle play surfaced. Then apply
-any **interrupt-preference** the player set in play (the digest records these): flip that reaction's
-toggle to `Stop: yes`/`Stop: no` as they asked — the toggle is the player's, so their word is
-authoritative. Cross-check the existing file so nothing duplicates; refine an entry the fight
-sharpened rather than restate it. Distil — a few good triggers, not a rules dump. Bump the file's
-`as-of` to this session. No combat → skip, no edit.
-
-### 5. Route verbatim documents
-For any verbatim handout in the digest's *Documents* (a letter, inscription, quoted passage), write
-the exact text to `campaign/documents/` and reference it from the entity it belongs to — don't
-inline it.
-
-### 6. Self-check completeness
-- Every new or changed entity from the digest is filed — nothing load-bearing left `named-only` or
-  unfiled.
-- Every entity file meets the completeness contract (Vitals filled; an NPC's Stats + Abilities
-  present).
-- Any capability the digest shows the PC gaining is on the sheet; the PC's Vitals reflect a level-up.
-- Any combat reaction/tactic the digest records is in the repertoire (if there was a fight).
-- Every `INDEX` row points at a real file and vice-versa; no dangling `[[slug]]` links.
-
-### 7. Report
-Brief: **Result** (entities filed / updated, PC sheet + repertoire changes), **Documents** routed,
-**Caveats** (anything the digest left ambiguous).
-
-## Boundaries
-- Your scope is **entity info files (the PC sheet and combat repertoire included), their `INDEX` rows,
-  and `documents/`**. Both the sheet and the repertoire are the PC's *capability* record; leave arc
-  bodies and every `.state.md` / global `state/*` snapshot — including the PC's `.state.md` and
-  **knowledge** ledger — to their own reconciliation; your job here is the entity canon.
+Entity files, the PC's sheet and repertoire, and `documents/`. The arcs, every `.state.md`, the
+`state/` dashboards and the PC's knowledge ledger are reconciled in their own steps.
