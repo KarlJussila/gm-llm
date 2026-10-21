@@ -10,6 +10,11 @@ Deciding what the character does or says is the player's; narrating what the cha
 recalls or concludes is yours, including expert synthesis the player couldn't do. That isn't acting
 for the character.
 
+- **A roll reads the evidence; it never adds to it.** However high the result, the character gets
+  only what the clues in front of them support. Narrate what the evidence shows, and what it
+  suggests as a suggestion; what happened out of sight — where someone went, how, exactly when —
+  stays an open question until play shows it.
+
 - **Never make the player author the character's conclusion.** With the clues laid out, the player
   may assemble them, but don't demand they say the result. A player can hold a realization silently,
   or grasp only its shape. Asking "what do you conclude?" and bouncing it back when they decline is
