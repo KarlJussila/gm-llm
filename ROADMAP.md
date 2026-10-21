@@ -22,7 +22,6 @@ Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in th
    start canon, structured findings.
 4. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject with file access,
    checker precision in the report.
-5. **`bench status`.** Batch state by outcome without a throwaway script.
 6. **B3 — the `low` baseline.** After luna 6 and benchmark 1–4: a Luna pilot sizes the batch, then
    bank the distribution.
 7. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the

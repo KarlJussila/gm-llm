@@ -39,6 +39,7 @@ Order (hot path first). Done is marked ✓.
 - ✓ Tagged `luna-clean-slate` at `18f8d29` (Karl: tag once the rework is complete and the product
   is ready to test). Prompts after it are protected by `refine-prompts`.
 - ✓ frontends 1: console autoplay runs through `Lifecycle` (`9db2c00`); the track is done.
+- ✓ B5, conditions and tiers (`8fabf13`).
 
 Find what's left with `git log --format=%h 1f6879a..HEAD -- <file>`: a file touched only by
 `1974a4b` (the mechanical layout change) or not at all is still MiMo prose.

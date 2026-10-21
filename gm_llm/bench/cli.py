@@ -85,6 +85,11 @@ def add_bench_parser(subparsers, engine) -> None:
                           help="emit the machine-readable summary instead of the text report")
     report_p.set_defaults(func=cmd_bench_report)
 
+    status_p = bsub.add_parser("status", help="each run in a batch by outcome (no model calls)")
+    status_p.add_argument("--out", default="bench-out",
+                          help="batch dir to read (default: bench-out)")
+    status_p.set_defaults(func=cmd_bench_status)
+
 
 
 def _watch_in_tui(args, batch_kwargs) -> list:
@@ -161,6 +166,23 @@ def cmd_bench_grade(args) -> None:
         if d["n"]:
             _note(f"agreement (n={d['n']}): severity {d['severity_match']:.0%}, "
                   f"category {d['category_match']:.0%}")
+    sys.exit(0)
+
+
+def cmd_bench_status(args) -> None:
+    """Print the batch's runs grouped by where they stand."""
+    status = runner.batch_status(args.out)
+    if not status:
+        print(f"no batch.jsonl under {args.out}")
+        sys.exit(0)
+    for state in ("complete", "reconcile pending", "resumable", "capped", "empty"):
+        runs = status.get(state, [])
+        if runs:
+            print(f"{state} ({len(runs)}):")
+            for rd in runs:
+                print(f"  {rd}")
+    if status.get("resumable") or status.get("reconcile pending"):
+        print("resume with `python -m gm_llm bench run --resume`")
     sys.exit(0)
 
 

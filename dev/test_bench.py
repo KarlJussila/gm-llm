@@ -481,6 +481,32 @@ def test_post_wrap_reconcile_failure_stays_complete(tmp):
         "a reconcile that never gated must stay visible to --resume, not be stranded"
 
 
+def test_batch_status(tmp):
+    """`bench status` sorts a batch's runs the way `--resume` classifies them, the last
+    manifest line winning for a run that was resumed."""
+    turn = {"event": "turn", "session_complete": False}
+    wrap = {"event": "turn", "session_complete": True}
+    runs = {
+        "run-a": [{"event": "conditions", "reconcile": True}, turn, wrap,
+                  {"event": "stage", "stage": "propagation"}],
+        "run-b": [{"event": "conditions", "reconcile": True}, turn, wrap],
+        "run-c": [{"event": "conditions", "reconcile": True}, turn],
+        "run-d": [{"event": "conditions", "reconcile": True}, turn, {"event": "cap"}],
+    }
+    lines = []
+    for rd, events in runs.items():
+        (tmp / rd).mkdir()
+        (tmp / rd / "archive.jsonl").write_text(
+            "\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8")
+        lines.append({"run_dir": rd, "archive": f"{rd}/archive.jsonl"})
+    lines.insert(0, {"run_dir": "run-a", "archive": None})  # superseded by its resume
+    (tmp / "batch.jsonl").write_text("\n".join(json.dumps(r) for r in lines) + "\n",
+                                     encoding="utf-8")
+    assert runner.batch_status(tmp) == {"complete": ["run-a"], "reconcile pending": ["run-b"],
+                                        "resumable": ["run-c"], "capped": ["run-d"]}
+    assert runner.batch_status(tmp / "nowhere") == {}
+
+
 def test_reconcile_pending(tmp):
     """The post-wrap gap is read off the `propagation` stage event — reconcile's last gate —
     and only under a condition that asked for reconcile at all."""
@@ -796,7 +822,7 @@ def main():
              test_post_wrap_reconcile_failure_stays_complete,
              test_cap_breach_skips_reconcile, test_combat_natural_close,
              test_combat_cap_breach, test_failed_run_survives_batch,
-             test_classify_archive, test_reconcile_pending,
+             test_classify_archive, test_batch_status, test_reconcile_pending,
              test_rate_limit_is_incomplete_not_failed,
              test_resume_continues_incomplete_run, test_resume_finishes_reconcile_only,
              test_resume_noop_when_nothing_incomplete)

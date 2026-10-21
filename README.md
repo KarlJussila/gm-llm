@@ -162,7 +162,7 @@ dev prep       [--session N] [--no-commit]                PRE: author + gate + c
 dev reconcile  [--session N] [--no-commit] [--no-prep] [--fresh]   POST: the staged pipeline
 dev lint                               entity-completeness lint, standalone
 dev ping       [N]                     probe the model's rate-limit state
-bench run | grade | report             the benchmark harness (design/benchmark.md)
+bench run | grade | report | status    the benchmark harness (design/benchmark.md)
 ```
 
 `bench run --ui tui` watches a batch in the play TUI instead of as stdout notes — a header

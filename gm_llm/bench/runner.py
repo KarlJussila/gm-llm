@@ -654,6 +654,37 @@ def _rel(path, base) -> str:
         return str(path)
 
 
+def _latest_records(manifest: Path) -> dict[str, dict]:
+    """The manifest's records by run dir, the last line winning (a resume rewrites a run)."""
+    latest: dict[str, dict] = {}
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            latest[rec.get("run_dir")] = rec
+    return latest
+
+
+def batch_status(out_dir) -> dict[str, list[str]]:
+    """`bench status`: every run in a batch's manifest by where it stands — `complete`,
+    `reconcile pending` (wrapped, the between-session pass unfinished), `resumable`,
+    `capped`, or `empty` — read from the archives alone, as `--resume` reads them."""
+    out_dir = Path(out_dir)
+    manifest = out_dir / "batch.jsonl"
+    status: dict[str, list[str]] = {}
+    if not manifest.is_file():
+        return status
+    for rd, rec in _latest_records(manifest).items():
+        arc = out_dir / rec["archive"] if rec.get("archive") else None
+        state, _ = classify_archive(arc)
+        if state == "complete" and reconcile_pending(arc):
+            state = "reconcile pending"
+        status.setdefault(state, []).append(rd)
+    return status
+
+
 def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int,
                   play_only: bool, kickoff: str, port: float, min_gap: float,
                   turn_timeout: int, stream: bool, backend_factory, gate_factory,
@@ -675,17 +706,9 @@ def _resume_batch(out_dir: Path, manifest: Path, fixture: dict, *, turn_cap: int
     if not manifest.is_file():
         note(f"no batch.jsonl under {out_dir} — nothing to resume.")
         return records
-    latest: dict[str, dict] = {}  # last manifest line wins per run dir
-    for line in manifest.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            try:
-                rec = json.loads(line)
-            except ValueError:
-                continue
-            latest[rec.get("run_dir")] = rec
 
     pending = []
-    for rd, rec in latest.items():
+    for rd, rec in _latest_records(manifest).items():
         arc = out_dir / rec["archive"] if rec.get("archive") else None
         state, done = classify_archive(arc)
         if state == "resumable":

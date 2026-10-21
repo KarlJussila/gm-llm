@@ -32,6 +32,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   now installs opencode from `@opencode/cli`.
 
 ### Added
+- **`bench status`** lists a batch's runs by where they stand — complete, reconcile pending,
+  resumable, capped — read from the archives the way `--resume` reads them.
 - **`bench run --subject-model` / `--subject-variant`** run the subject agents (`dm-runner`, `dm`,
   `author`, `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the
   product, is the only one yet). The `conditions` event stamps every agent's model and reasoning
