@@ -24,7 +24,17 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   duplicates, hidden layers and consistency. The `campaign-setup` skill is removed.
 - Player feedback lives outside the campaign in a shared player directory. The runner receives
   its standing guidance in prepared context, and agents read matching feedback when loading skills.
-  Benchmark runs use private copies of the fixture's feedback.
+  Benchmark runs use private copies of the fixture's feedback. The agents work on a copy in the
+  project's `feedback/`, which gm-llm fills from the player directory and copies curation back
+  from, so they no longer need access outside the project.
+- **Check results reveal details, not conclusions** (`discoveries`). A roll yields what the
+  character observes, and for a knowledge skill what they'd generally know, arranged so the
+  conclusion appears likely; a conclusion no such arrangement supports isn't handed over, however
+  high the roll.
+- **Every fact has one home.** `canon-conventions` § What goes where maps each kind of fact to its
+  file. A place's files hold who is based there, never who is there now or who came and went;
+  `check-propagation` flags a fact copied onto another entity's file.
+- The dice tool no longer tells the DM who rolls on every call.
 - **Requires opencode 2.1 or newer.** The backend speaks opencode's v2 server API (opencode 2.0
   dropped the v1 API), and the plugins use the v2 plugin contract, which needs no npm install:
   `gm-llm init` no longer installs plugin dependencies, and `gm-llm update` removes the
@@ -35,14 +45,20 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   order, with the campaign before and after the run and its transcript to read, and confirms or
   rejects each against rubric v2; only confirmed findings score. A run that hasn't been checked
   is skipped, and `bench report` flags it. The report adds checker and gate precision and the
-  stage correction rate; the defaulted rate now counts checked turns with no submission.
+  stage correction rate; the defaulted rate now counts checked turns with no submission. A gate's
+  correction reaches the grader as a diff, apart from the draft the gate judged.
 
 ### Added
 - **`bench check`** — the after-play checker. One rolling `play-checker` session per run reads
   the archived turns in play order against the campaign as it stood before play, and writes each
   turn's canon, conduct and combat findings to `checks-<run>.jsonl` beside the archive.
 - **`bench status`** lists a batch's runs by where they stand — complete, reconcile pending,
-  resumable, capped — read from the archives the way `--resume` reads them.
+  resumable, capped — read from the archives the way `--resume` reads them. `bench check` and
+  `bench grade` skip a run that isn't finished, and `bench run` exits non-zero unless every run
+  finished.
+- **Archived turns record the DM's own dice rolls** (`rolls`: expression and total), and the
+  checker sees them.
+- `gm-llm tokens` counts the checker's workspace (`check-ws`) as its own scope beside grading.
 - **`bench run --subject-model` / `--subject-variant`** run the subject agents (`dm-runner`, `dm`,
   `author`, `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the
   product, is the only one yet). The `conditions` event stamps every agent's model and reasoning
