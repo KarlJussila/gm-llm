@@ -1,6 +1,6 @@
 # Handoff — after the Luna prompt rework (2026-10-21)
 
-Temporary: delete this file once luna 6 is under way. The plan is `ROADMAP.md`; the design is
+Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the design is
 `design/luna.md` and `design/benchmark.md`. Run things through `.venv/bin/python` (see `CLAUDE.md`).
 
 ## Where things stand
@@ -12,6 +12,18 @@ Temporary: delete this file once luna 6 is under way. The plan is `ROADMAP.md`; 
   grader rework (`bebefa4`, `59f1914`). The suite is green.
 - **What's left needs quota or Karl:** luna 6 (live shakedown), 7 (between-session and combat
   shakedown), 8 (release); then B3 (`low` baseline), B9, B10. Packaging 1 needs a Windows box.
+
+## luna 6 in progress
+
+- `bench-out/luna6b/run-20261021T125839Z-fd89` played session 3 (28 turns, natural close) and
+  reconciled through propagation; the OpenAI usage limit hit during session 4's prep. Finish it
+  with `python -m gm_llm bench run --out bench-out/luna6b --resume`, then `bench check` and
+  `bench grade` on it (their first real-model run), then play session 4.
+- Fixed from the runs: the dice tool's DM-directed reminder (`8541c1b`); `discoveries` now says a
+  check reveals details and conclusions only through them (`3eb602c`, `c8d2e6b`, Karl's wording);
+  reconcile counts as done only once the next plan is archived (`a0a2f5f`).
+- Watched, once each: the DM rolled a PC check itself, then discarded it and asked (s3t4).
+- `bench-out/luna6` is the aborted first attempt (the dice bug); ignore it.
 
 ## The benchmark pipeline as built
 
