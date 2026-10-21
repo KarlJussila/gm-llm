@@ -1,51 +1,50 @@
-# Handoff — the Luna prompt rework (2026-10-21)
+# Handoff — after the Luna prompt rework (2026-10-21)
 
-Temporary: delete this file once ROADMAP luna 5 lands. The plan is `ROADMAP.md`; the design is
-`design/luna.md`. Run things through `.venv/bin/python` (see `CLAUDE.md`).
+Temporary: delete this file once luna 6 is under way. The plan is `ROADMAP.md`; the design is
+`design/luna.md` and `design/benchmark.md`. Run things through `.venv/bin/python` (see `CLAUDE.md`).
 
 ## Where things stand
 
-- **luna 4** landed: Sol's pass (`32d01cd`), then a cleanup (`a488787`). Setup moves on after one
-  arcs/state nudge, as reconcile does; agents read `feedback-dir` from `gm-llm.yaml` as written,
-  because opencode's file tools expand `~` and relative paths themselves.
-- **luna 5's sweep** landed (`74fb69b`): the in-play check skills and `design/runner-authority.md`
-  are gone; README, `design/README.md` and `combat.md` describe the Luna product.
-- Karl confirmed `as-of: S0` for setup. Old v0.5 campaigns on `~/Desktop` need no migration.
-- **Tag `luna-clean-slate` only when the prompt rework is complete** and the product is ready to
-  test (Karl, 2026-10-21) — the last step of ROADMAP luna 5, before the luna 6 shakedown.
+- **The prompt rework is complete** and tagged `luna-clean-slate` (`18f8d29`). Prose added after
+  the tag is trimmed only through `/refine-prompts`; a new guardrail names the failure and the run.
+- **Everything that needed no model quota has landed:** frontends 1 (`9db2c00`), B5 conditions and
+  tiers (`8fabf13`), `bench status` (`d398bbf`), B7 the after-play checker (`5718709`), B8 the
+  grader rework (`bebefa4`, `59f1914`). The suite is green.
+- **What's left needs quota or Karl:** luna 6 (live shakedown), 7 (between-session and combat
+  shakedown), 8 (release); then B3 (`low` baseline), B9, B10. Packaging 1 needs a Windows box.
 
-## The prompt rework in progress
+## The benchmark pipeline as built
 
-Rewriting every model-facing prompt still in MiMo form to `design/luna.md` § Principles and
-`CLAUDE.md` § The prompts, via the `refine-prompts` method. No tag yet, so nothing is protected.
-One commit per file or pair; Karl hasn't reviewed these yet — the skill's "approve the first few"
-step was skipped because he was away, so he should look at the first commits' diffs.
+`bench run` → `bench check` → `bench grade` → `bench report` (and `bench status` any time).
 
-Order (hot path first). Done is marked ✓.
+- `check` writes `checks-<run>.jsonl` beside each archive: one rolling `play-checker` (Luna xhigh)
+  session per run, over the run's first commit (the campaign before play).
+- `grade` reads it: one rolling `grader` (Sol 6.1 high) session per run, workspace
+  `<out>/grade-ws/<run>/` with the start campaign, `after/` (the run dir's HEAD) and
+  `transcript.md`. Each finding is confirmed or rejected against `rubric-v2.md`; only confirmed
+  ones score. Unchecked runs are skipped and the report flags them.
+- `report` shows checker and gate precision, the defaulted rate (checked turns with no
+  submission, gate verdicts passed by default) and the stage correction rate.
 
-- ✓ `social-play`, `discoveries` (`e961feb`)
-- ✓ `combat-run` (now says to roll initiative), `combat-balance` (`035459f`)
-- ✓ planning: the four `*-plan` skills, `check-plan`, its brief and correction, `setup-gate-brief`,
-  `correct-init` (`c5e8073`)
-- ✓ setup skills (`38768b3`); `dm.md`, `check-digest`, every skill description now "Load when …"
-  (`6d3cd2f`); the orchestrator's nudges and combat briefs moved out of Python into `prompts/`, and
-  `resume-prime` (`e2a20f1`)
-- ✓ B6, the autoplayer (`54f1203`, recap in the next commit): `player.md`, the `player-rolls` / `player-combat` skills
-  (scoped to the player agent by `skill` permissions, verified with `opencode debug agents` in a
-  scratch project), and the packet generated in code (`orchestrator/packet.py`). Only the
-  story-so-far recap (`dev/fixtures/hollowfell/story.md`) was written from the two transcripts by
-  Claude, not Luna — Karl to review it by hand.
+## Never run against a real model
 
-- ✓ Tagged `luna-clean-slate` at `18f8d29` (Karl: tag once the rework is complete and the product
-  is ready to test). Prompts after it are protected by `refine-prompts`.
-- ✓ frontends 1: console autoplay runs through `Lifecycle` (`9db2c00`); the track is done.
-- ✓ B5, conditions and tiers (`8fabf13`).
+- The autoplayer (`player.md`, `player-rolls`, `player-combat`), a whole `bench run`, and
+  `autoplay.run` end to end.
+- The `submit_checks` and `submit_grade` plugin tools. The `play-checker` and `grader` agents
+  load in `opencode serve` with the right model, variant and permissions (probed); the tools
+  registering and being called is unverified.
+- `opencode serve` loads a plain directory's `.opencode/` agents; only `opencode debug agents`
+  wanted a git repo (so the check and grade workspaces aren't repos).
 
-Find what's left with `git log --format=%h 1f6879a..HEAD -- <file>`: a file touched only by
-`1974a4b` (the mechanical layout change) or not at all is still MiMo prose.
+## For Karl
+
+- Review the prompt-rework commits — the `refine-prompts` "approve the first few" step was skipped
+  while you were away: `e961feb`, `035459f`, `c5e8073`, `38768b3`, `6d3cd2f`, `e2a20f1`, `54f1203`.
+- Review `dev/fixtures/hollowfell/story.md`, the story-so-far recap Claude wrote from the S1–S2
+  transcripts (it leaves out the Concordance records slip on purpose).
+- Token usage for `check-ws` isn't counted by `gm-llm tokens` (only `run-*` and `grade-ws`).
 
 ## Open, outside the repo
 
 - Karl's global `~/.config/opencode/plugin/task-signal.ts` and `plugins/dice-roller.ts` are v1
   plugins and fail to load under opencode 2.x.
-- Native Windows is untested (ROADMAP packaging 1).
