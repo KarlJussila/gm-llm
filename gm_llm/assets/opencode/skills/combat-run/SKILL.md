@@ -69,7 +69,7 @@ recalling the whole build. Each reaction there carries a player-owned **`Stop:`*
 - **`Stop: yes`** — before the triggering action resolves, **pause and offer** that reaction to the
   player. They react, it folds in, nothing is rolled back. This is the clean path.
 - **`Stop: no`** (the default) — **play on.** The player rations their one reaction a round themselves
-  and interjects at the confirm gate if they want it (below). Don't stop for these.
+  and interjects after the turn if they want it. Don't stop for these.
 
 The discipline around it is **the player's game, not yours**:
 - **Never remind the player of reactions they hold, and never nag.** A reaction the player hasn't set
@@ -80,16 +80,7 @@ The discipline around it is **the player's game, not yours**:
 - The toggle decides *whether to pause*, never *whether the reaction is worth using* — that's the
   player's call.
 
-## The confirm gate is the safety net, not a license
-
-After you resolve and narrate an NPC's action, the orchestrator presents it and waits: a bare Enter
-**confirms** (the beat commits and initiative advances); an **interjection** is treated as a reaction —
-the tracker rolls back to the start of that combatant's turn and you **replay** it with the reaction
-folded in. So a *missed* pause stays cheap and recoverable.
-
-That safety net is **not** permission to bulldoze. Proactive pause is the intended path; the gate is
-for the pause you missed, not a substitute for pausing. Resolve **one combatant at a time** so a
-retcon only ever unwinds a single turn — never batch several foes' actions into one beat.
+The interjection replay is the net for a pause you missed, not a substitute for pausing.
 
 ## Combatants are living, and lethality is real
 

@@ -1,45 +1,30 @@
 """
 The gate — run the independent checks on drafted content, in code.
 
-This is what the runner (and the dm, at planning) used to invoke as a tool; now the
-orchestrator owns it, so it runs by construction (never skipped). Each checker
+The orchestrator owns it, so it runs by construction (never skipped). Each checker
 submits its verdict via the `report_findings` tool (structured `report` + boolean
 `passed` fields); the gate reads the tool call from the session history — no text
-parsing.
+parsing. Live play has no gate (design/luna.md § Live play).
 
-Two result shapes share one spawn-and-check engine:
-  - `check(narration, player_msg)` — the RUNTIME gate (`GateResult`, two verdicts).
-    One narrative-checker session does both jobs, warm: first `check-turn` (canon
-    coherence, with the pre-loaded canon block), then `check-conduct` (table-craft
-    conduct) on the **same session** — so the canon/ledger context the canon check
-    just loaded is available when judging conduct (e.g. a PC knowledge leak). The
-    orchestrator supplies the player's message directly — it owns the loop, so
-    nothing has to fetch it from a transcript.
-  - Every stage gate returns a `StageGateResult` (one verdict + its correction
-    prompt): `check_plan(plan)` — PRE, with the pre-loaded canon block;
-    `check_digest(n)` / `check_feedback(n)` / `check_propagation(n)` — POST; and
-    `check_init()` — INIT. The POST/INIT checks take no preload — each is a
-    whole-repo audit the checker reads from disk itself, not a single draft to
-    match names against.
-
-The runtime gate reuses one session for both checks (warm context, one fewer
-spawn); every other gate runs as a fresh session per call.
+Every gate returns a `StageGateResult` (one verdict + its correction prompt):
+`check_plan(plan)` — PRE, with the pre-loaded canon block; `check_digest(n)` /
+`check_feedback(n)` / `check_propagation(n)` — POST; and `check_init()` — INIT. The
+POST/INIT checks take no preload — each is a whole-repo audit the checker reads from
+disk itself, not a single draft to match names against. Each runs as a fresh session.
 """
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from .combat import CombatState
 from .logs import append, banner
 from .prompts import load
 
 
 @dataclass
 class Verdict:
-    check: str   # which check produced this ("check-turn", "check-plan", …)
+    check: str   # which check produced this ("check-plan", "check-digest", …)
     passed: bool
     report: str  # full text, for the correction brief and logging
     # The checker gave no usable verdict (no tool call even after the nudge, or a
@@ -56,47 +41,9 @@ class Verdict:
 
 
 @dataclass
-class GateResult:
-    narrative: Verdict
-    conduct: Verdict
-    player_msg: str
-    canon_sections: int
-    # The combat-fidelity verdict, present only on a turn gated while `_in_combat`
-    # (design/combat.md § Implementation map, the gate): the committed→pending delta matched against the narrated action.
-    # None out of combat — the check doesn't run then. Runs warm between the canon and
-    # conduct checks, so it stays sequenced with them in the correction brief.
-    combat: Verdict | None = None
-
-    @property
-    def violations(self) -> bool:
-        return not (self.narrative.passed and self.conduct.passed
-                    and (self.combat is None or self.combat.passed))
-
-    def correction_brief(self) -> str:
-        """The message handed back to the runner to revise its narration. Fenced in
-        <correction>…</correction> so the runner reads it as out-of-fiction orchestrator
-        direction — a note to act on, never story input to narrate to the player. Sections
-        follow the check order: canon, combat, conduct."""
-        parts = [load("correct-turn") + "\n"]
-        if not self.narrative.passed:
-            parts.append("— Canon —\n" + self.narrative.report.strip())
-        if self.combat is not None and not self.combat.passed:
-            # A combat fix usually means a *tracker* call to reconcile state with the
-            # narration (or vice versa) — the fix note says which. That call is a side
-            # effect; the reply text is still narration-only, so it fits the header.
-            parts.append("— Combat —\n(Reconcile the tracker and your narration per each "
-                         "note — call the tracker to apply a change you narrated, or drop "
-                         "one you narrated but shouldn't have — then send the corrected "
-                         "narration.)\n" + self.combat.report.strip())
-        if not self.conduct.passed:
-            parts.append("— Conduct —\n" + self.conduct.report.strip())
-        return "<correction>\n" + "\n\n".join(parts) + "\n</correction>"
-
-
-@dataclass
 class StageGateResult:
-    """One verdict + its correction brief — every non-runtime gate (plan, propagation,
-    digest, feedback, init) is this shape. What varies is only which `correct-*` prompt
+    """One verdict + its correction brief — every gate (plan, propagation, digest,
+    feedback, init) is this shape. What varies is only which `correct-*` prompt
     the correction opens with and the report section's label; a session number formats
     into the prompt when the stage has one."""
     narrative: Verdict
@@ -137,35 +84,6 @@ def _parse_passed(tool_input: dict) -> bool | None:
     if isinstance(raw, str) and raw.strip().lower() in ("true", "false"):
         return raw.strip().lower() == "true"
     return None
-
-
-def _narrative_brief(player_msg: str, canon: str, narration: str) -> str:
-    return load("check-turn-brief").format(player_msg=player_msg, canon=canon, narration=narration)
-
-
-def _conduct_brief(player_msg: str, narration: str) -> str:
-    return load("check-conduct-brief").format(player_msg=player_msg, narration=narration)
-
-
-def _combat_brief(player_msg: str, narration: str, committed: str, pending: str) -> str:
-    return load("check-combat-brief").format(
-        player_msg=player_msg, narration=narration, committed=committed, pending=pending)
-
-
-def _combat_blobs(directory: str) -> tuple[str, str] | None:
-    """The tracker's `committed`/`pending` frames as pretty JSON for the check-combat
-    brief, or None when there's no live state file (e.g. the closing beat raced
-    `end_encounter`'s delete). READ-only — the checker never touches the mutators
-    (design/combat.md principle 6)."""
-    st = CombatState(directory)
-    if not st.exists():
-        return None
-    try:
-        s = st.load()
-    except (OSError, ValueError):
-        return None
-    return (json.dumps(s.get("committed", {}), indent=2),
-            json.dumps(s.get("pending", {}), indent=2))
 
 
 def _plan_brief(plan: str, canon: str) -> str:
@@ -283,41 +201,9 @@ class Gate:
         sid = self.backend.create_session(check)
         return self._check(sid, brief, check)
 
-    def check(self, narration: str, player_msg: str, in_combat: bool = False) -> GateResult:
-        """The RUNTIME gate. One narrative-checker session, warm across its checks:
-        first `check-turn` (canon coherence), then — while `in_combat` (design/combat.md § Implementation map, the gate)
-        — `check-combat` (the committed→pending delta vs. the narrated action), then
-        `check-conduct` (table-craft conduct), all on the same session so each check
-        benefits from the canon/ledger context `check-turn` loaded. The verdicts stay
-        separate (the correction brief and the UI distinguish canon / combat / conduct);
-        the model context is shared.
-
-        `check-combat` is chained between the two only when a combat state file is live —
-        it reads that file's two frames (never the mutators). Out of combat, or if the
-        file was already gone (the closing beat raced `end_encounter`'s delete), it's
-        skipped and the verdict is None."""
-        canon = self.preloader.build(narration)
-        sid = self.backend.create_session("check-turn")
-        narrative = self._check(sid, _narrative_brief(player_msg, canon, narration),
-                                "check-turn")
-        combat = None
-        blobs = _combat_blobs(self.backend.directory) if in_combat else None
-        if blobs:
-            combat = self._check(sid, _combat_brief(player_msg, narration, *blobs),
-                                 "check-combat")
-        conduct = self._check(sid, _conduct_brief(player_msg, narration),
-                              "check-conduct")
-        return GateResult(
-            narrative=narrative,
-            conduct=conduct,
-            combat=combat,
-            player_msg=player_msg,
-            canon_sections=canon.count("\n### "),
-        )
-
     def check_plan(self, plan: str) -> StageGateResult:
         """The PRE gate: narrative-only check of a draft session plan. The plan text
-        drives the canon preload exactly as a draft turn does (names match by name)."""
+        drives the canon preload (names match by name)."""
         canon = self.preloader.build(plan)
         return StageGateResult(
             narrative=self._run("check-plan", _plan_brief(plan, canon)),

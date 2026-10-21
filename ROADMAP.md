@@ -6,17 +6,8 @@ lands — git history is the record.
 
 ## luna — rebuild the product for GPT-6 Luna
 
-Design: [`design/luna.md`](design/luna.md). Tasks 1–5 need no model quota; 6–8 do.
+Design: [`design/luna.md`](design/luna.md). Tasks 3–5 need no model quota; 6–8 do.
 
-1. **Campaign layout v2 and the canon lint.** Generated `INDEX.md`, Vitals in frontmatter, secret
-   ids with code-flipped reveals, per-session folders; the lint widened to links, `as-of` stamps and
-   secret ids; `canon-conventions` and its templates rewritten; Hollowfell converted by script.
-   First, because every prompt and path below depends on it.
-2. **Live play and combat.** Strip the reminder, staleness, countdown and in-loop gate from the
-   loop; the new `dm-runner` prompt with `session-run` and pacing folded in; skill descriptions that
-   say when to load; one closing `task_complete` carrying narration and notes; no combat-reminder
-   resend; tracker frames in the archive; every agent pinned to Luna `xhigh`. `dev/probe_luna.py`
-   retires with it.
 3. **Reconcile and planning.** Whole-transcript digest; the assessment, `campaign-analyst` and
    `check-feedback` deleted; feedback curation on the `dm` thread; arcs through Luna-pinned
    subagents with code-verified coverage; `check-propagation` reduced to its judgment half;

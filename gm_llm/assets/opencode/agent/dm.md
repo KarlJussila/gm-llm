@@ -5,8 +5,8 @@ description: >-
   world state. Authors every campaign file itself; the orchestrator sequences
   its work. Does NOT run live sessions — that is dm-runner's job.
 mode: primary
-model: opencode/mimo-v2.5-free
-temperature: 0.2
+model: openai/gpt-6-luna
+variant: xhigh
 permission:
   '*': deny
   read: allow

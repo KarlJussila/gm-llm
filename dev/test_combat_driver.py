@@ -32,7 +32,6 @@ from gm_llm.orchestrator import (  # noqa: E402
 )
 from gm_llm.orchestrator.backend import BackendCancelled  # noqa: E402
 from gm_llm.orchestrator.combat import CombatState  # noqa: E402
-from gm_llm.orchestrator.gate import GateResult, Verdict  # noqa: E402
 
 
 # ── fakes (mirrors test_combat_loop) ─────────────────────────────────────────
@@ -87,13 +86,6 @@ class FakeBackend:
 
     def context_usage(self, sid):
         return None
-
-
-class FakeGate:
-    def check(self, narration, player_msg, in_combat=False):
-        combat = Verdict("check-combat", True, "") if in_combat else None
-        return GateResult(Verdict("check-turn", True, ""), Verdict("check-conduct", True, ""),
-                          player_msg, canon_sections=0, combat=combat)
 
 
 # ── state-file mutations ──────────────────────────────────────────────────────
@@ -158,7 +150,7 @@ def pump_and_end():
         ("The last goblin breaks and flees into the dark.", {"end_encounter"}, m_end),
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, campaign_dir=tmp, session=1, transcript=False)
     driver = _enter(game, backend)
     beats = []
 
@@ -193,7 +185,7 @@ def interject_via_callback():
         ("The last goblin turns and flees.", {"end_encounter"}, m_end),
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, campaign_dir=tmp, session=1, transcript=False)
     driver = _enter(game, backend)
     st = CombatState(tmp)
     beats, reacted = [], {"done": False}
@@ -227,7 +219,7 @@ def cancel_unwind():
         ("", (), m_cancel),  # goblin-1's draft is cancelled mid-flight
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, campaign_dir=tmp, session=1, transcript=False)
     driver = _enter(game, backend)
     st = CombatState(tmp)
 
@@ -262,7 +254,7 @@ def resume_into_combat():
         ("The last goblin flees into the dark.", {"end_encounter"}, m_end),
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, campaign_dir=tmp, session=1, transcript=False)
     check(game.in_combat, "a fresh Game recovers in_combat off the state file")
     driver = CombatDriver(game)
     check(driver.in_combat, "the driver mirrors the game's combat state")
@@ -288,7 +280,7 @@ def play_combat_uncapped():
         ("The last goblin breaks and flees into the dark.", {"end_encounter"}, m_end),
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, campaign_dir=tmp, session=1, transcript=False)
     _enter(game, backend)  # play_combat builds its own driver over the same game
     beats, slots, players, ended = [], [], [], []
 
@@ -327,7 +319,7 @@ def play_combat_hits_cap():
         # initiative is back on the PC and the fight is still on — the cap must trip here.
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, campaign_dir=tmp, session=1, transcript=False)
     _enter(game, backend)
     slots, ended = [], []
 
@@ -355,7 +347,7 @@ def play_combat_source_stops():
         ("You lunge; your blade bites deep.", {"damage", "advance_turn"}, m_act("goblin-1", 5)),
     ]
     backend = FakeBackend(tmp, script)
-    game = Game(backend, FakeGate(), campaign_dir=tmp, session=1, transcript=False)
+    game = Game(backend, campaign_dir=tmp, session=1, transcript=False)
     _enter(game, backend)
 
     source = KeyboardPlayer()

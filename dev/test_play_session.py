@@ -33,7 +33,6 @@ from gm_llm.orchestrator import (  # noqa: E402
 )
 from gm_llm.orchestrator.backend import BackendCancelled, BackendError  # noqa: E402
 from gm_llm.orchestrator.combat import CombatState  # noqa: E402
-from gm_llm.orchestrator.gate import GateResult, Verdict  # noqa: E402
 
 
 # ── fakes ─────────────────────────────────────────────────────────────────────
@@ -77,15 +76,8 @@ class FakeBackend:
         return None
 
 
-class FakeGate:
-    def check(self, narration, player_msg, in_combat=False):
-        combat = Verdict("check-combat", True, "") if in_combat else None
-        return GateResult(Verdict("check-turn", True, ""), Verdict("check-conduct", True, ""),
-                          player_msg, canon_sections=0, combat=combat)
-
-
 def _game(backend):
-    return Game(backend, FakeGate(), campaign_dir=backend.directory, session=1, transcript=False)
+    return Game(backend, campaign_dir=backend.directory, session=1, transcript=False)
 
 
 def _beat(text, tools=(), mutate=None):

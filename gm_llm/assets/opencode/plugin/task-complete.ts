@@ -19,8 +19,7 @@ import { tool } from "@opencode-ai/plugin"
  * which always knows the active phase/stage, decides what the signal means.
  *
  * Failing to call it fails safe and visibly: the stage/session simply doesn't advance and the
- * conversation continues — unlike a forgotten per-turn gate, which would silently ship unchecked
- * work. That's why a signal tool is acceptable here where the runtime gate is code-owned.
+ * conversation continues.
  */
 export const TaskCompletePlugin: Plugin = async () => {
   return {
@@ -47,10 +46,8 @@ export const TaskCompletePlugin: Plugin = async () => {
             .string()
             .optional()
             .describe(
-              "The INTERNAL channel: the deliverable the brief asked you to hand back to " +
-              "the orchestrator, when it asks for one (e.g. the end-of-session handoff " +
-              "notes). Never shown to the player, so spoilers are fine; it is filed " +
-              "verbatim, so put the complete text here, not a summary of it."
+              "Closing notes for the task — only when the task asks for them. Never shown " +
+              "to the player; filed verbatim, so put the complete text here."
             ),
         },
         async execute() {

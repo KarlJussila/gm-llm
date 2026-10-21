@@ -1,1 +1,0 @@
-**STALE — {n} turns since you last opened a skill or a campaign file.** You are running on memory, and memory is where invented facts come from. Step 2 is not optional this turn: load the beat's skill and re-read what the scene turns on before you write a word of it.

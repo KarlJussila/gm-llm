@@ -341,20 +341,18 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
             Resp("Ledger and state updated."),                                       # apply-state(1)
             Resp("Session 2 plan written."),                                         # author-brief(2)
         ],
-        # The runner: opening + three play turns (one gate-failing) + the wrap handoff.
+        # The runner: opening + three play turns, the last closing with the handoff notes.
         "dm-runner": [
             Resp("The Crossroads Inn is warm and loud. Behind the bar, Magren Soley "
-                 "works a rag over a mug. The satchel at your hip stirs."),          # opening draft
+                 "works a rag over a mug. The satchel at your hip stirs."),          # opening
             Resp("Magren's eyes flick to the satchel's faint glow. \"That's not "
-                 "the first I've seen,\" he says, low."),                            # turn 2 draft (clean)
-            Resp("Magren's jet-black hair catches the lamplight as he leans in."),   # turn 3 draft (fails canon)
+                 "the first I've seen,\" he says, low."),                            # turn 2
             Resp("Magren's grey-streaked hair catches the lamplight as he leans "
-                 "in."),                                                             # turn 3 correction
-            _task_complete(                                                          # turn 4 draft (closes)
-                "You slip out into the harbour dark. Behind you, Magren bolts the "
-                "door. — a good place to rest —"),
-            _task_complete(                                                          # handoff notes
-                "Notes filed.",
+                 "in."),                                                             # turn 3
+            _task_complete(                                                          # turn 4 (closes)
+                "",
+                player_message="You slip out into the harbour dark. Behind you, "
+                               "Magren bolts the door. — a good place to rest —",
                 notes="Dallid met Magren, who noticed the satchel's glow. Sunken "
                       "Crown seeded. Dallid left toward the wharf."),
         ],
@@ -367,24 +365,15 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
         "log-extractor": [
             Resp("Digest written for session 1.", writes=writes["digest_1"]),       # digest-brief(1)
         ],
-        # The narrative-checker: every runtime + stage check, in call order. Two fail
-        # (session-1 plan, play turn 3) to exercise the correction paths; the rest pass.
+        # The narrative-checker: every stage check, in call order (play has none). The
+        # session-1 plan fails to exercise the correction path; the rest pass.
         "narrative-checker": [
-            _pass(),                                                                 # 1  check-init
-            _fail("1. Describe Magren's grey-streaked hair per canon, not unnamed."),  # 2  check-plan s1
-            _pass(),                                                                 # 3  check-turn (opening)
-            _pass(),                                                                 # 4  check-conduct (opening)
-            _pass(),                                                                 # 5  check-turn (t2)
-            _pass(),                                                                 # 6  check-conduct (t2)
-            _fail("1. Magren's hair is grey-streaked, not jet-black "
-                  "(world/npcs/magren-soley.md)."),                                  # 7  check-turn (t3, fails)
-            _pass(),                                                                 # 8  check-conduct (t3)
-            _pass(),                                                                 # 9  check-turn (t4)
-            _pass(),                                                                 # 10 check-conduct (t4)
-            _pass(),                                                                 # 11 check-digest
-            _pass(),                                                                 # 12 check-feedback
-            _pass(),                                                                 # 13 check-propagation
-            _pass(),                                                                 # 14 check-plan s2
+            _pass(),                                                                 # check-init
+            _fail("1. Describe Magren's grey-streaked hair per canon, not unnamed."),  # check-plan s1
+            _pass(),                                                                 # check-digest
+            _pass(),                                                                 # check-feedback
+            _pass(),                                                                 # check-propagation
+            _pass(),                                                                 # check-plan s2
         ],
     }
 
@@ -476,8 +465,7 @@ class FakeBackend:
         return reply
 
     def context_usage(self, session_id: str) -> ContextUsage:
-        # Fixed, and below threshold, so the wrap countdown never latches and the
-        # session-length banner never rides in front of a player turn.
+        # Fixed, so nothing that reads it can vary between runs.
         return ContextUsage(tokens=1500, context_limit=200_000, threshold=160_000)
 
     # Resume-path surface (unused by this flow; present for parity / safety).
@@ -544,20 +532,19 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     # 2. Session-1 prep (Planner via finalize) — gate fails once, so a correction fires.
     setup.finalize()
 
-    # 3. Play: opening + three turns (turn 3 fails the gate) + a task_complete close.
-    game = Game(backend, gate, logs=None, campaign_dir=str(root / "campaign"),
+    # 3. Play: opening + three turns, the last a task_complete close carrying the notes.
+    game = Game(backend, preloader, logs=None, campaign_dir=str(root / "campaign"),
                 session=1, transcript=True)
     game.start()
-    t2 = game.turn("I watch the barkeep and let the satchel show.")
-    assert not t2.corrected, "turn 2 should pass the gate clean"
-    t3 = game.turn("I ask Magren what he knows.")
-    assert t3.corrected, "turn 3 should take the correction pass"
+    game.turn("I watch the barkeep and let the satchel show.")
+    game.turn("I ask Magren what he knows.")
     t4 = game.turn("I thank him and leave.")
     assert t4.session_complete, "turn 4 should close the session via task_complete"
+    assert "harbour dark" in t4.final, "the closing narration should reach the player"
 
-    # 4. Handoff notes (ungated).
+    # 4. Handoff: the notes already arrived with the close, so no prompt is sent.
     notes = game.handoff()
-    assert notes and notes.is_file(), "handoff should file notes"
+    assert notes and notes.is_file(), "the close should have filed notes"
     facts["notes"] = notes.read_text(encoding="utf-8")
 
     # 5. Reconcile session 1 (+ prep session 2).

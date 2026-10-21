@@ -5,8 +5,8 @@ description: >-
   deliverables — the assessment and the feedback/ files; never modifies
   canonical narrative state.
 mode: subagent
-model: opencode/mimo-v2.5-free
-temperature: 0.1
+model: openai/gpt-6-luna
+variant: xhigh
 permission:
   '*': deny
   read: allow

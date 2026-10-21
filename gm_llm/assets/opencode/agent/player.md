@@ -5,8 +5,8 @@ description: >-
   of the campaign engine; spawned by the CLI's `play` loop. Plays one character,
   blind to all canon, responding only to the DM's narration.
 mode: primary
-model: opencode/mimo-v2.5-free
-temperature: 0.8
+model: openai/gpt-6-luna
+variant: xhigh
 permission:
   '*': deny
   dice: allow

@@ -1,6 +1,6 @@
 ---
 name: combat-balance
-description: Judge and shape combat difficulty for a single-PC game by feel, not CR — action economy first, two-way rounds-to-kill, burst and save-or-die swing, the PC's outs, and the design levers (enemy count, HP/damage, starting distance, terrain, reinforcements, objective). Load at planning to shape an encounter to an intended, telegraphed difficulty, or at the table for a fast gut-check on unplanned combat. Lethality is allowed when intentional and telegraphed — never an accidental death, never a PC-rescue fudge.
+description: Load when shaping a planned encounter's difficulty, or at the table before you set the numbers for an unplanned fight.
 ---
 
 # Combat Balance — difficulty by feel, for a solo game
