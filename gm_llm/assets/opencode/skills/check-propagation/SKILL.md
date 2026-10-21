@@ -14,7 +14,8 @@ Code already checks the mechanics, so leave them alone: frontmatter, links that 
 job is the part code can't judge — whether the content says what play established.
 
 Judge each fact in the home `canon-conventions` gives it under *What goes where*. Missing from its
-home is a finding. Absent from anywhere else is not, and a fact copied onto another entity's file is.
+home is a finding. Absent from anywhere else is not, and a fact copied onto another entity's file is
+— most often a place's state recording who arrived, stayed or left.
 
 ## The checks
 

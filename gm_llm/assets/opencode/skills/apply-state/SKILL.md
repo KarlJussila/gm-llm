@@ -27,6 +27,9 @@ rewritten as of this session: where it is, its disposition toward the PC, its co
 it means to do next, with `as-of: S{N}`. The PC's own state file too. Keep each short; state is the
 now, not the history, and never HP, slots or coin.
 
+A place's state is the place's own: what has changed there. Someone arriving, staying or leaving is
+their own `## Location`, not something that happened to the place.
+
 ## The dashboards
 
 - `state/current.md` — the scene and situation the session ended on: where the next one opens.
