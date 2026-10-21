@@ -1,10 +1,10 @@
 """
 Live event tap — stream the model's output to the terminal as it happens.
 
-`Backend.prompt()` is a blocking request that returns only the final text, so a long
-`dm` apply pass (or a checker) is a black box until it finishes. This subscribes to
-`opencode serve`'s `/event` SSE stream in a background thread and prints assistant
-text as it streams, plus a concise line per tool call — each labelled by which
+`Backend.prompt()` blocks until the turn is over and returns only its result, so a long
+`dm` apply pass (or a checker) is a black box until it finishes. This subscribes to the
+server's event stream in a background thread and prints assistant text as it streams,
+plus a concise line per tool call — each labelled by which
 session/agent is talking (`dm reconcile`, `check-propagation`, the
 `log-extractor`…), so you can watch the dm and the checkers work and see exactly
 where a pass goes wrong.
@@ -19,8 +19,6 @@ import json
 import re
 import sys
 import threading
-import urllib.parse
-import urllib.request
 
 from rich.markup import escape as _escape
 
@@ -33,9 +31,8 @@ def _stdout_write(s: str) -> None:
 
 
 class EventTap:
-    def __init__(self, base: str, directory: str, write=None, markup: bool = False, on_tool=None):
-        self.base = base
-        self.directory = directory
+    def __init__(self, backend, write=None, markup: bool = False, on_tool=None):
+        self.backend = backend
         # Where rendered lines go. Default: stdout (the CLI's --stream). A consumer
         # like the TUI passes its own writer to route the live log into a pane.
         self._write_cb = write or _stdout_write
@@ -51,8 +48,7 @@ class EventTap:
         self._thread: threading.Thread | None = None
         self._lock = threading.Lock()
         self._titles: dict[str, str] = {}      # sessionID -> human title (lazy)
-        self._printed: dict[str, int] = {}     # partID -> chars already printed
-        self._seen_tools: set[str] = set()     # tool partIDs already announced
+        self._tool_names: dict[str, str] = {}  # tool call id -> tool name
         self._cur: str | None = None           # session we're mid-line on
         self._cur_pid: str | None = None       # message part we're mid-stream on
         self._body = ""                        # markup mode: buffered partial line
@@ -145,27 +141,16 @@ class EventTap:
         m = re.match(r"\s*#{1,6}\s+(.*)", line)
         return f"[bold]{_inline(m.group(1))}[/bold]" if m else _inline(line)
 
-    def _url(self, path: str) -> str:
-        return f"{self.base}{path}?directory={urllib.parse.quote(self.directory)}"
-
     def _title(self, sid: str | None) -> str:
         if not sid:
             return "?"
         if sid not in self._titles:
-            label = sid[-6:]
-            try:
-                req = urllib.request.Request(self._url(f"/session/{sid}"), method="GET")
-                with urllib.request.urlopen(req, timeout=5) as r:
-                    label = (json.loads(r.read().decode()).get("title") or label)
-            except Exception:
-                pass
-            self._titles[sid] = label
+            self._titles[sid] = self.backend.session_title(sid) or sid[-6:]
         return self._titles[sid]
 
     def _run(self) -> None:
         try:
-            req = urllib.request.Request(self._url("/event"), method="GET")
-            self._resp = urllib.request.urlopen(req)  # streaming; closed by stop()
+            self._resp = self.backend.open_events()  # streaming; closed by stop()
             for raw in self._resp:
                 if self._stop.is_set():
                     break
@@ -181,29 +166,25 @@ class EventTap:
             pass  # stream closed / server gone — nothing to do
 
     def _handle(self, evt: dict) -> None:
-        if evt.get("type") != "message.part.updated":
-            return
-        part = (evt.get("properties") or {}).get("part") or {}
-        kind = part.get("type")
-        if kind == "text":
-            self._emit_text(part.get("sessionID"), part.get("id"), part.get("text") or "", reasoning=False)
-        elif kind == "reasoning":
-            self._emit_text(part.get("sessionID"), part.get("id"), part.get("text") or "", reasoning=True)
-        elif kind == "tool":
-            self._emit_tool(part)
+        kind, data = evt.get("type"), evt.get("data") or {}
+        sid = data.get("sessionID")
+        if kind in ("session.text.delta", "session.reasoning.delta"):
+            # One block of text is a message id plus its ordinal within the message.
+            block = f"{data.get('assistantMessageID')}:{kind}:{data.get('ordinal')}"
+            self._emit_text(sid, block, data.get("delta") or "",
+                            reasoning=kind == "session.reasoning.delta")
+        elif kind == "session.tool.input.started":
+            self._tool_names[data.get("id")] = data.get("name") or "tool"
+        elif kind == "session.tool.called":
+            self._emit_tool(sid, self._tool_names.get(data.get("id"), "tool"), data.get("input") or {})
 
-    def _emit_text(self, sid: str | None, pid: str | None, full: str, reasoning: bool) -> None:
-        if not pid:
+    def _emit_text(self, sid: str | None, block: str, chunk: str, reasoning: bool) -> None:
+        if not chunk:
             return
         # Resolve the session title before taking the lock — the first lookup is an
         # HTTP fetch, and log() (called from the main thread) waits on this lock.
         title = self._title(sid)
         with self._lock:
-            prev = self._printed.get(pid, 0)
-            if len(full) <= prev:
-                return
-            chunk = full[prev:]
-            self._printed[pid] = len(full)
             if sid != self._cur:
                 self._flush_body()
                 if self._cur is not None:
@@ -211,26 +192,18 @@ class EventTap:
                 self._emit(self._style("heading", f"\n──── {title} ────\n"))
                 self._cur = sid
                 self._cur_pid = None
-            elif pid != self._cur_pid and self._cur_pid is not None:
-                # A new message part in the same session (e.g. a text part after a reasoning
-                # part, or an assistant reply resuming after a tool call). Close the previous
-                # part's line so adjacent runs don't mash together ("…PC.Good…").
+            elif block != self._cur_pid and self._cur_pid is not None:
+                # A new block in the same session (a text block after a reasoning block, or a
+                # reply resuming after a tool call). Close the previous block's line so
+                # adjacent runs don't mash together ("…PC.Good…").
                 self._flush_body()
                 self._emit("\n")
-            self._cur_pid = pid
+            self._cur_pid = block
             self._emit_body("reasoning" if reasoning else "plain", chunk)
 
-    def _emit_tool(self, part: dict) -> None:
-        pid = part.get("id")
-        if not pid or pid in self._seen_tools:
-            return
-        state = part.get("state") or {}
-        if state.get("status") not in ("running", "completed"):
-            return  # wait until the call actually fires
-        self._seen_tools.add(pid)
-        name = part.get("tool") or "tool"
-        arg = self._tool_arg(state.get("input") or {})
-        title = self._title(part.get("sessionID"))  # HTTP on first lookup — keep it off the lock
+    def _emit_tool(self, sid: str | None, name: str, inp: dict) -> None:
+        arg = self._tool_arg(inp)
+        title = self._title(sid)  # HTTP on first lookup — keep it off the lock
         with self._lock:
             self._flush_body()
             if self._cur is not None:

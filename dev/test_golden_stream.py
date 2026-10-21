@@ -472,7 +472,7 @@ class FakeBackend:
 
     def context_usage(self, session_id: str) -> ContextUsage:
         # Fixed, so nothing that reads it can vary between runs.
-        return ContextUsage(tokens=1500, context_limit=200_000, threshold=160_000)
+        return ContextUsage(tokens=1500, context_limit=200_000)
 
     # Resume-path surface (unused by this flow; present for parity / safety).
     def session_valid(self, session_id: str) -> bool:

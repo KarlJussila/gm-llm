@@ -25,8 +25,8 @@ the end.
 identical; only the prerequisites are installed differently.
 
 **Prerequisites**
-- The [opencode](https://opencode.ai) CLI, authenticated to a model provider (`opencode auth login`).
-- A JS runtime — **bun** or **node** — for opencode and the plugin dependency.
+- The [opencode](https://opencode.ai) CLI, **2.1 or newer**, authenticated to a model provider (`opencode auth login`).
+- A JS runtime — **bun** or **node** — for opencode.
 - **Python 3.10+**. [pipx](https://pipx.pypa.io) is a convenient way to install the command, but plain `pip` works too.
 
 **Install the command** (on Windows, prefer the [one-line installer](#windows-native--one-line-install) below)
@@ -38,16 +38,13 @@ pipx install .                # installs the `gm-llm` command (or: pip install .
 
 **Scaffold and run a campaign**
 ```
-gm-llm init ../my-campaign    # scaffold .opencode/ and install its plugin deps (a sibling dir)
+gm-llm init ../my-campaign    # scaffold .opencode/ (a sibling dir)
 cd ../my-campaign
 
 opencode auth login           # authenticate opencode to your model provider (once)
 gm-llm doctor                 # verify opencode / runtime / port / project
 gm-llm play                   # launch the TUI — setup runs on first play
 ```
-
-`gm-llm init` installs the `.opencode` plugin deps for you with the first package manager it
-finds (npm / bun / pnpm / yarn); pass `--no-install` to skip and do it yourself.
 
 `gm-llm play` (or a bare `gm-llm`) is the everyday command. The `dev` group carries the
 orchestrator power-commands (`status` / `prep` / `reconcile` / `lint`) for development.
@@ -68,9 +65,9 @@ Two things update independently — the `gm-llm` **tool**, and each project's co
 ```
 gm-llm update path/to/my-campaign
 ```
-`gm-llm update` overwrites the framework files (agents, skills, plugin, templates) and refreshes the
-plugin deps, while leaving your `campaign/` data, `.orchestrator` markers, and `node_modules`
-untouched. `gm-llm --version` shows what the tool is on.
+`gm-llm update` overwrites the framework files (agents, skills, plugin, templates) and removes
+what older versions left in `.opencode/` (`package.json`, `node_modules`), while leaving your
+`campaign/` data and `.orchestrator` markers untouched. `gm-llm --version` shows what the tool is on.
 
 ### Windows (native) — one-line install
 
@@ -86,7 +83,7 @@ finishes it prints the commands left to start playing:
 opencode auth login          # log in to a model provider (one time, interactive)
 mkdir ~\my-campaign          # a folder for your campaign
 cd ~\my-campaign
-gm-llm init                  # scaffold this folder + install its plugin deps
+gm-llm init                  # scaffold this folder
 gm-llm play                  # launch the game (setup runs on first play)
 ```
 Open a **new terminal** for those so `gm-llm` is on your PATH, and use **Windows Terminal** (the
@@ -97,7 +94,7 @@ installer adds it) — the legacy `cmd.exe` console renders the Textual interfac
 Run these, then follow **Install the command** and **Scaffold and run** above:
 ```
 winget install Git.Git Python.Python.3.12 OpenJS.NodeJS
-npm install -g --allow-scripts=opencode-ai opencode-ai   # the opencode CLI
+npm install -g --allow-scripts=@opencode/cli @opencode/cli   # the opencode CLI (2.x)
 
 python -m pip install --user pipx
 python -m pipx ensurepath                                 # then restart the terminal
@@ -188,7 +185,7 @@ anywhere; with no campaign in play they fall back to a `gm-llm/` folder under th
 ```
 gm_llm/                the pip-installable tool (cli, init, doctor, --version)
   assets/opencode/     the opencode assets it ships and copies into a project:
-                         agent/  skills/  plugin/  templates/  package.json
+                         agent/  skills/  plugin/  templates/
   orchestrator/        the Python orchestrator (over `opencode serve`)
   tui/                 the Textual app
 dev/                   the developer CLI + test harness (not shipped)
@@ -200,7 +197,7 @@ development and play history don't entangle:
 
 ```
 my-campaign/
-  .opencode/           the opencode assets (copied from the tool) + node_modules — gitignored
+  .opencode/           the opencode assets (copied from the tool) — gitignored
   campaign/            the generated, human-readable campaign data and play history
 ```
 

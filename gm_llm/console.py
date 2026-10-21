@@ -101,7 +101,7 @@ def with_engine(args, body, *, default_timeout=360):
     try:
         backend.start()
         if args.stream:
-            tap = EventTap(backend.base, backend.directory).start()
+            tap = EventTap(backend).start()
             note("streaming live model output (--stream)…")
         body(backend, Gate(backend, CanonPreloader(args.dir), logs=logs), logs)
         if logs.archive and logs.archive.path.is_file():

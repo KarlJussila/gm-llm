@@ -1,5 +1,3 @@
-import type { Plugin } from "@opencode-ai/plugin"
-import { tool } from "@opencode-ai/plugin"
 
 /**
  * `task_complete` — the model's explicit "I have finished the process you gave me" signal.
@@ -21,39 +19,45 @@ import { tool } from "@opencode-ai/plugin"
  * Failing to call it fails safe and visibly: the stage/session simply doesn't advance and the
  * conversation continues.
  */
-export const TaskCompletePlugin: Plugin = async () => {
-  return {
-    tool: {
-      task_complete: tool({
+export default {
+  id: "gm-task-complete",
+  async setup(ctx) {
+    await ctx.tool.transform((tools) => {
+      tools.add({
+        name: "task_complete",
         description:
-          "Signal that you have fully completed the process you were asked to run — and only " +
-          "then. Call this as your final act once every step is done and (for player-facing " +
-          "work) the player has confirmed. Calling it hands control back to the orchestrator to " +
-          "move on; do not call it while you still intend to keep talking to the player.",
-        args: {
-          // Two channels, both optional; the brief for the task in hand says which one
-          // (if any) it expects and what belongs in it.
-          player_message: tool.schema
-            .string()
-            .optional()
-            .describe(
-              "The PLAYER-VISIBLE channel: a closing message the orchestrator shows to the " +
-              "player verbatim, when the brief asks for one (e.g. the world-build stage's " +
-              "spoiler-free world overview). Nothing spoiler-bearing, and put the real " +
-              "thing here — prose you type outside the call is not surfaced."
-            ),
-          notes: tool.schema
-            .string()
-            .optional()
-            .describe(
-              "Closing notes for the task — only when the task asks for them. Never shown " +
-              "to the player; filed verbatim, so put the complete text here."
-            ),
+                "Signal that you have fully completed the process you were asked to run — and only " +
+                "then. Call this as your final act once every step is done and (for player-facing " +
+                "work) the player has confirmed. Calling it hands control back to the orchestrator to " +
+                "move on; do not call it while you still intend to keep talking to the player.",
+        // Two channels, both optional; the brief for the task in hand says which one (if any)
+        // it expects and what belongs in it.
+        input: {
+          type: "object",
+          properties: {
+            player_message: {
+              type: "string",
+              description:
+                "The PLAYER-VISIBLE channel: a closing message the orchestrator shows to the " +
+                "player verbatim, when the brief asks for one (e.g. the world-build stage's " +
+                "spoiler-free world overview). Nothing spoiler-bearing, and put the real " +
+                "thing here — prose you type outside the call is not surfaced.",
+            },
+            notes: {
+              type: "string",
+              description:
+                "Closing notes for the task — only when the task asks for them. Never shown " +
+                "to the player; filed verbatim, so put the complete text here.",
+            },
+          },
+          additionalProperties: false,
         },
+        // Called directly, not through code mode: the orchestrator reads the call by name.
+        options: { codemode: false },
         async execute() {
-          return "Acknowledged — completion recorded. The orchestrator will take it from here."
+          return { content: "Acknowledged — completion recorded. The orchestrator will take it from here." }
         },
-      }),
-    },
-  }
+      })
+    })
+  },
 }

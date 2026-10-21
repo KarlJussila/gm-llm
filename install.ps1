@@ -90,7 +90,7 @@ if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
 # Call npm.cmd, not npm: the bare name resolves to Node's unsigned npm.ps1, which a locked-down
 # execution policy blocks; the .cmd shim sidesteps that entirely.
 Say "Installing opencode"
-npm.cmd install -g --allow-scripts=opencode-ai opencode-ai | Out-Host
+npm.cmd install -g --allow-scripts=@opencode/cli @opencode/cli | Out-Host
 Sync-Path
 if (Get-Command opencode -ErrorAction SilentlyContinue) { Ok "opencode installed" }
 else { Warn "opencode not on PATH yet — a new terminal will pick it up" }

@@ -1,6 +1,3 @@
-import type { Plugin } from "@opencode-ai/plugin"
-import { tool } from "@opencode-ai/plugin"
-
 /**
  * `submit_grade` — the benchmark grader's structured grade submission.
  *
@@ -19,42 +16,52 @@ import { tool } from "@opencode-ai/plugin"
  * This is instrument, not product: it lives under `gm_llm/bench/assets/`, not the shipped
  * `gm_llm/assets/opencode/`, and is copied into the throwaway grading workspace only.
  */
-export const SubmitGradePlugin: Plugin = async () => {
-  return {
-    tool: {
-      submit_grade: tool({
+export default {
+  id: "gm-submit-grade",
+  async setup(ctx) {
+    await ctx.tool.transform((tools) => {
+      tools.add({
+        name: "submit_grade",
         description:
           "Submit your grade for the one flagged violation in your brief. This is your " +
           "final act — call it once. The harness reads severity, category, rationale, and " +
           "the duplicate marker from this call.",
-        args: {
-          severity: tool.schema
-            .string()
-            .describe(
-              "Exactly one of the rubric's severity labels (trivial | minor | major | " +
-              "critical), by its player-facing-consequence definition."
-            ),
-          category: tool.schema
-            .string()
-            .describe(
-              "Exactly one of the rubric's category labels (e.g. canon-contradiction, " +
-              "spoiler-leak, agency, dice-and-uncertainty, metagame-leak, pacing, " +
-              "rules-error, record-integrity), the single best fit."
-            ),
-          rationale: tool.schema
-            .string()
-            .describe("One sentence: why this severity and this category. Terse."),
-          duplicate_of: tool.schema
-            .string()
-            .describe(
-              "The ref id of an earlier finding in the window this one is the same " +
-              "persisting violation as, or an empty string if it is a fresh violation."
-            ),
+        input: {
+          type: "object",
+          properties: {
+            severity: {
+              type: "string",
+              description:
+                "Exactly one of the rubric's severity labels (trivial | minor | major | " +
+                "critical), by its player-facing-consequence definition.",
+            },
+            category: {
+              type: "string",
+              description:
+                "Exactly one of the rubric's category labels (e.g. canon-contradiction, " +
+                "spoiler-leak, agency, dice-and-uncertainty, metagame-leak, pacing, " +
+                "rules-error, record-integrity), the single best fit.",
+            },
+            rationale: {
+              type: "string",
+              description: "One sentence: why this severity and this category. Terse.",
+            },
+            duplicate_of: {
+              type: "string",
+              description:
+                "The ref id of an earlier finding in the window this one is the same " +
+                "persisting violation as, or an empty string if it is a fresh violation.",
+            },
+          },
+          required: ["severity", "category", "rationale", "duplicate_of"],
+          additionalProperties: false,
         },
+        // Called directly, not through code mode: the harness reads the call by name.
+        options: { codemode: false },
         async execute() {
-          return "Grade submitted. The harness will record it."
+          return { content: "Grade submitted. The harness will record it." }
         },
-      }),
-    },
-  }
+      })
+    })
+  },
 }

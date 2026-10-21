@@ -28,7 +28,7 @@ from .orchestrator import Planner, Reconciler
 from .orchestrator import paths
 from .orchestrator.paths import latest_session
 
-_PING_MODEL = os.environ.get("MODEL", "opencode/mimo-v2.5-free")
+_PING_MODEL = os.environ.get("MODEL", "openai/gpt-6-luna")
 _PING_TIMEOUT = int(os.environ.get("TIMEOUT", "45"))
 
 
@@ -107,8 +107,8 @@ def cmd_ping(args):
 
     A throttled call to the free tier *hangs* rather than erroring (hence the
     orchestrator's long turn_timeout), so a one-shot `opencode run` gets a hard timeout and
-    the timeout itself is the signal. `--pure` skips plugins and we run from a neutral dir,
-    so this probes only the model/account quota, which is per-account, not per-project.
+    the timeout itself is the signal. It runs on a private server from a neutral dir, so it
+    probes only the model/account quota, which is per-account, not per-project.
 
     A single ping clearing doesn't prove sustained throughput — a full autoplay or
     benchmark burst can re-trip a rolling-window limit even when one shot succeeds."""
@@ -118,7 +118,7 @@ def cmd_ping(args):
             print(f"probe {i}/{args.count}:", end="", flush=True)
         try:
             p = subprocess.run(
-                ["opencode", "run", "--pure", "-m", args.model, "Reply with exactly: OK"],
+                ["opencode", "run", "--standalone", "-m", args.model, "Reply with exactly: OK"],
                 cwd="/tmp", capture_output=True, text=True, timeout=args.timeout)
         except subprocess.TimeoutExpired:
             print(c("31", f"  STILL THROTTLED — call hung past {args.timeout}s"), flush=True)

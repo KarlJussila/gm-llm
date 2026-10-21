@@ -76,8 +76,7 @@ class Lifecycle:
         markup dialect for the Textual sink. None when no sink is wired."""
         if not stream_write:
             return None
-        return EventTap(self.backend.base, self.backend.directory,
-                        write=stream_write, markup=True).start()
+        return EventTap(self.backend, write=stream_write, markup=True).start()
 
     def setup_stream(self, stream_write, on_tool=None):
         """Stream the setup conversation's authoring behind the screen for its whole
@@ -86,8 +85,7 @@ class Lifecycle:
         progress ticker in the main scene."""
         if not stream_write:
             return None
-        return EventTap(self.backend.base, self.backend.directory,
-                        write=stream_write, markup=True, on_tool=on_tool).start()
+        return EventTap(self.backend, write=stream_write, markup=True, on_tool=on_tool).start()
 
     def play_stream(self, stream_write):
         """Stream live model output during a play turn or meta call. The caller

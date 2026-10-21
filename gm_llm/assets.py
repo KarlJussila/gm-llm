@@ -13,7 +13,7 @@ from pathlib import Path
 # The top-level names under the assets root that `init` scaffolds into a project's
 # `.opencode/`. Everything opencode reads — nothing Python-only.
 OPENCODE_ASSET_NAMES = [
-    "agent", "skills", "plugin", "templates", "package.json", "package-lock.json",
+    "agent", "skills", "plugin", "templates",
 ]
 
 

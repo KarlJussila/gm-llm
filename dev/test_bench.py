@@ -491,7 +491,7 @@ def test_resume_finishes_reconcile_only(tmp):
 
     def fakes(on_reconcile):
         return dict(
-            init=lambda d: None, install=lambda d: (True, "noop"),
+            init=lambda d: None,
             backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
             gate_factory=lambda backend, directory, logs: FakeGate(),
             lifecycle_factory=_lifecycle_factory(on_reconcile), note=lambda m: None)
@@ -524,13 +524,13 @@ def test_resume_finishes_reconcile_only(tmp):
 
 def test_cap_breach_skips_reconcile(tmp):
     out = tmp / "out"
-    _make_template(out / "template")  # pre-seed so prepare_template reuses (no init/install)
+    _make_template(out / "template")  # pre-seed so prepare_template reuses (no init)
     fixture = _make_fixture(tmp / "fixture")
 
     reconciled = []
     records = runner.run_batch(
         fixture, out, runs=1, turn_cap=3,
-        init=lambda d: None, install=lambda d: (True, "noop"),
+        init=lambda d: None,
         **_fakes(complete_after=None, reconcile_calls=reconciled))
 
     assert records[0]["outcome"] == "cap" and records[0]["turns"] == 3, records
@@ -599,7 +599,7 @@ def test_failed_run_survives_batch(tmp):
 
     records = runner.run_batch(
         fixture, out, runs=2, turn_cap=5,
-        init=lambda d: None, install=lambda d: (True, "noop"),
+        init=lambda d: None,
         backend_factory=flaky_backend,
         gate_factory=lambda backend, directory, logs: FakeGate(),
         lifecycle_factory=_lifecycle_factory(), note=lambda m: None)
@@ -697,7 +697,7 @@ def test_rate_limit_is_incomplete_not_failed(tmp):
 
     records = runner.run_batch(
         fixture, out, runs=1, turn_cap=10,
-        init=lambda d: None, install=lambda d: (True, "noop"),
+        init=lambda d: None,
         backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
         gate_factory=lambda backend, directory, logs: FakeGate(),
         lifecycle_factory=_lifecycle_factory(), note=lambda m: None)
@@ -723,7 +723,7 @@ def test_resume_continues_incomplete_run(tmp):
 
     def fakes(**over):
         return dict(
-            init=lambda d: None, install=lambda d: (True, "noop"),
+            init=lambda d: None,
             backend_factory=lambda directory, **kw: ScriptedBackend(directory, state),
             gate_factory=lambda backend, directory, logs: FakeGate(),
             lifecycle_factory=_lifecycle_factory(reconciled.append),
@@ -759,7 +759,7 @@ def test_resume_noop_when_nothing_incomplete(tmp):
     _make_template(out / "template")
     fixture = _make_fixture(tmp / "fixture")
     records = runner.run_batch(fixture, out, resume=True, note=lambda m: None,
-                               init=lambda d: None, install=lambda d: (True, "noop"))
+                               init=lambda d: None)
     assert records == [], "nothing to resume over an empty/complete batch"
 
 

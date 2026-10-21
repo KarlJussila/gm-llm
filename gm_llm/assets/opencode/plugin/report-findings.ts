@@ -1,5 +1,3 @@
-import type { Plugin } from "@opencode-ai/plugin"
-import { tool } from "@opencode-ai/plugin"
 
 /**
  * `report_findings` — the checker's structured verdict submission.
@@ -15,30 +13,40 @@ import { tool } from "@opencode-ai/plugin"
  *
  * Modeled after `task_complete`: same "signal tool the orchestrator reads" pattern.
  */
-export const ReportFindingsPlugin: Plugin = async () => {
-  return {
-    tool: {
-      report_findings: tool({
+export default {
+  id: "gm-report-findings",
+  async setup(ctx) {
+    await ctx.tool.transform((tools) => {
+      tools.add({
+        name: "report_findings",
         description:
           "Submit your verification report and verdict. This is your final act — call this " +
           "once with your findings and whether the content passed. The orchestrator reads " +
           "the verdict from this call.",
-        args: {
-          report: tool.schema
-            .string()
-            .describe(
-              "Your findings. On a clean pass: empty string or 'No violations.' " +
-              "On violations: a numbered list — for each finding: what's wrong, the source, " +
-              "and the fix instruction. Terse and specific; this is acted on directly."
-            ),
-          passed: tool.schema
-            .boolean()
-            .describe("true if you found no violations; false if you found any."),
+        input: {
+          type: "object",
+          properties: {
+            report: {
+              type: "string",
+              description:
+                "Your findings. On a clean pass: empty string or 'No violations.' " +
+                "On violations: a numbered list — for each finding: what's wrong, the source, " +
+                "and the fix instruction. Terse and specific; this is acted on directly.",
+            },
+            passed: {
+              type: "boolean",
+              description: "true if you found no violations; false if you found any.",
+            },
+          },
+          required: ["report", "passed"],
+          additionalProperties: false,
         },
+        // Called directly, not through code mode: the orchestrator reads the call by name.
+        options: { codemode: false },
         async execute() {
-          return "Report submitted. The orchestrator will act on your verdict."
+          return { content: "Report submitted. The orchestrator will act on your verdict." }
         },
-      }),
-    },
-  }
+      })
+    })
+  },
 }

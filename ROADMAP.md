@@ -51,14 +51,9 @@ Design: [`design/frontends.md`](design/frontends.md).
 
 The portability rules are `dev/MAINTAINING.md` § Portability.
 
-1. **Port `Backend` to opencode's v2 API.** opencode 2.0 (Sep 2026) dropped the v1 HTTP API the
-   backend speaks: the API now lives under `/api` behind basic auth (`opencode` /
-   `OPENCODE_SERVER_PASSWORD`), with new session, prompt, revert, interrupt and event routes (the
-   spec is at `/openapi.json`). Nothing live runs until this lands, so it blocks luna 6–7. A 1.18
-   binary does not work around it: its ChatGPT OAuth token no longer refreshes.
-2. **Validate on native Windows.** Probe opencode command resolution, process-tree kill, paths with
-   spaces and ANSI on a real Windows box. If opencode itself is the problem, pin a known-good version
-   and document it.
+1. **Validate on native Windows.** Probe the `@opencode/cli` install, opencode command resolution,
+   process-tree kill, paths with spaces and ANSI on a real Windows box. If opencode itself is the
+   problem, pin a known-good version and document it.
 
 ## Open questions
 

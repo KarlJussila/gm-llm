@@ -626,7 +626,7 @@ def test_grade_batch_double(tmp):
         return FakeGraderBackend(grades=grades)
 
     result = grade.grade_batch(out, backend_factory=backend_factory,
-                               install=lambda d: (True, "noop"), double=True, note=lambda m: None)
+                               double=True, note=lambda m: None)
     assert (out / "grade-ws" / ".opencode" / "agent" / "grader.md").is_file(), "workspace assembled"
     assert len(result["graded"]) == 1
     assert result["double"]["n"] == 1 and result["double"]["severity_match"] == 1.0

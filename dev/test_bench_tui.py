@@ -106,7 +106,7 @@ def _fakes(*, complete_after=None, delay=0.0, gate=None, reconciled=None):
         return _PacedBackend(directory, complete_after=complete_after, delay=delay,
                              gate=gate if runs["n"] == 1 else None)
 
-    return dict(init=lambda d: None, install=lambda d: (True, "noop"),
+    return dict(init=lambda d: None,
                 backend_factory=backend_factory,
                 gate_factory=lambda backend, directory, logs: tb.FakeGate(),
                 lifecycle_factory=tb._lifecycle_factory(

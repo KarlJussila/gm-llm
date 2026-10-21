@@ -36,10 +36,9 @@ Three pieces:
     violation that persists across consecutive turns `duplicate_of` an earlier one, and
     the persisting violation doesn't multiply the score.
 
-The expensive seams (Backend, the plugin-deps install) are injected so `dev/test_grade.py`
-can drive the whole pass — brief construction, the grades-file shape, idempotence, the
-ungraded-after-nudge path, dedup, and `--double` agreement — with no network, npm, or
-opencode. Stdlib only.
+The expensive seam (Backend) is injected so `dev/test_grade.py` can drive the whole pass —
+brief construction, the grades-file shape, idempotence, the ungraded-after-nudge path,
+dedup, and `--double` agreement — with no network or opencode. Stdlib only.
 """
 
 from __future__ import annotations
@@ -55,7 +54,6 @@ from pathlib import Path
 
 from ..orchestrator import Backend, Logs
 from ..orchestrator.logs import debug_enabled
-from ..project import install_plugin_deps
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 RUBRIC = "v1"                # the rubric version this pass grades against
@@ -103,12 +101,10 @@ def _apply_model(agent_md: str, model: str | None) -> str:
     return re.sub(r"(?m)^model:.*$", f"model: {model}", agent_md, count=1)
 
 
-def assemble_grade_ws(out_dir, *, model: str | None = None, install=install_plugin_deps,
-                      note=_quiet) -> Path:
-    """Assemble (once) the minimal grading workspace under `<out_dir>/grade-ws/`: the
-    grader agent, the `submit_grade` plugin, and the one npm dep it imports. Idempotent —
-    a re-invoked grade pass reuses an existing `.opencode/` (never re-pays the install) but
-    always re-writes the agent file so a changed `--model` takes effect. Returns the ws dir."""
+def assemble_grade_ws(out_dir, *, model: str | None = None, note=_quiet) -> Path:
+    """Assemble the minimal grading workspace under `<out_dir>/grade-ws/`: the grader agent
+    and the `submit_grade` plugin. Re-written on every pass, so a changed `--model` takes
+    effect. Returns the ws dir."""
     ws = Path(out_dir) / WS_NAME
     opencode = ws / ".opencode"
     agent_dir = opencode / "agent"
@@ -121,14 +117,7 @@ def assemble_grade_ws(out_dir, *, model: str | None = None, install=install_plug
     grader_md = _apply_model((ASSETS / "grader.md").read_text(encoding="utf-8"), model)
     (agent_dir / f"{GRADER_AGENT}.md").write_text(grader_md, encoding="utf-8")
     shutil.copy2(ASSETS / "submit-grade.ts", plugin_dir / "submit-grade.ts")
-    shutil.copy2(ASSETS / "package.json", opencode / "package.json")
-
-    if fresh:
-        note(f"preparing grading workspace at {ws} (plugin deps)…")
-        ok, msg = install(opencode)
-        note(msg if ok else f"WARNING: {msg}")
-    else:
-        note(f"reusing grading workspace at {ws}")
+    note(f"{'prepared' if fresh else 'refreshed'} grading workspace at {ws}")
     return ws
 
 
@@ -145,8 +134,7 @@ def instrument_fingerprint(assets=ASSETS) -> dict:
     the label records which rubric was *meant*, the hash records which one actually ran.
 
     Every file under `assets/` counts — the rubric is the criteria, `grader.md` is the
-    standing brief, `submit-grade.ts` is the schema a grade must fit, and `package.json`
-    pins the dep that plugin imports. Hashing the assets rather than the assembled
+    standing brief, and `submit-grade.ts` is the schema a grade must fit. Hashing the assets rather than the assembled
     workspace is deliberate: `assemble_grade_ws` rewrites all of them from here on every
     pass, so the two agree by construction, and the one thing that legitimately differs —
     a `--model` override — is already recorded separately in the header's `grader` block.
@@ -549,7 +537,7 @@ def unmanifested_archives(out_dir) -> list[Path]:
 def grade_batch(out_dir, *, model: str | None = None, force: bool = False,
                 double: bool = False, sample: int | None = None, port: int = 4181,
                 min_gap: float = 1.0, turn_timeout: int = 360,
-                backend_factory=_default_backend, install=install_plugin_deps,
+                backend_factory=_default_backend,
                 note=_quiet) -> dict:
     """Grade every archive in a batch `out_dir`. Assembles the grading workspace once,
     boots one Backend over it, and grades each run to a `grades-*.jsonl` beside its
@@ -570,7 +558,7 @@ def grade_batch(out_dir, *, model: str | None = None, force: bool = False,
     instrument = instrument_fingerprint()
     note(f"instrument: rubric {RUBRIC} · {instrument.get('sha256', instrument.get('error'))} "
          f"({instrument.get('files', 0)} file(s))")
-    ws = assemble_grade_ws(out_dir, model=model, install=install, note=note)
+    ws = assemble_grade_ws(out_dir, model=model, note=note)
     meta = grader_meta(ws)
     logs = Logs.under(project=ws, debug=debug_enabled())
     backend = backend_factory(ws, port=port, min_gap=min_gap, turn_timeout=turn_timeout,

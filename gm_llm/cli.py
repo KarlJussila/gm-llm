@@ -38,22 +38,10 @@ def _is_checkout() -> bool:
 
 # ── project commands ─────────────────────────────────────────────────────────
 
-def _install_deps(dest: Path, skip: bool, *, verb: str) -> None:
-    """Shared by init/update: run (or skip) the plugin-deps install and report."""
-    if skip:
-        print("skipped plugin-deps install (--no-install).")
-        return
-    from .project import install_plugin_deps
-    print(f"{verb} plugin deps (dice / report / task-complete) …")
-    ok, msg = install_plugin_deps(dest)
-    print(f"  {'✓' if ok else '✗'} {msg}")
-
-
 def _cmd_init(args) -> int:
     from .project import init_project
     dest = init_project(Path(args.dir), force=args.force)
     print(f"initialized opencode assets in {dest}")
-    _install_deps(dest, args.no_install, verb="installing")
     print("next: `gm-llm doctor` to check your environment, then `gm-llm play`.")
     return 0
 
@@ -68,8 +56,7 @@ def _cmd_update(args) -> int:
         return 1
     dest = init_project(directory, force=True)   # overwrite the framework assets
     print(f"updated framework assets in {dest} (to gm-llm {__version__})")
-    _install_deps(dest, args.no_install, verb="refreshing")
-    print("your campaign/ data, .orchestrator markers, and node_modules were left untouched.")
+    print("your campaign/ data and .orchestrator markers were left untouched.")
     return 0
 
 
@@ -282,15 +269,13 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="emit the machine-readable reading instead of the text report")
     p.set_defaults(func=_cmd_tokens)
 
-    p = sub.add_parser("init", help="scaffold opencode assets into a project + install plugin deps")
+    p = sub.add_parser("init", help="scaffold opencode assets into a project")
     p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")
     p.add_argument("--force", action="store_true", help="overwrite existing assets")
-    p.add_argument("--no-install", action="store_true", help="skip installing the .opencode plugin deps")
     p.set_defaults(func=_cmd_init)
 
     p = sub.add_parser("update", help="refresh an existing project's framework assets to this version")
     p.add_argument("dir", nargs="?", default=".", help="project directory (default: cwd)")
-    p.add_argument("--no-install", action="store_true", help="skip refreshing the .opencode plugin deps")
     p.set_defaults(func=_cmd_update)
 
     p = sub.add_parser("doctor", help="check the environment (opencode, runtime, port)")

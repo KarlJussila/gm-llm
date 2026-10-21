@@ -1,7 +1,7 @@
 """
 The `bench run` engine — promote the autoplay harness to benchmark grade.
 
-A batch prepares one **template** project once (`gm-llm init` + plugin deps), then for
+A batch prepares one **template** project once (`gm-llm init`), then for
 each run stamps out a fresh project dir from that template plus the fixture's frozen
 `campaign/`, plays it through the same gated loop the product uses, and leaves a
 condition-stamped score archive behind. The measurement contract (design/benchmark.md) lives
@@ -24,9 +24,9 @@ Two invariants this module owns:
     can't masquerade as one that did.
 
 Everything expensive is injected (`backend_factory`, `gate_factory`, `lifecycle_factory`,
-and the `init`/`install` callables on `prepare_template`) so `dev/test_bench.py` can
+and the `init` callable on `prepare_template`) so `dev/test_bench.py` can
 exercise the assembly, conditions, loop, cap, and batch-resilience logic with no
-network, no npm, and no opencode. The defaults wire up the real orchestrator.
+network and no opencode. The defaults wire up the real orchestrator.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ from ..orchestrator import (
 from ..orchestrator import paths
 from ..orchestrator.backend import BackendCancelled
 from ..orchestrator.logs import debug_enabled
-from ..project import init_project, install_plugin_deps
+from ..project import init_project
 
 # Which agents' model/temperature get stamped into the conditions event. dm-runner and
 # narrative-checker are the live subject+instrument; player is the autoplayer; dm is the
@@ -212,21 +212,17 @@ def _emit_conditions(logs, fixture: dict, *, turn_cap: int, reconcile: bool,
 
 # ── run-dir assembly ─────────────────────────────────────────────────────────
 
-def prepare_template(out_dir, *, init=init_project, install=install_plugin_deps,
-                     note=_quiet) -> Path:
+def prepare_template(out_dir, *, init=init_project, note=_quiet) -> Path:
     """Prepare (once) the batch's template project under `out_dir/template`: lay in the
-    opencode assets and install the plugin deps. Idempotent — a re-invoked batch with an
-    existing template reuses it, so runs never re-pay the npm install. Runs copytree this
-    into place; the fixture's `campaign/` is layered on top per run."""
+    opencode assets. Idempotent — a re-invoked batch with an existing template reuses it.
+    Runs copytree this into place; the fixture's `campaign/` is layered on top per run."""
     template = Path(out_dir) / "template"
     if (template / ".opencode").is_dir():
         note(f"reusing template at {template}")
         return template
-    note(f"preparing template at {template} (init + plugin deps)…")
+    note(f"preparing template at {template}…")
     template.mkdir(parents=True, exist_ok=True)
     init(template)
-    ok, msg = install(template / ".opencode")
-    note(msg if ok else f"WARNING: {msg}")
     return template
 
 
@@ -410,7 +406,7 @@ def run_once(run_dir, fixture: dict, *, turn_cap: int = 50, play_only: bool = Fa
         backend.start()
         if stream:
             from ..orchestrator.stream import EventTap
-            tap = EventTap(backend.base, backend.directory).start()
+            tap = EventTap(backend).start()
         reconcile = not play_only
 
         character = _character(run_dir, fixture, note)
@@ -725,7 +721,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
               play_only: bool = False, kickoff: str = "Let's begin the session.",
               port: int = 4181, min_gap: float = 1.0, turn_timeout: int = 360,
               stream: bool = False, resume: bool = False, init=init_project,
-              install=install_plugin_deps, backend_factory=_default_backend,
+              backend_factory=_default_backend,
               gate_factory=_default_gate, lifecycle_factory=_default_lifecycle,
               hooks: "BatchHooks | None" = None, note=_quiet) -> list[dict]:
     """Run a batch of `runs` plays of `fixture_path` under `out_dir`, appending one JSONL
@@ -763,7 +759,7 @@ def run_batch(fixture_path, out_dir, *, runs: int = 1, turn_cap: int = 50,
             stream=stream, backend_factory=backend_factory, gate_factory=gate_factory,
             lifecycle_factory=lifecycle_factory, hooks=hooks, note=note)
 
-    template = prepare_template(out_dir, init=init, install=install, note=note)
+    template = prepare_template(out_dir, init=init, note=note)
 
     records: list[dict] = []
     for i in range(runs):

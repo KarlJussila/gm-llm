@@ -18,7 +18,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
 from gm_llm.orchestrator import Game, paths  # noqa: E402
-from gm_llm.orchestrator.backend import Backend  # noqa: E402
+from gm_llm.orchestrator.backend import Backend, read_turn  # noqa: E402
 from gm_llm.orchestrator.loop import join_narration, session_is_complete  # noqa: E402
 
 
@@ -136,29 +136,42 @@ def join_narration_dedupes():
     print("join_narration_dedupes\n")
 
 
-def narration_before_a_trailing_tool_call_is_not_lost():
-    """opencode splits a turn at each tool call and the POST returns only the last message —
-    so narration written before a trailing tool call must be recovered from history."""
+def a_turn_reads_back_whole():
+    """A turn can span several assistant messages — narration, then a trailing tool call —
+    and all of it comes back: the narration as the reply, the call as a signal."""
     tmp = tempfile.mkdtemp()
     scene = "The tavern falls quiet as the door swings shut."
-    history = [
-        {"info": {"role": "user"}, "parts": [{"type": "text", "text": "<player>…"}]},
-        {"info": {"role": "assistant"}, "parts": [{"type": "text", "text": scene}]},
-        {"info": {"role": "assistant"},
-         "parts": [{"type": "tool", "tool": "todowrite", "state": {"input": {"todos": []}}}]},
+    turn = [
+        {"type": "assistant", "content": [{"type": "text", "text": scene}]},
+        {"type": "assistant", "content": [{"type": "tool", "name": "task_complete",
+                                           "state": {"input": {"notes": "n"}}}]},
+        {"type": "idle", "outcome": "succeeded"},
     ]
-    tool_only = {"parts": [{"type": "tool", "tool": "todowrite"}]}
-
     backend = Backend(directory=tmp, min_call_gap=0.0)
-    backend._raw_get = lambda path, timeout=30: history
-    backend._post_watched = lambda path, body, session_id: tool_only
+    backend._use_agent = lambda sid, agent: None
+    backend._send = lambda sid, text: "msg_1"
+    backend._await_turn = lambda sid, user_id: turn
 
-    check(backend._run_prompt("sid", "dm-runner", "go") == scene,
-          "the stranded narration comes back as the reply")
-    backend._raw_get = lambda path, timeout=30: history[:1] + history[2:]
-    check(backend._run_prompt("sid", "narrative-checker", "go") == "",
-          "a genuinely text-free turn still returns empty rather than retrying")
-    print("narration_before_a_trailing_tool_call_is_not_lost\n")
+    reply = backend.prompt_full("sid", "dm-runner", "go")
+    check(reply.text == scene, "the narration before the trailing call is the reply")
+    check(reply.tools == {"task_complete"} and reply.tool_inputs["task_complete"] == {"notes": "n"},
+          "the trailing call is read as a signal")
+
+    backend._await_turn = lambda sid, user_id: turn[1:]
+    check(backend.prompt("sid", "narrative-checker", "go") == "",
+          "a tool-call-only turn is a reply, not a failure to retry")
+    print("a_turn_reads_back_whole\n")
+
+
+def a_failed_turn_is_an_error():
+    texts, calls, error = read_turn([
+        {"type": "assistant", "content": [{"type": "text", "text": "partial"}]},
+        {"type": "idle", "outcome": "failed", "error": {"message": "rate limited"}},
+    ])
+    check(error == "rate limited", "a failed idle surfaces its error")
+    check(read_turn([{"type": "idle", "outcome": "interrupted"}])[2] == "turn interrupted",
+          "an interrupted turn is an error too")
+    print("a_failed_turn_is_an_error\n")
 
 
 if __name__ == "__main__":
@@ -166,5 +179,6 @@ if __name__ == "__main__":
     the_closing_call_carries_narration_and_notes()
     missing_notes_fall_back_to_one_request()
     join_narration_dedupes()
-    narration_before_a_trailing_tool_call_is_not_lost()
+    a_turn_reads_back_whole()
+    a_failed_turn_is_an_error()
     print("OK — runner turn: the message, the close, and the reply coming back whole.")

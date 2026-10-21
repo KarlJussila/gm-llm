@@ -1,5 +1,3 @@
-import type { Plugin } from "@opencode-ai/plugin"
-import { tool } from "@opencode-ai/plugin"
 
 /**
  * A TTRPG dice expression evaluator.
@@ -568,10 +566,12 @@ function renderDice(dice: Die[]): string {
 // Plugin
 // ---------------------------------------------------------------------------
 
-export const DiceRollerPlugin: Plugin = async () => {
-  return {
-    tool: {
-      dice: tool({
+export default {
+  id: "gm-dice-roller",
+  async setup(ctx) {
+    await ctx.tool.transform((tools) => {
+      tools.add({
+        name: "dice",
         description: `Roll TTRPG dice from a standard dice expression.
 
 WHO ROLLS: in play, the PLAYER rolls their own character's actions — attacks, saving throws, and
@@ -602,14 +602,16 @@ Dice terms (NdX, N optional):
 Aliases: adv -> 2d20kh1, dis -> 2d20kl1
 
 Examples: d20+5 · 4d6dl1 · 6d6!kh3 · 2d6+1d8+3 · 8d10>=8 · (2d6+3)*2`,
-
-        args: {
-          expression: tool.schema
-            .string()
-            .describe("Dice expression, e.g. '4d6dl1' or '(2d6+3)*2'"),
+        input: {
+          type: "object",
+          properties: {
+            expression: { type: "string", description: "Dice expression, e.g. '4d6dl1' or '(2d6+3)*2'" },
+          },
+          required: ["expression"],
+          additionalProperties: false,
         },
-
-        async execute(args) {
+        options: { codemode: false },
+        async execute(args: { expression: string }) {
           try {
             const ast = parse(tokenize(args.expression))
             const log: DiceLogEntry[] = []
@@ -630,16 +632,12 @@ Examples: d20+5 · 4d6dl1 · 6d6!kh3 · 2d6+1d8+3 · 8d10>=8 · (2d6+3)*2`,
               "for the player's character, discard it and ask the player to roll, then use their " +
               "result. Roll here only for what's outside the player's control: NPCs, hazards, the world."
             const output = lines.join("\n") + reminder
-            return {
-              title: `🎲 ${args.expression.trim()} = ${fmt(total)}`,
-              output,
-              metadata: { total, rolls: log },
-            }
+            return { content: output, metadata: { total, rolls: log } }
           } catch (error: any) {
-            return `Error: ${error.message}`
+            return { content: `Error: ${error.message}` }
           }
         },
-      }),
-    },
-  }
+      })
+    })
+  },
 }

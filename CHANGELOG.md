@@ -9,6 +9,13 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 
 ## [Unreleased]
 
+### Changed
+- **Requires opencode 2.1 or newer.** The backend speaks opencode's v2 server API (opencode 2.0
+  dropped the v1 API), and the plugins use the v2 plugin contract, which needs no npm install:
+  `gm-llm init` no longer installs plugin dependencies, and `gm-llm update` removes the
+  `package.json` and `node_modules` older versions left in `.opencode/`. On Windows the installer
+  now installs opencode from `@opencode/cli`.
+
 ### Added
 - **Each archived turn records what the runner opened while drafting it** (`tools`, `stale`), so
   whether a session was played from canon or from memory is readable without the grader.

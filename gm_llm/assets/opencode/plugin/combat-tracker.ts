@@ -1,5 +1,3 @@
-import type { Plugin } from "@opencode-ai/plugin"
-import { tool } from "@opencode-ai/plugin"
 import { promises as fs } from "node:fs"
 import * as path from "node:path"
 import {
@@ -30,10 +28,9 @@ import {
 
 /**
  * `combat-tracker` — the file-backed adapter around the pure engine in `combat/engine.ts`
- * (design/combat.md § Tracker). This file is the one opencode auto-discovers and loads, so it exports **only**
- * the plugin: opencode's loader (`Glob.scan("{plugin,plugins}/*.{ts,js}")` → iterate every export)
- * treats each named export as a plugin, so the engine's helpers live one directory down, out of the
- * scan. This adapter is a thin ring: load state → call the engine → save state → echo the roster.
+ * (design/combat.md § Tracker). opencode loads every direct child of `plugin/` as a plugin, so the
+ * engine lives one directory down, out of the scan. This adapter is a thin ring: load state → call
+ * the engine → save state → echo the roster.
  */
 
 // ---------------------------------------------------------------------------
@@ -74,262 +71,219 @@ async function withState(
 // Plugin
 // ---------------------------------------------------------------------------
 
-export const CombatTrackerPlugin: Plugin = async () => {
-  return {
-    tool: {
-      start_encounter: tool({
+const ID = { type: "string", description: 'A combatant id, e.g. "pc" or "goblin-2".' }
+const BEARING = "Bearing (n/ne/e/se/s/sw/w/nw)"
+
+/** A tool's JSON-Schema input: an object with these properties, `required` naming the mandatory ones. */
+function input(properties: Record<string, object> = {}, required: string[] = []) {
+  return { type: "object", properties, required, additionalProperties: false }
+}
+
+/** Run a tool body, turning an engine error into text the model can read and act on. */
+async function answer(body: () => Promise<string>) {
+  try {
+    return { content: await body() }
+  } catch (e: any) {
+    return { content: `Error: ${e.message}` }
+  }
+}
+
+export default {
+  id: "gm-combat-tracker",
+  async setup(ctx) {
+    const dir = ctx.location.directory
+    await ctx.tool.transform((tools) => {
+      // Called directly, not through code mode: the orchestrator reads these calls by name.
+      const add = (tool: {
+        name: string
+        description: string
+        input: object
+        execute: (args: any) => Promise<{ content: string }>
+      }) => tools.add({ ...tool, options: { codemode: false } })
+
+      add({
+        name: "start_encounter",
         description:
           "Start a new combat encounter with a roster of combatants in initiative order. " +
-          "Give the PC id \"pc\". Repeated NPCs get auto-numbered ids (goblin x3 -> goblin-1..3).",
-        args: {
-          roster: tool.schema
-            .array(
-              tool.schema.object({
-                id: tool.schema
-                  .string()
-                  .optional()
-                  .describe('Force a specific id, e.g. "pc" for the player character.'),
-                name: tool.schema.string().describe('Display name, e.g. "goblin".'),
-                hp: tool.schema.number().describe("Starting hit points."),
-                hp_max: tool.schema.number().optional().describe("Max hit points, defaults to hp."),
-                count: tool.schema
-                  .number()
-                  .optional()
-                  .describe("How many of this combatant; ids get -1, -2, ... suffixes."),
-                distance: tool.schema
-                  .number()
-                  .optional()
-                  .describe("Starting distance from the PC in feet, default 30."),
-                height: tool.schema
-                  .number()
-                  .optional()
-                  .describe("Starting height relative to the PC in feet, default 0."),
-                direction: tool.schema
-                  .string()
-                  .optional()
-                  .describe("Starting bearing from the PC (n/ne/e/se/s/sw/w/nw), default n."),
-              }),
-            )
-            .describe('Combatants in initiative order, PC included with id "pc".'),
-          scene: tool.schema
-            .string()
-            .describe('Short description of the encounter, e.g. "goblin ambush on the forest road".'),
-        },
-        async execute(args, ctx) {
-          try {
+          'Give the PC id "pc". Repeated NPCs get auto-numbered ids (goblin x3 -> goblin-1..3).',
+        input: input(
+          {
+            roster: {
+              type: "array",
+              description: 'Combatants in initiative order, PC included with id "pc".',
+              items: input(
+                {
+                  id: { type: "string", description: 'Force a specific id, e.g. "pc" for the player character.' },
+                  name: { type: "string", description: 'Display name, e.g. "goblin".' },
+                  hp: { type: "number", description: "Starting hit points." },
+                  hp_max: { type: "number", description: "Max hit points, defaults to hp." },
+                  count: { type: "number", description: "How many of this combatant; ids get -1, -2, ... suffixes." },
+                  distance: { type: "number", description: "Starting distance from the PC in feet, default 30." },
+                  height: { type: "number", description: "Starting height relative to the PC in feet, default 0." },
+                  direction: { type: "string", description: `Starting ${BEARING.toLowerCase()} from the PC, default n.` },
+                },
+                ["name", "hp"],
+              ),
+            },
+            scene: { type: "string", description: 'Short description of the encounter, e.g. "goblin ambush on the forest road".' },
+          },
+          ["roster", "scene"],
+        ),
+        execute: (args) =>
+          answer(async () => {
             const state = createEncounter(args.scene, args.roster)
-            await saveState(ctx.directory, state)
-            return { title: `Combat started: ${args.scene}`, output: describeEncounter(state) }
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+            await saveState(dir, state)
+            return describeEncounter(state)
+          }),
+      })
 
-      end_encounter: tool({
+      add({
+        name: "end_encounter",
         description: "End the current combat encounter and clear its state.",
-        args: {},
-        async execute(_args, ctx) {
-          await deleteState(ctx.directory)
-          return "Combat ended."
-        },
-      }),
+        input: input(),
+        execute: () =>
+          answer(async () => {
+            await deleteState(dir)
+            return "Combat ended."
+          }),
+      })
 
-      damage: tool({
+      add({
+        name: "damage",
         description: "Deal damage to a combatant. Does not mark an NPC dead — see set_dead.",
-        args: {
-          id: tool.schema.string(),
-          amount: tool.schema.number().describe("Damage to apply, >= 0."),
-        },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) => damage(state, args.id, args.amount))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: ID, amount: { type: "number", description: "Damage to apply, >= 0." } }, ["id", "amount"]),
+        execute: (args) => answer(() => withState(dir, (state) => damage(state, args.id, args.amount))),
+      })
 
-      heal: tool({
+      add({
+        name: "heal",
         description: "Restore hit points to a combatant, capped at their max.",
-        args: {
-          id: tool.schema.string(),
-          amount: tool.schema.number().describe("Healing to apply, >= 0."),
-        },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) => heal(state, args.id, args.amount))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: ID, amount: { type: "number", description: "Healing to apply, >= 0." } }, ["id", "amount"]),
+        execute: (args) => answer(() => withState(dir, (state) => heal(state, args.id, args.amount))),
+      })
 
-      add_condition: tool({
-        description:
-          "Apply a named condition to a combatant. The tracker returns the canonical effect text.",
-        args: {
-          id: tool.schema.string(),
-          name: tool.schema.string().describe("e.g. prone, restrained, frightened."),
-        },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) =>
-              addCondition(state, args.id, args.name),
-            )
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+      add({
+        name: "add_condition",
+        description: "Apply a named condition to a combatant. The tracker returns the canonical effect text.",
+        input: input({ id: ID, name: { type: "string", description: "e.g. prone, restrained, frightened." } }, ["id", "name"]),
+        execute: (args) => answer(() => withState(dir, (state) => addCondition(state, args.id, args.name))),
+      })
 
-      remove_condition: tool({
+      add({
+        name: "remove_condition",
         description: "Remove a named condition from a combatant.",
-        args: { id: tool.schema.string(), name: tool.schema.string() },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) =>
-              removeCondition(state, args.id, args.name),
-            )
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: ID, name: { type: "string" } }, ["id", "name"]),
+        execute: (args) => answer(() => withState(dir, (state) => removeCondition(state, args.id, args.name))),
+      })
 
-      move: tool({
+      add({
+        name: "move",
         description:
           'Move a combatant. Moving "pc" fans out and re-syncs everyone else\'s distance/' +
           "direction against the new PC origin; moving anyone else is a plain absolute set. " +
           "Height is untouched by a PC move.",
-        args: {
-          id: tool.schema.string(),
-          distance: tool.schema.number().optional().describe("Feet from the PC (or, for \"pc\", feet moved)."),
-          height: tool.schema.number().optional().describe("Feet above/below the PC (ignored for \"pc\")."),
-          direction: tool.schema
-            .string()
-            .optional()
-            .describe("Bearing (n/ne/e/se/s/sw/w/nw) — from the PC, or, for \"pc\", the direction moved."),
-        },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) =>
-              move(state, args.id, {
-                distance: args.distance,
-                height: args.height,
-                direction: args.direction,
-              }),
-            )
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input(
+          {
+            id: ID,
+            distance: { type: "number", description: 'Feet from the PC (or, for "pc", feet moved).' },
+            height: { type: "number", description: 'Feet above/below the PC (ignored for "pc").' },
+            direction: { type: "string", description: `${BEARING} — from the PC, or, for "pc", the direction moved.` },
+          },
+          ["id"],
+        ),
+        execute: (args) =>
+          answer(() =>
+            withState(dir, (state) =>
+              move(state, args.id, { distance: args.distance, height: args.height, direction: args.direction }),
+            ),
+          ),
+      })
 
-      set_dead: tool({
+      add({
+        name: "set_dead",
         description:
           "Mark a combatant dead or alive. NPC death is your narrative call (0 hp doesn't auto-kill); " +
           "callable either direction to correct a mistake.",
-        args: { id: tool.schema.string(), dead: tool.schema.boolean() },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) => setDead(state, args.id, args.dead))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: ID, dead: { type: "boolean" } }, ["id", "dead"]),
+        execute: (args) => answer(() => withState(dir, (state) => setDead(state, args.id, args.dead))),
+      })
 
-      death_save: tool({
+      add({
+        name: "death_save",
         description:
           "Report one death saving throw for the PC at 0 hp. Three failures ends them; " +
           "three successes just stops the prompting.",
-        args: { id: tool.schema.string(), success: tool.schema.boolean() },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) =>
-              deathSave(state, args.id, args.success),
-            )
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: ID, success: { type: "boolean" } }, ["id", "success"]),
+        execute: (args) => answer(() => withState(dir, (state) => deathSave(state, args.id, args.success))),
+      })
 
-      use_reaction: tool({
+      add({
+        name: "use_reaction",
         description: "Spend a combatant's reaction. Resets automatically on their own turn.",
-        args: { id: tool.schema.string() },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) => useReaction(state, args.id))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: ID }, ["id"]),
+        execute: (args) => answer(() => withState(dir, (state) => useReaction(state, args.id))),
+      })
 
-      remind_in: tool({
+      add({
+        name: "remind_in",
         description:
           "Set a one-shot reminder that fires after N future occurrences of the CURRENT " +
           "combatant's turn (e.g. a spell cast now that ends on the caster's turn in 3 rounds).",
-        args: {
-          rounds: tool.schema.number().describe("How many times the current turn-slot must recur."),
-          note: tool.schema.string().describe("What to remember when it fires."),
-        },
-        async execute(args, ctx) {
-          try {
+        input: input(
+          {
+            rounds: { type: "number", description: "How many times the current turn-slot must recur." },
+            note: { type: "string", description: "What to remember when it fires." },
+          },
+          ["rounds", "note"],
+        ),
+        execute: (args) =>
+          answer(async () => {
             let id = 0
-            const output = await withState(ctx.directory, (state) => {
+            const output = await withState(dir, (state) => {
               id = remindIn(state, args.rounds, args.note)
             })
             return `Timer ${id} set.\n\n${output}`
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+          }),
+      })
 
-      remind_each_turn: tool({
+      add({
+        name: "remind_each_turn",
         description:
           "Set a recurring reminder that fires every time the named combatant's turn comes up " +
           "(save-ends conditions, per-round ticks). Optional owner auto-clears it on that owner's death.",
-        args: {
-          combatant: tool.schema.string().describe("Whose turn-slot fires this — often the target, not the caster."),
-          note: tool.schema.string().describe("What to remember when it fires."),
-          owner: tool.schema.string().optional().describe("Auto-clear this timer when this combatant dies."),
-        },
-        async execute(args, ctx) {
-          try {
+        input: input(
+          {
+            combatant: { type: "string", description: "Whose turn-slot fires this — often the target, not the caster." },
+            note: { type: "string", description: "What to remember when it fires." },
+            owner: { type: "string", description: "Auto-clear this timer when this combatant dies." },
+          },
+          ["combatant", "note"],
+        ),
+        execute: (args) =>
+          answer(async () => {
             let id = 0
-            const output = await withState(ctx.directory, (state) => {
+            const output = await withState(dir, (state) => {
               id = remindEachTurn(state, args.combatant, args.note, args.owner)
             })
             return `Timer ${id} set.\n\n${output}`
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+          }),
+      })
 
-      clear_timer: tool({
+      add({
+        name: "clear_timer",
         description: "Remove a timer by id (dismissing a stale one, e.g. after its owner died).",
-        args: { id: tool.schema.number() },
-        async execute(args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) => clearTimer(state, args.id))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: { type: "number" } }, ["id"]),
+        execute: (args) => answer(() => withState(dir, (state) => clearTimer(state, args.id))),
+      })
 
-      advance_turn: tool({
+      add({
+        name: "advance_turn",
         description: "Advance to the next combatant's turn. Fires any timers pinned to that slot.",
-        args: {},
-        async execute(_args, ctx) {
-          try {
+        input: input(),
+        execute: () =>
+          answer(async () => {
             let fired: FiredObligation[] = []
-            const output = await withState(ctx.directory, (state) => {
+            const output = await withState(dir, (state) => {
               fired = advanceTurn(state).fired
             })
             if (!fired.length) return output
@@ -339,130 +293,106 @@ export const CombatTrackerPlugin: Plugin = async () => {
                 : `[timer ${f.id}] ${f.note}`,
             )
             return `Fired:\n${lines.join("\n")}\n\n${output}`
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+          }),
+      })
 
-      rollback: tool({
+      add({
+        name: "rollback",
         description:
           "Undo the in-flight action: roll pending back to the last committed state. Use when " +
           "interjecting with a reaction, before replaying the combatant's turn.",
-        args: {},
-        async execute(_args, ctx) {
-          try {
-            return await withState(ctx.directory, (state) => rollback(state))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input(),
+        execute: () => answer(() => withState(dir, (state) => rollback(state))),
+      })
 
-      state: tool({
+      add({
+        name: "state",
         description: "Show the current encounter: round, whose turn it is, and the full roster.",
-        args: {},
-        async execute(_args, ctx) {
-          try {
-            return describeEncounter(await loadState(ctx.directory))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input(),
+        execute: () => answer(async () => describeEncounter(await loadState(dir))),
+      })
 
-      describe: tool({
+      add({
+        name: "describe",
         description:
           "Show the full picture on one combatant: hp, every condition's full effect text, " +
           "reaction state, death saves, position, and any timers pinned to their turn.",
-        args: { id: tool.schema.string() },
-        async execute(args, ctx) {
-          try {
-            return describeCombatant(await loadState(ctx.directory), args.id)
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ id: ID }, ["id"]),
+        execute: (args) => answer(async () => describeCombatant(await loadState(dir), args.id)),
+      })
 
-      distance_between: tool({
+      add({
+        name: "distance_between",
         description: "Approximate distance in feet between two non-PC combatants.",
-        args: { a: tool.schema.string(), b: tool.schema.string() },
-        async execute(args, ctx) {
-          try {
-            const feet = distanceBetween(await loadState(ctx.directory), args.a, args.b)
-            return `${feet} ft`
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+        input: input({ a: ID, b: ID }, ["a", "b"]),
+        execute: (args) => answer(async () => `${distanceBetween(await loadState(dir), args.a, args.b)} ft`),
+      })
 
-      burst: tool({
+      add({
+        name: "burst",
         description:
           "Which combatants a burst catches — any radius effect (a fireball, and every sphere, " +
           "cylinder, or cube). Centered on a point `distance` ft in `direction` from the PC " +
           "(distance 0 = centered on the PC; direction is then ignored). Returns everyone within " +
           "`radius` ft, the PC included if caught. A read — then apply damage to each with `damage`.",
-        args: {
-          distance: tool.schema.number().describe("Feet from the PC to the center; 0 centers it on the PC."),
-          direction: tool.schema
-            .string()
-            .optional()
-            .describe("Bearing from the PC to the center (n/ne/e/se/s/sw/w/nw); omit when distance is 0."),
-          radius: tool.schema.number().describe("Radius of the effect in feet."),
-          height: tool.schema.number().optional().describe("Center's height relative to the PC in feet."),
-        },
-        async execute(args, ctx) {
-          try {
-            const state = await loadState(ctx.directory)
+        input: input(
+          {
+            distance: { type: "number", description: "Feet from the PC to the center; 0 centers it on the PC." },
+            direction: { type: "string", description: `${BEARING} from the PC to the center; omit when distance is 0.` },
+            radius: { type: "number", description: "Radius of the effect in feet." },
+            height: { type: "number", description: "Center's height relative to the PC in feet." },
+          },
+          ["distance", "radius"],
+        ),
+        execute: (args) =>
+          answer(async () => {
+            const state = await loadState(dir)
             return formatCaught(state, burst(state, args))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+          }),
+      })
 
-      cone: tool({
+      add({
+        name: "cone",
         description:
           "Which combatants a cone catches (a breath weapon, burning hands). It spreads from `origin` " +
           "(the caster — any combatant, whether or not it is their turn), `length` ft toward " +
           "`direction`. The origin is never caught. A read — then apply damage to each with `damage`.",
-        args: {
-          origin: tool.schema.string().describe("The combatant the cone spreads from (the caster's id)."),
-          direction: tool.schema.string().describe("Bearing the cone points (n/ne/e/se/s/sw/w/nw)."),
-          length: tool.schema.number().describe("How far the cone reaches, in feet."),
-        },
-        async execute(args, ctx) {
-          try {
-            const state = await loadState(ctx.directory)
+        input: input(
+          {
+            origin: { type: "string", description: "The combatant the cone spreads from (the caster's id)." },
+            direction: { type: "string", description: `${BEARING} the cone points.` },
+            length: { type: "number", description: "How far the cone reaches, in feet." },
+          },
+          ["origin", "direction", "length"],
+        ),
+        execute: (args) =>
+          answer(async () => {
+            const state = await loadState(dir)
             return formatCaught(state, cone(state, args.origin, args.direction, args.length))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
+          }),
+      })
 
-      line: tool({
+      add({
+        name: "line",
         description:
           "Which combatants a line catches (a lightning bolt). It runs from `origin` (the caster — any " +
           "combatant, whether or not it is their turn), `length` ft toward `direction`, `width` ft " +
           "wide (default 5). The origin is never caught. A read — then apply damage to each with `damage`.",
-        args: {
-          origin: tool.schema.string().describe("The combatant the line runs from (the caster's id)."),
-          direction: tool.schema.string().describe("Bearing the line runs (n/ne/e/se/s/sw/w/nw)."),
-          length: tool.schema.number().describe("How far the line reaches, in feet."),
-          width: tool.schema.number().optional().describe("Width of the line in feet; defaults to 5."),
-        },
-        async execute(args, ctx) {
-          try {
-            const state = await loadState(ctx.directory)
+        input: input(
+          {
+            origin: { type: "string", description: "The combatant the line runs from (the caster's id)." },
+            direction: { type: "string", description: `${BEARING} the line runs.` },
+            length: { type: "number", description: "How far the line reaches, in feet." },
+            width: { type: "number", description: "Width of the line in feet; defaults to 5." },
+          },
+          ["origin", "direction", "length"],
+        ),
+        execute: (args) =>
+          answer(async () => {
+            const state = await loadState(dir)
             return formatCaught(state, line(state, args.origin, args.direction, args.length, args.width))
-          } catch (e: any) {
-            return `Error: ${e.message}`
-          }
-        },
-      }),
-    },
-  }
+          }),
+      })
+    })
+  },
 }

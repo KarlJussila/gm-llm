@@ -43,6 +43,10 @@ _DB_NAMES = ("opencode.db", "opencode-local.db")
 _COLUMNS = ("tokens_input", "tokens_output", "tokens_reasoning",
             "tokens_cache_read", "tokens_cache_write")
 
+# opencode 1.x wrote sessions to `session`; 2.x writes them to `session_v2`, same columns. A
+# store upgraded across the two holds both, so a scope's usage is the sum over each.
+_SESSION_TABLES = ("session", "session_v2")
+
 
 @dataclass
 class Usage:
@@ -120,30 +124,43 @@ def usage_for(directory, *, db=None, data_dir=None) -> Reading:
     if path is None:
         return Reading(unavailable=f"no opencode store found under {data_dir or _DEFAULT_DATA}")
     prefix = str(Path(directory).resolve())
+    rows = []
     try:
         with _connect(path) as conn:
-            have = {r[1] for r in conn.execute("pragma table_info(session)")}
-            missing = {"directory", "agent", *_COLUMNS} - have
-            if missing:
-                return Reading(unavailable=f"{path.name}: session table lacks {sorted(missing)} "
-                                           f"(opencode schema changed?)")
-            cols = ", ".join(f"sum(coalesce({c}, 0))" for c in _COLUMNS)
-            has_cost = "cost" in have
-            rows = conn.execute(
-                f"select coalesce(agent, '(none)'), count(*), {cols}, "
-                f"{'sum(coalesce(cost, 0))' if has_cost else '0'} "
-                f"from session where directory = ? or directory like ? "
-                f"group by 1", (prefix, prefix + os.sep + "%")).fetchall()
+            for table in _SESSION_TABLES:
+                have = {r[1] for r in conn.execute(f"pragma table_info({table})")}
+                if not have:
+                    continue  # this opencode generation never wrote one
+                missing = {"directory", "agent", *_COLUMNS} - have
+                if missing:
+                    return Reading(unavailable=f"{path.name}: {table} table lacks "
+                                               f"{sorted(missing)} (opencode schema changed?)")
+                cols = ", ".join(f"sum(coalesce({c}, 0))" for c in _COLUMNS)
+                rows += conn.execute(
+                    f"select coalesce(agent, '(none)'), count(*), {cols}, "
+                    f"{'sum(coalesce(cost, 0))' if 'cost' in have else '0'} "
+                    f"from {table} where directory = ? or directory like ? "
+                    f"group by 1", (prefix, prefix + os.sep + "%")).fetchall()
     except sqlite3.Error as e:
         return Reading(unavailable=f"{path.name}: {e}")
+    if not rows and not _has_any_table(path):
+        return Reading(unavailable=f"{path.name}: no session table (opencode schema changed?)")
 
     reading = Reading()
     for agent, n, ti, to, tr, tcr, tcw, cost in rows:
         u = Usage(sessions=n, input=ti, output=to, reasoning=tr,
                   cache_read=tcr, cache_write=tcw, cost=float(cost or 0))
-        reading.by_agent[agent] = u
+        reading.by_agent[agent] = reading.by_agent.get(agent, Usage()) + u
         reading.total = reading.total + u
     return reading
+
+
+def _has_any_table(path: Path) -> bool:
+    try:
+        with _connect(path) as conn:
+            return any(conn.execute(f"pragma table_info({t})").fetchone() for t in _SESSION_TABLES)
+    except sqlite3.Error:
+        return False
 
 
 def usage_for_batch(out_dir, *, db=None, data_dir=None) -> dict:
