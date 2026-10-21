@@ -10,6 +10,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Changed
+- **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal, not the skills
+  to load; skill descriptions say only when to load them; no prompt instructs a task list. The
+  in-play check skills (`check-turn`, `check-conduct`, `check-combat`) are deleted, and
+  `combat-run` now says to roll initiative before `start_encounter`.
 - Campaign setup presents a world proposal the player can revise before character creation.
   Arcs and initial state are authored in one dispatch, checked from disk with one correction and
   resumable after interruption. The canon lint handles structural checks; `check-init` reviews
