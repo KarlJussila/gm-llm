@@ -38,7 +38,7 @@ leadership team. Any serious investigation will eventually lead here.
 - The Warden's Tower — the leadership offices, including [[seraphine-duskward]]'s office.
 - The Containment Wing — a secure area for dangerous artifacts and research subjects.
 
-## Who's here
+## Based here
 
 - [[seraphine-duskward]] — First Warden, based here.
 - Concordance researchers, investigators, and support staff.

@@ -36,10 +36,9 @@ which is how the PC will eventually become involved in the larger investigation.
 - The marsh-hamlets — scattered settlements in the surrounding bogs, home to the
   region's most independent folk.
 
-## Who's here
+## Based here
 
-- [[seraphine-duskward]] — visits periodically; currently stationed in the capital but
-  has agents here.
+- [[seraphine-duskward]] — visits periodically and has agents here.
 - Concordance investigators — a small team monitoring anomalies in the Briarwood.
 - Local merchants, Marsher folk, and the occasional adventurer.
 

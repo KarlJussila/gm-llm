@@ -36,7 +36,7 @@ the campaign's opening investigation — the first thread the PC will pull.
 - The Thornwall — a barrier of bramble at the forest's edge that seems to grow denser
   when approached with hostile intent.
 
-## Who's here
+## Based here
 
 - Concordance investigators — a small team monitoring the disturbances.
 - Local folk who avoid the deep forest.

@@ -38,7 +38,7 @@ discouraged.
 - The Courtyard of Echoes — an open area where spells are practiced; the stone retains
   magical residue.
 
-## Who's here
+## Based here
 
 - The Academy's governing body — a council of senior mages.
 - Students and faculty — hundreds of mages in training.

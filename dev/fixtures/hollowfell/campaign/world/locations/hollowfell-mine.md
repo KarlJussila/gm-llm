@@ -56,12 +56,10 @@ siphoned by the [[unraveler]].
   something fundamental. Sound dies the moment it leaves your boots. The air is thin,
   hollow. Spells fail completely — not a fizzle, the magic simply isn't there.
 
-## Who's here
+## Based here
 
 - Mining consortium workers — hard, practical folk.
-- [[brennan-cole]] — foreman, at the surface works, waiting for [[dallid]]'s return.
-- [[dallid]] — deep in the center tunnel, past the second crossing, approaching the source
-  of the spellbook's resonance.
+- [[brennan-cole]] — foreman.
 - No Concordance presence — the consortium hasn't asked for help.
 
 ## Hooks
