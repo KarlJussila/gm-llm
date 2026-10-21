@@ -574,11 +574,6 @@ export default {
         name: "dice",
         description: `Roll TTRPG dice from a standard dice expression.
 
-WHO ROLLS: in play, the PLAYER rolls their own character's actions — attacks, saving throws, and
-ability/skill checks (offensive, defensive, or out of combat). Ask them and use their reported
-result. Use this tool only for things outside the player's control (NPC actions, hazards, world
-events, random determinations) or when the player explicitly asks you to roll for them.
-
 Arithmetic with + - * / and parentheses, e.g. (2d6 + 3) * 2.
 
 Dice terms (NdX, N optional):
@@ -626,13 +621,7 @@ Examples: d20+5 · 4d6dl1 · 6d6!kh3 · 2d6+1d8+3 · 8d10>=8 · (2d6+3)*2`,
             }
             lines.push(`= ${fmt(total)}`)
 
-            const reminder =
-              "\n\n— Reminder: players roll their own characters' actions (attacks, saves, " +
-              "ability & skill checks — offensive, defensive, or exploration). If this roll was " +
-              "for the player's character, discard it and ask the player to roll, then use their " +
-              "result. Roll here only for what's outside the player's control: NPCs, hazards, the world."
-            const output = lines.join("\n") + reminder
-            return { content: output, metadata: { total, rolls: log } }
+            return { content: lines.join("\n"), metadata: { total, rolls: log } }
           } catch (error: any) {
             return { content: `Error: ${error.message}` }
           }
