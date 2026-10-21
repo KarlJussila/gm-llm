@@ -24,8 +24,10 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
   plan. No DM dice calls at all; the checker found nothing in play; Sol confirmed all 5 gate
   findings (all trivial record slips) — integrity 97.7. Uncaught by any gate: `greyhaven.state.md`
   logged Dallid arriving and `hollowfell-mine.state.md` his leaving (fixed, `ca24187`).
-- `bench-out/luna6d` is the third run, with `ca24187`; read its place state files first. If they
-  hold, luna 6 is done.
+- `bench-out/luna6d` is the third run, with `ca24187`. The usage limit stopped it at turn 13;
+  finish it with `python -m gm_llm bench run --out bench-out/luna6d --port 4191 --resume`, then
+  `bench check` and `bench grade`. Read its place state files first; if they hold, luna 6 is
+  done. Check and grade now skip unfinished runs (`1f1d5e4`).
 - Fixed from the runs: the dice tool's DM-directed reminder (`8541c1b`); `discoveries` says a
   check reveals details and conclusions only through them (`3eb602c`, `c8d2e6b`, Karl's
   wording); reconcile counts as done only once the next plan is archived (`a0a2f5f`);
