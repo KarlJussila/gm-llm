@@ -36,14 +36,34 @@ campaign/
 **State files.** NPCs, factions, arcs and the PC always have a `{slug}.state.md` beside the info
 file: where it stands *now*, as of the end of a session (`as-of: S<n>`; `S0` before the first). Locations, regions, items
 and concepts get one only when they have live state that changes in play. State files are frozen
-during play and rewritten between sessions; the transcript is the live record in between. State is
-the now, not the history, and never HP, slots or coin — the player tracks those.
+during play and rewritten between sessions; the transcript is the live record in between.
 
 **The PC** has four files: the sheet, its state, the knowledge ledger (what the *character* knows,
 believes and wonders) and the combat repertoire (its reactions and when to offer them).
 
 **Verbatim text** — a letter, an inscription, a quoted passage — goes in `documents/` and is linked
 from the entity it belongs to.
+
+## What goes where
+
+Every fact has one home. When play changes something, rewrite that home and nothing else; never
+mirror the change onto the files of the people and places it touches.
+
+| The fact | Its home |
+|---|---|
+| Who or what something is: nature, history, lasting ties, its secrets | its info file, `{slug}.md` |
+| Where it is now, its disposition, condition, what it means to do next | its own `{slug}.state.md` |
+| Who is at a place right now | each one's own `.state.md`; the scene play ended on, `state/current.md` |
+| Who lives, works or holds power at a place | the location's `## Based here` |
+| What the PC knows, believes and wonders | `characters/{pc}.knowledge.md` |
+| What the PC can do | its sheet; its reactions, `.repertoire.md` |
+| An arc's design — turning points, answers | the arc's `{slug}.md`; where it stands, its `.state.md` |
+| Threads, clocks, the date and dated events | `state/threads.md`, `state/clocks.md`, `state/calendar.md` |
+| What happened, in order | the session's `notes.md` and `digest.md`; canon and state hold the result |
+| HP, spell slots, coin | nowhere — the player tracks them |
+
+When the PC leaves the mine, that is the PC's `## Location`. The mine's files change only if the
+mine did.
 
 ## Frontmatter
 

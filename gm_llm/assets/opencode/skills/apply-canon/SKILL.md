@@ -8,7 +8,7 @@ description: Load when filing a played session's new and changed entities, PC ca
 Everything play established about who or what things are becomes committed canon here: improvised
 NPCs, new places, shifted truths. The record is the digest, `campaign/sessions/{N}/digest.md` —
 chiefly *World canon*, *Items*, *Documents*, *PC capabilities* and *Combat reactions & tactics*.
-`canon-conventions` is the format.
+`canon-conventions` is the format, and its *What goes where* says which file each fact belongs in.
 
 The player's feedback for `world-build` applies here too.
 

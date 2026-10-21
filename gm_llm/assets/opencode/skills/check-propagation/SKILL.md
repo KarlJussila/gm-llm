@@ -13,6 +13,9 @@ Code already checks the mechanics, so leave them alone: frontmatter, links that 
 `named-only` stubs, `as-of` stamps, secret ids, and the reveal tags it flips from the ledger. Your
 job is the part code can't judge — whether the content says what play established.
 
+Judge each fact in the home `canon-conventions` gives it under *What goes where*. Missing from its
+home is a finding. Absent from anywhere else is not, and a fact copied onto another entity's file is.
+
 ## The checks
 
 1. **New and changed canon.** Each NPC, place, faction and item in *World canon* and *Items* has a

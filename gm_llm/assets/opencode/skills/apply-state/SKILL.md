@@ -8,7 +8,8 @@ description: Load when bringing the knowledge ledger and the state files up to t
 Canon says who things are; state says where they stand now. After a session, state catches up to
 what play changed, each file written as true at the end of this session. The record is the digest,
 `campaign/sessions/{N}/digest.md` — chiefly *Knowledge gained*, *Secrets & awareness*, *Character
-state* and *Narrative*. `canon-conventions` is the format.
+state* and *Narrative*. `canon-conventions` is the format, and its *What goes where* says which
+file each fact belongs in.
 
 ## The knowledge ledger
 

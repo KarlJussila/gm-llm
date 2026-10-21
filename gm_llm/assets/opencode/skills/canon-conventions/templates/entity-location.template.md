@@ -26,8 +26,9 @@ scale: <a single room, a building, a district, a sprawling complex>
 ## Notable features
 <Rooms, landmarks, hazards, defenses — what shapes a scene.>
 
-## Who's here
-<NPCs and factions present or based here, as [[slug]] links.>
+## Based here
+<NPCs and factions who live, work or hold power here, as [[slug]] links. Who is here right now
+is state — each one's own `## Location`.>
 
 ## Hooks
 <Concrete reasons a PC would come or return.>
