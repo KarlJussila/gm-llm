@@ -30,6 +30,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   `gm-llm init` no longer installs plugin dependencies, and `gm-llm update` removes the
   `package.json` and `node_modules` older versions left in `.opencode/`. On Windows the installer
   now installs opencode from `@opencode/cli`.
+- **`bench grade` confirms or rejects the checker's findings.** One `grader` session per run (Sol
+  at `high`) takes the run's `checks-<run>.jsonl` findings and the flagged stage gates in play
+  order, with the campaign before and after the run and its transcript to read, and confirms or
+  rejects each against rubric v2; only confirmed findings score. A run that hasn't been checked
+  is skipped, and `bench report` flags it. The report adds checker and gate precision and the
+  stage correction rate; the defaulted rate now counts checked turns with no submission.
 
 ### Added
 - **`bench check`** — the after-play checker. One rolling `play-checker` session per run reads

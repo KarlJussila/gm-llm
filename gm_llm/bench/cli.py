@@ -4,10 +4,10 @@ The `bench` CLI seam — mounted onto the main CLI's subparsers.
 `gm_llm/cli.py` calls `add_bench_parser(sub, engine)` to graft the `bench` group onto the
 CLI when it is running from a checkout (the fixtures under `dev/` aren't packaged, so an
 installed copy has nothing to run). `engine` is the shared parent carrying `--dir` plus the
-backend flags (`--port/--min-gap/--stream/--turn-timeout`), which `bench run` and
-`bench grade` need. `bench run` plays a fixture into archives (B1); `bench grade` scores the
-flagged violations in a batch's archives with the pinned grader model (B2); `bench report`
-aggregates archives + grades into a summary with no model calls (B2).
+backend flags (`--port/--min-gap/--stream/--turn-timeout`), which the model-calling commands
+need. `bench run` plays a fixture into archives, `bench check` finds each turn's mistakes,
+`bench grade` confirms or rejects and grades them, and `bench report` and `bench status`
+aggregate with no model calls.
 """
 
 from __future__ import annotations
@@ -74,15 +74,15 @@ def add_bench_parser(subparsers, engine) -> None:
     check_p.set_defaults(func=cmd_bench_check)
 
     grade_p = bsub.add_parser("grade", parents=[engine],
-                              help="grade the flagged violations in a batch's archives (B2)")
+                              help="confirm or reject and grade a checked batch's findings")
     grade_p.add_argument("--out", default="bench-out",
                          help="batch dir to grade (holds batch.jsonl + run dirs; default: bench-out)")
     grade_p.add_argument("--model", default=None,
-                         help="override the pinned grader model (a V2 re-grade — grades are derived data)")
+                         help="override the pinned grader model (grades are derived data)")
     grade_p.add_argument("--force", action="store_true",
-                         help="re-grade runs already graded at this rubric+model+instrument")
+                         help="re-grade runs already graded with this instrument")
     grade_p.add_argument("--double", action="store_true",
-                         help="grade a sample twice in independent sessions and report agreement")
+                         help="grade a sample again in a second session and report agreement")
     grade_p.add_argument("--sample", type=int, default=None,
                          help="with --double: findings per run to re-grade (default: all)")
     grade_p.set_defaults(func=cmd_bench_grade)
@@ -171,22 +171,21 @@ def cmd_bench_check(args) -> None:
 
 
 def cmd_bench_grade(args) -> None:
-    """Grade every archive in `--out` with the pinned grader (`--model` overrides for a V2
-    re-grade). The grader is a between-run scoring pass, not a play turn, so the per-call
-    timeout defaults generous (600s) unless the user overrode `--turn-timeout`."""
-    timeout = args.turn_timeout or 600
+    """Grade every checked run in `--out` with the pinned grader (`--model` overrides)."""
     _note(f"grading out={args.out} model={args.model or '(pinned)'} "
           f"force={args.force} double={args.double}")
     result = grade.grade_batch(
         args.out, model=args.model, force=args.force, double=args.double,
-        sample=args.sample, port=args.port, min_gap=args.min_gap, turn_timeout=timeout,
-        note=_note)
+        sample=args.sample, port=args.port, min_gap=args.min_gap,
+        turn_timeout=args.turn_timeout or 600, note=_note)
     _note(f"graded {len(result['graded'])} run(s).")
-    if result.get("double"):
-        d = result["double"]
-        if d["n"]:
-            _note(f"agreement (n={d['n']}): severity {d['severity_match']:.0%}, "
-                  f"category {d['category_match']:.0%}")
+    d = result.get("double")
+    if d and d["n"]:
+        line = f"agreement (n={d['n']}): verdict {d['verdict_match']:.0%}"
+        if d["confirmed_both"]:
+            line += (f"; over {d['confirmed_both']} confirmed by both, severity "
+                     f"{d['severity_match']:.0%}, category {d['category_match']:.0%}")
+        _note(line)
     sys.exit(0)
 
 

@@ -18,9 +18,6 @@ Design: [`design/luna.md`](design/luna.md). Tasks 6–8 need model quota.
 
 Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in that doc.
 
-4. **B8 — grader rework.** Sol at `high`, one session per run, confirm or reject the
-   `checks-<run>.jsonl` findings with file access, checker precision in the report. The grader
-   still enumerates the MiMo-era in-play turn verdicts, which Luna archives no longer carry.
 6. **B3 — the `low` baseline.** After luna 6 and benchmark 1–4: a Luna pilot sizes the batch, then
    bank the distribution.
 7. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the

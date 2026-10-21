@@ -19,18 +19,15 @@ rewritten. Idempotent per instrument and checker model unless `force`.
 
 from __future__ import annotations
 
-import io
 import json
 import shutil
-import subprocess
-import zipfile
 from pathlib import Path
 
 from ..orchestrator import Logs
 from ..orchestrator.logs import debug_enabled
-from ..orchestrator.registry import FrontmatterError, split_frontmatter
-from .grade import (ASSETS, _apply_model, _batch_archives, _default_backend, _quiet,
-                    _read_events, _run_id_of, instrument_fingerprint)
+from .grade import (ASSETS, _batch_archives, _default_backend, _quiet, _read_events, _run_id_of,
+                    checks_path, instrument_fingerprint)
+from .workspace import agent_meta, apply_model, extract_commit, turn_message, turn_ref
 
 CHECKER_AGENT = "play-checker"
 WS_NAME = "check-ws"
@@ -39,53 +36,17 @@ WS_NAME = "check-ws"
 def assemble_check_ws(run_dir, ws, *, model: str | None = None) -> Path:
     """Lay the run's pre-play state and the checker's assets into `ws`, replacing what was
     there."""
-    run_dir, ws = Path(run_dir), Path(ws)
+    ws = Path(ws)
     if ws.exists():
         shutil.rmtree(ws)
-    ws.mkdir(parents=True)
-    root = _git(run_dir, "rev-list", "--max-parents=0", "HEAD").split()[0]
-    archive = subprocess.run(["git", "archive", "--format=zip", root], cwd=run_dir,
-                             capture_output=True, check=True).stdout
-    zipfile.ZipFile(io.BytesIO(archive)).extractall(ws)
-
+    extract_commit(run_dir, ws)
     agent_dir, plugin_dir = ws / ".opencode" / "agent", ws / ".opencode" / "plugin"
     agent_dir.mkdir(parents=True)
     plugin_dir.mkdir(parents=True)
-    agent = _apply_model((ASSETS / f"{CHECKER_AGENT}.md").read_text(encoding="utf-8"), model)
+    agent = apply_model((ASSETS / f"{CHECKER_AGENT}.md").read_text(encoding="utf-8"), model)
     (agent_dir / f"{CHECKER_AGENT}.md").write_text(agent, encoding="utf-8")
     shutil.copy2(ASSETS / "submit-checks.ts", plugin_dir / "submit-checks.ts")
     return ws
-
-
-def checker_meta(ws) -> dict:
-    """The checker's `{model, variant}`, from the workspace's agent file."""
-    try:
-        text = (Path(ws) / ".opencode" / "agent" / f"{CHECKER_AGENT}.md").read_text(encoding="utf-8")
-        fm = split_frontmatter(text)[0] or {}
-    except (OSError, FrontmatterError):
-        fm = {}
-    return {"model": fm.get("model"), "variant": fm.get("variant")}
-
-
-def turn_message(turn: dict) -> str:
-    """One archived turn as the checker reads it."""
-    lines = [f'<turn ref="{_ref(turn)}">']
-    if turn.get("player"):
-        lines += ["<player>", turn["player"], "</player>"]
-    lines += ["<dm>", turn.get("narration") or "", "</dm>",
-              f"<tools>{', '.join(turn.get('tools') or []) or 'none'}</tools>"]
-    combat = turn.get("combat")
-    if combat:
-        lines += [f'<tracker-before combatant="{combat.get("combatant")}">',
-                  json.dumps(combat.get("before"), ensure_ascii=False), "</tracker-before>",
-                  "<tracker-after>", json.dumps(combat.get("after"), ensure_ascii=False),
-                  "</tracker-after>"]
-    lines.append("</turn>")
-    return "\n".join(lines)
-
-
-def _ref(turn: dict) -> str:
-    return f"s{turn.get('session')}t{turn.get('turn')}"
 
 
 def check_archive(backend, archive, *, meta: dict, instrument: dict, force: bool = False,
@@ -94,7 +55,7 @@ def check_archive(backend, archive, *, meta: dict, instrument: dict, force: bool
     archive = Path(archive)
     events = _read_events(archive)
     run_id = _run_id_of(events, archive.stem)
-    out = archive.with_name(f"checks-{run_id}.jsonl")
+    out = checks_path(archive, run_id)
     header = {"event": "header", "run": run_id, "checker": meta, "instrument": instrument,
               "archive": archive.name}
     if not force and _already_checked(out, header):
@@ -105,7 +66,7 @@ def check_archive(backend, archive, *, meta: dict, instrument: dict, force: bool
     sid = backend.create_session("bench-check")
     lines = [header]
     for turn in (e for e in events if e.get("event") == "turn"):
-        ref = _ref(turn)
+        ref = turn_ref(turn)
         reply = backend.prompt_full(sid, CHECKER_AGENT, turn_message(turn))
         reply = backend.ensure_tool(sid, CHECKER_AGENT, reply, tool="submit_checks", nudge=nudge)
         record = {"ref": ref, "session": turn.get("session"), "turn": turn.get("turn")}
@@ -158,13 +119,9 @@ def check_batch(out_dir, *, model: str | None = None, force: bool = False, port:
                                   logs=Logs.under(project=ws, debug=debug_enabled()), note=note)
         try:
             backend.start()
-            written.append(check_archive(backend, archive, meta=checker_meta(ws),
+            written.append(check_archive(backend, archive, meta=agent_meta(ws, CHECKER_AGENT),
                                          instrument=instrument, force=force, note=note))
         finally:
             backend.stop()
     return written
 
-
-def _git(cwd: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True,
-                          check=True).stdout

@@ -1,17 +1,18 @@
 """
-The `bench report` engine — archive + grades → summary (design/benchmark.md B2).
+The `bench report` engine — archive + checks + grades → summary (design/benchmark.md § Report).
 
 Pure aggregation: no model calls, no network. It reads a batch out-dir (the `batch.jsonl`
-manifest B1 writes, each run's score archive, and the `grades-*.jsonl` B2 writes beside
-it) and rolls it up per-run and per-batch. Everything the report shows is re-derived from
-the raw archive and the derived grades — nothing is judged here.
+manifest, each run's score archive, and the `checks-*` and `grades-*` files beside it) and rolls
+it up per-run and per-batch. Everything the report shows is re-derived from those files —
+nothing is judged here.
 
 Two things this module is opinionated about, both from the measurement methodology:
 
-  * **Instrument health is prominent.** The `defaulted`-verdict rate (a checker that gave
-    no usable verdict, so the content passed by default) rides at the top of every run and
-    the batch: a checker not doing its job must never read as the subject improving. The
-    ungraded count (the grader's own misses) sits beside it.
+  * **Instrument health is prominent.** The defaulted rate (turns the checker gave no
+    submission for, and gate verdicts that passed by default), checker precision (confirmed
+    findings over all graded ones) and the grader's ungraded count ride at the top of every
+    run and the batch: an instrument not doing its job must never read as the subject
+    improving.
 
   * **Mismatched conditions are impossible to miss.** Each run carries a condition
     signature (fixture, tier, turn cap, per-agent model and variant, the subagents mode) from its `conditions`
@@ -34,7 +35,7 @@ import json
 import statistics
 from pathlib import Path
 
-from .grade import RUBRIC, unmanifested_archives
+from .grade import RUBRIC, checks_path, grades_path, unmanifested_archives
 
 # Display order for the rubric's severity ladder; any off-rubric label the grader emitted
 # is appended after these so it can never be silently dropped from a count.
@@ -88,7 +89,7 @@ def _score(penalty: float, units: int) -> float | None:
 
 
 def score_violations(scored: list[dict], units: int) -> dict:
-    """The score model over one run's *dedup'd* graded findings.
+    """The score model over one run's *dedup'd* confirmed findings.
 
     Each violation costs `_PENALTY[severity]`; the points sum, divide by graded units
     (turns + stage gates) into a rate, and map to 0–100. Subscores run the same formula over
@@ -102,7 +103,7 @@ def score_violations(scored: list[dict], units: int) -> dict:
     total = 0.0
     unweighted = 0
     for g in scored:
-        if g.get("ungraded") or g.get("duplicate_of"):
+        if g.get("verdict") != "confirmed" or g.get("duplicate_of"):
             continue
         pts = _PENALTY.get(g.get("severity"), 0.0)
         if g.get("severity") not in _PENALTY:
@@ -243,63 +244,58 @@ def _identity(sig: dict) -> dict:
     return {k: v for k, v in sig.items() if k != "turn_cap"}
 
 
-def summarize_run(events: list[dict], grades: list[dict]) -> dict:
-    """One run's numbers, all re-derived: outcome, turns, correction rate, the prominent
-    defaulted-verdict rate, violation counts by severity (raw and dedup'd), ungraded count,
-    stage-gate outcomes, and context growth if the archive carried it. `grades` is the
-    per-finding grade lines (header dropped); an empty list means the run wasn't graded."""
+def _precision(grades: list[dict], kind: str) -> dict:
+    """Confirmed over confirmed-plus-rejected, for one source of findings (`turn` — the
+    checker — or `stage` — the gates; the lint is code, so it never counts)."""
+    judged = [g for g in grades if g.get("kind") == kind and g.get("check") != "lint"
+              and g.get("verdict") in ("confirmed", "rejected")]
+    confirmed = sum(1 for g in judged if g["verdict"] == "confirmed")
+    return {"confirmed": confirmed, "rejected": len(judged) - confirmed,
+            "precision": confirmed / len(judged) if judged else None}
+
+
+def summarize_run(events: list[dict], grades: list[dict], checks: list[dict] | None) -> dict:
+    """One run's numbers, all re-derived: outcome, turns, the instrument's health, violation
+    counts by severity (raw and dedup'd), stage-gate outcomes and context growth. `checks` is
+    the checks file's turn lines (None when unchecked); `grades` the grade lines (empty when
+    ungraded)."""
     turns = [e for e in events if e.get("event") == "turn"]
     stages = [e for e in events if e.get("event") == "stage"]
     capped = any(e.get("event") == "cap" for e in events)
 
-    # outcome / turns-to-wrap
     complete = bool(turns) and bool(turns[-1].get("session_complete"))
     outcome = "cap" if capped else ("complete" if complete else "unwrapped")
-    turns_to_wrap = len(turns) if outcome == "complete" else None
 
-    # correction rate
-    corrected = sum(1 for t in turns if t.get("corrected"))
+    # defaulted: checked turns with no submission, and gate verdicts passed by default
+    stage_verdicts = [s["verdict"] for s in stages if s.get("verdict")]
+    judged = len(checks or []) + len(stage_verdicts)
+    defaulted = (sum(1 for c in checks or [] if c.get("defaulted"))
+                 + sum(1 for v in stage_verdicts if v.get("defaulted")))
 
-    # defaulted-verdict rate — instrument health, over every runtime and stage verdict
-    all_verdicts: list[dict] = []
-    for t in turns:
-        all_verdicts += t.get("verdicts", [])
-    for s in stages:
-        if s.get("verdict"):
-            all_verdicts.append(s["verdict"])
-    defaulted = sum(1 for v in all_verdicts if v.get("defaulted"))
-
-    # stage-gate outcomes
     stage_outcomes = []
     for s in stages:
         v = s.get("verdict") or {}
-        if s.get("stage") == "lint":
-            passed = not s.get("incomplete")
-        else:
-            passed = bool(v.get("passed"))
+        passed = not s.get("incomplete") if s.get("stage") == "lint" else bool(v.get("passed"))
         stage_outcomes.append({"stage": s.get("stage"), "session": s.get("session"),
                                "passed": passed, "corrected": bool(s.get("corrected")),
                                "defaulted": bool(v.get("defaulted"))})
+    corrected = sum(1 for s in stage_outcomes if s["corrected"])
 
-    # violations by severity, raw (every graded finding) and dedup'd (drop duplicate_of)
-    scored = [g for g in grades if not g.get("ungraded")]
-    ungraded = sum(1 for g in grades if g.get("ungraded"))
+    confirmed = [g for g in grades if g.get("verdict") == "confirmed"]
     raw_by_sev: dict[str, int] = {}
     dedup_by_sev: dict[str, int] = {}
-    for g in scored:
+    for g in confirmed:
         sev = g.get("severity", "?")
         raw_by_sev[sev] = raw_by_sev.get(sev, 0) + 1
         if not g.get("duplicate_of"):
             dedup_by_sev[sev] = dedup_by_sev.get(sev, 0) + 1
 
-    # context growth (first → last turn that carried a context reading)
     ctx = [t["context"]["tokens"] for t in turns if t.get("context")]
     context_growth = ({"first": ctx[0], "last": ctx[-1], "delta": ctx[-1] - ctx[0]}
                       if len(ctx) >= 2 else None)
 
-    # the score: penalty points over graded units (every turn and stage gate that could
-    # have produced a violation), 0–100 plus per-dimension subscores
-    score = score_violations(scored, len(turns) + len(stages)) if grades else None
+    # the score: penalty points over every turn and stage that could have produced a violation
+    score = score_violations(confirmed, len(turns) + len(stages)) if grades else None
 
     return {
         "run_id": next((e.get("run_id") for e in events if e.get("event") == "run"), None),
@@ -307,17 +303,19 @@ def summarize_run(events: list[dict], grades: list[dict]) -> dict:
         "outcome": outcome,
         "score": score,
         "turns": len(turns),
-        "turns_to_wrap": turns_to_wrap,
-        "corrected_turns": corrected,
-        "correction_rate": (corrected / len(turns)) if turns else None,
-        "verdicts_total": len(all_verdicts),
-        "defaulted_verdicts": defaulted,
-        "defaulted_rate": (defaulted / len(all_verdicts)) if all_verdicts else None,
-        "violations_raw": len(scored),
+        "turns_to_wrap": len(turns) if outcome == "complete" else None,
+        "checked": checks is not None,
+        "judged": judged,
+        "defaulted": defaulted,
+        "defaulted_rate": (defaulted / judged) if judged else None,
+        "checker": _precision(grades, "turn"),
+        "gates": _precision(grades, "stage"),
+        "stage_correction_rate": (corrected / len(stages)) if stages else None,
+        "violations_raw": len(confirmed),
         "violations_dedup": sum(dedup_by_sev.values()),
         "by_severity_raw": raw_by_sev,
         "by_severity_dedup": dedup_by_sev,
-        "ungraded": ungraded,
+        "ungraded": sum(1 for g in grades if g.get("ungraded")),
         "graded": bool(grades),
         "stage_outcomes": stage_outcomes,
         "context_growth": context_growth,
@@ -326,47 +324,28 @@ def summarize_run(events: list[dict], grades: list[dict]) -> dict:
 
 # ── batch ────────────────────────────────────────────────────────────────────
 
-def _grades_path(archive_path: Path) -> Path:
-    """Where a run's primary grades live: `grades-<run_id>-<rubric>.jsonl` beside its
-    archive (the `-b` double pass is not a report input)."""
-    run_id = archive_path.stem.replace("archive-", "")
-    return archive_path.parent / f"grades-{run_id}-{RUBRIC}.jsonl"
-
-
-def _grades_for(archive_path: Path) -> list[dict]:
-    """The per-finding grade lines for a run. Empty if the run hasn't been graded."""
-    grades_path = _grades_path(archive_path)
-    if not grades_path.is_file():
-        return []
-    return [e for e in _read_events(grades_path) if e.get("event") != "grades"]
-
-
-def _grading_signature(archive_path: Path) -> dict | None:
-    """Which grading instrument produced this run's grades, from the grades header: the
-    rubric label, the instrument fingerprint, and the grader model/temperature.
-
-    Grades are only comparable to grades taken the same way, and the rubric *label* does not
-    move when the prose under it is rewritten in place — which has already happened once
-    under `v1`. So the hash `grade.instrument_fingerprint` stamps is the part that actually
-    separates two instruments; the label is kept alongside it for reading. `None` when the
-    run is ungraded (it contributes no grades to disagree about). A header from before the
-    fingerprint existed reports `sha256: None` and pools with its own kind, the same
-    grandfathering `_condition_signature` gives pre-fingerprint archives."""
-    grades_path = _grades_path(archive_path)
-    if not grades_path.is_file():
+def _lines(path: Path) -> list[dict] | None:
+    """A checks or grades file's lines after its header; None when there is no file."""
+    if not path.is_file():
         return None
+    return _read_events(path)[1:]
+
+
+def _grading_signature(path: Path) -> dict | None:
+    """Which instrument produced a grades file: rubric label, instrument hash and grader. The
+    label doesn't move when the prose under it is rewritten in place; the hash does."""
     try:
-        header = _read_events(grades_path)[0]
+        header = _read_events(path)[0]
     except (OSError, ValueError, IndexError):
         return None
     grader = header.get("grader") or {}
     return {"rubric": header.get("rubric"),
             "sha256": (header.get("instrument") or {}).get("sha256"),
-            "grader": (grader.get("model"), grader.get("temperature"))}
+            "grader": (grader.get("model"), grader.get("variant"))}
 
 
 def summarize_batch(out_dir) -> dict:
-    """Roll a whole batch up from its `batch.jsonl` + archives + grades. Per-run summaries,
+    """Roll a whole batch up from its `batch.jsonl`, archives, checks and grades. Per-run summaries,
     the mixed-conditions check, and batch distributions (violation counts, turns-to-wrap,
     defaulted rate) — min/median/max across runs, never a lone mean."""
     out_dir = Path(out_dir)
@@ -385,8 +364,12 @@ def summarize_batch(out_dir) -> dict:
                 continue
             archive_path = out_dir / arc
             events = _read_events(archive_path)
-            summary = summarize_run(events, _grades_for(archive_path))
-            summary["grading"] = _grading_signature(archive_path)
+            run_id = next((e.get("run_id") for e in events if e.get("event") == "run"),
+                          archive_path.stem)
+            grades = grades_path(archive_path, run_id)
+            summary = summarize_run(events, _lines(grades) or [],
+                                    _lines(checks_path(archive_path, run_id)))
+            summary["grading"] = _grading_signature(grades)
             runs.append(summary)
 
     # mixed-conditions check
@@ -446,15 +429,27 @@ def summarize_batch(out_dir) -> dict:
         "violations_raw": _dist([r["violations_raw"] for r in graded_runs]),
         "violations_dedup": _dist([r["violations_dedup"] for r in graded_runs]),
         "turns_to_wrap": _dist([r.get("turns_to_wrap") for r in runs]),
-        "correction_rate": _dist([r.get("correction_rate") for r in runs if r.get("correction_rate") is not None]),
+        "stage_correction_rate": _dist([r.get("stage_correction_rate") for r in runs
+                                        if r.get("stage_correction_rate") is not None]),
         "defaulted_rate": _dist([r.get("defaulted_rate") for r in runs if r.get("defaulted_rate") is not None]),
-        "defaulted_total": sum(r.get("defaulted_verdicts", 0) for r in runs if not r.get("no_archive")),
+        "defaulted_total": sum(r.get("defaulted", 0) for r in runs if not r.get("no_archive")),
+        "unchecked": [r.get("run_id") for r in runs
+                      if not r.get("no_archive") and not r.get("checked")],
+        "checker": _pool_precision([r["checker"] for r in graded_runs]),
+        "gates": _pool_precision([r["gates"] for r in graded_runs]),
         "ungraded_total": sum(r.get("ungraded", 0) for r in graded_runs),
         "by_severity_raw": by_sev_raw,
         "by_severity_dedup": by_sev_dedup,
         "n_graded": len(graded_runs),
         "runs": runs,
     }
+
+
+def _pool_precision(per_run: list[dict]) -> dict:
+    confirmed = sum(p["confirmed"] for p in per_run)
+    rejected = sum(p["rejected"] for p in per_run)
+    return {"confirmed": confirmed, "rejected": rejected,
+            "precision": confirmed / (confirmed + rejected) if confirmed + rejected else None}
 
 
 # ── plain-text render ────────────────────────────────────────────────────────
@@ -480,9 +475,9 @@ def _fmt_sig(sig: dict) -> str:
 
 
 def _fmt_grading(sig: dict) -> str:
-    model, temp = sig.get("grader") or (None, None)
+    model, variant = sig.get("grader") or (None, None)
     return (f"rubric {sig.get('rubric')} @ {sig.get('sha256') or 'unstamped'} "
-            f"· grader={model}@{temp}")
+            f"· grader={model}@{variant}")
 
 
 def format_report(batch: dict) -> str:
@@ -506,8 +501,18 @@ def format_report(batch: dict) -> str:
     # Instrument health first — a checker not doing its job must never read as improvement.
     L.append("")
     L.append("── Instrument health ──────────────────────────────────────────────────────")
-    L.append(f"  defaulted-verdict rate : {_fmt_dist(batch['defaulted_rate'], pct=True)}")
-    L.append(f"  defaulted verdicts     : {batch['defaulted_total']} total across the batch")
+    if batch["unchecked"]:
+        L.append(f"  !! UNCHECKED RUNS      : {len(batch['unchecked'])} — no checks file, so their "
+                 f"turns score as clean. Run `bench check`:")
+        for rid in batch["unchecked"]:
+            L.append(f"       {rid}")
+    L.append(f"  defaulted rate         : {_fmt_dist(batch['defaulted_rate'], pct=True)}")
+    L.append(f"  defaulted              : {batch['defaulted_total']} total across the batch "
+             f"(checked turns and gate verdicts)")
+    for label, key in (("checker precision", "checker"), ("gate precision", "gates")):
+        pr = batch[key]
+        val = f"{pr['precision']:.0%}" if pr["precision"] is not None else "—"
+        L.append(f"  {label:<23}: {val} ({pr['confirmed']} confirmed, {pr['rejected']} rejected)")
     L.append(f"  ungraded findings      : {batch['ungraded_total']} total "
              f"({batch['n_graded']}/{batch['n_runs']} run(s) graded)")
     if batch.get("mixed_grading"):
@@ -584,14 +589,14 @@ def format_report(batch: dict) -> str:
     L.append("")
     L.append("── Play signals ────────────────────────────────────────────────────────────")
     L.append(f"  turns-to-wrap          : {_fmt_dist(batch['turns_to_wrap'])}")
-    L.append(f"  correction rate        : {_fmt_dist(batch['correction_rate'], pct=True)}")
+    L.append(f"  stages corrected       : {_fmt_dist(batch['stage_correction_rate'], pct=True)}")
     outc = "  ".join(f"{o}={n}" for o, n in batch["outcomes"].items())
     L.append(f"  session close          : {outc or '—'}")
 
     L.append("")
     L.append("── Per run ─────────────────────────────────────────────────────────────────")
     L.append(f"  {'run':<20} {'outcome':<10} {'turns':>5} {'score':>6} {'viol(raw/ded)':>14} "
-             f"{'corr':>5} {'dflt':>5} {'ungr':>5}")
+             f"{'prec':>5} {'dflt':>5} {'ungr':>5}")
     for r in batch["runs"]:
         if r.get("no_archive"):
             L.append(f"  {str(r.get('run_id'))[:20]:<20} {str(r.get('outcome'))[:10]:<10} "
@@ -600,8 +605,9 @@ def format_report(batch: dict) -> str:
         viol = f"{r['violations_raw']}/{r['violations_dedup']}" if r.get("graded") else "—"
         sc = r.get("score") or {}
         score = f"{sc['score']:.0f}" if sc.get("score") is not None else "—"
-        corr = str(r.get("corrected_turns", "—"))
-        dflt = str(r.get("defaulted_verdicts", "—"))
+        prec = r["checker"]["precision"]
+        corr = f"{prec:.0%}" if prec is not None else "—"
+        dflt = str(r.get("defaulted", "—"))
         ungr = str(r.get("ungraded", "—")) if r.get("graded") else "—"
         L.append(f"  {str(r.get('run_id'))[:20]:<20} {str(r.get('outcome'))[:10]:<10} "
                  f"{r.get('turns', 0):>5} {score:>6} {viol:>14} {corr:>5} {dflt:>5} {ungr:>5}")

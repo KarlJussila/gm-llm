@@ -76,7 +76,8 @@ The subject is the DM playing well, never the checker catching it failing.
 ### Grade — `bench grade`
 
 - `openai/gpt-6.1-sol` at `high` reasoning, **one session per run**, with read access to the pristine
-  start canon, the run's transcript and its checks.
+  start canon, the run's transcript and its checks, and the campaign at the end of the run for the
+  stage findings. A run that hasn't been checked is not graded.
 - Each finding is **confirmed or rejected**. A confirmed finding gets a severity, a category, a
   one-line rationale and `duplicate_of`; a rejection is a checker false positive. Stage-gate
   findings and canon-lint misses are graded the same way.
