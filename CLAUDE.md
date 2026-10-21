@@ -5,8 +5,9 @@ drives model agents through campaign setup → live play → post-session reconc
 kept as human-readable markdown files.
 
 It is being rebuilt for **GPT-6 Luna** (`openai/gpt-6-luna`, `xhigh` reasoning). The MiMo product
-is retired — v0.5.0 is its last release — and the model-facing prompts in the tree are still
-MiMo's until the rebuild replaces them. `design/luna.md` is the target; `ROADMAP.md` is the order.
+is retired — v0.5.0 is its last release. The model-facing prompts were rewritten for Luna at the
+`luna-clean-slate` tag; what's left is testing and refining them. `design/luna.md` is the target;
+`ROADMAP.md` is the order.
 
 ## Where things live
 
