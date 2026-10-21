@@ -14,6 +14,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   to load; skill descriptions say only when to load them; no prompt instructs a task list. The
   in-play check skills (`check-turn`, `check-conduct`, `check-combat`) are deleted, and
   `combat-run` now says to roll initiative before `start_encounter`.
+- **The autoplayer's character packet is generated** from the PC's sheet, state and knowledge
+  ledger, the same way for `--player auto` and `bench run`; the sheet's DM-side hooks stay out.
+  `--character` and the `*.player.md` lookup are gone. The autoplayer gets no per-turn reminder:
+  `player-rolls` and `player-combat` are skills only it can load.
 - Campaign setup presents a world proposal the player can revise before character creation.
   Arcs and initial state are authored in one dispatch, checked from disk with one correction and
   resumable after interruption. The canon lint handles structural checks; `check-init` reviews

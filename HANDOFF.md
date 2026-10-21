@@ -27,11 +27,13 @@ Order (hot path first). Done is marked ✓.
 - ✓ `combat-run` (now says to roll initiative), `combat-balance` (`035459f`)
 - ✓ planning: the four `*-plan` skills, `check-plan`, its brief and correction, `setup-gate-brief`,
   `correct-init` (`c5e8073`)
-- setup: `campaign-intake`, `world-build`, `character-create`, `character-import`, `arc-design`
-- reconcile: `check-digest`
-- `dm.md` (partly MiMo), `resume-prime`
-- Out of scope here: `player.md`, `player-reminder`, `player-combat-reminder` belong to benchmark
-  B6.
+- ✓ setup skills (`38768b3`); `dm.md`, `check-digest`, every skill description now "Load when …"
+  (`6d3cd2f`); the orchestrator's nudges and combat briefs moved out of Python into `prompts/`, and
+  `resume-prime` (`e2a20f1`)
+- ✓ B6, the autoplayer (`54f1203`): `player.md`, the `player-rolls` / `player-combat` skills
+  (scoped to the player agent by `skill` permissions, verified with `opencode debug agents` in a
+  scratch project), and the packet generated in code (`orchestrator/packet.py`). Only the
+  story-so-far recap is left (ROADMAP benchmark 2).
 
 Find what's left with `git log --format=%h 1f6879a..HEAD -- <file>`: a file touched only by
 `1974a4b` (the mechanical layout change) or not at all is still MiMo prose.
