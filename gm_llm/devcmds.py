@@ -192,7 +192,7 @@ def _autoplay(args):
     args.player = "auto"
     args.mock = False
     args.setup = False
-    run_play(args)
+    return run_play(args)
 
 
 def unavailable(what: str) -> None:

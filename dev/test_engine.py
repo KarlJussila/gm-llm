@@ -15,6 +15,7 @@ frontend drives it, and what is asserted is the event stream:
   - a second `advance` before the first has started is refused, and `closed` is the last
     event even with a wrap still running;
   - a batch quit before its run opens still stops that run;
+  - the console stops unattended play wherever it lands, and asks a human what's next;
   - the same protocol over a real `gm-llm serve` child: JSON lines both ways, and the child
     is gone after `close`.
 """
@@ -225,6 +226,55 @@ def a_batch_quit_before_its_run_opens():
     print()
 
 
+def the_console_knows_when_to_stop():
+    print("the_console_knows_when_to_stop:")
+    import builtins
+    import io
+    from contextlib import redirect_stdout
+
+    from gm_llm import consoleui
+
+    class Scripted:
+        def __init__(self, *states, errors=()):
+            self.events = queue.Queue()
+            for ev in (*errors, *states):
+                self.events.put(ev)
+            self.sent = []
+
+        def send(self, cmd):
+            self.sent.append(cmd)
+            self.events.put(state("closed"))
+
+        def close(self):
+            pass
+
+    def state(phase, *, player="auto", actions=("status", "shutdown"), **kw):
+        return {"type": "state", "phase": phase, "session": 1, "awaiting": None, "busy": None,
+                "player": player, "in_combat": False, "actions": list(actions), **kw}
+
+    def run(client, answers=()):
+        feed = iter(answers)
+        real = builtins.input
+        builtins.input = lambda prompt="": next(feed)  # StopIteration if it asks unexpectedly
+        try:
+            with redirect_stdout(io.StringIO()):
+                return consoleui.run(client)
+        finally:
+            builtins.input = real
+
+    adv = ("status", "shutdown", "advance")
+    check(run(Scripted(state("play", in_combat=True))) == 0,
+          "an agent stopped mid-fight (no advance offered) exits")
+    failed = {"type": "error", "what": "opening the session", "message": "gave up"}
+    check(run(Scripted(state("ready", actions=adv), errors=[failed])) == 1,
+          "an agent whose opening failed exits non-zero instead of prompting")
+    check(run(Scripted(state("complete", actions=adv))) == 0, "an agent's finished session exits")
+    c = Scripted(state("setup", player="human", actions=adv))
+    run(c, answers=["y"])
+    check(c.sent == [{"type": "advance"}], "a human is asked to retry a failed setup opening")
+    print()
+
+
 def over_the_pipe():
     print("over_the_pipe:")
     client = ProcessClient(["serve", "--mock"])
@@ -246,5 +296,6 @@ if __name__ == "__main__":
     advance_wraps()
     one_advance_and_a_terminal_close()
     a_batch_quit_before_its_run_opens()
+    the_console_knows_when_to_stop()
     over_the_pipe()
     print("OK — engine: setup, play, combat, meta, cancel, wrap, and the stdio protocol.")

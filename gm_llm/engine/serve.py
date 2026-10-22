@@ -22,7 +22,15 @@ def claim_stdout():
     os.dup2(2, 1)
     sys.stdout = sys.stderr
     sys.stdin.reconfigure(encoding="utf-8")
+    # A kill must still stop the backend, or its opencode server outlives us: the first
+    # SIGTERM unwinds through the cleanup paths, and later ones can't interrupt them.
+    signal.signal(signal.SIGTERM, _terminate)
     return out
+
+
+def _terminate(*_) -> None:
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    sys.exit(143)
 
 
 def fail(out, message: str) -> int:
@@ -51,8 +59,6 @@ def serve(engine, out) -> int:
 
     writer = threading.Thread(target=write, daemon=True)
     writer.start()
-    # A kill must still stop the backend, or its opencode server outlives us.
-    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     engine.subscribe(pending.put)
     engine.start()
     try:
@@ -68,6 +74,7 @@ def serve(engine, out) -> int:
             if cmd.get("type") == "shutdown":
                 break
     finally:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)  # don't let a kill cut cleanup short
         engine.close()
         pending.put(None)
         writer.join(timeout=5)

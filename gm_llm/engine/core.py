@@ -324,6 +324,7 @@ class Engine:
         try:
             st = self.lc.setup.start()
         except Exception as e:  # noqa: BLE001 — surface any failure to the player
+            self._stop_tap()
             self._error("opening setup", e)
             self._set(busy=None)
             return
@@ -573,11 +574,12 @@ def open_engine(directory: str | Path, *, player: str = "human", model=None, var
     logs = Logs.under(project=directory, debug=debug_enabled())
     backend = Backend(str(directory), port=port, min_call_gap=min_gap,
                       turn_timeout=turn_timeout or 360, logs=logs,
-                      agents=agent_overrides(directory, model, variant)).start()
+                      agents=agent_overrides(directory, model, variant))
     try:
+        backend.start()
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)
         lifecycle = Lifecycle(backend, gate, str(directory), logs=logs, player=player)
-    except Exception:
+    except BaseException:  # a kill mid-start included: the server is already running
         backend.stop()
         raise
     return Engine(lifecycle, cleanup=backend.stop, turn_cap=turn_cap, fresh=fresh,

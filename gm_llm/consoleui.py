@@ -18,12 +18,13 @@ import sys
 
 from .dice import roll_expr
 
+# The yes/no for each phase where the engine waits on an `advance`.
 _ASK = {
+    "setup": "Setup couldn't start — try again?",
     "setup_done": "Setup complete — plan and start session 1?",
     "ready": "Session {n} planned — start playing it?",
     "complete": "Session {n} complete — reconcile and prep session {next}?",
-    # play with nothing awaited and nothing in flight: the loop stopped (a cap, a failure)
-    "play": "The session has stopped — wrap it now?",
+    "play": "The session has stopped — wrap it now?",  # a cap or a failure ended the loop
 }
 
 
@@ -59,12 +60,6 @@ def _render(ev: dict, *, stream: bool, human: bool) -> None:
     elif kind == "stream" and stream:
         sys.stderr.write(ev["text"])
         sys.stderr.flush()
-
-
-def _wants_player(state: dict) -> bool:
-    return bool(state.get("awaiting")) or (
-        state.get("phase") in _ASK and not state.get("busy")
-        and "advance" in state.get("actions", ()))
 
 
 def _prompt(state: dict) -> str:
@@ -133,14 +128,17 @@ def run(client, *, stream: bool = False) -> int:
                     fresh = fresh or ev["type"] in ("error", "status")
                     failed = failed or ev["type"] == "error"
                 continue
-            if not (fresh and _wants_player(state)):
+            if not fresh or state.get("busy") or state.get("phase") == "starting":
                 continue
-            if state.get("player") == "auto" and state["phase"] in ("play", "complete"):
-                if state["phase"] == "complete":
+            if not state.get("awaiting"):
+                # Idle: an advance is the only way on. Unattended play stops here.
+                auto = state.get("player") == "auto" and state["phase"] != "setup_done"
+                if state["phase"] == "complete" and auto:
                     _print("— the session is complete — `gm-llm play` wraps it —")
                     return 0
-                _print("— the session is still open — run this again to resume it —")
-                return 1 if failed else 0
+                if auto or "advance" not in state.get("actions", ()):
+                    _print("— the session is still open — run this again to resume it —")
+                    return 1 if failed else 0
             try:
                 line = input(_prompt(state))
             except (EOFError, KeyboardInterrupt):
