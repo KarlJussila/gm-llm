@@ -132,7 +132,7 @@ class Backend:
         turn_timeout: int = 360,
         retries: int = 4,
         min_call_gap: float = 1.0,
-        stall_timeout: int = 180,
+        stall_timeout: int = 600,
         logs: Logs | None = None,
         agents: dict | None = None,
     ):
@@ -150,7 +150,8 @@ class Backend:
         # A call that produces no stream activity for this long has stalled — a rate limit, or
         # a first token that never came — so interrupt and retry rather than block to the full
         # `turn_timeout`. A productive call keeps streaming (text, reasoning and tool events),
-        # so this only fires on a genuine gap.
+        # so this only fires on a genuine gap. Generous, because interrupting a call that was
+        # only slow (a busy model, a big context at xhigh) throws its work away.
         self.stall_timeout = stall_timeout
         self._stall_override: int | None = None    # `patient()` raises the budget for heavy calls
         self._retries_override: int | None = None  # …and can lower the retry count for them

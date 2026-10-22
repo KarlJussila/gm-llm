@@ -247,8 +247,9 @@ def _build_parser() -> argparse.ArgumentParser:
     backend_flags.add_argument("--stream", action="store_true",
                                help="stream the dm/checker output live as it generates (verbose)")
     backend_flags.add_argument("--turn-timeout", type=int, default=0,
-                               help="per model-call timeout in seconds (0 = per-command "
-                                    "default; play=360, prep/reconcile=1800)")
+                               help="per model-call timeout in seconds (0 = the command's "
+                                    "default: 1800; bench check/grade 600, a play-only bench "
+                                    "run 360)")
 
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--dir", default=".", help="campaign project directory (default: cwd)")

@@ -573,7 +573,7 @@ def open_engine(directory: str | Path, *, player: str = "human", model=None, var
     directory = Path(directory).resolve()
     logs = Logs.under(project=directory, debug=debug_enabled())
     backend = Backend(str(directory), port=port, min_call_gap=min_gap,
-                      turn_timeout=turn_timeout or 360, logs=logs,
+                      turn_timeout=turn_timeout or 1800, logs=logs,
                       agents=agent_overrides(directory, model, variant))
     try:
         backend.start()

@@ -98,6 +98,9 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   invalidated.
 
 ### Fixed
+- **Slow model calls are no longer cut short.** A call now counts as stalled only after 10 minutes
+  without output (was 3), and play, setup and wraps get 30 minutes per call (was 6, which a
+  big setup or reconcile call could outlast).
 - **A reveal no longer splits a wrapped `Known to:` line.** The PC was added to the entry's first
   line, mid-sentence; it now goes at the end of the entry.
 - **Setup no longer shows the DM's message twice.** Luna can say a line as commentary before a
