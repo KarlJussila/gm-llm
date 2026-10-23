@@ -84,26 +84,52 @@ wrong one the probe prompt gave it).
   no lingering `named-only`, `as-of` stamps current, secret ids resolve. Its findings go back once,
   as a correction.
 - `canon-conventions` is rewritten as a reference for this layout.
+- **Anyone of consequence is named and filed** as soon as it is apparent they will matter: a
+  recurring contact, a faction's leader, anyone an arc or thread leans on. An NPC file starts as a
+  shim — vitals, who they are, what they want, how they come across — and grows as the NPC gains
+  weight: stats only for someone who may fight, a hidden layer only where there is one. A plugin
+  tool scaffolds entity files and their state files from frontmatter values, so the model writes
+  only the prose. Extras the runner invents and never meets again stay unnamed.
+- **Threads are the leads beside the arcs** (`state/threads.md`): local problems, hooks, people with
+  wants. One the player takes up and that proves compelling is promoted to a minor arc in the arc
+  close-out.
 
 ## Setup
 
 1. **Scaffold** — code.
-2. **Intake and world** (interactive). The brief states the goal and deliverable. The DM gathers the
-   brief (free-form or guided; lines and veils), builds the world, and presents a spoiler-free world
-   proposal as an ordinary message. The player can push back and the DM revises. When the player
-   approves, the DM calls `task_complete`.
-3. **Character** (interactive, same thread). Code sends the character brief; the DM opens with hooks
-   and the creation choice, imports a sheet if given one, fills the vitals, agrees backstory and
-   placement with the player, writes the PC files and any backstory canon, then calls `task_complete`.
-4. **Arcs and state** — one non-interactive dispatch. The major arc built around the PC (with its
-   level pacing), at least one minor arc hooked into it (subagents optional), and initial state.
-   Code then verifies one major arc, at least one minor arc with `hooks-into`, and state stamped
-   `S0` (`as-of: S<n>` means as of the end of session n, so state before play is `S0`), with one
-   nudge naming anything missing. Resume reads the same disk facts.
-5. **Canon lint** — one correction.
-6. **`check-init`** — the judgment half only: duplicates, a hidden layer on every entity, consistency
-   with `campaign.md`. One correction.
-7. **Commit** `campaign: init`, then **plan session 1** (§ Planning).
+2. **Intake and pitch** (interactive). The DM gathers the brief (free-form or guided; lines and
+   veils), writes `campaign.md`, and pitches the world as an ordinary message: premise, tone, the
+   shape of the world and where the PC would begin. Conversation only; the world is built next. The
+   player can push back and the DM revises. When the player approves, the DM calls `task_complete`.
+3. **World** — one non-interactive dispatch, subagents allowed. The world is built top down, each
+   tier to its own depth, so its details trickle down to where the PC begins:
+   - **The world, in broad strokes:** countries and powers, important cities, factions and the
+     geopolitics between them; peoples, faiths and magic as they shape society; a history with
+     named eras and events.
+   - **The region, in structure:** its geography and political structure — settlements, routes,
+     who holds power and who contests it, its neighbours.
+   - **The vicinity, in fine detail:** where the PC begins, with NPCs and locations to interact
+     with, what is happening there now, and problems of its own beside the main story.
+
+   The brief says what to populate and what to flesh out, never how many: the model judges the
+   amount. The stage ends with a spoiler-free **player primer** in `documents/` — what someone
+   living there knows of the world, the region and the vicinity.
+4. **Character** (interactive, same thread). Code sends the character brief; the DM opens with hooks
+   drawn from the built world and the creation choice, imports a sheet if given one, fills the
+   vitals, agrees backstory and placement with the player, writes the PC files and any backstory
+   canon, then calls `task_complete`. The knowledge ledger starts with what someone of the PC's
+   background knows of each tier.
+5. **Arcs and state** — one non-interactive dispatch. The major arc built around the PC (with its
+   level pacing), at least one minor arc hooked into it (subagents optional), the threads, and
+   initial state. Arcs are built on named NPCs, and an arc spins out the new NPCs it needs. The
+   vicinity's problems become threads. Code then verifies one major arc, at least one minor arc with
+   `hooks-into`, and state stamped `S0` (`as-of: S<n>` means as of the end of session n, so state
+   before play is `S0`), with one nudge naming anything missing. Resume reads the same disk facts.
+6. **Canon lint** — one correction.
+7. **`check-init`** — the judgment half only: duplicates, consistency with `campaign.md`, and
+   coverage — each tier built to its depth, the vicinity populated, the arcs cast with named NPCs.
+   One correction.
+8. **Commit** `campaign: init`, then **plan session 1** (§ Planning).
 
 `campaign-setup` is deleted; its standards are either in `canon-conventions` or are now the lint.
 
