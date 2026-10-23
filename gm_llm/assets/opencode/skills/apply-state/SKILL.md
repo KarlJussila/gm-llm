@@ -13,8 +13,12 @@ file each fact belongs in.
 
 ## The knowledge ledger
 
-Add to `characters/{pc}.knowledge.md` everything the PC learned, deduced or was told: what it now
-knows, what it believes (mark the false beliefs) and the open questions it became aware of.
+`characters/{pc}.knowledge.md` is what the PC knows of the world now, kept by subject; its
+template says what belongs there and what doesn't. Bring every subject the session touched up to
+date from *Knowledge gained*, adding a subject for anyone or anything new: fold in what the PC
+learned, deduced or was told, replace what it overturned, make a confirmed belief knowledge, and
+drop a question play answered. Rewrite the subject as it stands now rather than appending to it,
+and leave out what isn't knowledge — what the PC did, their plans, the rolls.
 
 When what it learned is a tagged secret, end the ledger line with `[learned:<id> S{N}]`. That is
 the whole reveal: the orchestrator turns the home tag into `[revealed:<id> S{N}]` and adds the PC to

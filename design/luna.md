@@ -93,6 +93,10 @@ wrong one the probe prompt gave it).
 - **Threads are the leads beside the arcs** (`state/threads.md`): local problems, hooks, people with
   wants. One the player takes up and that proves compelling is promoted to a minor arc in the arc
   close-out.
+- **Every file keeps its purpose.** The session's record is its digest; other files hold only the
+  result. The knowledge ledger is what the PC knows of the world now, kept by subject and rewritten
+  as play changes it — never what the PC did, planned or rolled. An arc is the design of a story
+  ahead and what is true beneath it, never a recap of play; where it stands is its state file.
 
 ## Setup
 
@@ -192,8 +196,8 @@ check can compare them with the narration.
    every pass. A close-out covers new minor arcs, the threads dashboard and the cross-arc sweep. Code
    verifies every arc is stamped `as-of: S<n>` and nudges once with any it missed; resume reads the
    same stamps.
-5. **State** — `dm` thread: reveals into the ledger by id, entity snapshots, `current`, `calendar`,
-   `clocks`.
+5. **State** — `dm` thread: the ledger's subjects brought up to date (reveals by id), entity
+   snapshots, `current`, `calendar`, `clocks`.
 6. **`check-propagation`** — the judgment half only (did what was played land?). One correction.
 7. **Commit**, then plan the next session.
 

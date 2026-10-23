@@ -11,7 +11,11 @@ hooks-into: <the major arc's slug — minor arcs only; delete this line on the m
 <!-- An arc — the living design of one story. Path: arcs/{slug}.md, paired with {slug}.state.md.
      The campaign runs one major arc and minor arcs that hook into it. Every turning point and the
      central mystery commit their answers here, tagged as secrets; only the player's path stays
-     open. Revised between sessions toward what was actually played. -->
+     open. Revised between sessions toward what was actually played.
+
+     It is a design: where the story is going and what is true beneath it, never the record of
+     play. What happened is the session's digest, what the PC knows is the ledger, and where the
+     arc stands is its state file. Play changes the design only where it changes the story. -->
 
 # <Arc Name>
 
@@ -29,7 +33,7 @@ hooks-into: <the major arc's slug — minor arcs only; delete this line on the m
    Known to: <[[slug]], …>
 
 ## Committed answers
-- <a question the campaign will raise> → <its committed answer>
+- <a question the campaign will raise> → <its committed answer, the truth play will uncover>
 
 ## Tension curve
 <Build-up → rising action → climax → falling action → resolution, and where each beat sits.>
@@ -41,6 +45,7 @@ hooks-into: <the major arc's slug — minor arcs only; delete this line on the m
 - **L<x> → L<x+1>** — due ~S<n>; <the turning point it lands on, or "cadence">
 
 ## Engagement paths
+<!-- The ways into the story from where it now stands — what lies open, not what was taken. -->
 - **Direct** — <they take the hook head-on>
 - **Indirect** — <they stumble into it>
 - **Avoidance** — <how it escalates if ignored>

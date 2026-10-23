@@ -15,7 +15,9 @@ job is the part code can't judge — whether the content says what play establis
 
 Judge each fact in the home `canon-conventions` gives it under *What goes where*. Missing from its
 home is a finding. Absent from anywhere else is not, and a fact copied onto another entity's file is
-— most often a place's state recording who arrived, stayed or left.
+— most often a place's state recording who arrived, stayed or left. So is a file turned into a
+record of play: an arc that recounts the session instead of designing the story ahead, a ledger
+that logs what the PC did, planned or rolled.
 
 ## The checks
 
@@ -23,9 +25,10 @@ home is a finding. Absent from anywhere else is not, and a fact copied onto anot
    file that says what play established about it — an improvised NPC filed with what the PC saw
    and heard, a changed entity revised where its truth changed.
 2. **The arcs.** Each divergence in *Plan vs. actual* shows in the affected arc's body — turning
-   points, answers, position — not just in its state file.
-3. **The ledger.** Each fact in *Knowledge gained* is in the PC's knowledge ledger, a tagged secret
-   with its `[learned:<id> S{N}]`.
+   points, answers, the curve ahead — not just in its state file.
+3. **The ledger.** Each fact in *Knowledge gained* is in the PC's knowledge ledger under its
+   subject, as that subject now stands: what it overturned replaced, not left beside it. A tagged
+   secret carries its `[learned:<id> S{N}]`.
 4. **State.** Each entity whose situation changed has a snapshot that says so; `state/current.md`
    is where the session ended; the calendar and clocks moved as play moved them; the threads play
    opened, advanced or closed are reflected in `state/threads.md`.

@@ -45,10 +45,10 @@ From the PC templates in `canon-conventions`:
 - **`characters/<slug>.state.md`** — starting location, any notable condition, key starting items,
   the opening objective, stamped `as-of: S0`. Never HP, spell slots or money; the player tracks
   those.
-- **`characters/<slug>.knowledge.md`, the ledger** — what the character holds true at the start
-  (their history, their goal, and what someone of their background knows of the world, the region
-  and the people and places around them — at least what the primer says), what they
-  believe that may be wrong, and the open questions they're motivated to chase. Never the campaign's
+- **`characters/<slug>.knowledge.md`, the ledger** — by subject, what someone of their background
+  knows at the start of the world, the region, and the people and places around them (at least
+  what the primer says), what they believe that may be wrong, and the open questions they're
+  motivated to chase. Never the campaign's
   secrets: those stay tagged in the world and arc files, and enter the ledger only when play reveals
   them.
 - **`characters/<slug>.repertoire.md`** — the PC's reaction-eligible moves as

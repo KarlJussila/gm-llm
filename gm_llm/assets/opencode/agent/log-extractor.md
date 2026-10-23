@@ -34,9 +34,10 @@ wording of anything written. Trim only the conversational back-and-forth.
 under one with nothing in it.
 
 1. **Narrative** — what happened, beat by beat, in order.
-2. **Knowledge gained** — every fact the PC learned, deduced or was told; beliefs the PC now holds
-   (mark the false ones); open questions the PC became aware of. Give a tagged secret's id when the
-   PC learned it (`[hidden:<id>]` in its home file).
+2. **Knowledge gained** — every fact about the world the PC learned, deduced or was told (what a
+   check revealed, not the roll); beliefs the PC now holds (mark the false ones); open questions
+   the PC became aware of. Give a tagged secret's id when the PC learned it (`[hidden:<id>]` in its
+   home file).
 3. **Secrets & awareness** — changes to who knows what beyond the PC: what the PC told an NPC, what
    an NPC found out.
 4. **World canon** — new or changed NPCs, locations, factions and events, including everything the

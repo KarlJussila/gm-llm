@@ -14,4 +14,4 @@ as-of: S<n>
 - <beat> — <hit S<n> | pending>
 
 ## Position on the tension curve
-<Where the arc sits, in a line.>
+<Where the arc sits, in a line — not a recap of play.>

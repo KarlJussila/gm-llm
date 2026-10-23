@@ -43,7 +43,7 @@ slots, coin); the player tracks those.
 | `state/clocks.md` | Time-pressure dashboard — every clock in one place | `dm` (apply pass) |
 | `characters/{slug}.md` | PC sheet — stats, personality, backstory, hooks | `dm` |
 | `characters/{slug}.state.md` | PC state — location, notable condition, key items, objective | `dm` (apply pass) |
-| `characters/{slug}.knowledge.md` | What the PC **Knows / Believes / Open questions** | `dm` (apply pass) |
+| `characters/{slug}.knowledge.md` | What the PC knows, believes and wonders, by subject, as it stands now | `dm` (apply pass) |
 | `characters/{slug}.repertoire.md` | Combat repertoire — the PC's reaction triggers & tactics | `dm` (apply pass) |
 | `sessions/{N}/plan.md` | The plan for an upcoming session | `dm` |
 | `sessions/{N}/transcript.md` | Play transcript (final messages), written each turn | orchestrator |
@@ -82,8 +82,8 @@ their knowledge ledger, or what is openly perceivable — anything tagged `[hidd
 until revealed.**
 
 Two mirrored layers:
-1. **The PC ledger** (`characters/{slug}.knowledge.md`) — the positive record: Knows / Believes /
-   Open questions.
+1. **The PC ledger** (`characters/{slug}.knowledge.md`) — the positive record, kept by subject:
+   what the PC knows, believes and wonders now. Not what happened, and never a roll.
 2. **Awareness tags** at each fact's home (`world/**`, `arcs/**`): a secret carries an id,
    `[hidden:<id>]`, and a `Known to:` line. Openly perceivable details need no tag.
 

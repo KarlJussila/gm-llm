@@ -39,6 +39,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - **Anyone of consequence is named and filed** as soon as it's apparent they'll matter; only a
   one-off extra stays unnamed. An NPC starts as a shim — vitals, who they are, what they want — and
   the lint no longer requires stats of one, nor `check-init` a hidden layer on every entity.
+- **The knowledge ledger is kept by subject and maintained, not appended to.** It holds what the
+  PC knows of the world now; what the PC did, planned or rolled stays out, and the state pass
+  rewrites each subject play touched. Arcs stay designs of the story ahead rather than recaps of
+  play, and `check-propagation` flags a file turned into a record of play.
 - **A cut-off model call is resumed, not reverted.** A stall, an error or the time limit used to
   throw the attempt away and send the prompt again; now the retry tells the agent to carry on in
   the same session, so a long authoring stage keeps the work it did. Each failed attempt is a
