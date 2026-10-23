@@ -49,8 +49,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   `retry` event in the archive.
 - **Threads are the leads beside the arcs**, including the vicinity's own problems; the threads
   dashboard says where each stands, and one the player takes up can become a minor arc.
-- Player feedback lives outside the campaign in a shared player directory. The runner receives
-  its standing guidance in prepared context, and agents read matching feedback when loading skills.
+- Player feedback lives outside the campaign in a shared player directory, one file per audience:
+  `dm-runner.md` for the table, `dm.md` for the work between sessions. The runner receives its
+  guidance in prepared context and the dm ahead of each thread's first brief; no agent looks
+  feedback up when it loads a skill, and per-skill files are no longer read.
   Benchmark runs use private copies of the fixture's feedback. The agents work on a copy in the
   project's `feedback/`, which gm-llm fills from the player directory and copies curation back
   from, so they no longer need access outside the project.

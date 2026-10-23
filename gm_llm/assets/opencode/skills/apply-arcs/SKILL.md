@@ -12,7 +12,6 @@ The record is the digest, `campaign/sessions/{N}/digest.md`, chiefly *Plan vs. a
 *Narrative*, *Threads* and *Knowledge gained*. The arc is `campaign/arcs/{slug}.md` with its `{slug}.state.md`;
 `canon-conventions` is the format.
 
-The player's feedback for `arc-design` applies here too.
 
 ## Two principles
 

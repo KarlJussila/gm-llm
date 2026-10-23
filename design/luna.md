@@ -49,9 +49,11 @@ wrong one the probe prompt gave it).
    safe choice for rate-limited free models. Subagent calls are captured in the archive and token
    counts.
 10. **Player feedback belongs to the player.** It lives in a player-level directory shared across
-    campaigns, one file per skill, read when that skill loads. The agents can't reach outside the
-    project, so they work on the project's `feedback/`: code fills it from the player's directory
-    and copies back what curation changed. Benchmark runs point it at the run's private copy of
+    campaigns, one file per audience: `dm-runner.md` for the table, `dm.md` for the work between
+    sessions. Code hands each to its agent — the runner's in its prepared context, the dm's ahead of
+    the first brief on each dm thread, which the dm passes on to its authors — so no agent looks
+    feedback up. The agents can't reach outside the project, so they work on the project's
+    `feedback/`: code fills it from the player's directory and copies back what curation changed. Benchmark runs point it at the run's private copy of
     the fixture's feedback. Configuration is documented in
     [Player settings](../README.md#player-settings).
 

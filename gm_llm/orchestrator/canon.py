@@ -1,10 +1,11 @@
 """
 Canon preload — campaign files read in code and handed to a model up front.
 
-Two readers: the runner's `<prepared-context>` at the start of a session (the plan, the standing
-canon, the entities the plan names, the player's runner feedback), and the plan checker's canon
-block (`build`), framed as a head start it must still extend, since the match is by name and can
-miss an entity referenced indirectly. Plain library code: give it the campaign dir, get text back.
+Three readers: the runner's `<prepared-context>` at the start of a session (the plan, the standing
+canon, the entities the plan names, the player's runner feedback); the plan checker's canon block
+(`build`), framed as a head start it must still extend, since the match is by name and can miss an
+entity referenced indirectly; and the dm thread's preface (`dm_guidance`), the player's guidance
+for the work between sessions. Plain library code: give it the campaign dir, get text back.
 """
 
 from __future__ import annotations
@@ -12,11 +13,18 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from gm_llm.settings import project_feedback
+from gm_llm.settings import guidance
 
 from . import paths
 from .prompts import load
 from .registry import scan
+
+
+def dm_guidance(directory) -> str:
+    """The dm thread's preface: the player's standing guidance for the work between sessions,
+    fenced for the thread's first brief; '' when there is none."""
+    text = guidance(directory, "dm")
+    return load("dm-guidance").format(guidance=text) + "\n\n" if text else ""
 
 
 class CanonPreloader:
@@ -112,9 +120,9 @@ class CanonPreloader:
         if plan:
             blocks.append(f"### {paths.rel(n, 'plan')}\n{plan.strip()}")
         blocks += self._render(self._baseline() + self._matched_entities(plan or ""))
-        feedback = project_feedback(self.campaign.parent) / "dm-runner.md"
-        if feedback.is_file():
-            blocks.append(f"### Player feedback: dm-runner\n{feedback.read_text(encoding='utf-8').strip()}")
+        feedback = guidance(self.campaign.parent, "dm-runner")
+        if feedback:
+            blocks.append(f"### Player feedback: dm-runner\n{feedback}")
         if not blocks:
             return ""
         # Fenced in <prepared-context>…</prepared-context> so the runner reads it as its

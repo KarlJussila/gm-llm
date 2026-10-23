@@ -50,6 +50,16 @@ def project_feedback(directory: str | Path) -> Path:
     return Path(directory).resolve() / "feedback"
 
 
+def guidance(directory: str | Path, audience: str) -> str:
+    """The player's standing guidance for `audience` — `dm-runner` at the table, `dm` between
+    sessions — from the project's copy; '' when there is none."""
+    path = project_feedback(directory) / f"{audience}.md"
+    try:
+        return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+    except OSError:
+        return ""
+
+
 def pull_feedback(directory: str | Path) -> None:
     """Copy the player's feedback store into the project's `feedback/`. A no-op when the store
     is that directory (a benchmark run's private copy)."""

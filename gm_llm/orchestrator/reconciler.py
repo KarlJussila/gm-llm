@@ -33,6 +33,7 @@ from gm_llm.settings import feedback_snapshot, load_settings, project_feedback, 
 from . import paths
 from .archive import verdict_fields
 from .backend import HEAVY_RETRIES, HEAVY_STALL_TIMEOUT
+from .canon import dm_guidance
 from .lint import arcs_not_stamped
 from .logs import append, banner, section
 from .phase import apply_lint_correction, commit_campaign, correct_once
@@ -67,6 +68,7 @@ class Reconciler:
         # One thread for the dm (feedback through prep), one for the extractor. Checker
         # sessions are spawned per call by the Gate.
         self.dm_sid = backend.create_session("dm apply")
+        backend.preface(self.dm_sid, dm_guidance(self.root))
         self.extractor_sid = backend.create_session("log-extractor")
 
     # -- stage markers (resume-after-failure) -------------------------------

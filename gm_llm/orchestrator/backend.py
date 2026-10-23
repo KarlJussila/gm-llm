@@ -175,6 +175,7 @@ class Backend:
         self._cancel = threading.Event()
         self._inflight_sid: str | None = None
         self._opened: dict[str, str] = {}  # session id -> the prompt its latest exchange opened with
+        self._prefaces: dict[str, str] = {}  # session id -> text its next prompt carries ahead of it
         self.on_retry = None  # optional callback(agent, attempt, wait, reason)
         self._agents: dict[str, str] = {}       # session id -> the agent it's switched to
         self._agent_models: dict[str, dict | None] = {}  # agent -> its pinned model
@@ -466,6 +467,7 @@ class Backend:
         self._opened.pop(session_id, None)
         retries = self._effective_retries()
         first = None  # the exchange's own prompt, once it's in the session
+        text = self._prefaces.get(session_id, "") + text
         try:
             for attempt in range(retries):
                 self._pace()
@@ -493,6 +495,7 @@ class Backend:
                         inputs: dict[str, dict] = {}
                         for name, inp in read_turn(whole_turn)[1]:
                             inputs[name] = inp  # last call wins (fine for signal tools)
+                        self._prefaces.pop(session_id, None)
                         return Reply(out, frozenset(inputs), inputs, dice_rolls(whole_turn))
                     else:
                         reason = "empty reply (likely a rate-limited/errored stream)"
@@ -539,6 +542,12 @@ class Backend:
         if not sid:
             raise BackendError("session create returned no id")
         return sid
+
+    def preface(self, session_id: str, text: str) -> None:
+        """Put `text` ahead of the next prompt on `session_id`: standing context a thread's first
+        brief carries, whichever brief that turns out to be. Kept until an exchange succeeds."""
+        if text:
+            self._prefaces[session_id] = text
 
     def session_valid(self, session_id: str) -> bool:
         """True if `session_id` still exists on the server (so a resume can reattach to it with

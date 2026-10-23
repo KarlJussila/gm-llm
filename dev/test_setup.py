@@ -33,6 +33,9 @@ class Backend:
     def create_session(self, title):
         return title
 
+    def preface(self, sid, text):
+        pass
+
     def prompt(self, sid, agent, message, **kwargs):
         self.prompts.append(message)
         self.author(message)

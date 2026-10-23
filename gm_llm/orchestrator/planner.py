@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .archive import verdict_fields
+from .canon import dm_guidance
 from .logs import append, banner, section
 from . import paths
 from .phase import apply_lint_correction, commit_campaign, correct_once
@@ -54,7 +55,10 @@ class Planner:
         self.root = Path(backend.directory)
         # Reuse a caller's dm session when given (so the reconcile's apply thread carries
         # its warm context straight into prepping the next session); else open our own.
-        self.dm_sid = dm_sid or backend.create_session("dm prep")
+        self.dm_sid = dm_sid
+        if not dm_sid:
+            self.dm_sid = backend.create_session("dm prep")
+            backend.preface(self.dm_sid, dm_guidance(self.root))
 
     def _plan_path(self, n: int) -> Path:
         return paths.plan(self.root / "campaign", n)

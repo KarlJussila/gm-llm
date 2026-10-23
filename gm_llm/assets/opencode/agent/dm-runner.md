@@ -57,8 +57,7 @@ every arc, the entities the plan names, and the player's standing preferences fo
 to be run. The plan is your preparation and is full of spoilers. Everything else is on disk under
 `campaign/` — read or grep whatever a scene turns on. You can read the campaign but not change it.
 
-The player's standing preferences override your defaults. When you load a skill, also read its
-`<skill-name>.md` in `feedback/`, if it exists.
+The player's standing preferences override your defaults.
 
 ## The player and the screen
 

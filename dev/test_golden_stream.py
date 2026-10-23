@@ -412,6 +412,7 @@ class FakeBackend:
         self.records: list[dict] = []
         self._sid = 0
         self._seq = 0
+        self._prefaces: dict[str, str] = {}
         self.on_retry = None
         self.retries = 4
 
@@ -438,15 +439,21 @@ class FakeBackend:
         self._sid += 1
         return f"sid-{self._sid}"
 
+    def preface(self, session_id: str, text: str) -> None:
+        if text:
+            self._prefaces[session_id] = text
+
     @contextmanager
     def patient(self, stall_timeout, retries=None):  # real Backend widens budget & cuts retries; no-op here
         yield
 
     def prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
+        text = self._prefaces.pop(session_id, "") + text
         self._record(agent, "prompt", text)
         return self._next(agent).text
 
     def prompt_full(self, session_id: str, agent: str, text: str, whole: bool = False) -> Reply:
+        text = self._prefaces.pop(session_id, "") + text
         self._record(agent, "prompt_full", text)
         r = self._next(agent)
         return Reply(r.text, frozenset(r.tools), dict(r.tool_inputs))
@@ -518,6 +525,9 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     writes = _writes(root)
     writes["arcs_state"] = writes["arc_major"] | writes["arc_minor"]
     (root / "gm-llm.yaml").write_text("feedback-dir: feedback\n", encoding="utf-8")
+    (root / "feedback").mkdir(exist_ok=True)
+    (root / "feedback/dm.md").write_text("- Name the people the player will deal with.\n",
+                                         encoding="utf-8")
     script = _script(writes)
     for i, key in _DM_STAGE_WRITES.items():
         script["dm"][i].writes = writes[key]

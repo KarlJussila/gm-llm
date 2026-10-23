@@ -34,6 +34,7 @@ from gm_llm.settings import load_settings
 
 from .archive import verdict_fields
 from . import paths
+from .canon import dm_guidance
 from .lint import setup_missing, world_missing
 from .loop import join_narration
 from .phase import apply_lint_correction, commit_campaign, correct_once, refresh_campaign
@@ -100,6 +101,7 @@ class Setup:
 
         scaffold_campaign(self.root)
         self.dm_sid = self.backend.create_session("dm setup")
+        self.backend.preface(self.dm_sid, dm_guidance(self.root))
         self._stage = self._resume_stage()
 
         # A resume between the interactive stages builds the world, then opens character creation

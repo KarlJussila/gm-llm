@@ -92,8 +92,24 @@ def t_gives_up_and_rolls_back(root: Path) -> None:
     assert not b.revert_exchange("s1"), "and leaves nothing for the caller to revert twice"
 
 
+def t_preface_rides_the_first_prompt_that_lands(root: Path) -> None:
+    b, seen = _backend(root, [[CUT], [CUT], [CUT], [_assistant({"type": "text", "text": "Done."}), IDLE],
+                              [_assistant({"type": "text", "text": "Done."}), IDLE]])
+    b.preface("s1", "<player-guidance>…</player-guidance>\n\n")
+    try:
+        b.prompt("s1", "dm", "Build the world.")
+    except BackendError:
+        pass
+    b.prompt("s1", "dm", "Build the world.")  # the caller runs the stage again
+    assert seen["sent"][3] == "<player-guidance>…</player-guidance>\n\nBuild the world.", \
+        "a given-up exchange keeps the preface for the next"
+    b.prompt("s1", "dm", "Plan session 1.")
+    assert seen["sent"][4] == "Plan session 1.", "once an exchange lands, the preface is spent"
+
+
 def main() -> None:
-    tests = [t_resumes_after_a_cut_off_attempt, t_gives_up_and_rolls_back]
+    tests = [t_resumes_after_a_cut_off_attempt, t_gives_up_and_rolls_back,
+             t_preface_rides_the_first_prompt_that_lands]
     for t in tests:
         with tempfile.TemporaryDirectory(prefix="gm-retry-") as temp:
             t(Path(temp))

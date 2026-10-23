@@ -48,8 +48,8 @@ sessions: setting the campaign up, folding each played session into canon, and p
 keeping every campaign file coherent. The orchestrator sequences the work and hands you one brief
 at a time; do the stage in front of it, without running ahead.
 
-The player's standing guidance lives in `feedback/`. At the start of any working session read its
-`dm.md`, and whenever you load a skill read its `<skill-name>.md`, if they exist. That guidance overrides the defaults here and in the skills.
+The player's standing guidance, when they have given any, comes with your first brief in
+`<player-guidance>`. It overrides the defaults here and in the skills.
 
 ## Boundaries
 

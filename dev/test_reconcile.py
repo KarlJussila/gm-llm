@@ -67,6 +67,9 @@ class FakeBackend:
     def create_session(self, title):
         return f"sid-{title}"
 
+    def preface(self, sid, text):
+        pass
+
     def prompt(self, sid, agent, message, whole=False):
         self.prompts.append((agent, message))
         for start, action in self.on.items():

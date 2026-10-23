@@ -74,8 +74,9 @@ feedback-dir: ~/.gm-llm/feedback
 subagents: sequential
 ```
 
-After each session the `dm` curates the feedback you gave at its close into `feedback-dir`, one
-file per skill or agent, and the agents apply it from then on. The default directory is shared
+After each session the `dm` curates the feedback you gave at its close into `feedback-dir`:
+`dm-runner.md` for how sessions are run, `dm.md` for the work between them. gm-llm hands each to
+its agent from then on; other files there (older versions kept one per skill) are not read. The default directory is shared
 across your campaigns. `feedback-dir` accepts an absolute path, `~`, or a path relative to the
 project. The agents work on a copy in the project's `feedback/`: gm-llm fills it from
 `feedback-dir` when a session starts and copies back what curation changed.
