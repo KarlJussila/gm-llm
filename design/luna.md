@@ -141,10 +141,11 @@ wrong one the probe prompt gave it).
 
 ## Live play
 
-**Start.** Code builds `<prepared-context>`: the plan, `INDEX.md`, `state/current.md`, the PC sheet
-and knowledge ledger, every arc with its state, the entities the plan names, and the player's
+**Start.** Code builds `<prepared-context>`: the plan, the PC's sheet, state and knowledge ledger,
+a map of `campaign/` (the `INDEX.md` tables, then every file they don't list), and the player's
 feedback. Its header is one plain sentence: this is your prepared context; everything else is on
-disk. The opening is not checked.
+disk. The runner reads the people, places and arcs a scene turns on as it needs them; preloading
+them all taught it to answer from what it had. The opening is not checked.
 
 **Each turn.** The message is the player's text in `<player>…</player>` and nothing else. Code keeps:
 the completion marker on `task_complete`, the one nudge for an ending narrated without the tool,

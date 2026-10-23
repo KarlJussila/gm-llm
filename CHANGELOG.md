@@ -43,6 +43,9 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   PC knows of the world now; what the PC did, planned or rolled stays out, and the state pass
   rewrites each subject play touched. Arcs stay designs of the story ahead rather than recaps of
   play, and `check-propagation` flags a file turned into a record of play.
+- **The runner starts from a map, not a preload.** Its prepared context is the plan, the PC's
+  sheet, state and knowledge ledger, and a map of the campaign's files; it reads the people, places
+  and arcs a scene turns on as it needs them.
 - **A cut-off model call is resumed, not reverted.** A stall, an error or the time limit used to
   throw the attempt away and send the prompt again; now the retry tells the agent to carry on in
   the same session, so a long authoring stage keeps the work it did. Each failed attempt is a

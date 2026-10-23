@@ -1,8 +1,8 @@
 """
 Canon preload — campaign files read in code and handed to a model up front.
 
-Three readers: the runner's `<prepared-context>` at the start of a session (the plan, the standing
-canon, the entities the plan names, the player's runner feedback); the plan checker's canon block
+Three readers: the runner's `<prepared-context>` at the start of a session (the plan, the PC, a
+map of the campaign, the player's runner feedback); the plan checker's canon block
 (`build`), framed as a head start it must still extend, since the match is by name and can miss an
 entity referenced indirectly; and the dm thread's preface (`dm_guidance`), the player's guidance
 for the work between sessions. Plain library code: give it the campaign dir, get text back.
@@ -17,7 +17,7 @@ from gm_llm.settings import guidance
 
 from . import paths
 from .prompts import load
-from .registry import scan
+from .registry import COMPANION_SUFFIXES, scan
 
 
 def dm_guidance(directory) -> str:
@@ -110,16 +110,34 @@ class CanonPreloader:
             return ""
         return load("canon-header") + "\n\n" + "\n\n".join(sections) + "\n\n--- end pre-loaded canon ---\n\n"
 
+    def _map(self) -> str:
+        """A map of campaign/ for the runner: the registry, then the files it doesn't list.
+        Companion files and past sessions follow fixed patterns the map states once."""
+        registered = {e.rel for e in scan(self.campaign)}
+        others = sorted(
+            rel for rel in (p.relative_to(self.campaign).as_posix()
+                            for p in self.campaign.rglob("*.md"))
+            if rel != "INDEX.md" and not rel.startswith("sessions/") and rel not in registered
+            and not rel.endswith(COMPANION_SUFFIXES))
+        index = self._read("INDEX.md") or ""
+        index = index[index.find("\n## ") + 1:].strip()  # the tables, without the file's own title
+        return load("runner-map").format(index=index, others="\n".join(f"- {r}" for r in others))
+
     def runner_preload(self, n: int | None = None) -> str:
-        """The runner's opening working set: the session plan, plus the standing canon
-        and the entity files the plan names. No transcript tail — at start there is
-        none, and on resume the orchestrator supplies the full transcript separately."""
+        """The runner's opening working set: the session plan, the PC (sheet, state and
+        knowledge ledger) and a map of the campaign — the rest it reads when a scene turns on
+        it. No transcript tail — at start there is none, and on resume the orchestrator
+        supplies the full transcript separately."""
         n = n if n is not None else self.latest_session_number()
         plan = self._read(paths.rel(n, "plan")) if n else None
         blocks: list[str] = []
         if plan:
             blocks.append(f"### {paths.rel(n, 'plan')}\n{plan.strip()}")
-        blocks += self._render(self._baseline() + self._matched_entities(plan or ""))
+        pcs = [e.rel[:-3] for e in scan(self.campaign) if e.type == "pc"]
+        blocks += self._render([f"{pc}{suffix}" for pc in pcs
+                                for suffix in (".md", ".state.md", ".knowledge.md")])
+        if (self.campaign / "INDEX.md").is_file():
+            blocks.append(self._map())
         feedback = guidance(self.campaign.parent, "dm-runner")
         if feedback:
             blocks.append(f"### Player feedback: dm-runner\n{feedback}")
