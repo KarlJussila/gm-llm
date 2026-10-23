@@ -25,6 +25,7 @@ import secrets
 import shutil
 import signal
 import subprocess
+import tempfile
 import threading
 import time
 import urllib.error
@@ -159,6 +160,7 @@ class Backend:
         self.logs = logs or Logs.under(project=self.directory)
         self._proc: subprocess.Popen | None = None
         self._owns_server = False
+        self._config_dir: str | None = None
         self._last_call = 0.0
         # Liveness: a background tap on the event stream bumps `_last_activity` on every
         # session event, so the stall watchdog can tell a hung call from a slow one.
@@ -181,8 +183,14 @@ class Backend:
         """Boot our own `opencode serve` and wait until it answers."""
         log = open(self.logs.serve, "w")
         exe = shutil.which("opencode") or "opencode"
+        # The player's own opencode setup stays out of the campaign: an empty directory stands
+        # in for the global config (its AGENTS.md, MCP servers, plugins and skills), and the
+        # Claude Code fallbacks are off. Auth lives in opencode's data dir, so login carries
+        # over; a provider defined only in the global config does not.
+        self._config_dir = tempfile.mkdtemp(prefix="gm-llm-opencode-")
         env = {**os.environ, "OPENCODE_SERVER_PASSWORD": self.password,
-               "OPENCODE_CONFIG_CONTENT": json.dumps(self.server_config())}
+               "OPENCODE_CONFIG_CONTENT": json.dumps(self.server_config()),
+               "OPENCODE_CONFIG_DIR": self._config_dir, "OPENCODE_DISABLE_CLAUDE_CODE": "1"}
         if os.name == "nt":
             # From `npm i -g`, `opencode` is an `opencode.cmd` shim that CreateProcess can't
             # launch directly, so run it through the shell. A new process group isolates it
@@ -229,6 +237,9 @@ class Backend:
             except Exception:
                 self._proc.kill()
         self._proc = None
+        if self._config_dir:
+            shutil.rmtree(self._config_dir, ignore_errors=True)
+            self._config_dir = None
 
     def __enter__(self):
         return self

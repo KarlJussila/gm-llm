@@ -92,6 +92,11 @@ variant: high
 A `model` without `variant` runs at the model's default. `variant` alone changes the level on
 the pinned model. The agent files stay as shipped, so `gm-llm update` keeps the choice.
 
+The campaign runs apart from your own opencode setup: the global config directory (its
+`AGENTS.md`, MCP servers, plugins and skills) is left out, and each agent can load only its own
+skills. Your login carries over. A provider you defined only in the global config does not, so
+pick a `model` from a built-in provider.
+
 ### Windows (native) — one-line install
 
 The simplest path. Open **PowerShell** and paste:

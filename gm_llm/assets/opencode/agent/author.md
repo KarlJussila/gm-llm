@@ -16,8 +16,20 @@ permission:
   patch: allow
   todowrite: allow
   skill:
-    '*': allow
-    'player-*': deny
+    '*': deny
+    world-build: allow
+    arc-design: allow
+    state-init: allow
+    canon-conventions: allow
+    session-plan: allow
+    encounter-plan: allow
+    investigation-plan: allow
+    npc-plan: allow
+    pacing-plan: allow
+    combat-balance: allow
+    apply-canon: allow
+    apply-arcs: allow
+    apply-state: allow
 ---
 
 You author campaign files for a long-running solo D&D campaign, on behalf of the campaign manager

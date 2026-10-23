@@ -18,8 +18,24 @@ permission:
   patch: allow
   todowrite: allow
   skill:
-    '*': allow
-    'player-*': deny
+    '*': deny
+    campaign-intake: allow
+    world-build: allow
+    character-create: allow
+    character-import: allow
+    arc-design: allow
+    state-init: allow
+    canon-conventions: allow
+    session-plan: allow
+    encounter-plan: allow
+    investigation-plan: allow
+    npc-plan: allow
+    pacing-plan: allow
+    combat-balance: allow
+    feedback-curation: allow
+    apply-canon: allow
+    apply-arcs: allow
+    apply-state: allow
   task_complete: allow
   task:
     '*': deny

@@ -43,6 +43,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   file. A place's files hold who is based there, never who is there now or who came and went;
   `check-propagation` flags a fact copied onto another entity's file.
 - The dice tool no longer tells the DM who rolls on every call.
+- **A campaign runs apart from the player's own opencode setup.** The server starts with an empty
+  stand-in for the global config directory, so a personal `AGENTS.md`, MCP servers, plugins and
+  skills stay out, and each agent's permissions allow only its own skills: the runner no longer
+  sees the checkers' skills, nor the checkers the planners'.
 - **Requires opencode 2.1 or newer.** The backend speaks opencode's v2 server API (opencode 2.0
   dropped the v1 API), and the plugins use the v2 plugin contract, which needs no npm install:
   `gm-llm init` no longer installs plugin dependencies, and `gm-llm update` removes the

@@ -28,6 +28,8 @@ wrong one the probe prompt gave it).
 3. **Skills stay; loading is the model's call.** A skill's `description` says briefly *when* to load
    it, never a summary of what it contains. No brief names the skills to load or their order. A rule
    that applies on every turn belongs in the agent prompt, not in a skill that is always loaded.
+   Each agent's permissions allow only its own skills, so its catalog lists nothing else — not
+   another agent's, not the player's own.
 4. **No instructed choreography.** No brief or skill tells the model to build a todo list or work
    numbered steps in order. `todowrite` stays *permitted* — the model may plan with it.
 5. **Turn checks never reach the DM.** Live play has no gate. Turn checks run after play, in the

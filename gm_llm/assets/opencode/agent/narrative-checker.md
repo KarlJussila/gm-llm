@@ -14,8 +14,12 @@ permission:
   list: allow
   todowrite: allow
   skill:
-    '*': allow
-    'player-*': deny
+    '*': deny
+    check-init: allow
+    check-plan: allow
+    check-digest: allow
+    check-propagation: allow
+    canon-conventions: allow
   report_findings: allow
 ---
 

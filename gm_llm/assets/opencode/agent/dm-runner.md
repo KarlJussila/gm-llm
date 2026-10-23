@@ -12,8 +12,12 @@ permission:
   grep: allow
   list: allow
   skill:
-    '*': allow
-    'player-*': deny
+    '*': deny
+    social-play: allow
+    discoveries: allow
+    session-close: allow
+    combat-run: allow
+    combat-balance: allow
   todowrite: allow
   dice: allow
   task_complete: allow
