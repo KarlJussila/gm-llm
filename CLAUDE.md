@@ -64,7 +64,7 @@ Model-facing prose lives in three places:
 
 ## Operational
 
-- Changes reach a live campaign via `pipx reinstall` (package code + assets) + `gm-llm update` in the
+- Changes reach a live campaign via `rm -rf build && pipx reinstall gm-llm` (package code + assets) + `gm-llm update` in the
   campaign (copies skills into its `.opencode/`). **Never while a TUI session is live** — quit at the
   wrap prompt first.
 
