@@ -1,0 +1,1 @@
+A new campaign is being created. Gather the player's campaign brief and content boundaries into `campaign/campaign.md`, then pitch them a world. Revise the pitch with them, and call `task_complete` once they approve it. The world is built from the pitch next, then the character.

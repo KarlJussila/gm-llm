@@ -5,18 +5,40 @@ description: Load when authoring or revising the world, its entities or its unde
 
 # world-build
 
-What to author and what makes it good; `canon-conventions` owns the format. At setup, build the
-world's premise and central situation from the player's brief, and record the setting, tone, themes,
-stakes and content boundaries in `campaign/campaign.md`.
+What to author and what makes it good; `canon-conventions` owns the format.
+
+## Building a new world
+
+Build it top down, each tier to its own depth, so that where the PC begins sits inside a world
+already thought through, and the player meets its details close up.
+
+- **The world, in broad strokes.** Its countries and powers and where they stand with each other,
+  its important cities, the factions that cross borders, its peoples, its faiths and gods, and what
+  magic means in ordinary life. A history with named eras and events that explains today's map. A
+  name, what it wants and a paragraph is enough for most of it.
+- **The region, in structure.** Its geography: terrain, rivers and roads, and how long the roads
+  take. Its settlements by name. Who holds power, who contests it, and how it is governed. Its
+  neighbours, and the dangers in its wild places.
+- **The vicinity, in fine detail.** Where the PC begins is a place to live in: the people they would
+  deal with — whoever runs things, keeps the inn, holds the local office, a rival, a friend — each
+  named and wanting something; places to go, each with a hook; what is going on there now; and
+  problems of its own beside the main story.
+
+The main story runs through all three, but the world does not exist to serve it: most of what the
+player meets is simply the world going about its business.
+
+Finish with `documents/primer.md`, the player's spoiler-free guide: what someone living there knows
+of the world, the region and the vicinity and its people. Nothing from a hidden layer.
 
 ## What the world is made of
 
-- **World truth** — `world/overview.md` (the premise, central conflict, surface situation, themes
-  and what's really going on), `cosmology.md` (how reality works, and the truth beneath it) and
-  `history.md` (the past that produced the present). Setting prose, not entities.
-- **Regions** — places at map scale: geography, who holds them, the notable places within, culture,
-  how they connect, and their history as a section of the region file.
-- **NPCs**, **factions** with goals and reach, and **locations** where play happens.
+- **World truth** — `world/overview.md` (premise, central conflict, surface situation, themes and
+  what's really going on), `cosmology.md` (how reality works, its powers and faiths, and the truth
+  beneath them) and `history.md` (the past that produced the present). Setting prose, not entities.
+- **Regions** — places at map scale: geography, who holds them, the places within, culture, how
+  they connect, their history.
+- **NPCs**, **factions** with goals and reach, and **locations** where play happens. Any of them
+  the story is likely to reach gets a file; `create_entities` writes many at once.
 - **Significant items** — campaign-weight objects, not mundane gear, which lives on the character
   sheet. The verbatim text of a written item goes in `documents/`.
 - **Concepts** — load-bearing ideas that aren't people, places, organizations or objects: a
@@ -26,10 +48,11 @@ stakes and content boundaries in `campaign/campaign.md`.
 ## Two layers
 
 Strong world content has a surface — the public role, the apparent situation, what a newcomer sees —
-and a hidden layer: the true allegiance, the real motive, the secret a place keeps, the actual cause
-of the visible symptoms. That's where the tension lives. Write the hidden layer into the file, tagged
-as `canon-conventions` says, even when no one will find it soon: it's what keeps the runner and the
-checks consistent, and what stops a later author inventing a contradictory truth.
+and, where something is concealed, a hidden layer: the true allegiance, the real motive, the secret a
+place keeps, the actual cause of the visible symptoms. That's where the tension lives. Write it into
+the file, tagged as `canon-conventions` says, even when no one will find it soon: it keeps the runner
+and the checks consistent and stops a later author inventing a contradictory truth. Not everything
+has one; the baker can just be the baker.
 
 ## Craft
 

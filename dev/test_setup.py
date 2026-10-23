@@ -49,7 +49,7 @@ def root_at(path):
     scaffold_campaign(path)
     markers = path / '.opencode' / '.orchestrator'
     markers.mkdir(parents=True)
-    for stage in ('INTAKE_WORLD', 'CHAR'):
+    for stage in ('INTAKE', 'WORLD', 'CHAR'):
         (markers / f'setup-{stage}.done').touch()
     return path
 

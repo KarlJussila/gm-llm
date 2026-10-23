@@ -249,6 +249,7 @@ class MockSetup:
         i = min(self._n, len(_SETUP_SCRIPT) - 1)
         done = self._n >= len(_SETUP_SCRIPT) - 1
         if self._n == 2:
+            self._announce("world")
             self._announce("char")
         if done:
             for key in ("arcs-state", "lint", "gate", "commit"):

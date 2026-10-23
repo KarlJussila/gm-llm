@@ -16,6 +16,7 @@ permission:
   edit: allow
   write: allow
   patch: allow
+  create_entities: allow
   todowrite: allow
   skill:
     '*': deny
@@ -71,7 +72,7 @@ talks to the player.
 
 ## Setup
 
-The interactive stages — the world, then the character — end when you call `task_complete`, as the
+The interactive stages — the pitch, then the character — end when you call `task_complete`, as the
 brief says. Until then, keep working with the player.
 
 ## Between sessions

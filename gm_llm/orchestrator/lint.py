@@ -38,9 +38,9 @@ VITALS: dict[str, list[str]] = {
     "arc": ["tier"],
 }
 
-# Body sections that must exist and carry content.
+# Body sections that must exist and carry content. An NPC has none: its file starts as a shim
+# and grows sections as it gains weight (design/luna.md § Campaign layout).
 SECTIONS: dict[str, list[str]] = {
-    "npc": ["Stats", "Abilities"],
     "creature": ["Stat block"],
 }
 
@@ -233,6 +233,13 @@ def arcs_not_stamped(root: Path | str, n: int) -> list[str]:
         if as_text((fm or {}).get("as-of")) != f"S{n}":
             out.append(e.slug)
     return out
+
+
+def world_missing(root: Path | str) -> list[str]:
+    """The world stage's one disk deliverable: the player's primer."""
+    if (Path(root) / "campaign" / "documents" / "primer.md").is_file():
+        return []
+    return ["`campaign/documents/primer.md`, the player's spoiler-free primer to the world."]
 
 
 def setup_missing(root: Path | str) -> list[str]:

@@ -27,7 +27,8 @@ PROTOCOL = 1
 # Spoiler-free labels for the stage keys Setup, the planner and the Reconciler announce.
 STAGE_LABELS = {
     "setup": {
-        "intake": "gathering your brief · building the world",
+        "intake": "gathering your brief",
+        "world": "building the world",
         "char": "creating your character",
         "arcs-state": "shaping the story and opening scene",
         "lint": "checking campaign files",

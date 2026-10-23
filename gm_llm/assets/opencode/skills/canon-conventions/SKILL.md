@@ -13,8 +13,11 @@ beside this skill, and `examples/` holds a filled NPC and its state file.
 
 **Commit every load-bearing fact when you write it; leave open only what the player decides.** An
 NPC's true allegiance, what a search turns up, the answer behind a mystery — decide it now and
-write it down. Never write "DM decides", "TBD" or "as needed". Ambient colour (a passing vendor's
-name) is the live DM's to improvise; it doesn't need a file.
+write it down. Never write "DM decides", "TBD" or "as needed".
+
+**Name anyone of consequence, and give them a file,** as soon as it's apparent they'll matter: a
+recurring contact, whoever holds a post the story touches, anyone an arc or thread leans on. Only an
+extra met once and never again stays unnamed.
 
 ## Layout
 
@@ -30,7 +33,7 @@ campaign/
 ├── characters/              {slug}.md (sheet) + .state.md + .knowledge.md + .repertoire.md
 ├── state/                   current.md  calendar.md  threads.md  clocks.md
 ├── sessions/<n>/            plan.md  transcript.md  notes.md  digest.md
-└── documents/               verbatim handouts — letters, inscriptions, quoted text
+└── documents/               verbatim handouts, and primer.md — the world as the PC's people know it
 ```
 
 **State files.** NPCs, factions, arcs and the PC always have a `{slug}.state.md` beside the info
@@ -42,7 +45,8 @@ during play and rewritten between sessions; the transcript is the live record in
 believes and wonders) and the combat repertoire (its reactions and when to offer them).
 
 **Verbatim text** — a letter, an inscription, a quoted passage — goes in `documents/` and is linked
-from the entity it belongs to.
+from the entity it belongs to. `documents/primer.md` is the player's spoiler-free guide to the world,
+the region and where the PC begins.
 
 ## What goes where
 
@@ -82,8 +86,11 @@ summary: Saltgate harbormaster; secret rebel informant     # one clause
 
 Each type's template lists its vitals (an NPC's `full-name`, `race`, `pronouns`, `age`, `role`,
 `affiliation`; a location's `kind`, `region`, `setting`, `controlled-by`, `scale`; and so on). Fill
-every one with a committed value. An NPC also needs a `## Stats (rough sketch)` and an
-`## Abilities` section; a creature that can fight needs a `## Stat block` (see
+every one with a committed value.
+
+**An NPC starts as a shim** — its vitals and a few lines of who they are, what they want and how they
+come across — and gains the template's other sections as it gains weight: stats once it may fight,
+a hidden layer only where it has one. A creature that can fight needs a `## Stat block` (see
 `stat-block.template.md`).
 
 `INDEX.md` is built from this frontmatter. To register an entity, write its file; to change its
@@ -97,8 +104,11 @@ same way. Every link must resolve: a link to something that doesn't exist means 
 real and needs a full file, or it was invented loosely and the link should go. To find what refers
 to an entity, grep for `[[slug]]`.
 
-**Before creating an entity, check `INDEX.md`** for an existing slug or a role-overlapping entity,
-and extend that one instead of creating a near-duplicate.
+## New entities
+
+**Check `INDEX.md` first** for an existing slug or a role-overlapping entity, and extend that one
+instead of creating a near-duplicate. Create new ones with `create_entities`: any number in one
+call, each written from its template with its state file. Edit the files as they grow.
 
 ## Secrets
 

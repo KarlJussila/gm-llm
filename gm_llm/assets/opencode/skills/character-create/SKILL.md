@@ -15,8 +15,8 @@ together (the default); or a seed to flesh out yourself, with choices put to the
 
 ## The conversation
 
-1. **Open with hooks and the choice.** Building on the world the player just approved, devise two to
-   four spoiler-free character hooks, each a role plus a tie into the situation. In the same message,
+1. **Open with hooks and the choice.** Building on the world as built — its places, factions and
+   people — devise two to four spoiler-free character hooks, each a role plus a tie into the situation. In the same message,
    offer the choice: take or adapt a hook, bring their own character file (a sheet export, PDF, JSON,
    notes — anything), or build one together. Then wait, and continue from whatever they say.
 2. **Import a file** with `character-import`. A one-line "level 5 elf wizard" needs no import.
@@ -24,7 +24,7 @@ together (the default); or a seed to flesh out yourself, with choices put to the
    scores, pronouns. Only the vitals — the full proficiency and spell list surfaces in play.
 4. **Backstory and place in the world.** Use a backstory that already fits; otherwise ask for a
    rough idea or build one together. Then propose how they fit the setting — where they're from, why
-   they're here, ties to existing places, factions and NPCs. Anything you infer or fill in (a
+   they're here, and whom and what they already know among the existing places, factions and NPCs. Anything you infer or fill in (a
    hometown, a faction tie, a reason they came) is a proposal to confirm, never a fact to commit
    silently.
 5. **DM-side hooks.** Distil one to three threads from the backstory the story can later pull — a
@@ -46,7 +46,8 @@ From the PC templates in `canon-conventions`:
   the opening objective, stamped `as-of: S0`. Never HP, spell slots or money; the player tracks
   those.
 - **`characters/<slug>.knowledge.md`, the ledger** — what the character holds true at the start
-  (their history, their goal, what someone of their background knows of the world), what they
+  (their history, their goal, and what someone of their background knows of the world, the region
+  and the people and places around them — at least what the primer says), what they
   believe that may be wrong, and the open questions they're motivated to chase. Never the campaign's
   secrets: those stay tagged in the world and arc files, and enter the ledger only when play reveals
   them.
@@ -56,5 +57,5 @@ From the PC templates in `canon-conventions`:
   is the player's to set in play, so don't ask about it now. Add a tactic or build wrinkle (a reach
   weapon, a feat that changes opportunity attacks) only where the sheet makes it explicit.
 
-Every person, place or faction the backstory introduced gets its own full file (`world-build`);
+Every person, place or faction the backstory introduced gets its own file (`create_entities`);
 nothing it names stays unfiled.

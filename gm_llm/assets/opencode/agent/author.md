@@ -14,6 +14,7 @@ permission:
   edit: allow
   write: allow
   patch: allow
+  create_entities: allow
   todowrite: allow
   skill:
     '*': deny

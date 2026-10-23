@@ -39,7 +39,7 @@ slots, coin); the player tracks those.
 | `arcs/{slug}.state.md` | Arc **progress** snapshot — status, beats hit | `dm` (arc pass) |
 | `state/current.md` | The "you are here" scene pointer — the runner's resume baseline | `dm` (apply pass) |
 | `state/calendar.md` | In-game date + event timeline | `dm` (apply pass) |
-| `state/threads.md` | Active leads/threads (a thread spans entities) | `dm` (arc pass) |
+| `state/threads.md` | Leads beside the arcs, and where each stands (a thread spans entities) | `dm` (arc pass) |
 | `state/clocks.md` | Time-pressure dashboard — every clock in one place | `dm` (apply pass) |
 | `characters/{slug}.md` | PC sheet — stats, personality, backstory, hooks | `dm` |
 | `characters/{slug}.state.md` | PC state — location, notable condition, key items, objective | `dm` (apply pass) |
@@ -49,6 +49,7 @@ slots, coin); the player tracks those.
 | `sessions/{N}/transcript.md` | Play transcript (final messages), written each turn | orchestrator |
 | `sessions/{N}/notes.md` | The runner's end-of-session handoff notes | orchestrator (runner authors, code files) |
 | `sessions/{N}/digest.md` | Structured session digest, extracted from the transcript | `log-extractor` |
+| `documents/primer.md` | The player's spoiler-free guide to the world, written at setup | `dm` |
 | `documents/{slug}.md` | **Verbatim** text of in-world written materials | `dm` (apply pass) |
 
 **Not registered in `INDEX.md`:** the world-truth singletons (`overview`/`cosmology`/`history`) and

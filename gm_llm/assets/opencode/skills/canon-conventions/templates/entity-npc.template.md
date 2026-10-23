@@ -13,7 +13,9 @@ affiliation: <[[faction-or-region-slug]], or "unaffiliated">
 ---
 
 <!-- NPC — who they truly are. Path: world/npcs/{slug}.md, paired with {slug}.state.md.
-     Fill every <placeholder> with a committed value and delete these comments. -->
+     A new NPC is a shim: the frontmatter, Identity, Personality and Agenda. The other sections
+     come as the NPC gains weight; leave out what doesn't apply yet. Fill what you write with
+     committed values and delete these comments. -->
 
 # <Canonical Name>
 

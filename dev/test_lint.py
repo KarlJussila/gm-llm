@@ -148,10 +148,16 @@ def t_missing_vitals(tmp):
 def t_sections_and_slug(tmp):
     c = build(tmp)
     p = c / "world/npcs/lysa-fenn.md"
-    p.write_text(p.read_text().replace("## Abilities\nNone.\n", "## Abilities\n<none yet>\n")
+    # an NPC shim: no stats or abilities is fine
+    p.write_text(p.read_text().replace("## Abilities\nNone.\n", "")
                  .replace("slug: lysa-fenn\nname", "slug: lysa\nname"))
+    (c / "world/bestiary").mkdir(parents=True, exist_ok=True)
+    (c / "world/bestiary/wolf.md").write_text(
+        "---\nslug: wolf\nname: Wolf\ntype: creature\nstatus: active\nsummary: a wolf\n---\n"
+        "\n# Wolf\n\n## Stat block\n<none yet>\n")
     out = issues(tmp)
-    assert any("`## Abilities`" in i for i in out), out
+    assert not any("lysa" in i and "`## Abilities`" in i for i in out), out
+    assert any("wolf.md" in i and "`## Stat block`" in i for i in out), out
     assert any("does not match the file name" in i for i in out), out
 
 
@@ -263,7 +269,7 @@ def t_fixture(tmp):
 for label, fn in [
     ("a complete campaign lints clean", t_clean),
     ("missing and punted vitals are flagged", t_missing_vitals),
-    ("empty required sections and slug/file mismatches are flagged", t_sections_and_slug),
+    ("a creature's empty stat block and slug/file mismatches are flagged; an NPC shim isn't", t_sections_and_slug),
     ("stateful entities need a stamped state file", t_state_files),
     ("named-only stubs and dangling links are flagged; dashboards and comments resolve", t_named_only_and_links),
     ("untagged, reused and unknown secret ids are flagged", t_secrets),

@@ -35,5 +35,10 @@ if they haven't given them. This is the one thing you must ask, and you honor it
 player who says "anything goes" has answered.
 
 The brief is done when you can state each dimension to the depth the player chose, the boundaries
-are confirmed, and you know which dimensions are yours. `world-build` records it in
-`campaign/campaign.md`.
+are confirmed, and you know which dimensions are yours. Record it in `campaign/campaign.md`.
+
+## The pitch
+
+Then pitch the world in an ordinary message: the premise and tone, the shape of the world in broad
+strokes, and where the character would begin. Keep it spoiler-free — secrets and the true story stay
+off the page. Revise it with the player until they approve. The world itself is built after that.

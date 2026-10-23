@@ -16,6 +16,9 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   (`design/frontends.md`). `play --ui console` is a plain-text frontend for a human player too.
 - `gm-llm tokens --sessions` lists a campaign's opencode sessions with their wall and model time,
   peak context and the skills they loaded; `--session N` prints one step by step with its tool calls.
+- **`create_entities`**, a tool that writes many new entity files in one call from their
+  templates, with their state files; it checks every spec first and never overwrites.
+- Setup writes the player a spoiler-free primer, `campaign/documents/primer.md`.
 
 ### Changed
 - **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal, not the skills
@@ -26,10 +29,18 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   ledger, the same way for `--player auto` and `bench run`; the sheet's DM-side hooks stay out.
   `--character` and the `*.player.md` lookup are gone. The autoplayer gets no per-turn reminder:
   `player-rolls` and `player-combat` are skills only it can load.
-- Campaign setup presents a world proposal the player can revise before character creation.
+- **Campaign setup builds the world in its own stage.** The DM pitches a world the player can
+  revise; once they approve it, a non-interactive stage builds it top down — the world in broad
+  strokes, the region in structure, the vicinity where the character begins in fine detail — and
+  writes the primer. Character hooks come from the built world, and arcs are cast from named NPCs.
   Arcs and initial state are authored in one dispatch, checked from disk with one correction and
   resumable after interruption. The canon lint handles structural checks; `check-init` reviews
-  duplicates, hidden layers and consistency. The `campaign-setup` skill is removed.
+  coverage of each tier, casting, duplicates and consistency. The `campaign-setup` skill is removed.
+- **Anyone of consequence is named and filed** as soon as it's apparent they'll matter; only a
+  one-off extra stays unnamed. An NPC starts as a shim — vitals, who they are, what they want — and
+  the lint no longer requires stats of one, nor `check-init` a hidden layer on every entity.
+- **Threads are the leads beside the arcs**, including the vicinity's own problems; the threads
+  dashboard says where each stands, and one the player takes up can become a minor arc.
 - Player feedback lives outside the campaign in a shared player directory. The runner receives
   its standing guidance in prepared context, and agents read matching feedback when loading skills.
   Benchmark runs use private copies of the fixture's feedback. The agents work on a copy in the

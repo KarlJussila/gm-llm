@@ -276,6 +276,7 @@ def _writes(root: Path) -> dict:
             "campaign/world/factions/harbor-guilds.md": _FACTION,
             "campaign/world/factions/harbor-guilds.state.md": _FACTION_STATE,
             "campaign/world/locations/crossroads-inn.md": _LOCATION,
+            "campaign/documents/primer.md": "# Primer\n\nSaltgate is a harbour city of rival guilds.\n",
         },
         "char": {
             "campaign/characters/dallid.md": _PC_SHEET,
@@ -335,10 +336,11 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
         # correction, then the reconcile stages and the next session's plan.
         "dm": [
             Resp("Welcome — tell me the kind of world you want to run."),           # intake brief
-            Resp("A rain-soaked harbour city of rival guilds. Does that fit?"),      # world proposal
+            Resp("A rain-soaked harbour city of rival guilds. Does that fit?"),      # pitch
             Resp("A hopeful harbour city of rival guilds. Better?"),                # revision
             _task_complete(                                                          # intake done
-                "The world is agreed."),
+                "The pitch is agreed."),
+            Resp("The world is built and the primer written."),                     # world
             Resp("Now let's make your character."),                                  # char brief
             _task_complete("Your rogue Dallid is ready."),                           # char done
             Resp("Arcs and opening state written."),                                 # arcs + state
@@ -384,13 +386,13 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
 # The setup-stage writes are attached to the dm replies that stand in for them; the
 # constant queue above keeps `writes=None` on those slots, so wire them here by index.
 _DM_STAGE_WRITES = {
-    3: "world",       # world approved -> world files
-    5: "char",        # character confirmed -> PC files
-    6: "arcs_state",  # one dispatch -> both arcs and their initial state
-    7: "plan_1",      # author-brief(1)      -> session-1-plan.md
-    8: "plan_1_fix",  # plan correction      -> corrected session-1-plan.md
-    11: "arcs_1",     # apply-arcs(1)        -> both arcs stamped S1
-    13: "plan_2",     # author-brief(2)      -> session-2-plan.md
+    4: "world",       # world build          -> world files and the primer
+    6: "char",        # character confirmed -> PC files
+    7: "arcs_state",  # one dispatch -> both arcs and their initial state
+    8: "plan_1",      # author-brief(1)      -> session-1-plan.md
+    9: "plan_1_fix",  # plan correction      -> corrected session-1-plan.md
+    12: "arcs_1",     # apply-arcs(1)        -> both arcs stamped S1
+    14: "plan_2",     # author-brief(2)      -> session-2-plan.md
 }
 
 
@@ -526,16 +528,17 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
 
     facts = {}
 
-    # 1. Setup: scaffold -> intake -> char -> arcs/state -> init gate -> commit.
+    # 1. Setup: scaffold -> intake -> world -> char -> arcs/state -> init gate -> commit.
     setup = Setup(backend, gate, str(root), logs=None)
     st = setup.start()
     assert not st.done, "setup should not finish on the intake brief"
     proposal = setup.turn("A rain-soaked harbour city of rival guilds.")
     assert "Does that fit?" in proposal.reply
-    assert setup._stage == "INTAKE_WORLD", "a proposal must wait for the player"
+    assert setup._stage == "INTAKE", "a pitch must wait for the player"
     revised = setup.turn("Make it more hopeful.")
-    assert "hopeful" in revised.reply and setup._stage == "INTAKE_WORLD"
-    setup.turn("Yes, that world works for me.")              # completes INTAKE_WORLD
+    assert "hopeful" in revised.reply and setup._stage == "INTAKE"
+    opened = setup.turn("Yes, that world works for me.")     # completes INTAKE, builds the world
+    assert setup._stage == "CHAR" and "your character" in opened.reply
     st = setup.turn("A half-elf rogue named Dallid.")           # completes CHAR -> runs pipeline
     assert st.done, "setup should be done once init is committed"
 

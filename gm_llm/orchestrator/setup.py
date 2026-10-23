@@ -3,11 +3,12 @@ Init — the orchestrated new-campaign flow.
 
 Setup drives the dm through campaign init as a staged pipeline:
   1. scaffold_campaign()  — pure Python, no LLM
-  2. INTAKE_WORLD         — dm does intake + world build (interactive with player)
-  3. CHAR                 — dm does character creation (interactive with player)
-  4. ARCS_STATE           — one dispatch, disk-based coverage check
-  5. LINT, GATE           — canon lint, then judgment in a fresh session
-  6. COMMIT               — git commit in code
+  2. INTAKE               — dm gathers the brief and pitches the world (interactive with player)
+  3. WORLD                — one dispatch: the world built from the pitch, then the player's primer
+  4. CHAR                 — dm does character creation (interactive with player)
+  5. ARCS_STATE           — one dispatch, disk-based coverage check
+  6. LINT, GATE           — canon lint, then judgment in a fresh session
+  7. COMMIT               — git commit in code
 
   s = Setup(backend, gate, directory)
   s.start()                 # scaffold, open first brief, return dm's first message
@@ -15,7 +16,7 @@ Setup drives the dm through campaign init as a staged pipeline:
   s.finalize()              # once done: plan session 1 (code-gated + committed)
 
 Stage markers in .opencode/.orchestrator/setup-{stage}.done track progress and enable resume.
-The interactive stages (INTAKE_WORLD, CHAR) advance when the dm calls the `task_complete` tool —
+The interactive stages (INTAKE, CHAR) advance when the dm calls the `task_complete` tool —
 its own explicit "I'm done" signal — not by inferring completion from a canon file appearing
 mid-conversation (which fired the transition before the dm had finished talking to the player).
 The non-interactive stages stop when their dispatch returns, like the reconciler. Overall
@@ -33,7 +34,7 @@ from gm_llm.settings import load_settings
 
 from .archive import verdict_fields
 from . import paths
-from .lint import setup_missing
+from .lint import setup_missing, world_missing
 from .loop import join_narration
 from .phase import apply_lint_correction, commit_campaign, correct_once, refresh_campaign
 from .planner import Planner
@@ -41,14 +42,15 @@ from .prompts import load
 from .scaffold import scaffold_campaign
 
 _STAGE_BRIEFS = {
-    "INTAKE_WORLD": "setup-intake-world-brief",
+    "INTAKE":       "setup-intake-brief",
     "CHAR":         "setup-char-brief",
 }
 
 # Stage → the key announced to a watcher (the TUI's ticker) — the same on_stage
 # protocol the Reconciler speaks, so one UI renderer covers the whole lifecycle.
 _STAGE_KEYS = {
-    "INTAKE_WORLD": "intake",
+    "INTAKE":       "intake",
+    "WORLD":        "world",
     "CHAR":         "char",
     "ARCS_STATE":   "arcs-state",
     "LINT":         "lint",
@@ -100,8 +102,13 @@ class Setup:
         self.dm_sid = self.backend.create_session("dm setup")
         self._stage = self._resume_stage()
 
+        # A resume between the interactive stages builds the world, then opens character creation
+        if self._stage == "WORLD":
+            self._build_world()
+            self._stage = "CHAR"
+
         # Non-interactive resume: run the pipeline immediately, no player turns needed
-        if self._stage not in ("INTAKE_WORLD", "CHAR"):
+        if self._stage not in ("INTAKE", "CHAR"):
             self._run_pipeline()
             return SetupTurn("Campaign init complete.", True)
 
@@ -123,8 +130,9 @@ class Setup:
                               reply.tool_inputs.get("task_complete", {}).get("player_message", ""))
         done = "task_complete" in reply.tools
 
-        if self._stage == "INTAKE_WORLD" and done:
-            self._mark_done("INTAKE_WORLD")
+        if self._stage == "INTAKE" and done:
+            self._mark_done("INTAKE")
+            self._build_world()
             self._stage = "CHAR"
             self._announce("CHAR")
             char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
@@ -144,7 +152,23 @@ class Setup:
                 on_prep=self.on_prep, logs=self.logs).prep_session(1, commit=True)
         return 1
 
-    # --- non-interactive pipeline ---
+    # --- non-interactive stages ---
+
+    def _build_world(self) -> None:
+        """The world from the approved pitch, top down, ending with the player's primer; one
+        nudge if the primer is missing."""
+        self._announce("WORLD")
+        self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-world-brief").format(
+            delegation=load(f"subagents-{load_settings(self.root).subagents}")))
+        missing = world_missing(self.root)
+        if missing:
+            self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-missing").format(
+                missing=_bullets(missing)))
+        if self.logs and self.logs.archive:
+            self.logs.archive.emit("stage", stage="world", missed=missing,
+                                   still_missed=world_missing(self.root))
+        refresh_campaign(self.root)
+        self._mark_done("WORLD")
 
     def _run_pipeline(self) -> None:
         """Arcs and state, lint, gate, and commit — no player turns."""
@@ -190,7 +214,7 @@ class Setup:
 
     def _resume_stage(self) -> str:
         """First stage without a completion marker."""
-        for stage in ("INTAKE_WORLD", "CHAR", "ARCS_STATE", "LINT", "GATE"):
+        for stage in ("INTAKE", "WORLD", "CHAR", "ARCS_STATE", "LINT", "GATE"):
             if not self._setup_done(stage):
                 return stage
         return "COMMIT"

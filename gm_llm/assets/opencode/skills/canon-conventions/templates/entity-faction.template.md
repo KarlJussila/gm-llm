@@ -7,7 +7,7 @@ summary: <what it is, in one clause>
 kind: <guild, cult, noble house, mercenary company, crown office, …>
 scale: <a cell of a dozen, a city guild, a continental order>
 seat: <[[location-slug]] or [[region-slug]]>
-leadership: <[[npc-slug]], or how it's led — "a council", "leaderless cells">
+leadership: <[[npc-slug]] — a council's members as [[npc-slug]] links; "leaderless" only if truly so>
 founded: <era or rough age>
 ---
 
@@ -23,7 +23,7 @@ founded: <era or rough age>
 <What it actually pursues, and how.>
 
 ## Structure & key members
-<How it's organized; leaders and notable members as [[slug]] links.>
+<How it's organized, and the people who run it and represent it, as [[slug]] links.>
 
 ## Reach & resources
 <Where it operates and what it can bring to bear.>

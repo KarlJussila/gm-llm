@@ -29,7 +29,9 @@ Fill the template's sections:
 - **Premise and core conflict** — a real tension, and what concretely happens if it goes unresolved.
 - **Stakes that bite** — a concrete cost tied to what the PC cares about. How the arc uses their
   backstory stays behind the screen.
-- **Key NPCs and factions** — each with a committed identity and a want.
+- **Key NPCs and factions** — named, each with a committed identity and a want. Cast from the
+  world's people where one fits and create the ones the arc still needs (`create_entities`): its
+  antagonist, allies, informants and go-betweens are people, not offices.
 - **Turning points**, three to five — beats that shift direction or tension, each with its answer.
 - **Tension curve** — build-up, rising action, climax, falling action, resolution. Flat too long
   bores; spiking too often burns out.
