@@ -18,6 +18,9 @@ Event stream shape (all events carry `ts`, ISO-8601 UTC):
            its verdict, whether a correction was dispatched, and the diff it made.
   resume — a session resume; turn numbering restarts, so analysis can tell one
            run's turns from a continuation's.
+  retry  — a model call's attempt that failed (a stall, an error, an empty
+           reply): the agent, its opencode session, the attempt and the reason.
+           The next attempt resumes that session where it stopped.
 
 An `Archive` rides on `Logs` (see `Logs.under`) and is threaded wherever logs
 already go; components emit through `logs.archive`. Writes share `append`'s

@@ -172,7 +172,7 @@ class Game(CombatMixin):
 
     def revert_last_turn(self) -> bool:
         """After a cancel, roll the DM session back over the abandoned turn."""
-        return self.backend.revert_to_recent_user(self.runner_sid, back=1)
+        return self.backend.revert_exchange(self.runner_sid)
 
     def _step(self, key: str) -> None:
         """Announce a turn-step to a watcher (the engine's busy label). Never raises."""

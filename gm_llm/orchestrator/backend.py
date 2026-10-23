@@ -9,7 +9,8 @@ messages. All the throttle-handling the autoplay harness learned the hard way li
 
   - retry with backoff on errors, empty replies, and rate-limited *hangs* (a throttled call
     simply stops producing output; a liveness tap on the event stream notices when nothing has
-    arrived for `stall_timeout` seconds and interrupts that attempt as a retryable stall);
+    arrived for `stall_timeout` seconds and interrupts that attempt as a retryable stall). A
+    retry resumes the session where the attempt stopped rather than starting the prompt over;
   - a minimum gap between calls, so the orchestrator doesn't burst the model's rate limit.
 
 Backend-agnostic on purpose: the loop, the gates, and the interfaces talk to this, never to
@@ -37,6 +38,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .logs import Logs, append
+from .prompts import load
 from ..settings import load_settings
 from .registry import FrontmatterError, split_frontmatter
 
@@ -165,13 +167,14 @@ class Backend:
         # Liveness: a background tap on the event stream bumps `_last_activity` on every
         # session event, so the stall watchdog can tell a hung call from a slow one.
         self._last_activity = 0.0
-        self._stalled = False
+        self._stalled: str | None = None  # why the watchdog interrupted the attempt, if it did
         self._live_stop = threading.Event()
         self._live_thread: threading.Thread | None = None
         # Cancellation: `abort()` (any thread) sets the event and interrupts the session parked
         # in `_inflight_sid`; the running call sees the event and raises BackendCancelled.
         self._cancel = threading.Event()
         self._inflight_sid: str | None = None
+        self._opened: dict[str, str] = {}  # session id -> the prompt its latest exchange opened with
         self.on_retry = None  # optional callback(agent, attempt, wait, reason)
         self._agents: dict[str, str] = {}       # session id -> the agent it's switched to
         self._agent_models: dict[str, dict | None] = {}  # agent -> its pinned model
@@ -401,9 +404,9 @@ class Backend:
         """Block until the session goes idle after `user_id`; return the turn's messages.
 
         The wait is guarded by the stall watchdog: if no session activity arrives for the
-        effective stall budget, it interrupts the session and sets `_stalled`, so the caller
-        retries the attempt as a stall. `turn_timeout` is the hard backstop."""
-        self._stalled = False
+        effective stall budget, it interrupts the session and sets `_stalled` to why, so the
+        caller retries the attempt. `turn_timeout` is the hard backstop."""
+        self._stalled = None
         self._last_activity = time.time()
         budget = self._effective_stall()
         deadline = time.time() + self.turn_timeout
@@ -413,10 +416,14 @@ class Backend:
             while not done.wait(self._stall_poll):
                 if self._cancel.is_set():
                     return
-                if time.time() - self._last_activity > budget or time.time() > deadline:
-                    self._stalled = True
-                    self._interrupt(session_id)
-                    return
+                if time.time() > deadline:
+                    self._stalled = f"still running at the {self.turn_timeout}s limit"
+                elif time.time() - self._last_activity > budget:
+                    self._stalled = f"no output for {budget}s (stalled — rate limit or slow first token)"
+                else:
+                    continue
+                self._interrupt(session_id)
+                return
 
         threading.Thread(target=watch, daemon=True).start()
         try:
@@ -425,7 +432,7 @@ class Backend:
                 if left < -60:  # interrupted at the deadline, and still no end to the turn
                     raise TimeoutError(f"no reply within {self.turn_timeout}s")
                 if left <= 0:
-                    self._stalled = True
+                    self._stalled = f"still running at the {self.turn_timeout}s limit"
                     self._interrupt(session_id)
                 try:
                     self._request("POST", f"/experimental/session/{session_id}/wait",
@@ -449,17 +456,24 @@ class Backend:
     def _exchange(self, session_id: str, agent: str, text: str, whole: bool) -> Reply:
         """Prompt `agent` on `session_id` and read the turn back, retrying on failure, empty
         replies, and stalls, with backoff and pacing. Cancellable: `abort()` from another
-        thread raises BackendCancelled here rather than retrying or returning a partial reply."""
+        thread raises BackendCancelled here rather than retrying or returning a partial reply.
+
+        A failed attempt stays in the session: the retry tells the agent it was cut off and to
+        carry on, so the work it did — files written, dice rolled, subagents run — isn't thrown
+        away and redone. Only when every attempt fails is the exchange rolled back."""
         self._cancel.clear()
         self._inflight_sid = session_id
+        self._opened.pop(session_id, None)
         retries = self._effective_retries()
+        first = None  # the exchange's own prompt, once it's in the session
         try:
             for attempt in range(retries):
                 self._pace()
-                user_id = None
                 try:
                     self._use_agent(session_id, agent)
-                    user_id = self._send(session_id, text)
+                    user_id = self._send(session_id, text if first is None else load("continue-interrupted"))
+                    if first is None:
+                        first = self._opened[session_id] = user_id
                     msgs = self._await_turn(session_id, user_id)
                     if self._cancel.is_set():
                         raise BackendCancelled(f"{agent} call cancelled")
@@ -468,16 +482,18 @@ class Backend:
                         self._dump_turn(session_id, agent, msgs)
                     out = pick_text(texts, whole)
                     if self._stalled:
-                        reason = f"no output for {self._effective_stall()}s (stalled — rate limit or slow first token)"
+                        reason = self._stalled
                     elif error:
                         reason = error
                     elif out or calls:
                         # A tool-call-only turn is a legitimate reply — e.g. a checker told to
-                        # submit report_findings and output nothing else.
+                        # submit report_findings and output nothing else. The tools count from
+                        # the whole exchange, cut-off attempts included; the text is this reply.
+                        whole_turn = msgs if user_id == first else self._turn(session_id, first)
                         inputs: dict[str, dict] = {}
-                        for name, inp in calls:
+                        for name, inp in read_turn(whole_turn)[1]:
                             inputs[name] = inp  # last call wins (fine for signal tools)
-                        return Reply(out, frozenset(inputs), inputs, dice_rolls(msgs))
+                        return Reply(out, frozenset(inputs), inputs, dice_rolls(whole_turn))
                     else:
                         reason = "empty reply (likely a rate-limited/errored stream)"
                 except BackendCancelled:
@@ -491,15 +507,17 @@ class Backend:
                     if self._cancel.is_set():
                         raise BackendCancelled(f"{agent} call cancelled")
                     reason = str(e)
-                # A failed attempt leaves its prompt in the session; take it back out so the
-                # retry doesn't stack a second copy into the context.
-                if user_id:
-                    self._revert_to(session_id, user_id)
                 wait = min(15 * (2 ** attempt), 120)
+                if self.logs.archive:
+                    self.logs.archive.emit("retry", agent=agent, session_id=session_id,
+                                           attempt=attempt + 1, of=retries, reason=reason)
                 if self.on_retry:
                     self.on_retry(agent, attempt + 1, wait, reason)
                 if self._cancel.wait(wait):  # interruptible backoff — abort breaks the wait
                     raise BackendCancelled(f"{agent} call cancelled")
+            # Given up: take the exchange back out, so the caller's next prompt — a retyped turn,
+            # a re-run stage — doesn't land after a pile of cut-off attempts.
+            self.revert_exchange(session_id)
             raise BackendError(f"{agent} failed after {retries} retries")
         finally:
             self._inflight_sid = None
@@ -546,20 +564,13 @@ class Backend:
         self._interrupt(sid)
         return True
 
-    def revert_to_recent_user(self, session_id: str, back: int = 1) -> bool:
-        """Revert `session_id` to the `back`-th most recent *user* message — dropping it and
-        everything after it (e.g. a just-aborted reply), so a cancelled-then-retyped turn
-        continues from clean context. Best-effort: any error (or too few user messages) leaves
-        the session as-is."""
-        try:
-            page = self._request("GET", f"/session/{session_id}/message?order=desc&limit=100",
-                                 timeout=10) or {}
-        except (urllib.error.URLError, OSError, ValueError):
-            return False
-        users = [m["id"] for m in page.get("data") or [] if m.get("type") == "user" and m.get("id")]
-        if len(users) < back:
-            return False
-        return self._revert_to(session_id, users[back - 1])
+    def revert_exchange(self, session_id: str) -> bool:
+        """Revert `session_id` to before its latest exchange — the prompt it opened with, any
+        cut-off attempts and the reply — so a cancelled-then-retyped turn continues from clean
+        context. Best-effort: with no exchange to revert (none yet, or a cancel before the
+        prompt went in), or on any error, the session is left as-is."""
+        first = self._opened.pop(session_id, None)
+        return bool(first) and self._revert_to(session_id, first)
 
     def _revert_to(self, session_id: str, message_id: str) -> bool:
         """Drop `message_id` and everything after it. Campaign files are left alone — what an

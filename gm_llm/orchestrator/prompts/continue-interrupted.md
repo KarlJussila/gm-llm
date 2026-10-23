@@ -1,0 +1,1 @@
+Your turn was cut off before it finished, and nothing from it reached anyone. Carry on from where you stopped: what you already wrote to files is still there, so check it rather than redo it. Then finish the turn as it should have ended.

@@ -477,7 +477,7 @@ class FakeBackend:
     def session_valid(self, session_id: str) -> bool:
         return False
 
-    def revert_to_recent_user(self, session_id: str, back: int = 1) -> bool:
+    def revert_exchange(self, session_id: str) -> bool:
         return False
 
     def abort(self) -> bool:

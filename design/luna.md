@@ -209,3 +209,8 @@ then a commit.
 Human-readable campaign files and the knowledge boundary; dice; the combat tracker; transcript
 capture, completion markers, stage markers and code-owned commits; the backend, lifecycle,
 frontends and cancellation; the archive.
+
+**An interruption is resumed, not reverted.** A model call cut off by a stall, an error or the
+time limit stays in its session, and the retry tells the agent to carry on: what it wrote to files
+is still there, and nothing from the cut-off turn reached anyone. Each failed attempt is a `retry`
+event in the archive. Only a give-up, or the player's cancel, rolls the exchange back.

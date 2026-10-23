@@ -39,6 +39,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - **Anyone of consequence is named and filed** as soon as it's apparent they'll matter; only a
   one-off extra stays unnamed. An NPC starts as a shim — vitals, who they are, what they want — and
   the lint no longer requires stats of one, nor `check-init` a hidden layer on every entity.
+- **A cut-off model call is resumed, not reverted.** A stall, an error or the time limit used to
+  throw the attempt away and send the prompt again; now the retry tells the agent to carry on in
+  the same session, so a long authoring stage keeps the work it did. Each failed attempt is a
+  `retry` event in the archive.
 - **Threads are the leads beside the arcs**, including the vicinity's own problems; the threads
   dashboard says where each stands, and one the player takes up can become a minor arc.
 - Player feedback lives outside the campaign in a shared player directory. The runner receives
