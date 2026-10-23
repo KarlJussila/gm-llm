@@ -97,6 +97,24 @@ def _cmd_status(args) -> int:
     return 0
 
 
+def _session_timeline(tok, root: Path, args) -> int:
+    """`tokens --sessions` / `--session N`: the per-session list, or one session step by step."""
+    sessions, reason = tok.sessions_for(root, data_dir=args.data_dir)
+    if reason:
+        print(f"token data unavailable: {reason}", file=sys.stderr)
+        return 1
+    if not args.session:
+        print(tok.format_sessions(root, sessions))
+        return 0
+    sid = tok.resolve(sessions, args.session)
+    if not sid:
+        print(f"no single session matches {args.session!r} under {root}", file=sys.stderr)
+        return 1
+    print(tok.format_timeline(sid, data_dir=args.data_dir, reasoning=args.reasoning,
+                              width=args.width))
+    return 0
+
+
 def _cmd_tokens(args) -> int:
     """Token + cost usage for any directory, read back out of opencode's own store. A batch
     dir (one holding `run-*` subdirs) groups per run and splits checking and grading out; a
@@ -105,6 +123,8 @@ def _cmd_tokens(args) -> int:
 
     from . import tokens as tok
     root = Path(args.dir)
+    if args.sessions or args.session:
+        return _session_timeline(tok, root, args)
     by_run = args.by_run or any(root.glob("run-*"))
     batch = (tok.usage_for_batch(root, data_dir=args.data_dir) if by_run
              else {"runs": {root.name or str(root): tok.usage_for(root, data_dir=args.data_dir)},
@@ -316,6 +336,15 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="$ per million cached-read tokens (default: 0)")
     p.add_argument("--json", action="store_true",
                    help="emit the machine-readable reading instead of the text report")
+    p.add_argument("--sessions", action="store_true",
+                   help="list every session instead: wall and model time, steps, peak context, "
+                        "skills loaded")
+    p.add_argument("--session", default=None, metavar="N|ID",
+                   help="print one session step by step — its number in --sessions, or an id prefix")
+    p.add_argument("--reasoning", action="store_true",
+                   help="with --session: include the reasoning headings")
+    p.add_argument("--width", type=int, default=600,
+                   help="with --session: cap each text block at this many chars (0: no cap)")
     p.set_defaults(func=_cmd_tokens)
 
     p = sub.add_parser("init", help="scaffold opencode assets into a project")

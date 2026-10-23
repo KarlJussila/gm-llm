@@ -167,6 +167,7 @@ play    [dir] [--player human|auto] [--ui tui|console] [--mock] [--setup]
 serve   [dir] [--player human|auto] [--mock] [--model …]   the engine over stdio, for a frontend
 status  [dir]                          where the campaign stands (disk only, no model)
 tokens  [dir] [--price-in …]           token + cost usage, from opencode's own store
+tokens  [dir] --sessions | --session N   per session: time, context, skills; or one step by step
 init | update | doctor  [dir]
 ```
 

@@ -8,6 +8,7 @@ reads someone else's schema, so a missing store or a renamed column must degrade
 reason string, never an exception that takes a benchmark run down with it.
 """
 
+import json
 import sqlite3
 import sys
 import tempfile
@@ -126,9 +127,109 @@ def test_batch_keeps_the_instrument_out_of_play(tmp):
     assert "hypothetical cost" not in tokens.format_tokens(batch)
 
 
+# ── per session (opencode 2.x `session_v2` + `session_message`) ──────────────
+
+T0 = 1_792_700_000_000  # ms
+
+
+def _v2_store(path, directory):
+    conn = sqlite3.connect(path)
+    conn.execute("create table session_v2 (id TEXT, directory TEXT, agent TEXT, title TEXT, "
+                 "time_created INTEGER, time_updated INTEGER, tokens_input INTEGER, "
+                 "tokens_output INTEGER, tokens_reasoning INTEGER, tokens_cache_read INTEGER)")
+    conn.execute("create table session_message (id TEXT, session_id TEXT, type TEXT, "
+                 "seq INTEGER, data TEXT)")
+    conn.execute("insert into session_v2 values ('ses_a', ?, 'dm-runner', 'game', ?, ?, "
+                 "100, 20, 30, 4000)", (str(directory), T0, T0 + 600_000))
+    conn.execute("insert into session_v2 values ('ses_b', '/elsewhere', 'dm', 'x', ?, ?, "
+                 "1, 1, 1, 1)", (T0, T0 + 1000))
+
+    def step(created, secs, tools, text=None, ctx=(1000, 5000)):
+        content = [{"type": "reasoning", "text": "**Weighing the door**"}]
+        content += [{"type": "tool", "name": n,
+                     # opencode keeps a big state as a JSON string, a small one inline
+                     "state": json.dumps(s) if big else s} for n, s, big in tools]
+        if text:
+            content.append({"type": "text", "text": text})
+        return {"time": {"created": created, "completed": created + secs * 1000},
+                "tokens": {"input": ctx[0], "output": 40, "reasoning": 300,
+                           "cache": {"read": ctx[1], "write": 0}},
+                "content": content}
+
+    msgs = [
+        ("user", {"time": {"created": T0}, "text": "<player>Open the door</player>"}),
+        ("assistant", step(T0 + 1000, 4, [
+            ("skill", {"status": "completed", "input": {"id": "social-play"},
+                       "content": [{"type": "text", "text": "x" * 50}]}, True),
+            ("read", {"status": "error", "input": {"path": "feedback/social-play.md"},
+                      "content": []}, False)])),
+        ("assistant", step(T0 + 6000, 20, [], text="The door sticks, then gives.",
+                           ctx=(2000, 9000))),
+        # five minutes of player thinking before the next message
+        ("user", {"time": {"created": T0 + 326_000}, "text": "<player>Go in</player>"}),
+        ("assistant", step(T0 + 327_000, 6, [
+            ("skill", {"status": "completed", "input": {"id": "social-play"},
+                       "content": []}, False)], text="Dust.")),
+    ]
+    for i, (typ, data) in enumerate(msgs):
+        conn.execute("insert into session_message values (?, 'ses_a', ?, ?, ?)",
+                     (f"m{i}", typ, i, json.dumps(data)))
+    conn.commit()
+    conn.close()
+
+
+def test_sessions_are_scoped_and_summarised(tmp):
+    camp = tmp / "camp"
+    camp.mkdir()
+    db = tmp / "opencode.db"
+    _v2_store(db, camp)
+    sessions, reason = tokens.sessions_for(camp, db=db)
+    assert reason is None, reason
+    assert [s["id"] for s in sessions] == ["ses_a"], "only sessions under the directory"
+    s = sessions[0]
+    assert s["steps"] == 3
+    assert s["model_s"] == 30, s["model_s"]
+    assert s["peak_context"] == 11_000, "peak context is input + cache read of the biggest step"
+    assert s["tool_errors"] == 1
+    assert s["skills"] == ["social-play", "social-play"], "repeat loads are kept, not deduped"
+    text = tokens.format_sessions(camp, sessions)
+    assert "social-play ×2" in text and "11,000" in text
+
+
+def test_timeline_reads_steps_tools_and_gaps(tmp):
+    camp = tmp / "camp"
+    camp.mkdir()
+    db = tmp / "opencode.db"
+    _v2_store(db, camp)
+    text = tokens.format_timeline("ses_a", db=db)
+    assert "Open the door" in text and "The door sticks" in text
+    assert "→ skill social-play  [50 chars]" in text, "a JSON-string tool state is decoded"
+    assert "✗ error" in text, "a failed tool call is flagged"
+    assert "5.0 min idle" in text, "a long wait before a message is flagged"
+    assert "Weighing the door" not in text, "reasoning headings only on request"
+    assert "Weighing the door" in tokens.format_timeline("ses_a", db=db, reasoning=True)
+
+
+def test_resolve_and_unreadable_store(tmp):
+    sessions = [{"id": "ses_abc"}, {"id": "ses_abd"}, {"id": "ses_x"}]
+    assert tokens.resolve(sessions, "2") == "ses_abd"
+    assert tokens.resolve(sessions, "ses_x") == "ses_x"
+    assert tokens.resolve(sessions, "ses_ab") is None, "an ambiguous prefix matches nothing"
+    assert tokens.resolve(sessions, "9") is None
+
+    _, reason = tokens.sessions_for(tmp, data_dir=tmp / "nope")
+    assert reason and "no opencode store" in reason
+    old = tmp / "opencode.db"
+    sqlite3.connect(old).execute("create table session (id TEXT)").connection.close()
+    _, reason = tokens.sessions_for(tmp, db=old)
+    assert reason and "session_message" in reason, "a 1.x store gives a reason, not a crash"
+
+
 def main():
     tests = (test_usage_is_scoped_and_split_by_agent, test_missing_store_and_schema_drift_degrade,
-             test_pricing_keeps_reasoning_separate, test_batch_keeps_the_instrument_out_of_play)
+             test_pricing_keeps_reasoning_separate, test_batch_keeps_the_instrument_out_of_play,
+             test_sessions_are_scoped_and_summarised, test_timeline_reads_steps_tools_and_gaps,
+             test_resolve_and_unreadable_store)
     failures = 0
     for test in tests:
         with tempfile.TemporaryDirectory() as td:

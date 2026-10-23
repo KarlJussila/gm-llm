@@ -14,6 +14,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   engine that speaks JSON lines over stdio (`gm-llm serve`); the TUI and the console spawn it
   and only render and send, so a frontend can be written in any language
   (`design/frontends.md`). `play --ui console` is a plain-text frontend for a human player too.
+- `gm-llm tokens --sessions` lists a campaign's opencode sessions with their wall and model time,
+  peak context and the skills they loaded; `--session N` prints one step by step with its tool calls.
 
 ### Changed
 - **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal, not the skills
