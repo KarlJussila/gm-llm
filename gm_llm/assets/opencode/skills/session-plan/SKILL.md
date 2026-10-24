@@ -47,8 +47,8 @@ investigation.
 
 - **Opening state** — where the PC is, what just happened, who's present, what's at stake. The
   anchor, from `state/current.md`.
-- **Where the player might go** — the directions *What the session offers* prepares, each ready to
-  run, never a sequence of scenes to walk them through.
+- **Where the player might go** — each direction *What the session offers* prepares, with the scenes
+  it's likely to lead through: planned enough to run, but never required or scripted.
 - **Encounter seeds** — situations first; a combat seed also commits its combatants, footing and
   objective for the tracker. `encounter-plan` covers designing them.
 - **Discoveries** — any revelation the session can deliver: the clues, how they combine, the
