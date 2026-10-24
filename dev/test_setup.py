@@ -24,6 +24,10 @@ def arc(root, slug, tier, hook=""):
     path.with_suffix('.state.md').write_text('---\nas-of: S0\n---\n', encoding='utf-8')
 
 
+def primer(root):
+    (root / 'campaign' / 'documents' / 'primer.md').write_text('# Primer\n', encoding='utf-8')
+
+
 class Backend:
     def __init__(self, root, author):
         self.directory = str(root)
@@ -72,9 +76,11 @@ def test_resume(root):
 
     def complete(message):
         arc(root, 'rivals', 'minor', 'crown')
+        primer(root)
 
     backend = Backend(root, complete)
-    assert Setup(backend, Gate(), str(root)).start().done
+    turn = Setup(backend, Gate(), str(root)).start()
+    assert turn.done and 'documents/primer.md' in turn.reply, 'code points the player to the primer'
     assert len(backend.prompts) == 1, 'resume should dispatch once and skip completed stages'
     assert 'Exactly one major arc' not in backend.prompts[0], 'resume lists only unfinished work'
     assert (root / 'campaign/arcs/crown.md').read_text(encoding='utf-8') == major
@@ -99,6 +105,8 @@ def test_one_correction(root):
 def test_coverage(root):
     arc(root, 'crown', 'major')
     arc(root, 'rivals', 'minor', 'crown')
+    assert ['primer' in m for m in setup_missing(root)] == [True], 'the primer ends setup'
+    primer(root)
     assert not setup_missing(root)
     arc(root, 'rivals', 'minor', 'elsewhere')
     assert len(setup_missing(root)) == 1

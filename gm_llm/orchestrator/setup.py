@@ -4,9 +4,10 @@ Init — the orchestrated new-campaign flow.
 Setup drives the dm through campaign init as a staged pipeline:
   1. scaffold_campaign()  — pure Python, no LLM
   2. INTAKE               — dm gathers the brief and pitches the world (interactive with player)
-  3. WORLD                — one dispatch: the world built from the pitch, then the player's primer
+  3. WORLD                — one dispatch: the world built from the pitch
   4. CHAR                 — dm does character creation (interactive with player)
-  5. ARCS_STATE           — one dispatch, disk-based coverage check
+  5. ARCS_STATE           — one dispatch: arcs, initial state, then the player's primer;
+                            disk-based coverage check
   6. LINT, GATE           — canon lint, then judgment in a fresh session
   7. COMMIT               — git commit in code
 
@@ -35,7 +36,7 @@ from gm_llm.settings import load_settings
 from .archive import verdict_fields
 from . import paths
 from .canon import dm_guidance
-from .lint import setup_missing, world_missing
+from .lint import setup_missing
 from .loop import join_narration
 from .phase import apply_lint_correction, commit_campaign, correct_once, refresh_campaign
 from .planner import Planner
@@ -58,6 +59,11 @@ _STAGE_KEYS = {
     "GATE":         "gate",
     "COMMIT":       "commit",
 }
+
+
+# Code, not the dm, points the player to their primer once setup has written it.
+_PRIMER_READY = ("Your primer is ready: `campaign/documents/primer.md`, the world as your "
+                 "character knows it before play begins.")
 
 
 def _bullets(items: list[str]) -> str:
@@ -112,7 +118,7 @@ class Setup:
         # Non-interactive resume: run the pipeline immediately, no player turns needed
         if self._stage not in ("INTAKE", "CHAR"):
             self._run_pipeline()
-            return SetupTurn("Campaign init complete.", True)
+            return SetupTurn(self._finished("Campaign init complete."), True)
 
         # whole=True: the dm's player-facing setup message can span several text parts (it
         # works as it talks — e.g. the world overview followed by a short closer), and
@@ -144,7 +150,7 @@ class Setup:
         if self._stage == "CHAR" and done:
             self._mark_done("CHAR")
             self._run_pipeline()
-            return SetupTurn(text, True)
+            return SetupTurn(self._finished(text), True)
 
         return SetupTurn(text, self._init_committed())
 
@@ -157,18 +163,12 @@ class Setup:
     # --- non-interactive stages ---
 
     def _build_world(self) -> None:
-        """The world from the approved pitch, top down, ending with the player's primer; one
-        nudge if the primer is missing."""
+        """The world from the approved pitch, top down."""
         self._announce("WORLD")
         self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-world-brief").format(
             delegation=load(f"subagents-{load_settings(self.root).subagents}")))
-        missing = world_missing(self.root)
-        if missing:
-            self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-missing").format(
-                missing=_bullets(missing)))
         if self.logs and self.logs.archive:
-            self.logs.archive.emit("stage", stage="world", missed=missing,
-                                   still_missed=world_missing(self.root))
+            self.logs.archive.emit("stage", stage="world")
         refresh_campaign(self.root)
         self._mark_done("WORLD")
 
@@ -211,6 +211,12 @@ class Setup:
         self._announce("COMMIT")
         commit_campaign(self.root, "campaign: init")
         self._mark_done("COMMIT")
+
+    def _finished(self, text: str) -> str:
+        """Setup's last word to the player, with the pointer to their primer."""
+        if (self.root / "campaign" / "documents" / "primer.md").is_file():
+            return join_narration(text, _PRIMER_READY)
+        return text
 
     # --- stage tracking ---
 

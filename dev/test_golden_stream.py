@@ -259,6 +259,11 @@ _ARCS_RECONCILED = {
     "campaign/arcs/guild-rivalry.state.md": _ARC_MINOR_STATE.replace("as-of: S0", "as-of: S1"),
 }
 
+_PROLOGUE_1 = """\
+Saltgate's guilds have fought over its harbour for a generation. You came for work, and a satchel
+that hums at night came with you.
+"""
+
 _PLAN_2 = """\
 # Session 2 plan
 
@@ -276,7 +281,6 @@ def _writes(root: Path) -> dict:
             "campaign/world/factions/harbor-guilds.md": _FACTION,
             "campaign/world/factions/harbor-guilds.state.md": _FACTION_STATE,
             "campaign/world/locations/crossroads-inn.md": _LOCATION,
-            "campaign/documents/primer.md": "# Primer\n\nSaltgate is a harbour city of rival guilds.\n",
         },
         "char": {
             "campaign/characters/dallid.md": _PC_SHEET,
@@ -291,7 +295,8 @@ def _writes(root: Path) -> dict:
             "campaign/arcs/guild-rivalry.md": _ARC_MINOR,
             "campaign/arcs/guild-rivalry.state.md": _ARC_MINOR_STATE,
         },
-        "plan_1": {"campaign/sessions/1/plan.md": _PLAN_1},
+        "plan_1": {"campaign/sessions/1/plan.md": _PLAN_1,
+                   "campaign/sessions/1/prologue.md": _PROLOGUE_1},
         "plan_1_fix": {"campaign/sessions/1/plan.md": _PLAN_1_CORRECTED},
         "digest_1": {"campaign/sessions/1/digest.md": _DIGEST_1},
         "arcs_1": _ARCS_RECONCILED,
@@ -340,7 +345,7 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
             Resp("A hopeful harbour city of rival guilds. Better?"),                # revision
             _task_complete(                                                          # intake done
                 "The pitch is agreed."),
-            Resp("The world is built and the primer written."),                     # world
+            Resp("The world is built."),                                            # world
             Resp("Now let's make your character."),                                  # char brief
             _task_complete("Your rogue Dallid is ready."),                           # char done
             Resp("Arcs and opening state written."),                                 # arcs + state
@@ -386,10 +391,10 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
 # The setup-stage writes are attached to the dm replies that stand in for them; the
 # constant queue above keeps `writes=None` on those slots, so wire them here by index.
 _DM_STAGE_WRITES = {
-    4: "world",       # world build          -> world files and the primer
+    4: "world",       # world build          -> world files
     6: "char",        # character confirmed -> PC files
-    7: "arcs_state",  # one dispatch -> both arcs and their initial state
-    8: "plan_1",      # author-brief(1)      -> session-1-plan.md
+    7: "arcs_state",  # one dispatch -> both arcs, their initial state and the primer
+    8: "plan_1",      # author-brief(1)      -> session-1-plan.md and its prologue
     9: "plan_1_fix",  # plan correction      -> corrected session-1-plan.md
     12: "arcs_1",     # apply-arcs(1)        -> both arcs stamped S1
     14: "plan_2",     # author-brief(2)      -> session-2-plan.md
@@ -523,7 +528,8 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     """Drive setup -> prep -> play -> handoff -> reconcile over the fake backend and
     the real Gate/preloader; return the recorded stream and a few flow assertions."""
     writes = _writes(root)
-    writes["arcs_state"] = writes["arc_major"] | writes["arc_minor"]
+    writes["arcs_state"] = writes["arc_major"] | writes["arc_minor"] | {
+        "campaign/documents/primer.md": "# Primer\n\nSaltgate is a harbour city of rival guilds.\n"}
     (root / "gm-llm.yaml").write_text("feedback-dir: feedback\n", encoding="utf-8")
     (root / "feedback").mkdir(exist_ok=True)
     (root / "feedback/dm.md").write_text("- Name the people the player will deal with.\n",
@@ -551,6 +557,7 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     assert setup._stage == "CHAR" and "your character" in opened.reply
     st = setup.turn("A half-elf rogue named Dallid.")           # completes CHAR -> runs pipeline
     assert st.done, "setup should be done once init is committed"
+    assert "documents/primer.md" in st.reply, "code points the player to the primer"
 
     # 2. Session-1 prep (Planner via finalize) — gate fails once, so a correction fires.
     setup.finalize()
@@ -558,7 +565,11 @@ def record_stream(root: Path) -> tuple[list[dict], dict]:
     # 3. Play: opening + three turns, the last a task_complete close carrying the notes.
     game = Game(backend, preloader, logs=None, campaign_dir=str(root / "campaign"),
                 session=1, transcript=True)
-    game.start()
+    opening = game.start()
+    assert opening.final.startswith("Saltgate's guilds"), "session 1 leads with its prologue"
+    assert "Crossroads Inn is warm" in opening.final
+    transcript = (root / "campaign/sessions/1/transcript.md").read_text(encoding="utf-8")
+    assert transcript.index("Saltgate's guilds") < transcript.index("Crossroads Inn is warm")
     game.turn("I watch the barkeep and let the satchel show.")
     game.turn("I ask Magren what he knows.")
     t4 = game.turn("I thank him and leave.")

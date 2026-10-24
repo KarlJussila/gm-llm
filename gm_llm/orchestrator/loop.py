@@ -100,9 +100,13 @@ class Game(CombatMixin):
 
     def start(self, kickoff: str = "Let's begin the session.") -> TurnResult:
         """The opening scene. Resets the transcript and records the opening narration (no
-        player line). The DM opens with its prepared context in front of it."""
+        player line). The DM opens with its prepared context in front of it. A session with a
+        prologue (the first) leads with it, read out verbatim, and the DM opens where it ends."""
         self._init_transcript()
-        tr = self._play(self._runner_preload() + kickoff, kickoff, opening=True)
+        prologue = self._read_prologue()
+        lead = load("runner-prologue").format(prologue=prologue) + "\n\n" if prologue else ""
+        tr = self._play(self._runner_preload() + lead + kickoff, kickoff, opening=True,
+                        prologue=prologue)
         self._save_runner_sid()  # so a later run can reattach this session
         return tr
 
@@ -182,7 +186,8 @@ class Game(CombatMixin):
             except Exception:  # noqa: BLE001 — the watcher is best-effort by design
                 pass
 
-    def _play(self, message: str, player_msg: str, opening: bool = False) -> TurnResult:
+    def _play(self, message: str, player_msg: str, opening: bool = False,
+              prologue: str = "") -> TurnResult:
         self._turn_no += 1
         self._step("draft")
         reply = self.backend.prompt_full(self.runner_sid, self.runner_agent, message)
@@ -201,6 +206,8 @@ class Game(CombatMixin):
             # A disk fact, so a wrap the player never confirms still shows the same choice
             # after a restart instead of resuming into more play.
             self._mark_complete()
+        if prologue:  # read out ahead of the opening scene, in the transcript as in the reply
+            narration = f"{prologue}\n\n{narration.strip()}"
         self._step("done")
         self._combat_observe(reply)
         tr = TurnResult(player_msg, narration, session_complete,
@@ -251,6 +258,13 @@ class Game(CombatMixin):
                 f.write("\n".join(blocks) + "\n")
         except (OSError, ValueError):
             pass
+
+    def _read_prologue(self) -> str:
+        p = paths.prologue(self.campaign, self.session) if self.session else None
+        try:
+            return p.read_text(encoding="utf-8").strip() if p and p.is_file() else ""
+        except OSError:
+            return ""
 
     def _read_transcript(self) -> str:
         if not self.transcript_path:

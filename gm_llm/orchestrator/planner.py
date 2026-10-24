@@ -3,8 +3,9 @@ PRE-session planning — orchestrated.
 
   prep_session(N):
       dm authors campaign/sessions/N/plan.md                 # 1. the dm holds the pen
+        (session 1: and prologue.md, one nudge if missing)
       canon lint on what it wrote, one correction
-      result = gate.check_plan(plan)                         # 2. ALWAYS gate, in code
+      result = gate.check_plan(plan, prologue)               # 2. ALWAYS gate, in code
       if result.violations: dm revises the file once         # 3. exactly ONE bounded pass
       commit "campaign: session N plan"                       # 4. deterministic commit
       return PrepResult
@@ -64,24 +65,30 @@ class Planner:
         return paths.plan(self.root / "campaign", n)
 
     def _read_plan(self, n: int) -> str:
-        p = self._plan_path(n)
-        try:
-            return p.read_text(encoding="utf-8") if p.is_file() else ""
-        except OSError:
-            return ""
+        return _read(self._plan_path(n))
+
+    def _read_prologue(self, n: int) -> str:
+        return _read(paths.prologue(self.root / "campaign", n))
 
     def prep_session(self, n: int, commit: bool = False) -> PrepResult:
-        # 1. The dm authors the plan file (and any new entities it pulls in).
-        self.backend.prompt(self.dm_sid, self.dm_agent, load("author-brief").format(n=n))
+        # 1. The dm authors the plan file (and any new entities it pulls in). The first
+        #    session also gets a prologue: the player remembers nothing before it.
+        brief = load("author-brief").format(n=n)
+        if n == 1:
+            brief += "\n\n" + load("prologue-brief")
+        self.backend.prompt(self.dm_sid, self.dm_agent, brief)
         plan = self._read_plan(n)
         if not plan:
             raise PlannerError(
                 f"the dm reported done but {self._plan_path(n)} is missing or empty")
+        if n == 1 and not self._read_prologue(n):
+            self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-missing").format(
+                missing=f"- `campaign/{paths.rel(n, 'prologue')}`, as the plan brief describes."))
         # New entities the plan pulled in meet the canon lint before the checker reads it.
         apply_lint_correction(self.backend, self.dm_sid, self.dm_agent, self.root)
 
         # 2. Gate it in code — always, narrative-only.
-        result = self.gate.check_plan(plan)
+        result = self.gate.check_plan(plan, prologue=self._read_prologue(n))
 
         # 3. Exactly one bounded correction (no re-gate). Re-read the file after.
         draft = plan  # the text the gate judged — archived even once corrected over
@@ -114,6 +121,13 @@ class Planner:
                 canon_sections=pr.gate.canon_sections,
                 draft=pr.draft, plan=pr.plan, diff=pr.diff,
             )
+
+
+def _read(p: Path) -> str:
+    try:
+        return p.read_text(encoding="utf-8") if p.is_file() else ""
+    except OSError:
+        return ""
 
 
 def _format_block(pr: PrepResult) -> str:

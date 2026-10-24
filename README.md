@@ -133,9 +133,9 @@ If winget can't find or install Python (common on older Windows 10), install Pyt
 </details>
 
 An empty directory opens in the **setup** phase: the DM interviews you (free-form or
-guided) and pitches a world, builds it once you approve and writes you a primer
-(`campaign/documents/primer.md`), creates your character with you, designs the arcs, plans
-session 1, and rolls straight into play. Thereafter the same screen carries the whole
+guided) and pitches a world, builds it once you approve, creates your character with you,
+designs the arcs, writes you a primer (`campaign/documents/primer.md`, the world as your character
+knows it), plans session 1, and rolls straight into play with a prologue. Thereafter the same screen carries the whole
 lifecycle: play a session, `ctrl+w` (or `/wrap`) to run the post-session pipeline and
 open the next one.
 

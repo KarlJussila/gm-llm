@@ -27,9 +27,6 @@ already thought through, and the player meets its details close up.
 The main story runs through all three, but the world does not exist to serve it: most of what the
 player meets is simply the world going about its business.
 
-Finish with `documents/primer.md`, the player's spoiler-free guide: what someone living there knows
-of the world, the region and the vicinity and its people. Nothing from a hidden layer.
-
 ## What the world is made of
 
 - **World truth** — `world/overview.md` (premise, central conflict, surface situation, themes and

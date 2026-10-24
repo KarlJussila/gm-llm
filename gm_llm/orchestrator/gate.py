@@ -76,8 +76,11 @@ def _parse_passed(tool_input: dict) -> bool | None:
     return None
 
 
-def _plan_brief(plan: str, canon: str) -> str:
-    return load("check-plan-brief").format(plan=plan, canon=canon)
+def _plan_brief(plan: str, canon: str, prologue: str = "") -> str:
+    brief = load("check-plan-brief").format(plan=plan, canon=canon)
+    if prologue.strip():
+        brief += "\n\n--- PROLOGUE (read to the player verbatim as the session opens) ---\n" + prologue
+    return brief
 
 
 def _propagation_brief(n: int) -> str:
@@ -187,12 +190,13 @@ class Gate:
         sid = self.backend.create_session(check)
         return self._check(sid, brief, check)
 
-    def check_plan(self, plan: str) -> StageGateResult:
-        """The PRE gate: narrative-only check of a draft session plan. The plan text
-        drives the canon preload (names match by name)."""
+    def check_plan(self, plan: str, prologue: str = "") -> StageGateResult:
+        """The PRE gate: narrative-only check of a draft session plan, and of session 1's
+        prologue when there is one. The plan text drives the canon preload (names match by
+        name)."""
         canon = self.preloader.build(plan)
         return StageGateResult(
-            narrative=self._run("check-plan", _plan_brief(plan, canon)),
+            narrative=self._run("check-plan", _plan_brief(plan, canon, prologue)),
             prompt="plan", label="Canon",
             canon_sections=canon.count("\n### "),
         )

@@ -18,6 +18,7 @@ Review the campaign's meaning:
 - **Duplicates.** Entities that duplicate another's name or role and should be one entity.
 - **Consistency.** Compare the world, the primer, the PC and the arcs with `campaign/campaign.md`
   and each other. Flag contradictions in facts, tone, themes or the player's content boundaries,
-  and anything in the primer that a hidden layer keeps from the player.
+  and anything in the primer that a hidden layer keeps from the player or the knowledge ledger
+  doesn't give the PC.
 
 Report each gap with its file, what conflicts or is missing, and the correction it needs.

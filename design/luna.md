@@ -79,7 +79,8 @@ wrong one the probe prompt gave it).
 - **Vitals move into YAML frontmatter**, with a schema per entity type. The body stays prose.
 - **Secrets carry ids:** `[hidden:<id>]`. A reveal is recorded once, by id, in the PC's knowledge
   ledger; code flips the flag in the home file and adds the PC to its `Known to:` line.
-- **One folder per session:** `sessions/<n>/{plan,transcript,notes,digest}.md`.
+- **One folder per session:** `sessions/<n>/{plan,transcript,notes,digest}.md`, and session 1's
+  `prologue.md`.
 - `.state.md` stays a separate file per stateful entity.
 - `assessment/` is gone, and `feedback/` leaves the campaign (principle 10).
 - **The canon lint** (code) runs after every authoring dispatch: frontmatter schema, links resolve,
@@ -118,8 +119,7 @@ wrong one the probe prompt gave it).
      with, what is happening there now, and problems of its own beside the main story.
 
    The brief says what to populate and what to flesh out, never how many: the model judges the
-   amount. The stage ends with a spoiler-free **player primer** in `documents/` — what someone
-   living there knows of the world, the region and the vicinity.
+   amount.
 4. **Character** (interactive, same thread). Code sends the character brief; the DM opens with hooks
    drawn from the built world and the creation choice, imports a sheet if given one, fills the
    vitals, agrees backstory and placement with the player, writes the PC files and any backstory
@@ -128,14 +128,18 @@ wrong one the probe prompt gave it).
 5. **Arcs and state** — one non-interactive dispatch. The major arc built around the PC (with its
    level pacing), at least one minor arc hooked into it (subagents optional), the threads, and
    initial state. Arcs are built on named NPCs, and an arc spins out the new NPCs it needs. The
-   vicinity's problems become threads. Code then verifies one major arc, at least one minor arc with
-   `hooks-into`, and state stamped `S0` (`as-of: S<n>` means as of the end of session n, so state
+   vicinity's problems become threads. Last comes the spoiler-free **player primer**,
+   `documents/primer.md`: the world, the region and the vicinity as the PC knows them before play,
+   from their background and ledger, foregrounding what the arcs will draw on. It waits until here
+   because only now is it known who the PC is and what will matter. Code then verifies one major arc, at least one minor arc with
+   `hooks-into`, state stamped `S0` and the primer (`as-of: S<n>` means as of the end of session n, so state
    before play is `S0`), with one nudge naming anything missing. Resume reads the same disk facts.
 6. **Canon lint** — one correction.
 7. **`check-init`** — the judgment half only: duplicates, consistency with `campaign.md`, and
    coverage — each tier built to its depth, the vicinity populated, the arcs cast with named NPCs.
    One correction.
-8. **Commit** `campaign: init`, then **plan session 1** (§ Planning).
+8. **Commit** `campaign: init`; code points the player to their primer. Then **plan session 1**
+   (§ Planning).
 
 `campaign-setup` is deleted; its standards are either in `canon-conventions` or are now the lint.
 
@@ -145,7 +149,9 @@ wrong one the probe prompt gave it).
 a map of `campaign/` (the `INDEX.md` tables, then every file they don't list), and the player's
 feedback. Its header is one plain sentence: this is your prepared context; everything else is on
 disk. The runner reads the people, places and arcs a scene turns on as it needs them; preloading
-them all taught it to answer from what it had. The opening is not checked.
+them all taught it to answer from what it had. The opening is not checked. In session 1, code reads
+the prologue out verbatim ahead of the opening, and writes it first in the transcript; the runner gets
+it after its prepared context and opens where it ends.
 
 **Each turn.** The message is the player's text in `<player>…</player>` and nothing else. Code keeps:
 the completion marker on `task_complete`, the one nudge for an ending narrated without the tool,
@@ -210,6 +216,11 @@ On the `dm` thread, warm from setup or reconcile. `session-plan` works without a
 focused plan skills load on demand. Inputs are the digest, the threads dashboard, the arcs and the
 state — there is no assessment. Canon lint on new entities, then `check-plan` with one correction,
 then a commit.
+
+**Session 1 has a prologue.** The player remembers nothing before the first session, so its brief
+also asks for `sessions/1/prologue.md`: the setting in broad strokes as the primer lays it out, then
+the bridge to the opening scene — what brought the PC here and what they're after — ending where
+that scene begins. Code nudges once if it's missing; `check-plan` reviews it with the plan.
 
 ## Substrate that carries over
 

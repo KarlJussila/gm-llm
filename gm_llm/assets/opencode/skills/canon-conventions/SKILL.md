@@ -32,8 +32,8 @@ campaign/
 ├── arcs/                    {slug}.md + {slug}.state.md
 ├── characters/              {slug}.md (sheet) + .state.md + .knowledge.md + .repertoire.md
 ├── state/                   current.md  calendar.md  threads.md  clocks.md
-├── sessions/<n>/            plan.md  transcript.md  notes.md  digest.md
-└── documents/               verbatim handouts, and primer.md — the world as the PC's people know it
+├── sessions/<n>/            plan.md  transcript.md  notes.md  digest.md  (session 1: prologue.md)
+└── documents/               verbatim handouts, and primer.md — the world as the PC knows it
 ```
 
 **State files.** NPCs, factions, arcs and the PC always have a `{slug}.state.md` beside the info
@@ -45,8 +45,8 @@ during play and rewritten between sessions; the transcript is the live record in
 believes and wonders) and the combat repertoire (its reactions and when to offer them).
 
 **Verbatim text** — a letter, an inscription, a quoted passage — goes in `documents/` and is linked
-from the entity it belongs to. `documents/primer.md` is the player's spoiler-free guide to the world,
-the region and where the PC begins.
+from the entity it belongs to. `documents/primer.md` is the player's spoiler-free guide: the world,
+the region and the vicinity as the PC knows them before play.
 
 ## What goes where
 

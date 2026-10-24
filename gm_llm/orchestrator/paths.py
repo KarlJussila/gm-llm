@@ -2,6 +2,7 @@
 Where a session's files live: one folder per session, `campaign/sessions/<n>/`.
 
     plan.md        the prepared session plan (its existence is what makes <n> a session)
+    prologue.md    session 1 only: read to the player verbatim as the session opens
     transcript.md  the orchestrator-written play record
     notes.md       the DM's closing handoff notes
     digest.md      the post-session extraction every later step reads
@@ -20,6 +21,10 @@ def session_dir(campaign: Path | str, n: int) -> Path:
 
 def plan(campaign: Path | str, n: int) -> Path:
     return session_dir(campaign, n) / "plan.md"
+
+
+def prologue(campaign: Path | str, n: int) -> Path:
+    return session_dir(campaign, n) / "prologue.md"
 
 
 def transcript(campaign: Path | str, n: int) -> Path:

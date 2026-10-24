@@ -18,7 +18,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   peak context and the skills they loaded; `--session N` prints one step by step with its tool calls.
 - **`create_entities`**, a tool that writes many new entity files in one call from their
   templates, with their state files; it checks every spec first and never overwrites.
-- Setup writes the player a spoiler-free primer, `campaign/documents/primer.md`.
+- Setup ends by writing the player a spoiler-free primer, `campaign/documents/primer.md`: the world
+  as their character knows it, written once the character and arcs exist.
+- **Session 1 opens with a prologue**, read out verbatim: the setting in broad strokes, then what
+  brought the character to the opening scene and what they're after. The session-1 plan writes it
+  and `check-plan` reviews it.
 
 ### Changed
 - **opencode auto-compaction is back on**, so a warm `dm` or runner thread outlives the
@@ -33,8 +37,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   `player-rolls` and `player-combat` are skills only it can load.
 - **Campaign setup builds the world in its own stage.** The DM pitches a world the player can
   revise; once they approve it, a non-interactive stage builds it top down — the world in broad
-  strokes, the region in structure, the vicinity where the character begins in fine detail — and
-  writes the primer. Character hooks come from the built world, and arcs are cast from named NPCs.
+  strokes, the region in structure, the vicinity where the character begins in fine detail.
+  Character hooks come from the built world, and arcs are cast from named NPCs.
   Arcs and initial state are authored in one dispatch, checked from disk with one correction and
   resumable after interruption. The canon lint handles structural checks; `check-init` reviews
   coverage of each tier, casting, duplicates and consistency. The `campaign-setup` skill is removed.

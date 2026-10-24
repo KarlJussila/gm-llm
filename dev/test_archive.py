@@ -85,7 +85,7 @@ class FakeGate:
     def __init__(self, results):
         self.results = list(results)
 
-    def check_plan(self, plan):
+    def check_plan(self, plan, prologue=""):
         return StageGateResult(
             narrative=Verdict("check-plan", False, "1. Plan names an unknown NPC."),
             prompt="plan", label="Canon", canon_sections=3)

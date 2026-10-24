@@ -235,13 +235,6 @@ def arcs_not_stamped(root: Path | str, n: int) -> list[str]:
     return out
 
 
-def world_missing(root: Path | str) -> list[str]:
-    """The world stage's one disk deliverable: the player's primer."""
-    if (Path(root) / "campaign" / "documents" / "primer.md").is_file():
-        return []
-    return ["`campaign/documents/primer.md`, the player's spoiler-free primer to the world."]
-
-
 def setup_missing(root: Path | str) -> list[str]:
     """Setup deliverables, read from disk so a resume only authors unfinished work."""
     campaign = Path(root) / "campaign"
@@ -264,6 +257,8 @@ def setup_missing(root: Path | str) -> list[str]:
     for path in sorted(states):
         if as_text((read_frontmatter(path) or {}).get("as-of")) != "S0":
             missing.append(f"{path.relative_to(campaign).as_posix()} needs initial state stamped `as-of: S0`.")
+    if not (campaign / "documents" / "primer.md").is_file():
+        missing.append("`campaign/documents/primer.md`, the player's primer.")
     return missing
 
 

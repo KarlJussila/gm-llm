@@ -19,6 +19,9 @@ differently than you would is fine. Flag only these:
   and each reveal is marked correctly as known, a new reveal, or staying hidden.
 - **Overlap.** No entity the plan introduces duplicates an existing one's name or role; say whether
   to merge or differentiate, naming the existing file.
+- **The prologue**, when one follows the plan (the first session): the player hears it verbatim,
+  so it tells only what the primer and the knowledge ledger give the PC, and it ends where the
+  plan's opening begins.
 - **Blanks.** No load-bearing fact is left open — "DM decides", "TBD", "as needed", "the runner
   creates". Only the player's path stays open.
 
