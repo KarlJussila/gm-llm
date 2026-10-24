@@ -165,7 +165,8 @@ the switch into combat, the transcript, and the archive (player message, reply, 
   often; never announce a DC; outcomes on a gradient) — your play preferences, condensed;
 - how to open a session;
 - pacing: what a good stopping point is, the two failures (ending after one scene, never ending),
-  and that drifting into heavy improvisation is itself a reason to land. Ending is the DM's call.
+  and that play drifted far from anything prepared should start looking for one. Ending is the DM's
+  call.
 
 On-demand skills: `social-play`, `discoveries`, `session-close`, `combat-run` ("when a fight is about
 to start") and `combat-balance`.

@@ -22,7 +22,10 @@ already thought through, and the player meets its details close up.
 - **The vicinity, in fine detail.** Where the PC begins is a place to live in: the people they would
   deal with — whoever runs things, keeps the inn, holds the local office, a rival, a friend — each
   named and wanting something; places to go, each with a hook; what is going on there now; and
-  problems of its own beside the main story.
+  problems of its own beside the main story. Those problems are the kind of play the player's brief
+  asks for, sized to where the PC starts. A brief for heroic adventure wants a starting town's
+  troubles to be adventures, if small ones, where a slice-of-life brief makes chores and errands
+  the right material.
 
 The main story runs through all three, but the world does not exist to serve it: most of what the
 player meets is simply the world going about its business.

@@ -33,7 +33,7 @@ from .runner import classify_archive, reconcile_pending
 from .workspace import agent_meta, apply_model, extract_commit, turn_message
 
 ASSETS = Path(__file__).resolve().parent / "assets"
-RUBRIC = "v2"
+RUBRIC = "v3"
 GRADER_AGENT = "grader"
 WS_NAME = "grade-ws"
 

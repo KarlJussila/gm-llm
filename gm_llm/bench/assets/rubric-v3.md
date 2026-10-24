@@ -1,4 +1,4 @@
-# Grading rubric — v2
+# Grading rubric — v3
 
 Each finding is a claim that the DM, or a between-session record, got something wrong. First decide
 whether it holds; then, if it does, how bad it is and what kind it is.
@@ -34,7 +34,7 @@ egregious the mistake looks in the abstract.
 
 - **critical** — breaks the game's integrity in a way that can't be walked back. A `[hidden]`
   plot fact spoiled to the player; the DM speaking or deciding for the PC on a consequential
-  choice; a load-bearing antagonist or plot identity invented on the fly that derails canon; a
+  choice; an improvised antagonist or plot identity that contradicts canon and derails it; a
   line that hands the player the *shape* of the story ("the first turning point of the arc is in
   play"). Once the player has seen it, the reveal or the stolen agency is spent.
 
@@ -62,17 +62,21 @@ used when a slip is genuinely small.
 
 - **canon-contradiction** — contradicts established canon or what play already established (who
   someone is, where they are, what they hold or did).
-- **fabrication** — a load-bearing new entity, identity or fact invented on the fly instead of
-  grounded in canon (a named antagonist identity, a near-duplicate of an existing entity).
+- **fabrication** — an improvised entity, identity or fact that conflicts with canon, quietly rules
+  out something the plan has waiting, or near-duplicates an existing entity.
 - **spoiler-leak** — hands the PC a `[hidden]` fact it hasn't learned, something it has no in-scene
   way to know, or a coming beat.
 - **npc-provenance** — an NPC knows or acts on information with no plausible route to them.
 - **agency** — spoke, felt or decided for the PC; narrated a transition the player didn't choose;
   made the player restate a conclusion already given.
+- **herding** — pushed the player toward the plan: pressed a hook again and again, inflated it, left
+  the alternatives thin, or pressed a choice the player had already made or not taken up.
 - **dice-and-uncertainty** — rolled for the PC, resolved an uncertain action with no roll,
   announced a DC, or let a social move land with no check (a lie always takes Deception).
 - **metagame-leak** — production language in the fiction, or a line that reveals the campaign's
   structure (naming a beat's plot significance), even said to the player directly.
+- **clarity** — narration whose meaning was lost in flavour or unexplained terms, or that
+  over-explained what the scene already made clear.
 - **pacing** — wound down after a single scene, or refused a clearly close-worthy landing.
 - **rules-error** — a mechanical D&D mistake: tracker and narration disagree, a reaction or
   ability used against the rules.

@@ -53,7 +53,7 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
   session per run, over the run's first commit (the campaign before play).
 - `grade` reads it: one rolling `grader` (Sol 6.1 high) session per run, workspace
   `<out>/grade-ws/<run>/` with the start campaign, `after/` (the run dir's HEAD) and
-  `transcript.md`. Each finding is confirmed or rejected against `rubric-v2.md`; only confirmed
+  `transcript.md`. Each finding is confirmed or rejected against `rubric-v3.md`; only confirmed
   ones score. Unchecked runs are skipped and the report flags them.
 - `report` shows checker and gate precision, the defaulted rate (checked turns with no
   submission, gate verdicts passed by default) and the stage correction rate.

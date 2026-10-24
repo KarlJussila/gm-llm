@@ -25,11 +25,19 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   and `check-plan` reviews it.
 
 ### Changed
-- **Session plans offer paths, not a sequence of scenes.** A plan prepares the two to four
-  directions the player is likeliest to take and draws them to the favoured one with incentives,
-  never by leaving the rest thin; `check-plan` flags herding and facts that don't hold up. The
-  runner presents hooks at their natural weight, keeps scenes moving once the player commits, and
-  keeps flavour from costing the meaning.
+- **Session plans start from what the session offers the character**: something worth chasing,
+  aimed at their goals, and the two to four directions they're likeliest to take, never a sequence
+  of scenes. Plans commit what the secrets and stakes rest on and leave the everyday world (pay,
+  deals, bystanders) to the runner; `check-plan` flags herding. The runner presents hooks at their
+  natural weight, keeps scenes moving once the player commits, and keeps flavour from costing the
+  meaning.
+- **The runner improvises more freely.** Anything it adds is checked against canon rather than held
+  to what's written, and drifting from the plan prompts it to look for a stopping point rather
+  than land at once.
+- A starting vicinity's problems match the kind of play the player's brief asks for.
+- **Rubric v3.** The play checker and the rubric add `herding` and `clarity` (both ways), and
+  `fabrication` now counts only additions that conflict with canon or the plan. Clarity is scored
+  under a new narration dimension.
 - The `author` subagent is now `helper`, a general-purpose subagent: the dm can hand it research or
   a review as well as writing.
 - The session-1 prologue stops on the threshold of the opening scene, and the runner continues it

@@ -33,9 +33,9 @@ contradicted.
 - **Consistency.** Every entity, place, item or fact the DM asserts or relies on matches the files
   and the play so far. Following the player off the plan is fine; contradicting what's been played
   or what canon fixes is not. Adding detail that's consistent is ordinary play.
-- **Fabrication.** A newly named thing with no file and no earlier appearance in play is fine as
-  ambient colour (a passing vendor). It's a finding when it's load-bearing — an identity, a secret,
-  the answer to something being investigated — or near-duplicates an existing entity.
+- **Fabrication.** The DM may improvise freely, load-bearing additions included. It's a finding when
+  the addition conflicts with canon, quietly rules out something the plan has waiting, or
+  near-duplicates an existing entity.
 - **Spoilers.** The PC knows its knowledge ledger, what's openly perceivable, and what it learned
   earlier this session. Handing the PC a fact tagged `[hidden:…]` that it hasn't learned, or naming a
   coming beat or the story's structure, is a leak.
@@ -56,6 +56,10 @@ contradicted.
   levels, sessions, the plan, "this NPC". Speaking to the player directly, out of fiction, is
   sanctioned, and so is naming a skill or a die; but characterizing a beat as "a turning point" or
   saying what it means to the plot is a finding even out of fiction.
+- **Herding.** Pushing the player toward the plan: pressing a hook again and again, inflating it,
+  leaving the alternatives thin, or pressing a choice the player already made or didn't take up.
+- **Clarity**, both ways: narration whose meaning is lost in flavour or in terms the player hasn't
+  met, or over-explaining what the scene already makes clear.
 - **Pacing**, both ways: winding down after a single scene, or declining a clearly close-worthy
   landing and opening new threads instead. Ending is the DM's call; don't demand it mid-build.
 
@@ -81,7 +85,7 @@ counting down move on every turn; ignore them.
 Call `submit_checks` once per turn, with an empty list when the turn is clean. For each finding give
 the check (`canon`, `conduct` or `combat`), the claim, the evidence (a quote from the turn, a file,
 an earlier turn), and the category that fits best: `canon-contradiction`, `fabrication`,
-`spoiler-leak`, `npc-provenance`, `agency`, `dice-and-uncertainty`, `metagame-leak`, `pacing` or
-`rules-error`. A mistake you already reported on an earlier turn that carries on here is one
+`spoiler-leak`, `npc-provenance`, `agency`, `herding`, `dice-and-uncertainty`, `metagame-leak`,
+`clarity`, `pacing` or `rules-error`. A mistake you already reported on an earlier turn that carries on here is one
 finding, not a new one: set `continues` to the earlier finding's ref (`s3t5#1` — the turn's ref and
 the finding's place in that turn's list) rather than claiming it again.

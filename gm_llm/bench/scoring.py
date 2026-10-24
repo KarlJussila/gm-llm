@@ -62,13 +62,14 @@ _FLOOR_RATE = 2.0
 # than printing a decimal point that means nothing.
 _THIN_DIMENSION = 10
 
-# The rubric's 9 categories, collapsed into the dimensions a subscore is reported on. Every
+# The rubric's 11 categories, collapsed into the dimensions a subscore is reported on. Every
 # category maps to exactly one; an off-rubric label falls through to "other" so it stays
 # visible in the total instead of scoring free.
 _DIMENSIONS = {
     "canon_fidelity":         ("canon-contradiction", "fabrication"),
     "information_discipline": ("spoiler-leak", "npc-provenance", "metagame-leak"),
-    "player_agency":          ("agency", "pacing"),
+    "player_agency":          ("agency", "herding", "pacing"),
+    "narration":              ("clarity",),
     "mechanical_integrity":   ("dice-and-uncertainty", "rules-error"),
     "record_integrity":       ("record-integrity",),
 }
@@ -76,7 +77,7 @@ _DIM_OF = {cat: dim for dim, cats in _DIMENSIONS.items() for cat in cats}
 _DIM_LABEL = {
     "canon_fidelity": "canon fidelity", "information_discipline": "information discipline",
     "player_agency": "player agency", "mechanical_integrity": "mechanical integrity",
-    "record_integrity": "record integrity", "other": "other (off-rubric)",
+    "record_integrity": "record integrity", "narration": "narration", "other": "other (off-rubric)",
 }
 
 

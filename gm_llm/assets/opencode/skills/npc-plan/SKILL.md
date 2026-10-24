@@ -16,7 +16,7 @@ default; give them friction, suspicion and agendas.
 - **What they know** — and what they don't. They act only on what could have reached them; flag
   anything secret.
 - **Voice** — a one-line personality and speech handle.
-- **Reactions** — to the likely beats, including to other NPCs: a savvy ally reads the newcomer the
+- **Reactions** — to what the player is likely to do, and to each other: a savvy ally reads the newcomer the
   PC trusts; a rival presses an opening. Planned reactions are what keep the runner from funnelling
   every decision back to the PC.
 
