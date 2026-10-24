@@ -1,49 +1,40 @@
-# Handoff — after the Luna prompt rework (2026-10-21)
+# Handoff — live play on Luna (2026-10-24)
 
-Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the design is
+Ongoing work, kept transferable between agents. The plan is `ROADMAP.md`; the design is
 `design/luna.md` and `design/benchmark.md`. Run things through `.venv/bin/python` (see `CLAUDE.md`).
 
 ## Where things stand
 
-- **The prompt rework is complete** and tagged `luna-clean-slate` (`18f8d29`). Prose added after
-  the tag is trimmed only through `/refine-prompts`; a new guardrail names the failure and the run.
-- **Everything that needed no model quota has landed:** frontends 1 (`9db2c00`), B5 conditions and
-  tiers (`8fabf13`), `bench status` (`d398bbf`), B7 the after-play checker (`5718709`), B8 the
-  grader rework (`bebefa4`, `59f1914`). The suite is green.
-- **What's left needs quota or Karl:** luna 6 (live shakedown), 7 (between-session and combat
-  shakedown), 8 (release); then B3 (`low` baseline), B9, B10. Packaging 1 needs a Windows box.
+- **The prompt rework** is tagged `luna-clean-slate` (`18f8d29`). Prose added after the tag is
+  trimmed only through `/refine-prompts`; a new guardrail names the failure and the run (campaign
+  directory + archive run id).
+- **Shakedown has moved to Karl's own campaigns** on Desktop, played through the TUI:
+  - `~/Desktop/luna-campaign`: sessions 1–2 played and reconciled, session 3 planned.
+  - `~/Desktop/luna-campaign2`: setup, then session 1 planned. Its setup run
+    (`20261024T005158Z-c601`) showed the failures fixed in `e00fa1d`.
+  - `~/Desktop/luna-campaign3`: session 1 in play under the old planning prompts (run
+    `20261024T033752Z-967c`). Its first fifteen minutes drove `7c727f1` through `a13a6e3`.
+- **Landed since 2026-10-21, never yet run on Luna:**
+  - The primer is written after the character and arcs, and session 1 opens with a verbatim
+    prologue (`53029b3`, seam fixed in `7c727f1`).
+  - The planning rework (`a13a6e3`). `session-plan` opens with what the session offers the
+    character and leaves the everyday world (pay, deals, bystanders) to the runner. The runner
+    improvises more freely and checks what it adds against canon.
+  - The `author` subagent is now `helper`, a general-purpose subagent, and `author-brief` is now
+    `plan-brief` (`a940b0b`).
+  - opencode auto-compaction is back on (`65353a2`). Under ChatGPT OAuth, opencode caps OpenAI
+    models at 400k context / 272k input.
+- **Karl's install** needs `/quit`, `pipx reinstall gm-llm`, `gm-llm update` to pick these up. The
+  build is hatchling now (`414e810`), so no `rm -rf build`.
 
-## luna 6 in progress
+## Benchmark
 
-- `bench-out/luna6b/run-20261021T125839Z-fd89` (pre-fix skills) is done: session 3 played (28
-  turns, natural close), reconciled, session 4 planned. `bench check` and `bench grade` ran on it,
-  their first real-model run; both tools work. 8 checker findings, all rejected by Sol (4 were
-  world rolls the checker took for PC rolls); 3 propagation gate findings confirmed (2 minor, 1
-  trivial) once the grader saw the correction as a correction (`b2bff0d`).
-- `bench-out/luna6c` (every fix through `b2bff0d`): 21 turns, natural close, full reconcile and
-  plan. No DM dice calls at all; the checker found nothing in play; Sol confirmed all 5 gate
-  findings (all trivial record slips) — integrity 97.7. Uncaught by any gate: `greyhaven.state.md`
-  logged Dallid arriving and `hollowfell-mine.state.md` his leaving (fixed, `ca24187`).
-- `bench-out/luna6d` is the third run, with `ca24187`. The usage limit stopped it at turn 13;
-  finish it with `python -m gm_llm bench run --out bench-out/luna6d --port 4191 --resume`, then
-  `bench check` and `bench grade`. Read its place state files first; if they hold, luna 6 is
-  done. Check and grade now skip unfinished runs (`1f1d5e4`).
-- Fixed from the runs: the dice tool's DM-directed reminder (`8541c1b`); `discoveries` says a
-  check reveals details and conclusions only through them (`3eb602c`, `c8d2e6b`, Karl's
-  wording); reconcile counts as done only once the next plan is archived (`a0a2f5f`);
-  `canon-conventions` § What goes where, one home per fact (`c7b7eb5`), and the fixture's
-  locations no longer track who is where (`183c229`); the archive records the DM's dice rolls and
-  the grader reads a gate's correction diff as a correction, not as the judged draft (`b2bff0d`);
-  a place's state is the place's own, not who came and went (`ca24187`).
-- Found without quota: opencode's `read` doesn't expand `~` (probed on `glm-5.3-flash-free`), so
-  real campaigns never reached `~/.gm-llm/feedback`. The agents now work on the project's
-  `feedback/`, synced with `feedback-dir` (`9ef9f2c`). Bench runs were unaffected (their
-  `feedback-dir` is the run's own `feedback/`).
-- Free models (`opencode/glm-5.3-flash-free`, `opencode/deepseek-v4.1-flash-free`) are fine for
-  anything that just needs *a* model — wiring and tool checks, never Luna's measurements.
-- Watched, once each: the DM rolled a PC check itself (d20+10), then discarded it and asked
-  (luna6b s3t4). The checker couldn't see it then; with rolls archived it can.
-- `bench-out/luna6` is the aborted first attempt (the dice bug); ignore it.
+- `bench-out/luna6d` finished playing (26 turns), but `bench check` failed: `play-checker failed
+  after 4 retries` (`check2.log`). It has no checks file and no grades. Re-check it before grading.
+- **Rubric v3** (`a13a6e3`). The play checker and the rubric add `herding` and `clarity` (both
+  ways). `fabrication` counts only additions that conflict with canon or the plan. Clarity scores
+  under a new `narration` dimension. v2 grades don't compare with v3 without re-grading.
+- `bench-out/luna7/fresh` is an abandoned fresh-setup attempt driven by a scratch client; ignore it.
 
 ## The benchmark pipeline as built
 
@@ -58,19 +49,11 @@ Temporary: delete this file once luna 6 lands. The plan is `ROADMAP.md`; the des
 - `report` shows checker and gate precision, the defaulted rate (checked turns with no
   submission, gate verdicts passed by default) and the stage correction rate.
 
-## Never run against a real model
+## Notes
 
-- The autoplayer (`player.md`, `player-rolls`, `player-combat`), a whole `bench run`, and
-  `autoplay.run` end to end.
-- `opencode serve` loads a plain directory's `.opencode/` agents; only `opencode debug agents`
-  wanted a git repo (so the check and grade workspaces aren't repos).
-
-## For Karl
-
-- Review the prompt-rework commits — the `refine-prompts` "approve the first few" step was skipped
-  while you were away: `e961feb`, `035459f`, `c5e8073`, `38768b3`, `6d3cd2f`, `e2a20f1`, `54f1203`.
-- Review `dev/fixtures/hollowfell/story.md`, the story-so-far recap Claude wrote from the S1–S2
-  transcripts (it leaves out the Concordance records slip on purpose).
+- Free models (`opencode/glm-5.3-flash-free`, `opencode/deepseek-v4.1-flash-free`) are fine for
+  anything that just needs *a* model, such as wiring and tool checks. Never use them for Luna's
+  measurements.
 
 ## Open, outside the repo
 
