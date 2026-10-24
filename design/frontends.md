@@ -37,8 +37,9 @@ Version 1, sent in `hello`. Every message is one JSON object with a `type`.
  "actions": ["status", "shutdown", "input", "meta", "advance"]}
 ```
 
-- `phase` — `starting`, `setup`, `setup_done`, `planning`, `ready` (session *n* planned, not
-  opened), `play`, `complete` (the runner ended the session), `wrapping`, `closed`.
+- `phase` — `starting`, `setup`, `setup_done` (setup committed, but planning session 1
+  failed), `planning`, `ready` (session *n* planned, not opened), `play`, `complete` (the runner
+  ended the session), `wrapping`, `closed`. Setup rolls straight into planning session 1.
 - `awaiting` — what an `input` will be taken as: `answer` (setup), `turn`, `pc_action`,
   `confirm` (empty confirms, text reacts), or `null`.
 - `busy` — a spoiler-free label while a call is in flight, else `null`.
@@ -51,7 +52,7 @@ Version 1, sent in `hello`. Every message is one JSON object with a `type`.
 |---|---|
 | `input {text}` | The player's line, taken as `awaiting` says. |
 | `meta {text}` | An out-of-game question, between turns. |
-| `advance` | The next phase step: plan session 1, open the planned session, or wrap (mid-play too). |
+| `advance` | The next phase step: retry planning session 1, open the planned session, or wrap (mid-play too). |
 | `cancel` | Abort the call in flight. A cancelled turn leaves no trace and comes back in `handback`. |
 | `status` | Ask for the disk-only campaign status. |
 | `shutdown` | Close the engine. |

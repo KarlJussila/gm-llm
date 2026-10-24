@@ -21,7 +21,7 @@ from .dice import roll_expr
 # The yes/no for each phase where the engine waits on an `advance`.
 _ASK = {
     "setup": "Setup couldn't start — try again?",
-    "setup_done": "Setup complete — plan and start session 1?",
+    "setup_done": "Planning session 1 failed — try again?",
     "ready": "Session {n} planned — start playing it?",
     "complete": "Session {n} complete — reconcile and prep session {next}?",
     "play": "The session has stopped — wrap it now?",  # a cap or a failure ended the loop
@@ -136,6 +136,10 @@ def run(client, *, stream: bool = False) -> int:
                 if state["phase"] == "complete" and auto:
                     _print("— the session is complete — `gm-llm play` wraps it —")
                     return 0
+                if auto and state["phase"] == "ready":
+                    _print(f"— session {state.get('session')} is planned — "
+                           f"run this again to play it —")
+                    return 1 if failed else 0
                 if auto or "advance" not in state.get("actions", ()):
                     _print("— the session is still open — run this again to resume it —")
                     return 1 if failed else 0

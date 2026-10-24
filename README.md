@@ -170,7 +170,7 @@ player-facing and takes the campaign as a path (default: the current directory):
 
 ```
 play    [dir] [--player human|auto] [--ui tui|console] [--mock] [--setup]
-        [--model PROVIDER/MODEL] [--variant V]
+        [--setup-script FILE] [--model PROVIDER/MODEL] [--variant V]
 serve   [dir] [--player human|auto] [--mock] [--model …]   the engine over stdio, for a frontend
 status  [dir]                          where the campaign stands (disk only, no model)
 tokens  [dir] [--price-in …]           token + cost usage, from opencode's own store
@@ -215,6 +215,33 @@ Logs land in the campaign's `.opencode/logs/` (gitignored, so they're never comm
 (every checker call in full), `orchestrator-serve.log` (the opencode server), and
 `orchestrator-raw.log` (`GM_LLM_DEBUG=1` reply dumps). Set `GM_LLM_LOG_DIR` to redirect them
 anywhere; with no campaign in play they fall back to a `gm-llm/` folder under the OS temp dir.
+
+### Scripted setup
+
+`gm-llm play DIR --setup-script FILE` hands a new campaign's setup to the `setup-player` agent,
+which answers the DM from your script while the exchange streams by in the scene pane. A `DIR`
+with no `.opencode/` is scaffolded first. Setup and the planning of session 1 run unattended, and
+you're asked before session 1 opens. If the agent fails or runs out of answers, the keyboard takes
+over.
+
+The script is markdown:
+
+```markdown
+---
+character: ~/characters/dallid.md   # optional; a relative path is from the script's folder
+max-turns: 20                       # optional: answers before the keyboard takes over
+---
+## Brief
+Your answer to the DM's opening question, sent word for word.
+
+## How I answer
+Anything else the agent should know: what you want, what you'd push back on, what you leave to
+the DM.
+```
+
+The character file is copied into `campaign/documents/` as character creation opens. Without a
+`## Brief`, the agent writes the first answer from the rest of the script. A campaign that's
+already set up ignores the script.
 
 ## Architecture
 
@@ -268,6 +295,7 @@ the agents and every workflow — setup, play, combat, reconcile, planning — a
 | `log-extractor` | subagent | Transcript and notes → the session digest. |
 | `narrative-checker` | subagent | The between-session gates (`check-*`). Reads and reports only, via `report_findings`. |
 | `player` | primary | The autoplayer, for `--player auto` and the benchmark. |
+| `setup-player` | primary | Answers setup from a script, for `play --setup-script`. |
 
 ### Orchestrator (`gm_llm/orchestrator/`)
 

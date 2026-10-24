@@ -89,6 +89,7 @@ class Engine:
         self._tap = None             # the live stream tap for the current phase
         self._turn = 0
         self._activity_seen: set[str] = set()
+        self._setup_player = None    # the scripted setup player, while it's answering
         self._closing = False
         self._terminal = False       # the closed state is out; nothing follows it
         self._close_lock = threading.Lock()
@@ -102,6 +103,8 @@ class Engine:
         self.lc.backend.on_retry = self._retry
         self._emit("hello", protocol=PROTOCOL, version=__version__,
                    directory=self._directory, batch=False)
+        if self.lc.phase != "setup" and getattr(self.lc, "setup_script", None):
+            self._notice("this campaign is already set up — the setup script isn't used", "rule")
         if self.lc.phase == "setup":
             self._spawn(self._open_setup)
         elif self.lc.phase == "wrap_pending" and not self._fresh:
@@ -324,16 +327,15 @@ class Engine:
         self.lc.setup.on_stage = lambda key: self._stage("setup", key)
         try:
             st = self.lc.setup.start()
+            if self._setup_player is None and not st.done:
+                make = getattr(self.lc, "setup_player", None)
+                self._setup_player = make() if make else None
         except Exception as e:  # noqa: BLE001 — surface any failure to the player
             self._stop_tap()
             self._error("opening setup", e)
             self._set(busy=None)
             return
-        self._say("dm", st.reply)
-        if st.done:
-            self._setup_done()
-        else:
-            self._set(awaiting="answer", busy=None)
+        self._setup_replied(st)
 
     def _setup_turn(self, text: str) -> None:
         try:
@@ -342,11 +344,44 @@ class Engine:
             self._error("the setup exchange", e)
             self._set(awaiting="answer", busy=None)
             return
-        self._say("dm", st.reply)
-        if st.done:
-            self._setup_done()
-        else:
-            self._set(awaiting="answer", busy=None)
+        self._setup_replied(st)
+
+    def _setup_replied(self, st) -> None:
+        """Show the dm's reply, then take the next answer: from the scripted setup player
+        while it has turns left, else from the keyboard."""
+        while True:
+            self._say("dm", st.reply)
+            if st.done:
+                self._setup_done()
+                return
+            player = self._setup_player
+            if player is None or self._closing:
+                self._set(awaiting="answer", busy=None)
+                return
+            if player.exhausted:
+                self._setup_player = None
+                self._notice(f"the setup player used its {player.turns} answers — over to you",
+                             "rule")
+                self._set(awaiting="answer", busy=None)
+                return
+            self._set(awaiting=None, busy="the player is thinking")
+            try:
+                text = player.answer(st.reply)
+            except Exception as e:  # noqa: BLE001
+                self._setup_player = None
+                self._error("the setup player", e)
+                self._set(awaiting="answer", busy=None)
+                return
+            if self._closing:
+                return
+            self._say("player", text)
+            self._set(busy="the DM is thinking")
+            try:
+                st = self.lc.setup.turn(text)
+            except Exception as e:  # noqa: BLE001
+                self._error("the setup exchange", e)
+                self._set(awaiting="answer", busy=None)
+                return
 
     def _setup_activity(self, name: str, arg: str) -> None:
         """Each label shows at most once: the DM touches files across categories in no fixed
@@ -357,12 +392,17 @@ class Engine:
             self._emit("progress", label=label)
 
     def _setup_done(self) -> None:
+        """Setup is committed: plan session 1 straight away. The player is asked once
+        session 1 is ready to play, not before it's planned."""
         self._stop_tap()
+        self._setup_player = None
         self._notice("the campaign is built", "success")
-        self._set(phase="setup_done", awaiting=None, busy=None)
+        self._plan_first()
 
     def _plan_first(self) -> None:
-        self._set(phase="planning", busy="planning session 1")
+        if self._closing:
+            return
+        self._set(phase="planning", awaiting=None, busy="planning session 1")
         try:
             n = self.lc.finish_setup(on_stage=lambda key: self._stage("setup", key),
                                      stream=self._stream)
@@ -370,8 +410,8 @@ class Engine:
             self._error("planning session 1", e)
             self._set(phase="setup_done", busy=None)
             return
-        self._notice(f"campaign ready · opening session {n}", "success")
-        self._open_session()
+        self._notice(f"session {n} planned and ready to start", "success")
+        self._set(phase="ready", busy=None)
 
     # -- play ------------------------------------------------------------------
 
@@ -560,7 +600,7 @@ class Engine:
 def open_engine(directory: str | Path, *, player: str = "human", model=None, variant=None,
                 port: int = 4181, min_gap: float = 1.0, turn_timeout: int = 0,
                 turn_cap: int | None = None, fresh: bool = False, mock: bool = False,
-                setup: bool = False) -> Engine:
+                setup: bool = False, setup_script=None) -> Engine:
     """An engine over a real backend rooted at `directory`, or over `MockLifecycle`
     (`setup` starts the mock in its setup phase)."""
     if mock:
@@ -568,10 +608,12 @@ def open_engine(directory: str | Path, *, player: str = "human", model=None, var
         return Engine(MockLifecycle(start_in_setup=setup), directory="(mock)")
 
     from ..orchestrator import Backend, CanonPreloader, Gate, Lifecycle, Logs
+    from ..orchestrator.autosetup import load_script
     from ..orchestrator.backend import agent_overrides
     from ..orchestrator.logs import debug_enabled
 
     directory = Path(directory).resolve()
+    script = load_script(setup_script) if setup_script else None  # fail before opencode starts
     logs = Logs.under(project=directory, debug=debug_enabled())
     backend = Backend(str(directory), port=port, min_call_gap=min_gap,
                       turn_timeout=turn_timeout or 1800, logs=logs,
@@ -579,7 +621,8 @@ def open_engine(directory: str | Path, *, player: str = "human", model=None, var
     try:
         backend.start()
         gate = Gate(backend, CanonPreloader(str(directory)), logs=logs)
-        lifecycle = Lifecycle(backend, gate, str(directory), logs=logs, player=player)
+        lifecycle = Lifecycle(backend, gate, str(directory), logs=logs, player=player,
+                              setup_script=script)
     except BaseException:  # a kill mid-start included: the server is already running
         backend.stop()
         raise

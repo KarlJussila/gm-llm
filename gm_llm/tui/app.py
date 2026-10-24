@@ -38,7 +38,7 @@ from .widgets import (
 )
 
 _ASK = {
-    "setup_done": "Setup complete — plan & start session 1?",
+    "setup_done": "Planning session 1 failed — try again?",
     "ready": "Session {n} planned — start playing it now?",
     "complete": "Session {n} complete — reconcile & prep session {next}?",
 }
@@ -402,7 +402,7 @@ class PlayApp(App):
             return
         acts = self.state.get("actions", [])
         phase = self.state.get("phase")
-        wrap_label = {"setup_done": "Finish setup → session 1", "ready": "Start the planned session"
+        wrap_label = {"setup_done": "Retry planning session 1", "ready": "Start the planned session"
                       }.get(phase, "Wrap session")
         items = [
             ("status", "Campaign status", "status" not in acts),

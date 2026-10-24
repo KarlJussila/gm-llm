@@ -24,6 +24,10 @@ Ongoing work, kept transferable between agents. The plan is `ROADMAP.md`; the de
     `plan-brief` (`a940b0b`).
   - opencode auto-compaction is back on (`65353a2`). Under ChatGPT OAuth, opencode caps OpenAI
     models at 400k context / 272k input.
+- **Scripted setup** (`play --setup-script`, the `setup-player` agent): a two-call Luna check of the
+  agent passed, but no full setup has run through it yet. Karl's script is
+  `~/Desktop/dallid-setup.md`, from his three setups. Setup now plans session 1 before asking to
+  start it.
 - **Karl's install** needs `/quit`, `pipx reinstall gm-llm`, `gm-llm update` to pick these up. The
   build is hatchling now (`414e810`), so no `rm -rf build`.
 

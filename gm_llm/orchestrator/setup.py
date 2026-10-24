@@ -26,6 +26,7 @@ completion is still read from git/disk — never by parsing the dm's prose.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -80,7 +81,7 @@ class Setup:
     """Drives the dm through campaign init as a staged, orchestrator-controlled pipeline."""
 
     def __init__(self, backend, gate, directory: str, dm_agent: str = "dm",
-                 on_prep=None, on_stage=None, logs=None):
+                 on_prep=None, on_stage=None, logs=None, character_file: Path | None = None):
         self.backend = backend
         self.gate = gate
         self.directory = directory
@@ -89,6 +90,9 @@ class Setup:
         self.on_stage = on_stage  # called with a stage key as each stage starts (TUI ticker)
         self.logs = logs
         self.root = Path(directory)
+        # A character file the player brings (a setup script's `character:`), placed among the
+        # campaign's documents as character creation opens — as a player would drop it in.
+        self.character_file = character_file
         self._stage: str | None = None
         self.dm_sid: str | None = None
 
@@ -126,6 +130,8 @@ class Setup:
         # overview. Joining all text parts surfaces the whole message; reasoning/tool parts
         # are excluded, so the behind-the-screen thinking never leaks in.
         self._announce(self._stage)
+        if self._stage == "CHAR":
+            self._bring_character()
         reply = self.backend.prompt(self.dm_sid, self.dm_agent,
                                     load(_STAGE_BRIEFS[self._stage]), whole=True)
         refresh_campaign(self.root)
@@ -143,6 +149,7 @@ class Setup:
             self._build_world()
             self._stage = "CHAR"
             self._announce("CHAR")
+            self._bring_character()
             char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
                                             load("setup-char-brief"), whole=True)
             refresh_campaign(self.root)
@@ -159,6 +166,14 @@ class Setup:
         Planner(self.backend, self.gate, dm_agent=self.dm_agent, dm_sid=self.dm_sid,
                 on_prep=self.on_prep, logs=self.logs).prep_session(1, commit=True)
         return 1
+
+    def _bring_character(self) -> None:
+        if self.character_file is None:
+            return
+        dest = self.root / "campaign" / "documents" / self.character_file.name
+        if not dest.exists():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(self.character_file, dest)
 
     # --- non-interactive stages ---
 

@@ -67,6 +67,7 @@ wrong one the probe prompt gave it).
 | `helper` | General-purpose subagent for the dm's delegated work, pinned to Luna | New |
 | `narrative-checker` | Between-session gates, and the benchmark's after-play checker | Re-authored for Luna; never at the table |
 | `player` | The autoplayer (benchmark, `--player auto`) | See [benchmark.md](benchmark.md) |
+| `setup-player` | Answers setup from the player's script (`play --setup-script`) | New |
 
 `campaign-analyst` and the `session-review` assessment are deleted; feedback curation moves to the
 `dm` thread.
@@ -139,7 +140,10 @@ wrong one the probe prompt gave it).
    coverage — each tier built to its depth, the vicinity populated, the arcs cast with named NPCs.
    One correction.
 8. **Commit** `campaign: init`; code points the player to their primer. Then **plan session 1**
-   (§ Planning).
+   (§ Planning) at once; the player is asked before it opens.
+
+A setup script (`play --setup-script`) puts the `setup-player` agent in the player's seat for the
+interactive stages; its format is in the README.
 
 `campaign-setup` is deleted; its standards are either in `canon-conventions` or are now the lint.
 

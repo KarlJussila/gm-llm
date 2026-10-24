@@ -23,8 +23,14 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - **Session 1 opens with a prologue**, read out verbatim: the setting in broad strokes, then what
   brought the character to the opening scene and what they're after. The session-1 plan writes it
   and `check-plan` reviews it.
+- **Scripted setup.** `play --setup-script FILE` has the `setup-player` agent answer a new
+  campaign's setup from the player's script — a brief sent word for word, a character file to
+  bring, how to answer the rest — while the exchange plays out in the TUI. The keyboard takes
+  over if it runs out of answers.
 
 ### Changed
+- Setup plans session 1 straight away; the yes/no comes before session 1 opens, not before it's
+  planned.
 - **Session plans start from what the session offers the character**: something worth chasing,
   aimed at their goals, and the two to four directions they're likeliest to take, never a sequence
   of scenes. Plans commit what the secrets and stakes rest on and leave the everyday world (pay,

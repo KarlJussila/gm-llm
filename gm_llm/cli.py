@@ -164,6 +164,22 @@ def run_play(args) -> int:
         from .devcmds import unavailable
         unavailable("--player auto needs a real backend (the mock has no gate to score).")
 
+    script = getattr(args, "setup_script", None)
+    if script:
+        if mock:
+            from .devcmds import unavailable
+            unavailable("--setup-script needs a real backend.")
+        from .orchestrator.autosetup import SetupScriptError, load_script
+        try:
+            load_script(script)
+        except SetupScriptError as e:
+            print(e, file=sys.stderr)
+            return 1
+        # A scripted setup starts from nothing: scaffold a fresh directory's assets here.
+        if not (Path(args.dir).resolve() / ".opencode" / "agent").is_dir():
+            from .project import init_project
+            print(f"initialized opencode assets in {init_project(Path(args.dir))}")
+
     if ui == "console":
         return _run_console(args)
 
@@ -187,6 +203,8 @@ def _serve_args(args) -> list[str]:
         out += ["--turn-cap", str(args.turn_cap)]
     if getattr(args, "fresh", False):
         out += ["--fresh"]
+    if getattr(args, "setup_script", None):
+        out += ["--setup-script", str(Path(args.setup_script).expanduser().resolve())]
     return out
 
 
@@ -215,7 +233,8 @@ def _cmd_serve(args) -> int:
         engine = open_engine(args.dir, player=args.player, model=args.model,
                              variant=args.variant, port=args.port, min_gap=args.min_gap,
                              turn_timeout=args.turn_timeout, turn_cap=args.turn_cap,
-                             fresh=args.fresh, mock=args.mock, setup=args.setup)
+                             fresh=args.fresh, mock=args.mock, setup=args.setup,
+                             setup_script=args.setup_script)
     except Exception as e:  # noqa: BLE001 — the frontend shows it
         return fail(out, str(e))
     return serve(engine, out)
@@ -297,6 +316,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--setup", action="store_true",
                    help="with --mock: start in the new-campaign setup phase "
                         "(live detects this from disk)")
+    p.add_argument("--setup-script", default=None, metavar="FILE",
+                   help="a new campaign: a scripted player answers setup from FILE "
+                        "(see README § Scripted setup)")
     p.add_argument("--theme", default="dracula",
                    help="Textual theme (dracula, tokyo-night, gruvbox, nord, …)")
     # autoplay's flags, accepted here too so `play --player auto` is the same command
@@ -315,6 +337,8 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="with --mock: start in the new-campaign setup phase")
     p.add_argument("--fresh", action="store_true",
                    help="open the session over instead of resuming its transcript")
+    p.add_argument("--setup-script", default=None, metavar="FILE",
+                   help="a scripted player answers setup from FILE")
     p.set_defaults(func=_cmd_serve)
 
     p = sub.add_parser("status", help="where the campaign stands (disk only, no model)")

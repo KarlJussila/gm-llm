@@ -7,7 +7,9 @@ frontend drives it, and what is asserted is the event stream:
 
   - setup → plan session 1 → play, with `awaiting` and `actions` saying at each point what
     a line of input is and which commands are accepted; a command not offered is refused
-    with an `error` and changes nothing;
+    with an `error` and changes nothing; session 1 is planned before the player is asked;
+  - a scripted setup player answers setup unattended, then hands the keyboard over when
+    its answers run out;
   - a fight: the PC's action, a bare confirm, a reaction to an NPC beat, back to the table;
   - a meta question between turns;
   - a cancel mid-turn hands the message back and leaves the session playing;
@@ -101,18 +103,55 @@ def setup_then_play():
         d.until(f"answer {i} is taken", awaiting="answer")
         check(d.said("player")[0]["text"] == f"answer {i}", f"answer {i} is echoed")
     d.send("input", "my character")
-    d.until("the last answer completes setup", phase="setup_done")
-    check([e["key"] for e in d.of("stage")] == ["arcs-state", "lint", "gate", "commit"],
+    d.until("the last answer completes setup and plans session 1", phase="ready", busy=None)
+    check([e["key"] for e in d.of("stage")] == ["arcs-state", "lint", "gate", "commit", "prep"],
           "setup's stages are announced with their keys")
+    check(any(e["type"] == "state" and e["phase"] == "planning" for e in d.seen),
+          "planning follows setup without asking")
     check(d.state["actions"] == ["status", "shutdown", "advance"],
-          "at setup_done the next step is an advance")
+          "once session 1 is planned the next step is an advance")
 
     d.send("advance")
     d.until("session 1 opens awaiting a turn", phase="play", awaiting="turn")
-    check(any(e["type"] == "state" and e["phase"] == "planning" for e in d.seen),
-          "planning comes between")
     check("meta" in d.state["actions"] and "advance" in d.state["actions"],
           "between turns: input, meta, or wrap")
+    d.client.close()
+    d.until("close ends the engine", phase="closed")
+    print()
+
+
+class _ScriptedSetupPlayer:
+    def __init__(self, answers, max_turns):
+        self.answers = list(answers)
+        self.max_turns = max_turns
+        self.turns = 0
+        self.heard = []
+
+    @property
+    def exhausted(self):
+        return self.turns >= self.max_turns
+
+    def answer(self, dm_reply):
+        self.heard.append(dm_reply)
+        self.turns += 1
+        return self.answers.pop(0)
+
+
+def a_scripted_setup():
+    print("a_scripted_setup:")
+    lc = MockLifecycle(start_in_setup=True, pace=0.0)
+    player = _ScriptedSetupPlayer(["a heroic brief", "sounds great"], max_turns=2)
+    lc.setup_player = lambda: player
+    d = Driver(LocalClient(Engine(lc)))
+    d.until("its answers run out and the keyboard takes over", phase="setup", awaiting="answer")
+    check([e["text"] for e in d.said("player")] == ["a heroic brief", "sounds great"],
+          "each scripted answer is said as the player's")
+    check(len(player.heard) == 2 and player.heard[0] == d.said("dm")[0]["text"],
+          "the player answers the DM's replies")
+    check(any(e["type"] == "notice" and "over to you" in e["text"] for e in d.seen),
+          "the handover is announced")
+    d.send("input", "my character")
+    d.until("a typed answer finishes setup", phase="ready", busy=None)
     d.client.close()
     d.until("close ends the engine", phase="closed")
     print()
@@ -291,6 +330,7 @@ def over_the_pipe():
 
 if __name__ == "__main__":
     setup_then_play()
+    a_scripted_setup()
     a_fight()
     cancel_hands_back()
     advance_wraps()

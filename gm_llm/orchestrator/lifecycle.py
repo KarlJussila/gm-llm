@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..settings import pull_feedback
+from .autosetup import SetupPlayer
 from .packet import character_packet
 from .paths import latest_session
 from .loop import Game, session_is_complete
@@ -28,7 +29,7 @@ from .stream import EventTap
 
 class Lifecycle:
     def __init__(self, backend, gate, directory: str, logs=None,
-                 player: str = "human"):
+                 player: str = "human", setup_script=None):
         self.backend = backend
         self.gate = gate
         self.directory = directory
@@ -36,6 +37,8 @@ class Lifecycle:
         # Who supplies player turns (`--player`). The frontend asks for a source per session
         # and drives one loop either way — see `player_source`.
         self.player = player
+        # A loaded `SetupScript` (`--setup-script`): the setup-player agent answers setup.
+        self.setup_script = setup_script
         pull_feedback(directory)
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
         # that needs setup; a session whose runner already signalled the end (even in
@@ -45,7 +48,8 @@ class Lifecycle:
         if n is None:
             self.phase = "setup"
             self.game = None
-            self.setup = Setup(backend, gate, directory, logs=logs)
+            self.setup = Setup(backend, gate, directory, logs=logs,
+                               character_file=setup_script.character if setup_script else None)
         else:
             self.game = Game(backend, gate.preloader, logs=logs, session=n)
             self.setup = None
@@ -68,6 +72,13 @@ class Lifecycle:
         return AgentPlayer(self.backend, self.backend.create_session("play-player"),
                            character=character_packet(Path(self.directory) / "campaign"),
                            story=story)
+
+    def setup_player(self) -> SetupPlayer | None:
+        """The scripted setup player, on a session of its own, or None to ask the keyboard."""
+        if self.setup_script is None:
+            return None
+        return SetupPlayer(self.backend, self.backend.create_session("setup-player"),
+                           self.setup_script)
 
     def status(self) -> CampaignStatus:
         """Where the campaign stands — disk only (lint + git), no model calls.
