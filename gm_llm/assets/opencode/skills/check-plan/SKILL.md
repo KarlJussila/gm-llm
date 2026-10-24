@@ -21,8 +21,8 @@ differently than you would is fine. Flag only these:
   to merge or differentiate, naming the existing file.
 - **Herding.** The favoured path wins only because the alternatives are left thin, or the plan
   walks the player through its scenes in order.
-- **Facts that don't hold up.** An arrangement nobody in the world would make, like terms the
-  employer wouldn't offer, or a choice put to the player where one option is simply worse.
+- **Facts that don't hold up.** Something that wouldn't make sense from inside the world, or a
+  choice put to the player where one option is simply worse.
 - **The prologue**, when one follows the plan (the first session): the player hears it verbatim,
   so it tells only what the primer and the knowledge ledger give the PC, and it stops on the
   threshold of the plan's opening, leaving that scene to the runner.

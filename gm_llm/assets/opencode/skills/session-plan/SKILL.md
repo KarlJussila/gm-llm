@@ -18,8 +18,7 @@ is what forces invention at the table. For anything the session needs, take the 
 answer if it has one, else existing canon, else decide it now and file it. Ambient colour (a passing
 vendor's name) is the runner's to improvise.
 
-What you commit has to hold up when the player pokes at it: terms make sense to whoever offers them,
-and every option of a choice has something going for it.
+What you commit has to make sense from inside the world, and hold up when the player pokes at it.
 
 ## What to work from
 
