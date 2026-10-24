@@ -66,9 +66,8 @@ Model-facing prose lives in three places:
 ## Operational
 
 - Changes reach a live campaign via `pipx reinstall gm-llm` (package code + assets) + `gm-llm update`
-  in the campaign (copies skills into its `.opencode/`). **Never while gm-llm is running.** The best moment
-  is when a session has ended and the TUI asks whether to wrap it up: `/quit` there, update, and the
-  next `gm-llm play` asks again, so the wrap runs on the new code.
+  in the campaign (copies skills into its `.opencode/`). **Never while gm-llm is running** — `/quit` first;
+  the next `gm-llm play` picks up where it left off.
 
 ## Git
 
