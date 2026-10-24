@@ -60,7 +60,8 @@ Model-facing prose lives in three places:
   back only when a Luna run shows the failure it repairs.
 - **After the clean slate, guardrails are protected.** Prose added after the `luna-clean-slate` tag
   is trimmed only through the `/refine-prompts` process, and a commit adding a guardrail names the
-  failure it fixes and the run that showed it.
+  failure it fixes and the run that showed it — the campaign directory and the archive's run id
+  (`.opencode/logs/archive-<run id>.jsonl`); a campaign or world name alone doesn't pin a run.
 
 ## Operational
 

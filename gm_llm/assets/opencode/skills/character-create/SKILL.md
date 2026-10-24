@@ -6,9 +6,9 @@ description: Load when creating a player character with the player and fitting t
 # character-create
 
 This interviews the player, so the `dm` runs it; a subagent can't. It's narrative integration, not a
-rules engine: record mechanics as the player gives them, and help turn a concept into a fitting
-class, race or background if they want — building, balancing and levelling stay with their D&D
-tools. `canon-conventions` is the format.
+rules engine: record mechanics as the player gives them, without auditing where they come from, and
+help turn a concept into a fitting class, race or background if they want — building, balancing and
+levelling stay with their D&D tools. `canon-conventions` is the format.
 
 Match how much the player wants to drive: a finished character to place and tidy; a concept to build
 together (the default); or a seed to flesh out yourself, with choices put to them for approval.

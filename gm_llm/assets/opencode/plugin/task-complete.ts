@@ -39,9 +39,9 @@ export default {
               type: "string",
               description:
                 "The PLAYER-VISIBLE channel: a closing message the orchestrator shows to the " +
-                "player verbatim, when the brief asks for one (e.g. the world-build stage's " +
-                "spoiler-free world overview). Nothing spoiler-bearing, and put the real " +
-                "thing here — prose you type outside the call is not surfaced.",
+                "player verbatim, when the brief asks for one (e.g. a session's closing narration). " +
+                "Nothing spoiler-bearing, and put the real thing here — prose you type outside " +
+                "the call is not surfaced.",
             },
             notes: {
               type: "string",
