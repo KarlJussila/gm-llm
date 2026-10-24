@@ -60,7 +60,7 @@ def main(root: Path) -> None:
 
     config = Backend(str(project), agents=glm).server_config()
     assert config["agent"]["dm"]["model"] == "opencode/glm-5.3-flash-free"
-    assert config["compaction"] == {"auto": False}, "the server's own config stays"
+    assert config["compaction"] == {"auto": True}, "the server's own config stays"
     assert "agent" not in Backend(str(project)).server_config()
     print("OK — the campaign's model reaches every agent through the server config; flags win.")
 

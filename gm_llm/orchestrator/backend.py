@@ -94,10 +94,12 @@ HEAVY_RETRIES = 2
 # opencode's v2 server takes HTTP basic auth with this fixed user and a per-server password.
 _USER = "opencode"
 
-# Server config for the processes we own. Auto-compaction is opencode's single, lossy
-# summarisation pass over a long session — exactly the model-judgment rewrite this pipeline
-# avoids everywhere else — so it stays off; a session that runs long is the DM's to close.
-_SERVER_CONFIG = {"compaction": {"auto": False}}
+# Server config for the processes we own. Auto-compaction keeps a warm thread alive past the
+# model's input ceiling: signed in through ChatGPT, opencode caps Luna at 400k context / 272k
+# input, and a setup thread has reached 345k. Only the model's working memory is summarised —
+# transcripts are written by code and canon lives in files — and a compaction is its own
+# message type, so `read_turn` never surfaces its summary as a reply.
+_SERVER_CONFIG = {"compaction": {"auto": True}}
 
 
 def agent_overrides(directory, model: str | None = None, variant: str | None = None) -> dict:

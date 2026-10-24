@@ -21,6 +21,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - Setup writes the player a spoiler-free primer, `campaign/documents/primer.md`.
 
 ### Changed
+- **opencode auto-compaction is back on**, so a warm `dm` or runner thread outlives the
+  model's context window instead of failing at it. Transcripts and canon never depended on it.
 - **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal, not the skills
   to load; skill descriptions say only when to load them; no prompt instructs a task list. The
   in-play check skills (`check-turn`, `check-conduct`, `check-combat`) are deleted, and

@@ -62,9 +62,10 @@ The parts of the design that are neither agent nor skill, and are easy to lose:
   the console spawn `gm-llm serve` and only render and send ([frontends.md](frontends.md)).
 - **Transcripts are written by code**, to `campaign/sessions/<n>/transcript.md`, from each turn's
   player message and reply. Note-taking never depends on the model.
-- **No compaction.** The runner keeps one warm session for a whole game session. opencode's
-  auto-compaction, a lossy model summary of the canon in context, is switched off in the server
-  config. No live narration is ever summarized by a model.
+- **Warm threads, compacted when full.** The `dm` keeps one thread from setup or reconcile
+  through the next plan, and the runner one per game session. opencode's auto-compaction is on:
+  past the model's input ceiling it summarizes the thread's history and the thread carries on.
+  The record never depends on it — transcripts are written by code and canon lives in files.
 - **Completion is a disk fact.** When the runner ends a session (`task_complete`), the orchestrator
   records it under `.opencode/.orchestrator/session-<n>.json`, so a session closed before the wrap
   reopens to the same wrap-or-quit choice instead of resuming into more play. Setup and reconcile
