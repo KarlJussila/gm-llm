@@ -264,7 +264,7 @@ the agents and every workflow — setup, play, combat, reconcile, planning — a
 | --- | --- | --- |
 | `dm` | primary | Between sessions: setup, reconcile, planning. Writes every campaign file; never runs a session. |
 | `dm-runner` | primary | Runs one live session — narration, NPCs, dice, combat — then stops. Reads the campaign, never writes it. |
-| `author` | subagent | Focused authoring the `dm` delegates through `task`, such as one arc's reconcile. |
+| `helper` | subagent | General-purpose help the `dm` delegates through `task`, such as one arc's reconcile. |
 | `log-extractor` | subagent | Transcript and notes → the session digest. |
 | `narrative-checker` | subagent | The between-session gates (`check-*`). Reads and reports only, via `report_findings`. |
 | `player` | primary | The autoplayer, for `--player auto` and the benchmark. |

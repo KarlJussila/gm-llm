@@ -42,8 +42,8 @@ wrong one the probe prompt gave it).
 8. **Between-session gates must earn their place.** `check-digest`, `check-propagation`, `check-plan`
    and `check-init` stay for now, and each archives its artifact before and after correction. A gate
    that rarely makes a meaningful correction is cut.
-9. **Subagents are a tool the author may use.** Authoring agents may delegate through opencode's
-   `task` tool to our own subagent definitions, pinned to Luna (never opencode's built-in `general`).
+9. **Subagents are a tool the dm may use.** The dm may delegate through opencode's `task` tool to
+   our own subagent definitions, pinned to Luna (never opencode's built-in `general`).
    One `task` call blocks; several in one message run concurrently. A user setting
    `subagents: sequential | parallel` becomes one sentence in the brief — sequential by default, the
    safe choice for rate-limited free models. Subagent calls are captured in the archive and token
@@ -64,7 +64,7 @@ wrong one the probe prompt gave it).
 | `dm-runner` | Live play: read-only campaign access, dice, the combat tracker, `task_complete` | New prompt (see § Live play) |
 | `dm` | Between sessions: setup, reconcile, planning; writes the campaign | Briefs state goals, not skill sequences; may delegate to subagents |
 | `log-extractor` | Fresh-context digest of the transcript | Whole-transcript read |
-| authoring subagent(s) | Delegated arc and entity work, pinned to Luna | New |
+| `helper` | General-purpose subagent for the dm's delegated work, pinned to Luna | New |
 | `narrative-checker` | Between-session gates, and the benchmark's after-play checker | Re-authored for Luna; never at the table |
 | `player` | The autoplayer (benchmark, `--player auto`) | See [benchmark.md](benchmark.md) |
 

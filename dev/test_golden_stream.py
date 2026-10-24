@@ -349,13 +349,13 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
             Resp("Now let's make your character."),                                  # char brief
             _task_complete("Your rogue Dallid is ready."),                           # char done
             Resp("Arcs and opening state written."),                                 # arcs + state
-            Resp("Session 1 plan written."),                                         # author-brief(1)
+            Resp("Session 1 plan written."),                                         # plan-brief(1)
             Resp("Plan corrected."),                                                 # plan correction
             Resp("Feedback folded in."),                                             # curate-feedback(1)
             Resp("Entity canon updated for session 1."),                            # apply-canon(1)
             Resp("Both arcs reconciled; threads updated."),                          # apply-arcs(1)
             Resp("Ledger and state updated."),                                       # apply-state(1)
-            Resp("Session 2 plan written."),                                         # author-brief(2)
+            Resp("Session 2 plan written."),                                         # plan-brief(2)
         ],
         # The runner: opening + three play turns, the last closing with the handoff notes.
         "dm-runner": [
@@ -394,10 +394,10 @@ _DM_STAGE_WRITES = {
     4: "world",       # world build          -> world files
     6: "char",        # character confirmed -> PC files
     7: "arcs_state",  # one dispatch -> both arcs, their initial state and the primer
-    8: "plan_1",      # author-brief(1)      -> session-1-plan.md and its prologue
+    8: "plan_1",      # plan-brief(1)      -> session-1-plan.md and its prologue
     9: "plan_1_fix",  # plan correction      -> corrected session-1-plan.md
     12: "arcs_1",     # apply-arcs(1)        -> both arcs stamped S1
-    14: "plan_2",     # author-brief(2)      -> session-2-plan.md
+    14: "plan_2",     # plan-brief(2)      -> session-2-plan.md
 }
 
 

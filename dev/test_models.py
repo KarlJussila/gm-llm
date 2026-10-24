@@ -16,7 +16,7 @@ from gm_llm.orchestrator.backend import Backend, agent_overrides  # noqa: E402
 def _project(root: Path) -> Path:
     agents = root / ".opencode" / "agent"
     agents.mkdir(parents=True)
-    for name in ("dm", "author"):
+    for name in ("dm", "helper"):
         (agents / f"{name}.md").write_text(
             f"---\ndescription: {name}\nmode: primary\nmodel: openai/gpt-6-luna\n"
             "variant: xhigh\n---\nBody.\n", encoding="utf-8")
@@ -30,11 +30,11 @@ def main(root: Path) -> None:
 
     glm = agent_overrides(project, "opencode/glm-5.3-flash-free")
     assert glm == {name: {"model": "opencode/glm-5.3-flash-free", "variant": ""}
-                   for name in ("author", "dm")}, \
+                   for name in ("helper", "dm")}, \
         "a new model drops the pinned variant (empty clears it; a null would void the entry)"
 
     assert agent_overrides(project, "opencode/glm-5.3-flash-free", "high")["dm"]["variant"] == "high"
-    assert agent_overrides(project, variant="low")["author"] == \
+    assert agent_overrides(project, variant="low")["helper"] == \
         {"model": "openai/gpt-6-luna", "variant": "low"}, \
         "a variant alone keeps each agent's model — opencode needs the model named"
 
@@ -49,7 +49,7 @@ def main(root: Path) -> None:
     assert agent_overrides(project, variant="low")["dm"] == \
         {"model": "opencode/deepseek-v4.1-flash-free", "variant": "low"}
     (project / "gm-llm.yaml").write_text("variant: low\n", encoding="utf-8")
-    assert agent_overrides(project)["author"] == {"model": "openai/gpt-6-luna", "variant": "low"}
+    assert agent_overrides(project)["helper"] == {"model": "openai/gpt-6-luna", "variant": "low"}
     (project / "gm-llm.yaml").write_text("model: glm-5.3\n", encoding="utf-8")
     try:
         agent_overrides(project)

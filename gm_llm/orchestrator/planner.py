@@ -73,7 +73,7 @@ class Planner:
     def prep_session(self, n: int, commit: bool = False) -> PrepResult:
         # 1. The dm authors the plan file (and any new entities it pulls in). The first
         #    session also gets a prologue: the player remembers nothing before it.
-        brief = load("author-brief").format(n=n)
+        brief = load("plan-brief").format(n=n)
         if n == 1:
             brief += "\n\n" + load("prologue-brief")
         self.backend.prompt(self.dm_sid, self.dm_agent, brief)

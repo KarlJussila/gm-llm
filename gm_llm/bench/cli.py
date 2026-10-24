@@ -45,7 +45,7 @@ def add_bench_parser(subparsers, engine) -> None:
     run.add_argument("--tier", choices=runner.TIERS, default="low",
                      help="the scaffolding tier to play (default: low, the product)")
     run.add_argument("--subject-model", default=None,
-                     help="run the subject agents (dm-runner, dm, author, log-extractor) on "
+                     help="run the subject agents (dm-runner, dm, helper, log-extractor) on "
                           "this model instead of their pinned one")
     run.add_argument("--subject-variant", default=None,
                      help="the subject agents' reasoning variant ('' for none)")

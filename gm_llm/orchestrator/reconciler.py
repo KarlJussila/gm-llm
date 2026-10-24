@@ -9,7 +9,7 @@ correction per gate.
     digest      log-extractor: transcript + notes -> digest     gate: check_digest
     feedback    dm: the digest's player feedback -> player store (skipped when there is none)
     canon       dm: new and changed entities, the PC, documents canon lint
-    arcs        dm: every arc, each through the `author` subagent, then the close-out;
+    arcs        dm: every arc, each through the `helper` subagent, then the close-out;
                 code checks every arc is stamped `as-of: S<N>`, one nudge for any missed
     state       dm: reveals into the ledger, snapshots, current/calendar/clocks
     propagation gate: check_propagation (the whole apply)

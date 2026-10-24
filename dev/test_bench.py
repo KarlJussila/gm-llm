@@ -225,7 +225,7 @@ def _combat_fakes(*, end_after=1, reconcile_calls=None):
 AGENTS = {
     "dm-runner": ("openai/gpt-6-luna", "xhigh"),
     "dm": ("openai/gpt-6-luna", "xhigh"),
-    "author": ("openai/gpt-6-luna", "xhigh"),
+    "helper": ("openai/gpt-6-luna", "xhigh"),
     "log-extractor": ("openai/gpt-6-luna", "xhigh"),
     "narrative-checker": ("openai/gpt-6-luna", "high"),
     "player": ("openai/gpt-6-luna", "medium"),
@@ -337,7 +337,7 @@ def test_subject_model(tmp):
     runner.assemble_run(template, fixture / "campaign", run_dir, "hollowfell-test",
                         subject_model="opencode/mimo-v2.6-flash-free", subject_variant="")
     agents = runner.agent_conditions(run_dir)
-    for name in ("dm-runner", "dm", "author", "log-extractor"):
+    for name in ("dm-runner", "dm", "helper", "log-extractor"):
         assert agents[name] == {"model": "opencode/mimo-v2.6-flash-free", "variant": None}, \
             (name, agents[name])
     assert agents["narrative-checker"] == {"model": "openai/gpt-6-luna", "variant": "high"}

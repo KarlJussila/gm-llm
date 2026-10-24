@@ -66,7 +66,7 @@ pipeline, one dispatch per step:
    `sessions/{N}/digest.md` (checked against the transcript);
 2. the `dm` folds any player feedback into the player-level store;
 3. the `dm` files new and changed canon (then the canon lint), reconciles every arc through the
-   `author` subagent plus the threads dashboard, and brings the knowledge ledger and every state
+   `helper` subagent plus the threads dashboard, and brings the knowledge ledger and every state
    file up to date — the whole apply audited by the propagation check;
 4. the orchestrator commits and the `dm` plans session N+1.
 
