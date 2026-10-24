@@ -18,6 +18,9 @@ is what forces invention at the table. For anything the session needs, take the 
 answer if it has one, else existing canon, else decide it now and file it. Ambient colour (a passing
 vendor's name) is the runner's to improvise.
 
+What you commit has to hold up when the player pokes at it: terms make sense to whoever offers them,
+and every option of a choice has something going for it.
+
 ## What to work from
 
 - The last session's digest `campaign/sessions/{N-1}/digest.md`, if there was one: what happened,
@@ -36,7 +39,9 @@ investigation.
 
 - **Opening state** — where the PC is, what just happened, who's present, what's at stake. The
   anchor, from `state/current.md`.
-- **Likely beats** — three to five things that will probably happen or need addressing, ranked.
+- **Paths** — the two to four directions the player is likeliest to take from the opening, each
+  prepared enough to run, and never a sequence of scenes to walk them through. Each has its own
+  pull, and the path you favour has the strongest.
 - **Encounter seeds** — situations first; a combat seed also commits its combatants, footing and
   objective for the tracker. `encounter-plan` covers designing them.
 - **Discoveries** — any revelation the session can deliver: the clues, how they combine, the
@@ -65,6 +70,10 @@ reveal, or staying hidden; no beat assumes the PC knows what it doesn't), and fo
 ## Principles
 
 - **Plan situations, not plots** — problems and opportunities, not solutions.
+- **Draw the player; don't herd them.** Steer with incentives aimed at this character — their goals,
+  curiosity and nature — and make the favoured path the most interesting one, not the only real
+  one. Every session gives them something worth chasing, even when no reveal is due: an arc can
+  advance by raising a question as well as by answering one.
 - **Never plan the player's decisions.** Plan what the world does.
 - **Leave 30–40% unplanned** for improvisation and the scenes the player drives. The openness is
   the path, never the facts.

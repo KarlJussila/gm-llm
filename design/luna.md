@@ -219,8 +219,8 @@ then a commit.
 
 **Session 1 has a prologue.** The player remembers nothing before the first session, so its brief
 also asks for `sessions/1/prologue.md`: the setting in broad strokes as the primer lays it out, then
-the bridge to the opening scene — what brought the PC here and what they're after — ending where
-that scene begins. Code nudges once if it's missing; `check-plan` reviews it with the plan.
+the bridge to the opening scene — what brought the PC here and what they're after — stopping on
+its threshold, so the runner sets the scene. Code nudges once if it's missing; `check-plan` reviews it with the plan.
 
 ## Substrate that carries over
 

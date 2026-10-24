@@ -25,6 +25,13 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   and `check-plan` reviews it.
 
 ### Changed
+- **Session plans offer paths, not a sequence of scenes.** A plan prepares the two to four
+  directions the player is likeliest to take and draws them to the favoured one with incentives,
+  never by leaving the rest thin; `check-plan` flags herding and terms that don't hold up. The
+  runner presents hooks at their natural weight, keeps scenes moving once the player commits, and
+  explains in-world terms in plain words.
+- The session-1 prologue stops on the threshold of the opening scene, and the runner continues it
+  as one message rather than retelling it.
 - **opencode auto-compaction is back on**, so a warm `dm` or runner thread outlives the
   model's context window instead of failing at it. Transcripts and canon never depended on it.
 - **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal, not the skills
