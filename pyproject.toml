@@ -1,10 +1,12 @@
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+# hatchling builds the wheel straight from the tree. setuptools staged it in the clone's build/
+# and never pruned that, so a file deleted upstream kept shipping until someone cleared it.
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "gm-llm"
-# Single source of truth: gm_llm/__init__.py `__version__` (read statically below).
+# Single source of truth: gm_llm/__init__.py `__version__` (read by [tool.hatch.version]).
 # Bump it there only; the CLI (`gm-llm --version`), `gm-llm update`, and this package's
 # metadata all resolve from it, so they can never drift.
 dynamic = ["version"]
@@ -20,17 +22,13 @@ dependencies = [
 [project.scripts]
 gm-llm = "gm_llm.cli:main"
 
-[tool.setuptools]
-# One top-level package: the tool (gm_llm) with the orchestrator, the engine and the
-# TUI beneath it — nothing generic lands in site-packages. dev/ is developer tooling
-# and is not shipped.
-packages = ["gm_llm", "gm_llm.orchestrator", "gm_llm.engine", "gm_llm.tui"]
+[tool.hatch.version]
+path = "gm_llm/__init__.py"
 
-[tool.setuptools.dynamic]
-version = { attr = "gm_llm.__version__" }
-
-[tool.setuptools.package-data]
-# Runtime data loaded by path, so it must ship in the wheel: the checker/turn prompts,
-# and the opencode assets that `gm-llm init` copies.
-"gm_llm.orchestrator" = ["prompts/*.md"]
-gm_llm = ["assets/opencode/**/*"]
+[tool.hatch.build.targets.wheel]
+# One top-level package: the tool (gm_llm) with the orchestrator, the engine and the TUI
+# beneath it, and its runtime data — the orchestrator's prompts and the opencode assets
+# `gm-llm init` copies. Git-ignored files never ship. bench/ is workshop tooling that needs
+# dev/fixtures/, so like dev/ it stays out.
+packages = ["gm_llm"]
+exclude = ["gm_llm/bench"]

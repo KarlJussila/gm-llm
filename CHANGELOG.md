@@ -130,9 +130,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   invalidated.
 
 ### Fixed
-- **Deleted assets no longer ship from a stale `build/`.** setuptools reuses the clone's `build/`
-  and never prunes it, so skills removed in the Luna rework still installed and the agents loaded
-  them. The Windows installer now clears it, and the manual update says to.
+- **Deleted assets no longer ship from a stale `build/`.** setuptools reused the clone's `build/`
+  and never pruned it, so skills removed in the Luna rework still installed and the agents loaded
+  them. The package now builds with hatchling, which writes no `build/`, so updating is just
+  `pipx reinstall gm-llm` and `gm-llm update`.
 - **Slow model calls are no longer cut short.** A call now counts as stalled only after 10 minutes
   without output (was 3), and play, setup and wraps get 30 minutes per call (was 6, which a
   big setup or reconcile call could outlast).

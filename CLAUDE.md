@@ -65,9 +65,9 @@ Model-facing prose lives in three places:
 
 ## Operational
 
-- Changes reach a live campaign via `rm -rf build && pipx reinstall gm-llm` (package code + assets) + `gm-llm update` in the
-  campaign (copies skills into its `.opencode/`). **Never while a TUI session is live** — quit at the
-  wrap prompt first.
+- Changes reach a live campaign via `pipx reinstall gm-llm` (package code + assets) + `gm-llm update`
+  in the campaign (copies skills into its `.opencode/`). **Never while a TUI session is live** — quit
+  at the wrap prompt first.
 
 ## Git
 
@@ -83,7 +83,7 @@ Pre-1.0, but keep the minor/patch line meaningful:
 Rules:
 
 - **Single source of truth: `__version__` in `gm_llm/__init__.py`.** Bump it *there and nowhere else* —
-  `pyproject.toml` reads it dynamically (`[tool.setuptools.dynamic]`), and `gm-llm --version` /
+  `pyproject.toml` reads it dynamically (`[tool.hatch.version]`), and `gm-llm --version` /
   `gm-llm update` report it, so they can't drift. (Validate a version change resolves with
   `python -m build --sdist` if you touch the build config.)
 - **Keep `CHANGELOG.md` in step.** Add notes under `[Unreleased]` *as you go*; on a bump, rename

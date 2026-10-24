@@ -50,15 +50,13 @@ Two things update independently — the `gm-llm` **tool**, and each project's co
 **Update the tool:**
 - **Windows one-liner install** — just re-run the installer; it pulls the latest and reinstalls
   into its venv.
-- **Manual pipx/pip install** — `cd path/to/gm-llm && git pull && rm -rf build && pipx reinstall gm-llm`
-  (or `pip install . --force-reinstall`). Clear `build/` first: setuptools reuses it and never
-  prunes it, so a skill or agent deleted upstream would still ship. Use `reinstall`, not
-  `install --force`: with pipx's uv backend, `--force` trips over uv's refusal to overwrite an
-  existing venv.
+- **Manual pipx/pip install** — `git pull` in your clone, then `pipx reinstall gm-llm` (or
+  `pip install . --force-reinstall`). Use `reinstall`, not `install --force`: with pipx's uv
+  backend, `--force` trips over uv's refusal to overwrite an existing venv.
 
-**Then refresh each project's assets** to match the updated tool:
+**Then refresh each project's assets** to match the updated tool, from inside the project:
 ```
-gm-llm update path/to/my-campaign
+gm-llm update
 ```
 `gm-llm update` overwrites the framework files (agents, skills, plugin, templates) and removes
 what older versions left in `.opencode/` (`package.json`, `node_modules`), while leaving your

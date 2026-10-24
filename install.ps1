@@ -168,9 +168,6 @@ Say "Building the gm-llm environment"
 Invoke-Py -m venv $Venv | Out-Host
 if (-not (Test-Path $VenvPy)) { Die "Failed to create the Python venv at $Venv." }
 & $VenvPy -m pip install --upgrade pip 2>&1 | ForEach-Object { "$_" } | Out-Host
-# setuptools reuses the clone's build/ and never prunes it, so an asset deleted upstream would
-# still ship. Build from a clean tree.
-Remove-Item -Recurse -Force (Join-Path $RepoDir 'build') -ErrorAction SilentlyContinue
 & $VenvPy -m pip install --force-reinstall $RepoDir 2>&1 | ForEach-Object { "$_" } | Out-Host
 if (-not (Test-Path $gmllm)) { Die "gm-llm didn't install into the venv (expected $gmllm)." }
 Ok "gm-llm installed"
