@@ -223,7 +223,7 @@ anywhere; with no campaign in play they fall back to a `gm-llm/` folder under th
 `gm-llm play DIR --setup-script FILE` hands a new campaign's setup to the `setup-player` agent,
 which answers the DM from your script while the exchange streams by in the scene pane. A `DIR`
 with no `.opencode/` is scaffolded first. Setup and the planning of session 1 run unattended, and
-you're asked before session 1 opens. If the agent fails or runs out of answers, the keyboard takes
+you're asked before session 1 opens; with `--player auto`, play goes straight on. If the agent fails or runs out of answers, the keyboard takes
 over.
 
 The script is markdown:
