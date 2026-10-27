@@ -31,6 +31,7 @@ is a sum, not a contract), or leave them out.
 
 ## What to work from
 
+- `campaign/campaign.md` — the player's brief: the story and the mix of play they asked for.
 - The last session's digest `campaign/sessions/{N-1}/digest.md`, if there was one: what happened,
   where the plan was left, what the player leaned into.
 - `campaign/state/threads.md` — the open leads.

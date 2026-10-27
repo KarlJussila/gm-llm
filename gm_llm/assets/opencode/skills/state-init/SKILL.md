@@ -15,4 +15,4 @@ templates. Stamp every initial snapshot `as-of: S0`, the state before play.
 - `state/calendar.md` establishes the start date and calendar reference.
 - `state/threads.md` records the leads the PC starts with: the vicinity's own problems and hooks as
   well as the arcs' openings.
-- `state/clocks.md` records any time pressure already in motion.
+- `state/clocks.md` records any time pressure already in motion, as its template defines a clock.

@@ -11,11 +11,11 @@ hooks-into: <the major arc's slug — minor arcs only; delete this line on the m
 <!-- An arc — the living design of one story. Path: arcs/{slug}.md, paired with {slug}.state.md.
      The campaign runs one major arc and minor arcs that hook into it. Every turning point and the
      central mystery commit their answers here, tagged as secrets; only the player's path stays
-     open. Revised between sessions toward what was actually played.
+     open. Edited in place between sessions wherever play gives it a better story.
 
      It is a design: where the story is going and what is true beneath it, never the record of
      play. What happened is the session's digest, what the PC knows is the ledger, and where the
-     arc stands is its state file. Play changes the design only where it changes the story. -->
+     arc stands is its state file. -->
 
 # <Arc Name>
 
@@ -23,20 +23,23 @@ hooks-into: <the major arc's slug — minor arcs only; delete this line on the m
 <What this story is about and why it matters.>
 
 ## Core conflict & stakes
-<The central tension, and what tangibly happens if it goes unresolved — tied to this PC.>
+<The central tension, who opposes the PC and why, and what tangibly happens if it goes unresolved —
+tied to this PC.>
 
 ## Key NPCs & factions
 - [[<slug>]] — <role; what they want; what they know about the core conflict>
 
 ## Turning points
-1. **<beat>** — <what shifts>. [hidden:<secret-id>] <the committed answer this beat delivers>.
+1. **<beat>** — <what changes for the PC>. [hidden:<secret-id>] <the committed answer this beat
+   delivers>. <How it's likely to reach the table: a fight, an investigation, a negotiation, …>
    Known to: <[[slug]], …>
 
 ## Committed answers
 - <a question the campaign will raise> → <its committed answer, the truth play will uncover>
 
 ## Tension curve
-<Build-up → rising action → climax → falling action → resolution, and where each beat sits.>
+<Build-up → rising action → climax → falling action → resolution, where each beat sits, and the
+kinds of play each stretch calls for.>
 
 ## Level pacing
 <!-- Major arc only (a minor arc writes "— the major arc owns advancement"). Milestone level-ups
@@ -53,6 +56,3 @@ hooks-into: <the major arc's slug — minor arcs only; delete this line on the m
 
 ## Links
 <[[slug]] references to related arcs, key entities, the PC's backstory hooks.>
-
-## Adjustment log
-- **S<n>:** <what changed in this arc between sessions, and the play that prompted it>

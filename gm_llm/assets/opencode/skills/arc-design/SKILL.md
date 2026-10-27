@@ -27,14 +27,23 @@ what the engagement paths are for.
 Fill the template's sections:
 
 - **Premise and core conflict** — a real tension, and what concretely happens if it goes unresolved.
+- **Opposition** — every story needs conflict, whatever mix of play the player wants: someone whose
+  wants work against the PC's, and who acts on them. A mystery, a disaster or a broken system can
+  be the stakes, but give it people too — someone who caused it, profits from it, or will stop the
+  PC from fixing it.
 - **Stakes that bite** — a concrete cost tied to what the PC cares about. How the arc uses their
   backstory stays behind the screen.
 - **Key NPCs and factions** — named, each with a committed identity and a want. Cast from the
   world's people where one fits and create the ones the arc still needs (`create_entities`): its
   antagonist, allies, informants and go-betweens are people, not offices.
-- **Turning points**, three to five — beats that shift direction or tension, each with its answer.
-- **Tension curve** — build-up, rising action, climax, falling action, resolution. Flat too long
-  bores; spiking too often burns out.
+- **Turning points**, three to five. A turning point is where the story's situation changes,
+  through a revelation, reversal or escalation, after which the PC wants something different,
+  faces something new, or can do something they couldn't before. It's the world moving or a truth
+  coming out, never a step in the PC's own work. Each commits its answer and says how it's likely
+  to reach the table: a fight, an investigation, a negotiation, a heist, a journey.
+- **Tension curve** — build-up, rising action, climax, falling action, resolution, with the kinds
+  of play each stretch calls for, mixed the way the player's brief asks. Flat too long bores;
+  spiking too often burns out.
 - **Engagement paths** — direct, indirect, avoidance, alternative: how the player might come at it,
   and how it escalates on its own if ignored.
 - **A hook** that draws the player in naturally — a bond, curiosity, urgency, a moral obligation.
@@ -43,6 +52,19 @@ Fill the template's sections:
 
 Start from what the PC actually knows (the knowledge ledger), and record who's in on each secret
 with `Known to:`.
+
+## Craft
+
+- **Conflict escalates.** The opposition notices what the PC does and answers it, and the pressure
+  rises along the curve. When words stop working or the stakes turn physical, the conflict comes to
+  blows — a fight is where a conflict lands, not a break from the story.
+- **Mysteries pay off.** Every question the arc raises leads somewhere the PC can reach, and each
+  answer opens the next question. Clues point forward.
+- **Make it personal.** The stakes land on what the PC cares about, and the hard choices are
+  between things they want.
+- **Choices cost something.** Give the PC dilemmas, not only puzzles: each way forward gains
+  something and gives something up.
+- **The world doesn't wait.** Ignored, the opposition advances and the cost grows.
 
 ## Level pacing
 

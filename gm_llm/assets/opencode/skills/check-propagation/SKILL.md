@@ -24,8 +24,10 @@ that logs what the PC did, planned or rolled.
 1. **New and changed canon.** Each NPC, place, faction and item in *World canon* and *Items* has a
    file that says what play established about it — an improvised NPC filed with what the PC saw
    and heard, a changed entity revised where its truth changed.
-2. **The arcs.** Each divergence in *Plan vs. actual* shows in the affected arc's body — turning
-   points, answers, the curve ahead — not just in its state file.
+2. **The arcs.** Where play changed the story — contradicted a pending beat or answer, or made one
+   impossible — the affected arc's design says so: its turning points, answers and the curve
+   ahead, not just its state file. A beat that hasn't happened yet is still ahead; it needs no
+   change.
 3. **The ledger.** Each fact in *Knowledge gained* is in the PC's knowledge ledger under its
    subject, as that subject now stands: what it overturned replaced, not left beside it. A tagged
    secret carries its `[learned:<id> S{N}]`.

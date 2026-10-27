@@ -112,6 +112,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   is skipped, and `bench report` flags it. The report adds checker and gate precision and the
   stage correction rate; the defaulted rate now counts checked turns with no submission. A gate's
   correction reaches the grader as a diff, apart from the draft the gate judged.
+- **Arcs are the living plan of the story.** `apply-arcs` changes an arc wherever play gives it a
+  better story, edited in place; the adjustment log is gone. `arc-design` gives every arc
+  opposition, defines a turning point as a change in the story's situation rather than a step in
+  the PC's work, maps the kinds of play the brief asks for onto the tension curve, and adds craft
+  guidance on conflict, mysteries and stakes. A clock is only something coming that changes the
+  PC's situation or the world when it fires. The session plan works from the player's brief.
 
 ### Added
 - **`bench check`** — the after-play checker. One rolling `play-checker` session per run reads
