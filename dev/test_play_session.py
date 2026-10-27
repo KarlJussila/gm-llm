@@ -21,6 +21,7 @@ console harness, `bench run` and the TUI all depend on:
 """
 
 import copy
+import shutil
 import sys
 import tempfile
 import threading
@@ -370,9 +371,9 @@ def a_quit_before_the_opening_reopens_the_session():
     print("a_quit_before_the_opening_reopens_the_session: the opening is played, not skipped.\n")
 
 
-def a_wrap_cut_off_mid_planning_is_finished_first():
-    """The wrap of session 1 writes session 2's plan before its gate passes. A restart in
-    between must finish session 1's wrap, not open session 2 on a half-made plan."""
+def a_plan_cut_off_mid_planning_is_finished_first():
+    """A plan is written before its gate passes. A restart in between must finish the step
+    that was making it, the wrap of the session before or setup, not play the half-made plan."""
     tmp = Path(tempfile.mkdtemp())
     (tmp / "gm-llm.yaml").write_text("feedback-dir: feedback\n", encoding="utf-8")
     for n in (1, 2):
@@ -385,14 +386,19 @@ def a_wrap_cut_off_mid_planning_is_finished_first():
     class _Gate:
         preloader = None
 
-    lc = Lifecycle(FakeBackend(tmp, []), _Gate(), str(tmp))
-    check((lc.session, lc.phase) == (1, "wrap_pending"),
-          f"session 1's wrap is still to finish — got {(lc.session, lc.phase)}")
-    (state / "reconcile-1-prep.done").write_text("done", encoding="utf-8")
-    lc = Lifecycle(FakeBackend(tmp, []), _Gate(), str(tmp))
-    check((lc.session, lc.phase) == (2, "play"),
-          f"once planning finished, session 2 opens — got {(lc.session, lc.phase)}")
-    print("a_wrap_cut_off_mid_planning_is_finished_first: no half-made plan is played.\n")
+    def opening():
+        lc = Lifecycle(FakeBackend(tmp, []), _Gate(), str(tmp))
+        return lc.session, lc.phase
+
+    check(opening() == (2, "play"), f"a plan with no planning under way is played — got {opening()}")
+    (state / "planning-2.pending").write_text("", encoding="utf-8")
+    check(opening() == (1, "wrap_pending"),
+          f"session 1's wrap is still to finish — got {opening()}")
+    (state / "planning-2.pending").unlink()
+    shutil.rmtree(tmp / "campaign" / "sessions" / "2")
+    (state / "planning-1.pending").write_text("", encoding="utf-8")
+    check(opening() == (0, "setup"), f"setup is still to finish — got {opening()}")
+    print("a_plan_cut_off_mid_planning_is_finished_first: no half-made plan is played.\n")
 
 
 def _wait(cond, what, timeout=5.0):
@@ -417,5 +423,5 @@ if __name__ == "__main__":
     a_session_resumed_into_a_live_fight_never_plays_a_normal_turn()
     an_interrupt_is_the_frontend_s_to_answer()
     a_quit_before_the_opening_reopens_the_session()
-    a_wrap_cut_off_mid_planning_is_finished_first()
+    a_plan_cut_off_mid_planning_is_finished_first()
     print("OK — session loop: priming, hooks, cap, keyboard, combat handoff, interrupts, restarts.")

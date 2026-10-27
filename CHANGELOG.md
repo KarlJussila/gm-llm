@@ -176,8 +176,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   title for play in progress and sent the player a blank scene; it now opens the session.
 - **In combat, the AI player sees the whole round.** It was handed only the last beat before its
   slot, missing its own action's result and the NPC turns between.
-- **A wrap cut off while planning the next session is finished on restart,** instead of opening
-  the next session on its half-made plan.
+- **Planning cut off before the plan is committed is finished on restart,** by the wrap or setup
+  that was doing it, instead of opening the session on its half-made plan.
 - **The AI player gives no feedback,** so its preferences never become standing guidance. And the
   player's guidance now shapes how the story is told, never what is true in it.
 

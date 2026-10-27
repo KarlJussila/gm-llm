@@ -19,6 +19,7 @@ from gm_llm import __version__  # noqa: E402
 from gm_llm.orchestrator import Game, Logs, Planner  # noqa: E402
 from gm_llm.orchestrator.archive import SCHEMA, Archive  # noqa: E402
 from gm_llm.orchestrator.gate import StageGateResult, Verdict  # noqa: E402
+from gm_llm.orchestrator.planner import planning_cut_off  # noqa: E402
 from gm_llm.bench.workspace import turn_message  # noqa: E402
 
 
@@ -154,6 +155,7 @@ def test_planner_stage_event(tmp):
     assert stage["stage"] == "plan" and stage["session"] == 2
     assert not stage["verdict"]["passed"] and stage["corrected"] and not stage["committed"]
     assert stage["draft"] == "# Session 2 plan\n"  # the plan as gated, pre-correction
+    assert not planning_cut_off(tmp, 2), "a finished plan leaves no planning marker"
 
 
 def test_close_nudge(tmp):

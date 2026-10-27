@@ -11,7 +11,8 @@ PRE-session planning — orchestrated.
       return PrepResult
 
 The dm authors and revises the file; the orchestrator owns *when* the gate runs and
-*whether* to commit. `Game` (loop.py) can run the session the moment the plan exists.
+*whether* to commit. A marker stands while planning runs, so a restart can tell a plan that
+was cut off (`planning_cut_off`) from one that's ready to play.
 """
 
 from __future__ import annotations
@@ -73,6 +74,9 @@ class Planner:
     def prep_session(self, n: int, commit: bool = False) -> PrepResult:
         # 1. The dm authors the plan file (and any new entities it pulls in). The first
         #    session also gets a prologue: the player remembers nothing before it.
+        marker = _planning(self.root, n)
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(datetime.now(timezone.utc).isoformat() + "\n", encoding="utf-8")
         brief = load("plan-brief").format(n=n)
         if n == 1:
             brief += "\n\n" + load("prologue-brief")
@@ -99,6 +103,7 @@ class Planner:
 
         # 4. Commit deterministically (the orchestrator owns git, not the model).
         committed = commit_campaign(self.root, f"campaign: session {n} plan") if commit else False
+        marker.unlink()
 
         pr = PrepResult(n, plan, result, corrected, committed, draft=draft, diff=diff or "")
         self._log(pr)
@@ -139,3 +144,12 @@ def _format_block(pr: PrepResult) -> str:
         section(f"CHECK-PLAN · {g.narrative.label}", g.narrative.report),
         "",
     ])
+
+
+def _planning(root: Path | str, n: int) -> Path:
+    return Path(root) / ".opencode" / ".orchestrator" / f"planning-{n}.pending"
+
+
+def planning_cut_off(root: Path | str, n: int) -> bool:
+    """Whether planning session `n` started and never finished: its plan isn't ready to play."""
+    return _planning(root, n).is_file()

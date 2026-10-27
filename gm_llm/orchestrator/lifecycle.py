@@ -21,7 +21,8 @@ from .packet import character_packet
 from .paths import latest_session
 from .loop import Game, session_is_complete
 from .play import AgentPlayer, KeyboardPlayer, PlayerSource
-from .reconciler import Reconciler, prepped
+from .planner import planning_cut_off
+from .reconciler import Reconciler
 from .setup import Setup
 from .status import CampaignStatus, campaign_status
 from .stream import EventTap
@@ -43,11 +44,11 @@ class Lifecycle:
         # Disk decides the opening phase: no session plan yet ⇒ a brand-new campaign
         # that needs setup; a session whose runner already signalled the end (even in
         # a prior run the player never confirmed the wrap on) ⇒ show that choice again,
-        # never resume it into more play; otherwise jump straight into play. A plan whose
-        # wrap was cut off mid-planning isn't ready: finish that wrap instead.
+        # never resume it into more play; otherwise jump straight into play. A plan cut off
+        # mid-planning isn't ready: finish the step that was making it, setup or a wrap.
         n = latest_session(Path(directory) / "campaign")
-        if n and n > 1 and not prepped(directory, n - 1):
-            n -= 1
+        if n and planning_cut_off(directory, n):
+            n = n - 1 or None
         if n is None:
             self.phase = "setup"
             self.game = None
