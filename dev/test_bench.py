@@ -204,7 +204,7 @@ def _lifecycle_factory(on_reconcile=None):
                 on_reconcile(n)
 
     def factory(backend, gate, directory, logs):
-        return _FakeLifecycle(backend, gate, str(directory), logs=logs, player="auto")
+        return _FakeLifecycle(backend, gate, str(directory), logs=logs, player="bench")
 
     return factory
 

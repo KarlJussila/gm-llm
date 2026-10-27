@@ -8,16 +8,20 @@ lands — git history is the record.
 
 Design: [`design/luna.md`](design/luna.md). Tasks 6–8 need model quota.
 
-6. **Live shakedown.** Two or three Hollowfell sessions on Luna; fix only failures the runs show.
-7. **Between-session and combat shakedown.** Reconcile and plan from those runs, a fresh campaign
-   through setup, and the first real fight. Read the gates' before/after and cut the ones that
-   don't earn their place.
+6. **Autonomous shakedown.** A fresh campaign through scripted setup, played on by the autonomous
+   player from blank feedback; fix only failures the runs show. Feedback of Karl's that proves
+   load-bearing is baked into the prompts. A run with a free-model DM (GLM, DeepSeek, or the local
+   Qwen, whose provider the project config would need) gives readable reasoning.
+7. **Between-session and combat shakedown.** Reconcile and plan from those runs, and the first real
+   fight. Read the gates' before/after and cut the ones that don't earn their place.
 8. **Release.** Version bump, changelog, `README.md` for the Luna product.
 
 ## benchmark — measure the product, tier by tier
 
 Design: [`design/benchmark.md`](design/benchmark.md). B-numbers are stages in that doc.
 
+5. **Refreeze the fixture.** Hollowfell predates the Luna layout's later changes; replace it with
+   a campaign from the autonomous runs, taking what they teach about the player.
 6. **B3 — the `low` baseline.** After luna 6 and benchmark 1–4: a Luna pilot sizes the batch, then
    bank the distribution.
 7. **B9 — `medium` and `high` tiers, and ablations.** Decide what each tier strips from what the

@@ -7,9 +7,9 @@ render what came back, repeat until the runner wraps the session or the turn cap
 `play_session` is the one loop. The only thing that differs between a human at a keyboard
 and the scripted `player` agent is **where the next message comes from** — a `PlayerSource`:
 
-  * `AgentPlayer` — prompts the `player` agent. The character packet (and, on a resume, the
-    story so far) rides in front of its first message; everything after is the per-turn
-    reminder alone.
+  * `AgentPlayer` — prompts an AI player agent. Its lead (the character packet, for one) and,
+    on a resume, the story so far ride in front of its first message; everything after is the
+    per-turn reminder alone.
   * `KeyboardPlayer` — blocks until the engine hands a line in from another thread.
 
 Everything else is the loop's, once: the packet framing, turn-cap accounting, the handoff
@@ -64,9 +64,10 @@ class PlayerSource:
 
 
 class AgentPlayer(PlayerSource):
-    """The scripted `player` agent — `--player auto`, the offline-human mode.
+    """An AI player agent: the benchmark's `player`, or the autonomous `auto-player`.
 
-    Its **first** message carries the character packet, then (on a resume) the story so far,
+    Its **first** message carries its lead (the character packet, for one), then (on a resume)
+    the story so far,
     in front of the per-turn body; every later message is the body alone. That priming is
     what makes an unattended session playable at all, and it lives here so the console
     harness and `bench run` cannot frame it two subtly different ways — which they were one
@@ -74,13 +75,13 @@ class AgentPlayer(PlayerSource):
 
     human = False
 
-    def __init__(self, backend, session_id: str, *, character: str = "",
+    def __init__(self, backend, session_id: str, *, lead: str = "",
                  story: str | None = None, agent: str = "player"):
         super().__init__()
         self.backend = backend
         self.session_id = session_id
         self.agent = agent
-        self.character = character
+        self.lead = lead
         self.story = story
         self._primed = False
 
@@ -91,11 +92,11 @@ class AgentPlayer(PlayerSource):
         return self.backend.prompt(self.session_id, self.agent, self._prime(body))
 
     def _prime(self, body: str) -> str:
-        """The first message only: the packet, the story so far, then the turn body."""
+        """The first message only: the lead, the story so far, then the turn body."""
         if self._primed:
             return body
         self._primed = True
-        parts = [self.character] if self.character else []
+        parts = [self.lead] if self.lead else []
         if self.story:
             parts.append(load("player-story").format(story=self.story))
         parts.append(body)

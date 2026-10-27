@@ -66,7 +66,8 @@ wrong one the probe prompt gave it).
 | `log-extractor` | Fresh-context digest of the transcript | Whole-transcript read |
 | `helper` | General-purpose subagent for the dm's delegated work, pinned to Luna | New |
 | `narrative-checker` | Between-session gates, and the benchmark's after-play checker | Re-authored for Luna; never at the table |
-| `player` | The autoplayer (benchmark, `--player auto`) | See [benchmark.md](benchmark.md) |
+| `player` | The benchmark's player | See [benchmark.md](benchmark.md) |
+| `auto-player` | The autonomous player (`--player auto`) | New (see § Autonomous play) |
 | `setup-player` | Answers setup from the player's script (`play --setup-script`) | New |
 
 `campaign-analyst` and the `session-review` assessment are deleted; feedback curation moves to the
@@ -186,6 +187,22 @@ task, given only when the task asks for them.
 
 **Unchanged:** `/meta` questions, resume (reattach or re-prime), cancel and revert, completion as a
 disk fact.
+
+## Autonomous play
+
+`--player auto` has the `auto-player` agent play the PC with nobody at the keyboard. The engine
+wraps each session and opens the next by itself, for `--sessions N` or with no limit; a session has
+no turn cap unless `--turn-cap` sets one.
+
+- **One thread for the campaign.** The player keeps one opencode session across sessions, so it
+  remembers play the way a player would; compaction keeps it going. A cold start leads with its
+  files and the character packet's state and knowledge.
+- **Files of its own** in the project's `player/`, outside the campaign, and it can read and edit
+  only those: `sheet.md`, seeded once from the PC's sheet, where it applies its own level-ups, and
+  `notes.md` for its goals, leads and theories.
+- **It gives no feedback.** Its feedback reached the shared store and steered the DM.
+- **It is not the benchmark's player.** `player` keeps a fresh session and the generated packet per
+  run ([benchmark.md](benchmark.md)).
 
 ## Combat
 

@@ -106,7 +106,7 @@ The subject is the DM playing well, never the checker catching it failing.
 session 3 against real prior canon. It is converted to the [luna.md](luna.md) layout by script.
 
 - **The character packet is generated in code** from the PC sheet, state and knowledge ledger — one
-  generation path for `bench` and `--player auto`, never a hand-merged file.
+  generation path for `bench` and the autonomous player's start, never a hand-merged file.
 - **The story so far** is a recap of the past transcripts, generated once, reviewed by hand and stored
   in the fixture. Transcripts are exactly what the player saw, so the recap cannot leak a secret.
 - **Feedback files tune the subject**, so they are curated whenever the fixture is refrozen.

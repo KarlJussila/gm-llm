@@ -142,9 +142,10 @@ open the next one.
 No opencode / no model? `gm-llm play --mock` runs the same
 UI against a scripted mock (`--setup` to demo the new-campaign flow).
 
-Want to watch instead of play? `gm-llm play --player auto` hands the player's turns to a
-scripted agent and renders the session in the same TUI — its character packet is generated from
-the PC's sheet, state and knowledge ledger, and `--turn-cap` bounds the run.
+Want to watch instead of play? `gm-llm play --player auto` hands the player's turns to an
+autonomous player agent and renders play in the same TUI. It plays on session after session,
+wrapping each and opening the next by itself; `--sessions N` stops it after N, and `--turn-cap N`
+pauses a session after N turns. It keeps its own sheet and notes in the project's `player/`.
 
 Prefer plain text? `--ui console` plays (or watches) the same campaign at a terminal prompt:
 `/meta <question>`, `/wrap`, `/status`, `/roll 2d6+3`, `/quit`, and Ctrl+C cancels the call in
@@ -171,6 +172,7 @@ player-facing and takes the campaign as a path (default: the current directory):
 ```
 play    [dir] [--player human|auto] [--ui tui|console] [--mock] [--setup]
         [--setup-script FILE] [--model PROVIDER/MODEL] [--variant V]
+        [--sessions N] [--turn-cap N]   (with --player auto)
 serve   [dir] [--player human|auto] [--mock] [--model …]   the engine over stdio, for a frontend
 status  [dir]                          where the campaign stands (disk only, no model)
 tokens  [dir] [--price-in …]           token + cost usage, from opencode's own store
@@ -191,7 +193,7 @@ checkout, reach them with `python -m gm_llm …`, which runs the checkout's code
 install step. They target a campaign via `--dir`:
 
 ```
-dev autoplay   [--turn-cap 6] [--fresh]                   the scripted player agent plays
+dev autoplay   [--sessions N] [--turn-cap N] [--fresh]    the autonomous player plays on
 dev prep       [--session N] [--no-commit]                PRE: author + gate + commit the plan
 dev reconcile  [--session N] [--no-commit] [--no-prep] [--fresh]   POST: the staged pipeline
 dev lint                               entity-completeness lint, standalone
@@ -294,7 +296,8 @@ the agents and every workflow — setup, play, combat, reconcile, planning — a
 | `helper` | subagent | General-purpose help the `dm` delegates through `task`, such as one arc's reconcile. |
 | `log-extractor` | subagent | Transcript and notes → the session digest. |
 | `narrative-checker` | subagent | The between-session gates (`check-*`). Reads and reports only, via `report_findings`. |
-| `player` | primary | The autoplayer, for `--player auto` and the benchmark. |
+| `auto-player` | primary | The autonomous player, for `--player auto`. |
+| `player` | primary | The benchmark's player. |
 | `setup-player` | primary | Answers setup from a script, for `play --setup-script`. |
 
 ### Orchestrator (`gm_llm/orchestrator/`)
@@ -341,7 +344,7 @@ From a source checkout (`python -m venv .venv && .venv/bin/pip install -e .`):
 .venv/bin/python dev/test_completeness.py     # lint unit checks
 gm-llm play --mock                    # offline TUI (mock play/wrap)
 gm-llm play --mock --setup            # offline TUI (mock new-campaign setup)
-python -m gm_llm dev autoplay --turn-cap 6 --dir ../my-campaign   # scripted player vs. the real model
+python -m gm_llm dev autoplay --turn-cap 6 --dir ../my-campaign   # the autonomous player vs. the real model
 ```
 
 Model-facing `dev` commands target a `gm-llm init`-ed campaign project via

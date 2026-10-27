@@ -143,10 +143,11 @@ def add_dev_parser(subparsers, common, engine) -> None:
     sub = dev.add_subparsers(dest="dev_cmd", required=True)
 
     p = sub.add_parser("autoplay", parents=[engine],
-                       help="play a session with the scripted player agent (no human)")
-    p.add_argument("--turn-cap", type=int, default=30,
-                   help="stop after this many turns — play ends earlier when the runner "
-                        "wraps the session (default: 30)")
+                       help="play on with the autonomous player agent (no human)")
+    p.add_argument("--sessions", type=int, default=None,
+                   help="stop after playing this many sessions (default: no limit)")
+    p.add_argument("--turn-cap", type=int, default=None,
+                   help="pause a session after this many turns (default: no limit)")
     p.add_argument("--fresh", action="store_true",
                    help="start the session over, overwriting its transcript "
                         "(the default resumes an in-progress session)")

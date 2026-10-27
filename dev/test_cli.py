@@ -51,6 +51,12 @@ def test_play_axes_parse_independently(tmp):
     a = _parse("play", "/tmp/camp", "--player", "auto", "--ui", "console", "--turn-cap", "7")
     assert (a.player, a.ui, a.dir, a.turn_cap) == ("auto", "console", "/tmp/camp", 7)
 
+    a = _parse("play", "--player", "auto", "--sessions", "3")
+    assert (a.sessions, a.turn_cap) == (3, None), "autonomous play has no turn cap by default"
+    assert cli._serve_args(a)[-2:] == ["--sessions", "3"], cli._serve_args(a)
+    assert "--turn-cap" not in cli._serve_args(a)
+    assert cli.run_play(_parse("play", "--sessions", "3")) == 2, "--sessions needs --player auto"
+
     a = _parse("play", "--mock", "--setup")
     assert a.mock and a.setup
 

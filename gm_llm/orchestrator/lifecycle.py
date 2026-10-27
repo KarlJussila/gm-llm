@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..settings import pull_feedback
+from .autoplay import auto_player
 from .autosetup import SetupPlayer
 from .packet import character_packet
 from .paths import latest_session
@@ -35,8 +36,9 @@ class Lifecycle:
         self.gate = gate
         self.directory = directory
         self.logs = logs
-        # Who supplies player turns (`--player`). The frontend asks for a source per session
-        # and drives one loop either way — see `player_source`.
+        # Who supplies player turns: "human", "auto" (`--player auto`, the autonomous player)
+        # or "bench" (the benchmark's player). The frontend asks for a source per session and
+        # drives one loop either way — see `player_source`.
         self.player = player
         # A loaded `SetupScript` (`--setup-script`): the setup-player agent answers setup.
         self.setup_script = setup_script
@@ -67,14 +69,17 @@ class Lifecycle:
         """A fresh `PlayerSource` for the session about to be played — the axis `--player`
         selects, resolved here so a frontend never builds backend sessions of its own.
 
-        **One per session loop, never reused.** A `KeyboardPlayer`'s `stop()` latches, and an
-        `AgentPlayer` gets its own opencode session so the packet is re-handed (and the
-        previous session's play isn't carried into the next one's context). `story` is what
-        an `AgentPlayer` is told has happened before it starts."""
-        if self.player != "auto":
+        **One per session loop, never reused**: a `KeyboardPlayer`'s `stop()` latches. The
+        benchmark's `player` gets an opencode session of its own each time, so the packet is
+        re-handed and the previous session's play isn't carried into the next one's context;
+        the autonomous player keeps one thread across sessions (`autoplay`). `story` is what a
+        player starting cold is told has happened in this session so far."""
+        if self.player == "human":
             return KeyboardPlayer()
+        if self.player == "auto":
+            return auto_player(self.backend, self.directory, self.session, story=story)
         return AgentPlayer(self.backend, self.backend.create_session("play-player"),
-                           character=character_packet(Path(self.directory) / "campaign"),
+                           lead=character_packet(Path(self.directory) / "campaign"),
                            story=story)
 
     def setup_player(self) -> SetupPlayer | None:

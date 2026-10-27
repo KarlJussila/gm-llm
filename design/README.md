@@ -56,8 +56,8 @@ The parts of the design that are neither agent nor skill, and are easy to lose:
   `<player>`, and in a fight `<combat-turn>` / `<combat-reaction>` — keeping it distinct from the
   player's in-fiction input.
 - **One session loop, whoever is playing.** `play_session` (`orchestrator/play.py`) is the turn
-  loop for every player; who supplies the next message is a `PlayerSource` (the keyboard or the
-  scripted `player` agent).
+  loop for every player; who supplies the next message is a `PlayerSource` (the keyboard, or an AI
+  player agent).
 - **Frontends are clients.** The engine owns the workflow and speaks a JSON protocol; the TUI and
   the console spawn `gm-llm serve` and only render and send ([frontends.md](frontends.md)).
 - **Transcripts are written by code**, to `campaign/sessions/<n>/transcript.md`, from each turn's

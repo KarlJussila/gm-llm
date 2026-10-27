@@ -16,6 +16,8 @@ frontend drives it, and what is asserted is the event stream:
   - `advance` during play takes the loop down, wraps, and offers the next session;
   - a second `advance` before the first has started is refused, and `closed` is the last
     event even with a wrap still running;
+  - the autonomous player wraps each session and opens the next by itself, for as many
+    sessions as it was given;
   - a batch quit before its run opens still stops that run;
   - the console stops unattended play wherever it lands, and asks a human what's next;
   - the same protocol over a real `gm-llm serve` child: JSON lines both ways, and the child
@@ -241,6 +243,29 @@ def one_advance_and_a_terminal_close():
     print()
 
 
+def the_autonomous_player_plays_on():
+    print("the_autonomous_player_plays_on:")
+    from gm_llm.orchestrator.play import PlayerSource
+
+    class _Agent(PlayerSource):
+        def next_message(self, scene, *, combat=False):
+            return None if self.stopped else "I press on."
+
+    class _Auto(MockLifecycle):
+        player = "auto"
+
+        def player_source(self, story=None):
+            return _Agent()
+
+    d = Driver(LocalClient(Engine(_Auto(pace=0), sessions=2)))
+    d.until("two sessions play and wrap with nobody advancing", phase="ready", busy=None,
+            session=3, timeout=30)
+    check([e["key"] for e in d.of("stage")].count("prep") == 2, "each session was wrapped")
+    check(not d.of("error"), "nothing was refused or failed")
+    d.client.close()
+    print()
+
+
 def a_batch_quit_before_its_run_opens():
     print("a_batch_quit_before_its_run_opens:")
     stopped = []
@@ -335,6 +360,7 @@ if __name__ == "__main__":
     cancel_hands_back()
     advance_wraps()
     one_advance_and_a_terminal_close()
+    the_autonomous_player_plays_on()
     a_batch_quit_before_its_run_opens()
     the_console_knows_when_to_stop()
     over_the_pipe()

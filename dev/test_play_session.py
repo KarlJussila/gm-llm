@@ -172,7 +172,7 @@ def agent_plays_to_the_wrap():
     game = _game(backend)
     hooks, trace = _recorder()
 
-    source = AgentPlayer(backend, "sid-player", character="You are Dallid, a cleric.",
+    source = AgentPlayer(backend, "sid-player", lead="You are Dallid, a cleric.",
                          story="Rain. A locked door.")
     result = play_session(game, source, "You push open the tavern door.", hooks=hooks,
                           turn_cap=10)
@@ -311,7 +311,7 @@ def a_session_resumed_into_a_live_fight_never_plays_a_normal_turn():
     check(game.in_combat, "the fresh Game recovered in_combat off the state file")
     hooks, trace = _recorder()
 
-    result = play_session(game, AgentPlayer(backend, "sid-player", character="Dallid, a cleric."),
+    result = play_session(game, AgentPlayer(backend, "sid-player", lead="Dallid, a cleric."),
                           "Steel is out.", hooks=hooks, turn_cap=10)
 
     check(result.outcome == "complete", f"the resumed fight ran on into a wrap — {result.outcome}")

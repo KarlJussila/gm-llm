@@ -1,6 +1,7 @@
-"""The autoplayer's character packet, generated from the PC's own files (design/benchmark.md
-§ The fixture): the sheet's player-facing sections, the PC's state and the knowledge ledger. The player agent
-has no file access, so this is everything it knows about its character.
+"""The AI player's character packet, generated from the PC's own files (design/benchmark.md
+§ The fixture): the sheet's player-facing sections, the PC's state and the knowledge ledger. The
+benchmark's player has no file access, so this is everything it knows about its character; the
+autonomous player keeps its own copy of the sheet.
 
 The sheet also holds DM-side material — the story hooks, and connections the character may not
 know about — so only the sections below are taken from it. Links become names, and the ledger's
@@ -24,11 +25,39 @@ _TAG = re.compile(r"\s*\[(?:learned|revealed):[^\]]*\]")
 
 def character_packet(campaign: Path | str) -> str:
     """The packet for the campaign's PC, or '' when there is no PC sheet to build it from."""
-    campaign = Path(campaign)
-    entries = scan(campaign)
-    pc = next((e for e in entries if e.type == "pc"), None)
+    return "\n\n".join(p for p in (character_sheet(campaign), character_situation(campaign)) if p)
+
+
+def character_sheet(campaign: Path | str) -> str:
+    """The packet's sheet: the PC's vitals and the sheet's player-facing sections."""
+    pc, clean = _pc(campaign)
     if pc is None:
         return ""
+    vitals = "\n".join(f"- {key}: {as_text(pc.meta[key])}" for key in _VITALS
+                       if as_text(pc.meta.get(key)))
+    parts = [f"# You are {pc.name}", vitals]
+    parts += [f"## {title}\n\n{clean(body)}" for title, body in _sections(pc.path)
+              if title in _SHEET_SECTIONS and clean(body)]
+    return "\n\n".join(p for p in parts if p)
+
+
+def character_situation(campaign: Path | str) -> str:
+    """The packet's situation: where the PC stands and what they know."""
+    pc, clean = _pc(campaign)
+    if pc is None:
+        return ""
+    parts = []
+    for suffix, title in ((".state.md", "Where you stand"), (".knowledge.md", "What you know")):
+        body = clean(_body(pc.path.with_name(pc.slug + suffix)))
+        if body:
+            parts.append(f"## {title}\n\n{body.replace('## ', '### ')}")
+    return "\n\n".join(parts)
+
+
+def _pc(campaign: Path | str):
+    """The PC's entry (None without one) and the cleaner for text the player may see."""
+    entries = scan(Path(campaign))
+    pc = next((e for e in entries if e.type == "pc"), None)
     names = {e.slug: e.name for e in entries}
 
     def clean(text: str) -> str:
@@ -37,17 +66,7 @@ def character_packet(campaign: Path | str) -> str:
         text = _TAG.sub("", text)
         return "\n".join(line for line in text.splitlines() if "[hidden:" not in line).strip()
 
-    vitals = "\n".join(f"- {key}: {as_text(pc.meta[key])}" for key in _VITALS
-                       if as_text(pc.meta.get(key)))
-    parts = [f"# You are {pc.name}", vitals]
-    parts += [f"## {title}\n\n{clean(body)}" for title, body in _sections(pc.path)
-              if title in _SHEET_SECTIONS and clean(body)]
-
-    for suffix, title in ((".state.md", "Where you stand"), (".knowledge.md", "What you know")):
-        body = clean(_body(pc.path.with_name(pc.slug + suffix)))
-        if body:
-            parts.append(f"## {title}\n\n{body.replace('## ', '### ')}")
-    return "\n\n".join(p for p in parts if p)
+    return pc, clean
 
 
 def _body(path: Path) -> str:

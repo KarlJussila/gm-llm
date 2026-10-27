@@ -163,6 +163,9 @@ def run_play(args) -> int:
     if player == "auto" and mock:
         from .devcmds import unavailable
         unavailable("--player auto needs a real backend (the mock has no gate to score).")
+    if getattr(args, "sessions", None) is not None and player != "auto":
+        print("--sessions needs --player auto", file=sys.stderr)
+        return 2
 
     script = getattr(args, "setup_script", None)
     if script:
@@ -199,8 +202,10 @@ def _serve_args(args) -> list[str]:
         out += ["--model", args.model]
     if args.variant is not None:
         out += ["--variant", args.variant]
-    if getattr(args, "player", "human") == "auto":
+    if getattr(args, "turn_cap", None) is not None:
         out += ["--turn-cap", str(args.turn_cap)]
+    if getattr(args, "sessions", None) is not None:
+        out += ["--sessions", str(args.sessions)]
     if getattr(args, "fresh", False):
         out += ["--fresh"]
     if getattr(args, "setup_script", None):
@@ -234,7 +239,7 @@ def _cmd_serve(args) -> int:
                              variant=args.variant, port=args.port, min_gap=args.min_gap,
                              turn_timeout=args.turn_timeout, turn_cap=args.turn_cap,
                              fresh=args.fresh, mock=args.mock, setup=args.setup,
-                             setup_script=args.setup_script)
+                             setup_script=args.setup_script, sessions=args.sessions)
     except Exception as e:  # noqa: BLE001 — the frontend shows it
         return fail(out, str(e))
     return serve(engine, out)
@@ -321,8 +326,11 @@ def _build_parser() -> argparse.ArgumentParser:
                         "(see README § Scripted setup)")
     p.add_argument("--theme", default="dracula",
                    help="Textual theme (dracula, tokyo-night, gruvbox, nord, …)")
-    # autoplay's flags, accepted here too so `play --player auto` is the same command
-    p.add_argument("--turn-cap", type=int, default=30, help=argparse.SUPPRESS)
+    p.add_argument("--sessions", type=int, default=None, metavar="N",
+                   help="with --player auto: stop after playing N sessions (default: no limit)")
+    p.add_argument("--turn-cap", type=int, default=None, metavar="N",
+                   help="with --player auto: pause a session after N turns (default: no limit)")
+    # `dev autoplay`'s flag, accepted here too so `play --player auto` is the same command
     p.add_argument("--fresh", action="store_true", help=argparse.SUPPRESS)
     p.set_defaults(func=run_play)
 
@@ -332,6 +340,8 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--player", choices=("human", "auto"), default="human")
     p.add_argument("--turn-cap", type=int, default=None,
                    help="stop an agent-played session after this many turns")
+    p.add_argument("--sessions", type=int, default=None,
+                   help="with --player auto: stop after playing this many sessions")
     p.add_argument("--mock", action="store_true", help="mock backend — no opencode")
     p.add_argument("--setup", action="store_true",
                    help="with --mock: start in the new-campaign setup phase")

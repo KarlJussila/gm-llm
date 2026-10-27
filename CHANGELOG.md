@@ -27,6 +27,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   campaign's setup from the player's script — a brief sent word for word, a character file to
   bring, how to answer the rest — while the exchange plays out in the TUI. The keyboard takes
   over if it runs out of answers.
+- **Autonomous play.** `play --player auto` now has a new `auto-player` agent play on session
+  after session: the engine wraps each session and opens the next by itself, `--sessions N` stops
+  it after N, and there's no turn cap unless `--turn-cap` sets one. The player keeps one opencode
+  thread across sessions and its own files in `player/`: its sheet, where it applies its own
+  level-ups, and its notes. The benchmark keeps the `player` agent.
 
 ### Changed
 - Setup plans session 1 straight away; the yes/no comes before session 1 opens, not before it's

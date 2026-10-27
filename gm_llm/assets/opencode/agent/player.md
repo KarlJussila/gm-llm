@@ -1,8 +1,7 @@
 ---
 description: >-
-  The autoplayer — plays one character against dm-runner when no human is at the
-  keyboard (`--player auto`, the benchmark). Not part of the campaign engine; sees only
-  its character packet and the DM's narration.
+  The benchmark's player — plays one character against dm-runner for `bench run`. Not part
+  of the campaign engine; sees only its character packet and the DM's narration.
 mode: primary
 model: openai/gpt-6-luna
 variant: xhigh

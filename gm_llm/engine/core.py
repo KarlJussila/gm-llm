@@ -68,10 +68,13 @@ class Engine:
     `cleanup` runs on close (the real backend's `stop`)."""
 
     def __init__(self, lifecycle, *, cleanup=None, turn_cap: int | None = None,
-                 fresh: bool = False, directory: str = ""):
+                 fresh: bool = False, directory: str = "", sessions: int | None = None):
         self.lc = lifecycle
         self._cleanup = cleanup
         self._turn_cap = turn_cap
+        # Sessions the autonomous player has left to play (None: no limit). With some left,
+        # the engine wraps each session and opens the next by itself.
+        self._sessions = sessions
         self._fresh = fresh          # open the first session over, not resume its transcript
         self._directory = directory
         self._subscribers = []
@@ -108,6 +111,10 @@ class Engine:
         if self.lc.phase == "setup":
             self._spawn(self._open_setup)
         elif self.lc.phase == "wrap_pending" and not self._fresh:
+            if self._continuous():
+                self._set(phase="complete", busy="wrapping the session")
+                self._spawn(self._wrap)
+                return
             n = self.lc.session
             self._notice(f"session {n} complete — reconcile and prep session {n + 1}, "
                          f"or quit and decide later", "rule")
@@ -200,7 +207,11 @@ class Engine:
         self._emit("error", what=what, message=str(exc))
 
     def _player(self) -> str:
-        return "auto" if getattr(self.lc, "player", "human") == "auto" else "human"
+        return "human" if getattr(self.lc, "player", "human") == "human" else "auto"
+
+    def _continuous(self) -> bool:
+        """Whether the autonomous player plays on without anyone advancing."""
+        return self._player() == "auto" and self._sessions != 0
 
     def _in_combat(self) -> bool:
         game = getattr(self.lc, "game", None)
@@ -411,7 +422,15 @@ class Engine:
             self._set(phase="setup_done", busy=None)
             return
         self._notice(f"session {n} planned and ready to start", "success")
-        self._set(phase="ready", busy=None)
+        self._ready()
+
+    def _ready(self) -> None:
+        """A session is planned: open it straight away in continuous play, else wait."""
+        if self._continuous() and not self._closing:
+            self._set(phase="ready", busy="the DM sets the scene")
+            self._spawn(self._open_session)
+        else:
+            self._set(phase="ready", busy=None)
 
     # -- play ------------------------------------------------------------------
 
@@ -446,8 +465,7 @@ class Engine:
             # Resumed straight into a live fight: the loop enters combat on its first pass.
             self._notice("resuming mid-fight — initiative", "rule")
         self._context()
-        # An agent player starts each loop with a fresh session, so on a resume it is told
-        # what has happened so far.
+        # An AI player starting cold is told, on a resume, what has happened so far.
         self._run_loop(scene, story=game._read_transcript() if resumed else None)
 
     def _run_loop(self, scene: str, story: str | None = None) -> None:
@@ -474,12 +492,14 @@ class Engine:
                 return
             if result.outcome == "complete":
                 self._notice("the session has reached its end", "rule")
-                self._set(phase="complete", awaiting=None, busy=None)
+                after = after or ("wrap" if self._continuous() else None)
+                self._set(phase="complete", awaiting=None,
+                          busy="wrapping the session" if after == "wrap" else None)
             elif result.outcome == "cap":
                 self._notice(f"turn cap ({self._turn_cap}) reached — the session is still "
                              f"open", "rule")
                 self._set(awaiting=None, busy=None)
-        if result.outcome == "stopped" and after == "wrap":
+        if after == "wrap" and result.outcome in ("complete", "stopped"):
             self._wrap()
 
     def _release_loop(self) -> None:
@@ -594,13 +614,15 @@ class Engine:
             self._set(phase="complete", busy=None)
             return
         self._notice(f"session {n} planned and ready to start", "rule")
-        self._set(phase="ready", busy=None)
+        if self._continuous():
+            self._sessions = None if self._sessions is None else self._sessions - 1
+        self._ready()
 
 
 def open_engine(directory: str | Path, *, player: str = "human", model=None, variant=None,
                 port: int = 4181, min_gap: float = 1.0, turn_timeout: int = 0,
                 turn_cap: int | None = None, fresh: bool = False, mock: bool = False,
-                setup: bool = False, setup_script=None) -> Engine:
+                setup: bool = False, setup_script=None, sessions: int | None = None) -> Engine:
     """An engine over a real backend rooted at `directory`, or over `MockLifecycle`
     (`setup` starts the mock in its setup phase)."""
     if mock:
@@ -627,4 +649,4 @@ def open_engine(directory: str | Path, *, player: str = "human", model=None, var
         backend.stop()
         raise
     return Engine(lifecycle, cleanup=backend.stop, turn_cap=turn_cap, fresh=fresh,
-                  directory=str(directory))
+                  directory=str(directory), sessions=sessions)
