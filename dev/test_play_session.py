@@ -15,7 +15,9 @@ console harness, `bench run` and the TUI all depend on:
     got wrong (they sent a normal turn into a live tracker);
   - a cancelled turn is handed to `on_interrupt`, costs no turn against the cap, and leaves
     the loop playing; with no hook it propagates to the caller intact (what the unattended
-    callers need to record a rate-limit give-up).
+    callers need to record a rate-limit give-up);
+  - a restart after a quit before the opening landed opens the session, not a blank resume;
+    and one after a wrap cut off mid-planning finishes that wrap, not the half-made plan.
 """
 
 import copy
@@ -32,6 +34,7 @@ from gm_llm.orchestrator import (  # noqa: E402
 )
 from gm_llm.orchestrator.backend import BackendCancelled, BackendError  # noqa: E402
 from gm_llm.orchestrator.combat import CombatState  # noqa: E402
+from gm_llm.orchestrator.lifecycle import Lifecycle  # noqa: E402
 
 
 # ── fakes ─────────────────────────────────────────────────────────────────────
@@ -287,8 +290,9 @@ def a_fight_is_entered_from_the_top_of_the_loop():
         "prompt", "player", "turn",              # normal play resumes
     ], f"the fight is entered from the loop's next pass — got {[t[0] for t in trace]}")
     check(("slot", 1, 2) in trace, f"the PC slot is turn 2, round 1 — got {trace}")
-    check("<dm>\nThe goblin breaks and flees.\n</dm>" in backend.player_msgs[-1],
-          "normal play resumes from the fight's exit beat")
+    check("<dm>\nYou lunge; your blade bites deep.\n\nThe goblin breaks and flees.\n</dm>"
+          in backend.player_msgs[-1],
+          "normal play resumes with every beat since the PC acted, through the exit")
     print("a_fight_is_entered_from_the_top_of_the_loop: entry, accounting, and resumption.\n")
 
 
@@ -353,6 +357,44 @@ def an_interrupt_is_the_frontend_s_to_answer():
     print("an_interrupt_is_the_frontend_s_to_answer: continue or propagate, never silent.\n")
 
 
+def a_quit_before_the_opening_reopens_the_session():
+    """A quit while the opening was drafting leaves the transcript's title and nothing else.
+    That is nothing to resume: `resume()` says so, and the caller opens the session."""
+    tmp = Path(tempfile.mkdtemp())
+    backend = FakeBackend(tmp, [])
+    game = Game(backend, campaign_dir=tmp / "campaign", session=1)
+    game.transcript_path.parent.mkdir(parents=True)
+    game.transcript_path.write_text("# Session 1 — transcript\n\n", encoding="utf-8")
+    check(game.resume() is None, "a title-only transcript is not a session to resume")
+    check(backend.i == 0, "…and no model call was made")
+    print("a_quit_before_the_opening_reopens_the_session: the opening is played, not skipped.\n")
+
+
+def a_wrap_cut_off_mid_planning_is_finished_first():
+    """The wrap of session 1 writes session 2's plan before its gate passes. A restart in
+    between must finish session 1's wrap, not open session 2 on a half-made plan."""
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "gm-llm.yaml").write_text("feedback-dir: feedback\n", encoding="utf-8")
+    for n in (1, 2):
+        (tmp / "campaign" / "sessions" / str(n)).mkdir(parents=True)
+        (tmp / "campaign" / "sessions" / str(n) / "plan.md").write_text("# Plan\n")
+    state = tmp / ".opencode" / ".orchestrator"
+    state.mkdir(parents=True)
+    (state / "session-1.json").write_text('{"complete": true}', encoding="utf-8")
+
+    class _Gate:
+        preloader = None
+
+    lc = Lifecycle(FakeBackend(tmp, []), _Gate(), str(tmp))
+    check((lc.session, lc.phase) == (1, "wrap_pending"),
+          f"session 1's wrap is still to finish — got {(lc.session, lc.phase)}")
+    (state / "reconcile-1-prep.done").write_text("done", encoding="utf-8")
+    lc = Lifecycle(FakeBackend(tmp, []), _Gate(), str(tmp))
+    check((lc.session, lc.phase) == (2, "play"),
+          f"once planning finished, session 2 opens — got {(lc.session, lc.phase)}")
+    print("a_wrap_cut_off_mid_planning_is_finished_first: no half-made plan is played.\n")
+
+
 def _wait(cond, what, timeout=5.0):
     """Poll until `cond()` — the threaded scenarios have no clock to fix, only an order."""
     import time
@@ -374,4 +416,6 @@ if __name__ == "__main__":
     a_fight_is_entered_from_the_top_of_the_loop()
     a_session_resumed_into_a_live_fight_never_plays_a_normal_turn()
     an_interrupt_is_the_frontend_s_to_answer()
-    print("OK — session loop: priming, hooks, cap, keyboard, combat handoff, interrupts.")
+    a_quit_before_the_opening_reopens_the_session()
+    a_wrap_cut_off_mid_planning_is_finished_first()
+    print("OK — session loop: priming, hooks, cap, keyboard, combat handoff, interrupts, restarts.")

@@ -74,10 +74,10 @@ class Reconciler:
     # -- stage markers (resume-after-failure) -------------------------------
 
     def _marker_dir(self) -> Path:
-        return self.root / ".opencode" / ".orchestrator"
+        return _marker_dir(self.root)
 
     def _marker(self, n: int, stage: str) -> Path:
-        return self._marker_dir() / f"reconcile-{n}-{stage}.done"
+        return _marker_dir(self.root) / f"reconcile-{n}-{stage}.done"
 
     def _done(self, n: int, stage: str) -> bool:
         return self._marker(n, stage).is_file()
@@ -257,6 +257,15 @@ def _bullets(items: list[str]) -> str:
 
 _FEEDBACK_HEADING = re.compile(r"^#+\s*(?:\d+\.\s*)?player feedback\b.*$", re.I | re.M)
 _NONE = re.compile(r"^[\s(_*—-]*(?:none|n/?a|no feedback)\b[\s\w,.()—-]*$", re.I)
+
+
+def _marker_dir(root: Path) -> Path:
+    return root / ".opencode" / ".orchestrator"
+
+
+def prepped(root: Path | str, n: int) -> bool:
+    """Whether session `n`'s wrap finished planning session n+1, its last stage."""
+    return (_marker_dir(Path(root)) / f"reconcile-{n}-prep.done").is_file()
 
 
 def player_feedback(digest: str) -> str:

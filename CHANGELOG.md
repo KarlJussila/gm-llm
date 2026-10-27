@@ -172,6 +172,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   tool call and returns only the last message, so prose written *before* a trailing tool call came
   back empty — a blank scene to the gate and the player. The draft is now recovered from the
   session history.
+- **A quit before the opening landed no longer skips it.** The restart took the transcript's bare
+  title for play in progress and sent the player a blank scene; it now opens the session.
+- **In combat, the AI player sees the whole round.** It was handed only the last beat before its
+  slot, missing its own action's result and the NPC turns between.
+- **A wrap cut off while planning the next session is finished on restart,** instead of opening
+  the next session on its half-made plan.
 
 ## [0.5.0] — 2026-07-29
 

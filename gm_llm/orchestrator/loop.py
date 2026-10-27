@@ -118,7 +118,8 @@ class Game(CombatMixin):
         otherwise **rebuild** the context in a fresh session from the prepared context and the
         transcript. Either way the transcript is appended to, never reset."""
         transcript = self._read_transcript()
-        if not transcript.strip():
+        scene = _last_dm_beat(transcript)
+        if not scene:  # nothing played yet — a quit before the opening landed leaves a bare title
             return None
         saved = self._load_runner_sid()
         if saved and self.backend.session_valid(saved):
@@ -130,7 +131,7 @@ class Game(CombatMixin):
         self._save_runner_sid()
         if self.logs and self.logs.archive:
             self.logs.archive.emit("resume", session=self.session)
-        return _last_dm_beat(transcript)
+        return scene
 
     def turn(self, player_input: str) -> TurnResult:
         """One turn. The player's words are fenced in <player>…</player> so the DM never

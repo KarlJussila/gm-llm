@@ -397,22 +397,29 @@ def play_combat(game, source, entry_scene, hooks, *, turns: int = 0,
     resolved beat — its return interjects, see `CombatDriver`), `hooks.on_player` (the action
     that came back) and `hooks.on_combat_end` (the exit beat, which no other hook carries)."""
     driver = CombatDriver(game)
-    state = {"scene": entry_scene}
+    # Every beat since the PC last acted, so an agent player sees the whole round, not its
+    # last beat. A human sees each beat as it lands, through `hooks.on_beat`.
+    since = [entry_scene]
 
     def beat(narration, who):
-        state["scene"] = narration
+        since.append(narration)
         return hooks.on_beat(narration, who)
+
+    def scene() -> str:
+        return "\n\n".join(b for b in since if b.strip())
 
     event = driver.advance(beat)
     while event.kind == "pc_slot":
         if turn_cap is not None and turns >= turn_cap:
-            return CombatRun(state["scene"], turns, hit_cap=True)
+            return CombatRun(scene(), turns, hit_cap=True)
         turns += 1
         hooks.on_slot(event, turns)
-        player = source.next_message(state["scene"], combat=True)
+        player = source.next_message(scene(), combat=True)
         if player is None:  # the player is done driving the loop — leave the fight standing
-            return CombatRun(state["scene"], turns - 1, stopped=True)
+            return CombatRun(scene(), turns - 1, stopped=True)
         hooks.on_player(player, turns)
+        since.clear()
         event = driver.pc_action(player, beat)
     hooks.on_combat_end(event.narration)
-    return CombatRun(event.narration, turns)
+    since.append(event.narration)
+    return CombatRun(scene(), turns)

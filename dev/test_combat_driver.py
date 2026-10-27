@@ -294,14 +294,17 @@ def play_combat_uncapped():
     run = play_combat(game, AgentPlayer(backend, "sid-player"),
                       "Blades out — initiative!", hooks)
 
-    check(run.scene.startswith("The last goblin"), "the exit narration comes back as the scene")
+    check(run.scene.endswith("flees into the dark.")
+          and "The goblin's blade rakes your side." in run.scene,
+          "the scene back is every beat since the PC acted, through the exit narration")
     check(run.hit_cap is False, "no cap breach when turn_cap is None")
     check(run.stopped is False, "an agent player never stops the loop")
     check(run.turns == 1, f"one PC slot counted even uncapped — got {run.turns}")
     check(slots == [(1, 1)], f"on_slot saw round 1, turn 1 — got {slots}")
     check(players == [("I attack the nearer goblin.", 1)], "on_player carried the reply + turn")
     check(beats == ["pc", "goblin-1"], f"on_beat saw the PC beat then the NPC beat — got {beats}")
-    check(ended == [run.scene], "on_combat_end carries the exit beat no other hook does")
+    check(len(ended) == 1 and ended[0].startswith("The last goblin"),
+          "on_combat_end carries the exit beat no other hook does")
     check(not game.in_combat, "in_combat False after the fight")
     check(backend.i == len(script), "every scripted call consumed, in order")
     print("play_combat_uncapped: hooks fire in order and the fight drives to its end.\n")
@@ -309,8 +312,8 @@ def play_combat_uncapped():
 
 def play_combat_hits_cap():
     """The load-bearing bench semantics: each PC slot burns one turn against `turn_cap`, and
-    a fight still running when the cap trips returns `hit_cap` with the last beat as the
-    scene — no further player prompt, so a fight can't make a run uncappable."""
+    a fight still running when the cap trips returns `hit_cap` with the beats since the PC
+    acted as the scene — no further player prompt, so a fight can't make a run uncappable."""
     tmp = tempfile.mkdtemp()
     script = [
         ("Blades out — initiative!", {"start_encounter"}, m_start),
@@ -332,7 +335,8 @@ def play_combat_hits_cap():
     check(run.hit_cap is True, "the second PC slot trips the cap")
     check(run.turns == 3, f"the one played slot burned one turn (2 → 3) — got {run.turns}")
     check(slots == [3], f"only the played slot announced — got {slots}")
-    check(run.scene.startswith("The second goblin"), "the last beat is the scene to resume from")
+    check(run.scene.startswith("You lunge") and run.scene.endswith("grazes you."),
+          "the scene to resume from is every beat since the PC acted")
     check(ended == [], "a cut-short fight never ended — no exit beat to hand over")
     check(game.in_combat, "the fight is still live — the cap cut it short, it didn't end")
     check(backend.i == len(script), "no player prompt after the cap — nothing extra consumed")
