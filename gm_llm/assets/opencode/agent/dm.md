@@ -49,7 +49,8 @@ keeping every campaign file coherent. The orchestrator sequences the work and ha
 at a time; do the stage in front of it, without running ahead.
 
 The player's standing guidance, when they have given any, comes with your first brief in
-`<player-guidance>`. It overrides the defaults here and in the skills.
+`<player-guidance>`. It overrides the defaults here and in the skills, but never what is true in
+the story.
 
 ## Boundaries
 

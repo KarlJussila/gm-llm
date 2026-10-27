@@ -178,6 +178,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   slot, missing its own action's result and the NPC turns between.
 - **A wrap cut off while planning the next session is finished on restart,** instead of opening
   the next session on its half-made plan.
+- **The AI player gives no feedback,** so its preferences never become standing guidance. And the
+  player's guidance now shapes how the story is told, never what is true in it.
 
 ## [0.5.0] — 2026-07-29
 

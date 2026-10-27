@@ -122,6 +122,7 @@ def test_player_feedback():
     assert player_feedback("## 12. Player feedback\nNone.\n## 13. Combat\nx") == ""
     assert player_feedback("## Player feedback\n\n_None — no feedback given._\n") == ""
     assert player_feedback("# Digest\nno section here") == ""
+    assert player_feedback("## Player feedback\n“No feedback.”\n") == ""  # the AI player's answer
     assert player_feedback('## Player feedback\n"More rolls."\n\n## Next') == '"More rolls."'
 
 

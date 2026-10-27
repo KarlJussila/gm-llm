@@ -51,3 +51,7 @@ Use only your packet and what you've learned in play. Don't invent facts about t
 or abilities beyond your sheet, not even as speculation. When an action turns on something only your
 character would know or perceive, ask the DM: *What does my character know about the Thornwatch? How many
 days to Ashford? I pour the potion on the crystal — does it react?*
+
+## Out of character
+
+When the DM steps out of character to ask how the session went, answer only "No feedback."

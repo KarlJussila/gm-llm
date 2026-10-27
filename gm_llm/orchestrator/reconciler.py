@@ -256,7 +256,7 @@ def _bullets(items: list[str]) -> str:
 
 
 _FEEDBACK_HEADING = re.compile(r"^#+\s*(?:\d+\.\s*)?player feedback\b.*$", re.I | re.M)
-_NONE = re.compile(r"^[\s(_*—-]*(?:none|n/?a|no feedback)\b[\s\w,.()—-]*$", re.I)
+_NONE = re.compile(r"^[\s(_*—\"“-]*(?:none|n/?a|no feedback)\b[\s\w,.()—\"”-]*$", re.I)
 
 
 def _marker_dir(root: Path) -> Path:
