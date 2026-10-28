@@ -219,11 +219,11 @@ def _lint_secrets(campaign: Path) -> list[Issue]:
 
 def arcs_not_stamped(root: Path | str, n: int) -> list[str]:
     """Arcs whose state file isn't stamped `as-of: S<n>` — the coverage check after an arc
-    reconcile pass."""
+    reconcile pass. A resolved arc is done with, so it's never asked for."""
     campaign = Path(root) / "campaign"
     out = []
     for e in scan(campaign):
-        if e.type != "arc":
+        if e.type != "arc" or e.status == "resolved":
             continue
         state = e.path.with_name(e.path.name[:-3] + ".state.md")
         try:

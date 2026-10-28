@@ -232,6 +232,9 @@ def t_index_and_paths(tmp):
     assert paths.latest_session(c) == 2
     assert paths.transcript(c, 1).is_file()
     assert arcs_not_stamped(tmp, 2) == [] and arcs_not_stamped(tmp, 3) == ["the-tide"]
+    arc = c / "arcs/the-tide.md"
+    arc.write_text(arc.read_text().replace("status: active", "status: resolved"))
+    assert arcs_not_stamped(tmp, 3) == [], "a resolved arc isn't reconciled again"
 
 
 def t_scaffold(tmp):
