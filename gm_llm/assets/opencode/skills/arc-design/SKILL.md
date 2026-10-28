@@ -30,7 +30,8 @@ Fill the template's sections:
 - **Opposition** — every story needs conflict, whatever mix of play the player wants: someone whose
   wants work against the PC's, and who acts on them. A mystery, a disaster or a broken system can
   be the stakes, but give it people too — someone who caused it, profits from it, or will stop the
-  PC from fixing it.
+  PC from fixing it. The opposition is at work from the first sessions: an antagonist still
+  distant acts through people and trouble the PC can meet now.
 - **Stakes that bite** — a concrete cost tied to what the PC cares about. How the arc uses their
   backstory stays behind the screen.
 - **Key NPCs and factions** — named, each with a committed identity and a want. Cast from the
@@ -42,8 +43,9 @@ Fill the template's sections:
   coming out, never a step in the PC's own work. Each commits its answer and says how it's likely
   to reach the table: a fight, an investigation, a negotiation, a heist, a journey.
 - **Tension curve** — build-up, rising action, climax, falling action, resolution, with the kinds
-  of play each stretch calls for, mixed the way the player's brief asks. Flat too long bores;
-  spiking too often burns out.
+  of play each stretch calls for, mixed the way the player's brief asks. A kind of play the brief
+  wants appears in every stretch, never saved for the climax: if it asks for combat, every stretch
+  has fights. Flat too long bores; spiking too often burns out.
 - **Engagement paths** — direct, indirect, avoidance, alternative: how the player might come at it,
   and how it escalates on its own if ignored.
 - **A hook** that draws the player in naturally — a bond, curiosity, urgency, a moral obligation.

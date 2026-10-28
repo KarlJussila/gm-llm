@@ -9,7 +9,9 @@ Give the runner a sense of how much session there is, so it neither overruns ope
 after a single scene.
 
 - **Expected scope** — roughly how many beats or scenes the session spans, and which is its centre
-  of gravity: the substance to fill before any ending counts.
+  of gravity: the substance to fill before any ending counts. A session is an evening at the table:
+  several scenes, usually more than one problem and more than one kind of play. One problem solved
+  in a few scenes is a short session; give it more.
 - **Exits** — one or two natural stopping points, each with what makes it satisfying (a resolved
   beat, a new question, a moment of rest) and, if the session has momentum, the cliffhanger to build
   toward: the revelation, threat or turn that leaves the player eager for next time. A quiet beat is

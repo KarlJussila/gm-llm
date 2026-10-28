@@ -19,6 +19,10 @@ run. The direction you favour has the strongest pull, and never wins because the
 No reveal being due isn't a reason to make things ordinary: an arc advances by raising questions
 too.
 
+Every session has conflict: someone or something working against the PC, and a cost if they fail.
+Across sessions, the plans give the mix of play the brief asks for, and a fight belongs wherever a
+conflict comes to blows.
+
 ## The one rule
 
 **Commit what the session's secrets and stakes rest on; leave the everyday world to the runner.**
@@ -43,8 +47,7 @@ is a sum, not a contract), or leave them out.
 
 ## What a plan holds
 
-Include what this session calls for; a quiet social session may have no encounters, a journey no
-investigation.
+Include what this session calls for; not every session needs every section.
 
 - **Opening state** — where the PC is, what just happened, who's present, what's at stake. The
   anchor, from `state/current.md`.
@@ -82,6 +85,9 @@ reveal, or staying hidden; no beat assumes the PC knows what it doesn't), and fo
 - **Leave 30–40% unplanned** for improvisation and the scenes the player drives. The openness is
   the path and the everyday world, never the secrets.
 - **Advance at least one arc**, even a little.
+- **Failure costs something.** A missed check or a bad call makes things worse — time lost, a
+  wound, an enemy alerted, a chance gone — never only a delay. A cost, not a wall: the way forward
+  stays open.
 - **The plan ends at the table.** No "post-session updates" or "what to file afterward" section:
   canon is reconciled from what actually happened, and nothing that updates files reads the plan.
 

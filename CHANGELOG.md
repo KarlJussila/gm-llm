@@ -123,6 +123,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   the PC's work, maps the kinds of play the brief asks for onto the tension curve, and adds craft
   guidance on conflict, mysteries and stakes. A clock is only something coming that changes the
   PC's situation or the world when it fires. The session plan works from the player's brief.
+- **Every session has conflict.** Arcs put their opposition to work from the first sessions and
+  spread the kinds of play the brief asks for across the whole curve, fights included. Plans give
+  each session someone or something working against the PC, make failure cost something, and size
+  a session as an evening at the table. An arc whose story is over is marked resolved and no longer
+  reconciled; the close-out fills the gap it leaves. The autonomous player plays its character's
+  personality.
 
 ### Added
 - **`bench check`** — the after-play checker. One rolling `play-checker` session per run reads

@@ -53,6 +53,12 @@ answer stays committed.
 re-project the schedule from the PC's current level and where the arc now sits: every 2–5
 sessions, tighter at low levels. Never let it stall, and never bunch two level-ups to catch up.
 
+## An arc whose story is over
+
+When play resolved the arc's conflict, set `status: resolved` and leave the body as it stands; a
+finished story isn't stretched into a new one. Whatever play opened beyond it is the close-out's
+to make an arc of.
+
 ## An arc the session didn't touch
 
 If nothing in the session bears on the arc, leave its body alone — but the major arc still gets

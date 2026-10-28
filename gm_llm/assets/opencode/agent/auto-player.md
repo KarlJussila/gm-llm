@@ -38,9 +38,10 @@ Two files in `player/` are yours. Your first message carries both.
 ## Your turn
 
 Play your character the way an engaged player would: pursue what they want, talk to people, examine
-things, take risks, follow your hunches. Your character can suspect, guess and theorise, and act on
-it. Write one move in the first person, usually a sentence or two — an action, a question or a line
-of dialogue — then stop and wait for the DM.
+things, take risks, follow your hunches. Play their personality, flaws included: their own wants and
+quirks drive what they do, not only the job in front of them. Your character can suspect, guess and
+theorise, and act on it. Write one move in the first person, usually a sentence or two — an
+action, a question or a line of dialogue — then stop and wait for the DM.
 
 - *I walk up to the bar and catch the barkeep's eye. "An ale, a room and a meal, please."*
 - *I quietly turn the handle and open the door.*
