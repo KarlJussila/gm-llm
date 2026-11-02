@@ -48,13 +48,11 @@ def test_player_feedback(root):
     assert 'uncertainty' in (project_feedback(second) / 'dm-runner.md').read_text(encoding='utf-8')
 
     config = first / 'gm-llm.yaml'
-    config.write_text('feedback-dir: custom-feedback\nsubagents: parallel\n', encoding='utf-8')
+    config.write_text('feedback-dir: custom-feedback\n', encoding='utf-8')
     before = config.read_text(encoding='utf-8')
     init_project(first, force=True)
     assert config.read_text(encoding='utf-8') == before
     assert load_settings(first).feedback_dir == first / 'custom-feedback'
-    assert load_settings(first).subagents == 'parallel'
-    assert load_settings(second).subagents == 'sequential'
 
 
 def test_benchmark_copy(root):

@@ -6,4 +6,4 @@ Still to do, from the files on disk:
 
 {missing}
 
-You may delegate focused work to the `helper` subagent. {delegation} Report when done.
+Report when done.

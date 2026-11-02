@@ -54,13 +54,12 @@ from ..orchestrator.backend import BackendCancelled
 from ..orchestrator.logs import debug_enabled
 from ..orchestrator.registry import FrontmatterError, split_frontmatter
 from ..project import init_project
-from ..settings import load_settings
 
 # Every agent a run can call, whose model and reasoning variant the conditions event stamps.
-_CONDITION_AGENTS = ("dm-runner", "dm", "helper", "log-extractor", "narrative-checker", "player")
+_CONDITION_AGENTS = ("dm-runner", "dm", "log-extractor", "narrative-checker", "player")
 
 # The subject (design/benchmark.md § Principles): the agents `--subject-model` rewrites.
-_SUBJECT_AGENTS = ("dm-runner", "dm", "helper", "log-extractor")
+_SUBJECT_AGENTS = ("dm-runner", "dm", "log-extractor")
 
 # A tier is the set of model-facing files placed in the run directory. `low` is the shipped
 # assets — the product itself; the others are defined once `low` has a baseline (B9).
@@ -226,7 +225,6 @@ def _emit_conditions(logs, fixture: dict, *, tier: str, turn_cap: int, reconcile
                  "provisional": fixture.get("provisional")},
         tier=tier, turn_cap=turn_cap, reconcile=reconcile,
         agents=agent_conditions(run_dir),
-        subagents=load_settings(run_dir).subagents,
         prompts=prompt_fingerprint(run_dir),
     )
 
@@ -265,9 +263,8 @@ def assemble_run(template_dir, fixture_campaign, run_dir, fixture_id: str, *,
     fixture_feedback = Path(fixture_campaign).parent / "feedback"
     if fixture_feedback.is_dir():
         shutil.copytree(fixture_feedback, run_dir / "feedback")
-    (run_dir / "gm-llm.yaml").write_text(yaml.safe_dump({
-        "feedback-dir": "feedback", "subagents": load_settings(run_dir).subagents,
-    }, sort_keys=False), encoding="utf-8")
+    (run_dir / "gm-llm.yaml").write_text(yaml.safe_dump({"feedback-dir": "feedback"},
+                                                        sort_keys=False), encoding="utf-8")
     set_subject_model(run_dir, subject_model, subject_variant)
 
     gitignore = run_dir / ".gitignore"

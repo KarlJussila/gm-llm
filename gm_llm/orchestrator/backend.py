@@ -468,7 +468,7 @@ class Backend:
         thread raises BackendCancelled here rather than retrying or returning a partial reply.
 
         A failed attempt stays in the session: the retry tells the agent it was cut off and to
-        carry on, so the work it did — files written, dice rolled, subagents run — isn't thrown
+        carry on, so the work it did — files written, dice rolled — isn't thrown
         away and redone. Only when every attempt fails is the exchange rolled back."""
         self._cancel.clear()
         self._inflight_sid = session_id

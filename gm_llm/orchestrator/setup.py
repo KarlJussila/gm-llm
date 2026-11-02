@@ -32,8 +32,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from gm_llm.settings import load_settings
-
 from .archive import verdict_fields
 from . import paths
 from .canon import dm_guidance
@@ -174,8 +172,7 @@ class Setup:
     def _build_world(self) -> None:
         """The world from the approved pitch, top down."""
         self._announce("WORLD")
-        self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-world-brief").format(
-            delegation=load(f"subagents-{load_settings(self.root).subagents}")))
+        self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-world-brief"))
         if self.logs and self.logs.archive:
             self.logs.archive.emit("stage", stage="world")
         refresh_campaign(self.root)
@@ -188,8 +185,7 @@ class Setup:
         if not self._setup_done("ARCS_STATE"):
             self._announce("ARCS_STATE")
             self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-arcs-state-brief").format(
-                missing=_bullets(setup_missing(self.root)),
-                delegation=load(f"subagents-{load_settings(self.root).subagents}")))
+                missing=_bullets(setup_missing(self.root))))
             missing = setup_missing(self.root)
             if missing:
                 self.backend.prompt(self.dm_sid, self.dm_agent, load("setup-missing").format(

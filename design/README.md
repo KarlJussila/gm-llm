@@ -17,9 +17,8 @@ workstream. For *how to use* gm-llm, read the root `README.md`; for what remains
 
 A Python **orchestrator** lets an LLM design, run, and maintain a long-running solo tabletop D&D
 campaign. Two **primary agents** split the work the way a human DM's week does: `dm` is the
-between-sessions brain (setup, reconcile, planning; it writes every campaign file, delegating
-focused work to the `helper` subagent) and `dm-runner` runs one live session, with read-only access
-to the campaign, and then stops. The orchestrator owns every sequence — setup, play, reconcile,
+between-sessions brain (setup, reconcile, planning; it writes every campaign file) and `dm-runner`
+runs one live session, with read-only access to the campaign, and then stops. The orchestrator owns every sequence — setup, play, reconcile,
 planning — sending one brief per stage. Between sessions, deterministic code checks (the canon lint,
 arc coverage) and the `narrative-checker`'s gates each get **at most one bounded correction**, and
 code commits the result. Live play has no gate. **Skills** hold the procedures, loaded when the model

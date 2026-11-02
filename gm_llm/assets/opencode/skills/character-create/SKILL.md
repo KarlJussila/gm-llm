@@ -5,7 +5,7 @@ description: Load when creating a player character with the player and fitting t
 
 # character-create
 
-This interviews the player, so the `dm` runs it; a subagent can't. It's narrative integration, not a
+This interviews the player, so the `dm` runs it. It's narrative integration, not a
 rules engine: record mechanics as the player gives them, without auditing where they come from, and
 help turn a concept into a fitting class, race or background if they want — building, balancing and
 levelling stay with their D&D tools. `canon-conventions` is the format.

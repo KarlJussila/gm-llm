@@ -20,7 +20,7 @@ wrong one the probe prompt gave it).
 
 ## Principles
 
-1. **Luna everywhere unless named.** Every agent and subagent is `openai/gpt-6-luna` at `xhigh`.
+1. **Luna everywhere unless named.** Every agent is `openai/gpt-6-luna` at `xhigh`.
    The one exception so far is the benchmark grader ([benchmark.md](benchmark.md)). Luna does not
    accept a temperature; agent files set a reasoning `variant` instead.
 2. **No per-turn reminders.** No brief prepended to every message, no staleness counts, no wrap
@@ -42,16 +42,13 @@ wrong one the probe prompt gave it).
 8. **Between-session gates must earn their place.** `check-digest`, `check-propagation`, `check-plan`
    and `check-init` stay for now, and each archives its artifact before and after correction. A gate
    that rarely makes a meaningful correction is cut.
-9. **Subagents are a tool the dm may use.** The dm may delegate through opencode's `task` tool to
-   our own subagent definitions, pinned to Luna (never opencode's built-in `general`).
-   One `task` call blocks; several in one message run concurrently. A user setting
-   `subagents: sequential | parallel` becomes one sentence in the brief — sequential by default, the
-   safe choice for rate-limited free models. Subagent calls are captured in the archive and token
-   counts.
+9. **No delegation.** The dm does its own work; it has no `task` tool. The `log-extractor` and the
+   `narrative-checker` are fresh-context sessions the orchestrator runs as stages, not the dm's
+   delegates.
 10. **Player feedback belongs to the player.** It lives in a player-level directory shared across
     campaigns, one file per audience: `dm-runner.md` for the table, `dm.md` for the work between
     sessions. Code hands each to its agent — the runner's in its prepared context, the dm's ahead of
-    the first brief on each dm thread, which the dm passes on to its authors — so no agent looks
+    the first brief on each dm thread — so no agent looks
     feedback up. The agents can't reach outside the project, so they work on the project's
     `feedback/`: code fills it from the player's directory and copies back what curation changed. Benchmark runs point it at the run's private copy of
     the fixture's feedback. Configuration is documented in
@@ -62,9 +59,8 @@ wrong one the probe prompt gave it).
 | Agent | Role | Model-facing change |
 |---|---|---|
 | `dm-runner` | Live play: read-only campaign access, dice, the combat tracker, `task_complete` | New prompt (see § Live play) |
-| `dm` | Between sessions: setup, reconcile, planning; writes the campaign | Briefs state goals, not skill sequences; may delegate to subagents |
+| `dm` | Between sessions: setup, reconcile, planning; writes the campaign | Briefs state goals, not skill sequences |
 | `log-extractor` | Fresh-context digest of the transcript | Whole-transcript read |
-| `helper` | General-purpose subagent for the dm's delegated work, pinned to Luna | New |
 | `narrative-checker` | Between-session gates, and the benchmark's after-play checker | Re-authored for Luna; never at the table |
 | `player` | The benchmark's player | See [benchmark.md](benchmark.md) |
 | `auto-player` | The autonomous player (`--player auto`) | New (see § Autonomous play) |
@@ -110,7 +106,7 @@ wrong one the probe prompt gave it).
    veils), writes `campaign.md`, and pitches the world as an ordinary message: premise, tone, the
    shape of the world and where the PC would begin. Conversation only; the world is built next. The
    player can push back and the DM revises. When the player approves, the DM calls `task_complete`.
-3. **World** — one non-interactive dispatch, subagents allowed. The world is built top down, each
+3. **World** — one non-interactive dispatch. The world is built top down, each
    tier to its own depth, so its details trickle down to where the PC begins:
    - **The world, in broad strokes:** countries and powers, important cities, factions and the
      geopolitics between them; peoples, faiths and magic as they shape society; a history with
@@ -128,7 +124,7 @@ wrong one the probe prompt gave it).
    canon, then calls `task_complete`. The knowledge ledger starts with what someone of the PC's
    background knows of each tier.
 5. **Arcs and state** — one non-interactive dispatch. The major arc built around the PC (with its
-   level pacing), at least one minor arc hooked into it (subagents optional), the threads, and
+   level pacing), at least one minor arc hooked into it, the threads, and
    initial state. Arcs are built on named NPCs, and an arc spins out the new NPCs it needs. The
    vicinity's problems become threads. Last comes the spoiler-free **player primer**,
    `documents/primer.md`: the world, the region and the vicinity as the PC knows them before play,
@@ -229,7 +225,7 @@ check can compare them with the narration.
    the player-level feedback files. No check.
 3. **Canon** — `dm` thread: new and changed entities, PC capabilities and level-up, the combat
    repertoire, verbatim documents. Canon lint, one correction.
-4. **Arcs** — the `dm` hands each arc to a subagent, under two principles: what was played beats what
+4. **Arcs** — the `dm` reconciles each arc in turn, under two principles: what was played beats what
    was planned, and canon hardens once the player has seen it. The major arc re-paces its level-ups
    every pass. A close-out covers new minor arcs, the threads dashboard and the cross-arc sweep. Code
    verifies every arc is stamped `as-of: S<n>` and nudges once with any it missed; resume reads the

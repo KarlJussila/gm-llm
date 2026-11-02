@@ -65,9 +65,9 @@ pipeline, one dispatch per step:
 1. `log-extractor` reads the whole transcript and the notes and writes the digest
    `sessions/{N}/digest.md` (checked against the transcript);
 2. the `dm` folds any player feedback into the player-level store;
-3. the `dm` files new and changed canon (then the canon lint), reconciles every arc through the
-   `helper` subagent plus the threads dashboard, and brings the knowledge ledger and every state
-   file up to date — the whole apply audited by the propagation check;
+3. the `dm` files new and changed canon (then the canon lint), reconciles every arc and the threads
+   dashboard, and brings the knowledge ledger and every state file up to date — the whole apply
+   audited by the propagation check;
 4. the orchestrator commits and the `dm` plans session N+1.
 
 Because the transcript is what gets extracted, the rule during play is **narrate it, don't just

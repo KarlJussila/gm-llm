@@ -69,8 +69,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - **Rubric v3.** The play checker and the rubric add `herding` and `clarity` (both ways), and
   `fabrication` now counts only additions that conflict with canon or the plan. Clarity is scored
   under a new narration dimension.
-- The `author` subagent is now `helper`, a general-purpose subagent: the dm can hand it research or
-  a review as well as writing.
+- **The dm does its own work.** The `author` subagent and the `subagents` setting are gone: the dm
+  builds the world, writes the arcs and reconciles them itself, one arc at a time.
 - The session-1 prologue stops on the threshold of the opening scene, and the runner continues it
   as one message rather than retelling it.
 - **opencode auto-compaction is back on**, so a warm `dm` or runner thread outlives the
@@ -167,12 +167,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   `gm-llm play --model` / `--variant` override them for one invocation, as do `dev autoplay`,
   `dev prep` and `dev reconcile`.
 - **`bench run --subject-model` / `--subject-variant`** run the subject agents (`dm-runner`, `dm`,
-  `author`, `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the
-  product, is the only one yet). The `conditions` event stamps every agent's model and reasoning
-  variant (no longer a temperature) and the `subagents` mode, and the report keys on them.
-- `gm-llm.yaml` configures `feedback-dir`, `subagents: sequential | parallel`, and optionally
-  `model` and `variant`. `gm-llm init` and `update` write the defaults if the file is missing,
-  and never overwrite it.
+  `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the product, is
+  the only one yet). The `conditions` event stamps every agent's model and reasoning variant (no
+  longer a temperature), and the report keys on them.
+- `gm-llm.yaml` configures `feedback-dir` and, optionally, `model` and `variant`. `gm-llm init`
+  and `update` write the defaults if the file is missing, and never overwrite it.
 - **Each archived turn records the tools the runner called while drafting it** (`tools`), so
   whether a session was played from canon or from memory is readable without the grader.
 - **`bench report` states its own precision.** The integrity score now carries a 95% confidence

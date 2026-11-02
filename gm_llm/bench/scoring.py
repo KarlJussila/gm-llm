@@ -15,8 +15,8 @@ Two things this module is opinionated about, both from the measurement methodolo
     improving.
 
   * **Mismatched conditions are impossible to miss.** Each run carries a condition
-    signature (fixture, tier, turn cap, per-agent model and variant, the subagents mode) from its `conditions`
-    event. A batch whose runs don't all share one signature is flagged loudly at the very
+    signature (fixture, tier, turn cap, per-agent model and variant, the prompts) from its
+    `conditions` event. A batch whose runs don't all share one signature is flagged loudly at the very
     top — a comparison across mixed conditions should be impossible to make by accident.
 
 The score model lives here too (`score_violations`): dedup'd violations cost penalty points
@@ -224,7 +224,6 @@ def _condition_signature(cond: dict) -> dict:
         "tier": cond.get("tier"),
         "turn_cap": cond.get("turn_cap"),
         "agents": {name: (a.get("model"), a.get("variant")) for name, a in sorted(agents.items())},
-        "subagents": cond.get("subagents"),
         # The prompts are the tier-0 subject, so a batch that mixes prose versions is mixing
         # conditions however well the models and fixture match. Archives written before the
         # fingerprint existed carry None and still pool with each other.

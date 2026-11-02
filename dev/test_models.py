@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Standalone check for the campaign's model (`gm-llm.yaml`'s `model` / `variant`, and the
 `--model` / `--variant` flags over them): every agent in the project is re-pinned through
-opencode's `agent` config, which reaches the subagents opencode starts itself. No pytest, no
-opencode — run me directly."""
+opencode's `agent` config. No pytest, no opencode — run me directly."""
 
 import sys
 import tempfile

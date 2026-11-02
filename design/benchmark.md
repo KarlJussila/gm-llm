@@ -26,7 +26,7 @@ The subject is the DM playing well, never the checker catching it failing.
 1. **The product is the `low` tier.** The benchmark never changes product behavior: a run differs
    from real play only in who the player is and in being archived.
 2. **Instrument vs. subject.** The *subject* is everything the product's model-facing surface is
-   made of: `dm-runner`, `dm`, `log-extractor`, the authoring subagents, their skills and briefs. The
+   made of: `dm-runner`, `dm`, `log-extractor`, their skills and briefs. The
    *instrument* is the after-play checker, the grader, the rubric and the scoring. The instrument is
    pinned independently of the subject. The between-session gates belong to the product — they
    correct in real play, so they correct in a benchmark run too, and their verdicts are archived.
@@ -48,7 +48,7 @@ The subject is the DM playing well, never the checker catching it failing.
   model and reasoning variant.
 - Player feedback points at the fixture's copy, never the user's own.
 - A `conditions` event stamps the fixture id, tier, turn cap, whether reconcile runs, every agent's
-  and subagent's model and reasoning variant, the prompt fingerprint and the gm-llm version.
+  model and reasoning variant, the prompt fingerprint and the gm-llm version.
 - The autoplayer is Luna. `player.md` holds its rules, and two skills cover the situational parts:
   `player-combat` (its turn in a fight) and `player-rolls` (the DM asked for a roll). Its first
   message carries the character packet and the fixture's story-so-far recap; every later message is
@@ -150,7 +150,7 @@ change to the stream is re-recorded in the round that makes it.
 
 ### B5 — Conditions and tiers
 
-The tier as a real field, reasoning variants instead of temperatures, subagents in the conditions,
+The tier as a real field, reasoning variants instead of temperatures, every agent in the conditions,
 `--subject-model`, and feedback isolation.
 
 ### B6 — Autoplayer on Luna

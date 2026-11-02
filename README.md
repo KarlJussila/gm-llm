@@ -69,7 +69,6 @@ and never overwrite it.
 
 ```yaml
 feedback-dir: ~/.gm-llm/feedback
-subagents: sequential
 ```
 
 After each session the `dm` curates the feedback you gave at its close into `feedback-dir`:
@@ -78,9 +77,6 @@ its agent from then on; other files there (older versions kept one per skill) ar
 across your campaigns. `feedback-dir` accepts an absolute path, `~`, or a path relative to the
 project. The agents work on a copy in the project's `feedback/`: gm-llm fills it from
 `feedback-dir` when a session starts and copies back what curation changed.
-
-Set `subagents: parallel` to let independent authoring subagents run concurrently. The default
-runs one at a time for rate-limited providers.
 
 Every agent pins its model, GPT-6 Luna at `xhigh`. To play a campaign on another, add
 `model` (an opencode `provider/model`) and, optionally, `variant` (its reasoning level):
@@ -295,7 +291,6 @@ the agents and every workflow — setup, play, combat, reconcile, planning — a
 | --- | --- | --- |
 | `dm` | primary | Between sessions: setup, reconcile, planning. Writes every campaign file; never runs a session. |
 | `dm-runner` | primary | Runs one live session — narration, NPCs, dice, combat — then stops. Reads the campaign, never writes it. |
-| `helper` | subagent | General-purpose help the `dm` delegates through `task`, such as one arc's reconcile. |
 | `log-extractor` | subagent | Transcript and notes → the session digest. |
 | `narrative-checker` | subagent | The between-session gates (`check-*`). Reads and reports only, via `report_findings`. |
 | `auto-player` | primary | The autonomous player, for `--player auto`. |
