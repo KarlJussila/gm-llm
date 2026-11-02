@@ -124,24 +124,18 @@ class Setup:
             self._run_pipeline()
             return SetupTurn(self._finished("Campaign init complete."), True)
 
-        # whole=True: the dm's player-facing setup message can span several text parts (it
-        # works as it talks — e.g. the world overview followed by a short closer), and
-        # the default last-part read would surface only the final fragment, dropping the
-        # overview. Joining all text parts surfaces the whole message; reasoning/tool parts
-        # are excluded, so the behind-the-screen thinking never leaks in.
         self._announce(self._stage)
         if self._stage == "CHAR":
             self._bring_character()
         reply = self.backend.prompt(self.dm_sid, self.dm_agent,
-                                    load(_STAGE_BRIEFS[self._stage]), whole=True)
+                                    load(_STAGE_BRIEFS[self._stage]))
         refresh_campaign(self.root)
         return SetupTurn(reply, False)
 
     def turn(self, player_input: str) -> SetupTurn:
-        reply = self.backend.prompt_full(self.dm_sid, self.dm_agent, player_input, whole=True)
+        reply = self.backend.prompt_full(self.dm_sid, self.dm_agent, player_input)
         refresh_campaign(self.root)
-        text = join_narration(reply.text,
-                              reply.tool_inputs.get("task_complete", {}).get("player_message", ""))
+        text = reply.text
         done = "task_complete" in reply.tools
 
         if self._stage == "INTAKE" and done:
@@ -151,7 +145,7 @@ class Setup:
             self._announce("CHAR")
             self._bring_character()
             char_open = self.backend.prompt(self.dm_sid, self.dm_agent,
-                                            load("setup-char-brief"), whole=True)
+                                            load("setup-char-brief"))
             refresh_campaign(self.root)
             return SetupTurn(join_narration(text, char_open), False)
         if self._stage == "CHAR" and done:

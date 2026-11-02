@@ -456,7 +456,7 @@ class Backend:
         except (urllib.error.URLError, OSError, ValueError):
             pass  # best-effort; the wait still unwinds via the backstop
 
-    def _exchange(self, session_id: str, agent: str, text: str, whole: bool) -> Reply:
+    def _exchange(self, session_id: str, agent: str, text: str) -> Reply:
         """Prompt `agent` on `session_id` and read the turn back, retrying on failure, empty
         replies, and stalls, with backoff and pacing. Cancellable: `abort()` from another
         thread raises BackendCancelled here rather than retrying or returning a partial reply.
@@ -484,7 +484,7 @@ class Backend:
                     texts, calls, error = read_turn(msgs)
                     if self.logs.debug:
                         self._dump_turn(session_id, agent, msgs)
-                    out = pick_text(texts, whole)
+                    out = "\n".join(texts)
                     if self._stalled:
                         reason = self._stalled
                     elif error:
@@ -594,21 +594,16 @@ class Backend:
         except (urllib.error.URLError, OSError, ValueError):
             return False
 
-    def prompt(self, session_id: str, agent: str, text: str, whole: bool = False) -> str:
-        """Prompt `agent` on `session_id`; return its text.
+    def prompt(self, session_id: str, agent: str, text: str) -> str:
+        """Prompt `agent` on `session_id`; return its reply text."""
+        return self._exchange(session_id, agent, text).text
 
-        `whole=True` joins every text block of the turn (for replies whose content spans
-        blocks, e.g. a checker that writes findings and then calls `report_findings`);
-        otherwise the last block (the runner's narration)."""
-        return self._exchange(session_id, agent, text, whole).text
-
-    def prompt_full(self, session_id: str, agent: str, text: str, whole: bool = False) -> Reply:
+    def prompt_full(self, session_id: str, agent: str, text: str) -> Reply:
         """Prompt `agent`; return a `Reply` (text + the tools called this turn + their inputs)."""
-        return self._exchange(session_id, agent, text, whole)
+        return self._exchange(session_id, agent, text)
 
     def ensure_tool(self, session_id: str, agent: str, reply: Reply, *, tool: str,
-                    nudge: str, args: tuple[str, ...] = (), tries: int = 1,
-                    whole: bool = False) -> Reply:
+                    nudge: str, args: tuple[str, ...] = (), tries: int = 1) -> Reply:
         """Safety hatch for tool-call-delimited tasks (task_complete, report_findings): make
         sure `reply` carries a call to `tool` with every arg in `args` non-empty. If it doesn't,
         send `nudge` as a follow-up prompt and re-read, up to `tries` times; return the final
@@ -622,7 +617,7 @@ class Backend:
         for _ in range(tries):
             if satisfied(reply):
                 break
-            reply = self.prompt_full(session_id, agent, nudge, whole=whole)
+            reply = self.prompt_full(session_id, agent, nudge)
         return reply
 
     def _model_limit(self, provider_id: str, model_id: str) -> dict | None:
@@ -665,29 +660,30 @@ class Backend:
 def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str | None]:
     """A turn's messages → (text blocks, (tool name, input) calls, error or None), in order.
     The error is the turn's failure as opencode reported it — a failed or interrupted idle, or
-    an assistant message carrying an error."""
+    an assistant message carrying an error.
+
+    The reply is every text block, in order: the player's screen is the agent's whole reply,
+    whatever channel the model wrote it in (`commentary` before tool calls, the closing
+    `final_answer`, or both). A line the turn repeats shows once — models that say something,
+    work through tools, and say it again as their closing answer would read it twice otherwise."""
     texts: list[str] = []
-    finals: list[str] = []
     calls: list[tuple[str, dict]] = []
     error = None
     for m in msgs:
         kind = m.get("type")
         if kind == "assistant":
             for c in m.get("content") or []:
-                if c.get("type") == "text" and c.get("text"):
-                    texts.append(c["text"])
-                    if (c.get("native") or {}).get("phase") == "final_answer":
-                        finals.append(c["text"])
+                if c.get("type") == "text" and (c.get("text") or "").strip():
+                    block = c["text"].strip()
+                    if block in "\n".join(texts):
+                        continue  # a repeat of what the turn already said
+                    texts.append(block)
                 elif c.get("type") == "tool" and c.get("name"):
                     calls.append((c["name"], (c.get("state") or {}).get("input") or {}))
             if m.get("error"):
                 error = _error_text(m["error"])
         elif kind == "idle" and m.get("outcome") != "succeeded":
             error = _error_text(m.get("error")) if m.get("error") else f"turn {m.get('outcome')}"
-    # Luna can say a line as `commentary` before a tool call and then repeat it as its
-    # `final_answer`; when a turn has a final answer, that is the reply.
-    if any(t.strip() for t in finals):
-        texts = finals
     return texts, calls, error
 
 
@@ -709,11 +705,3 @@ def _error_text(err) -> str:
     if isinstance(err, dict):
         return str(err.get("message") or err.get("type") or err.get("_tag") or err)[:200]
     return str(err)[:200]
-
-
-def pick_text(texts: list[str], whole: bool) -> str:
-    """`whole=True` → every text block joined; otherwise the last one."""
-    kept = [t.strip() for t in texts if t.strip()]
-    if not kept:
-        return ""
-    return "\n".join(kept) if whole else kept[-1]

@@ -177,12 +177,19 @@ On-demand skills: `social-play`, `discoveries`, `session-close`, `combat-run` ("
 to start") and `combat-balance`.
 
 **Ending.** The DM loads `session-close`: land the ending, award the level-up the plan schedules,
-ask the player for feedback, close without spoilers, then make one `task_complete` call carrying the
-closing narration in `player_message` and the handoff notes in `notes`. `session-close` says what the
-notes cover. Code writes the narration into the transcript and the notes to `sessions/<n>/notes.md`.
-A separate notes request is the fallback only when they come back missing.
+ask the player for feedback, close without spoilers, then make one `task_complete` call carrying
+the handoff notes in `notes` — its closing narration is its reply text, like any turn's.
+`session-close` says what the notes cover. Code writes the narration into the transcript and the
+notes to `sessions/<n>/notes.md`. A separate notes request is the fallback only when they come
+back missing.
 
-**`task_complete` stays task-agnostic.** Its `notes` parameter is described as closing notes for the
+**The reply is the player's screen.** Every agent's rules state the one rule: reply text reaches
+the player verbatim and unfiltered — the player-facing words go there and nowhere else, spoilers
+never go there, and behind-the-screen work stays in reasoning, tool calls and files. The
+orchestrator surfaces a turn's text blocks in order, dropping exact repeats, and doesn't mine
+tool arguments for player-facing content.
+
+**`task_complete` stays task-agnostic.** Its only parameter is `notes`: closing notes for the
 task, given only when the task asks for them.
 
 **Unchanged:** `/meta` questions, resume (reattach or re-prime), cancel and revert, completion as a

@@ -366,9 +366,8 @@ def _script(writes: dict) -> dict[str, list[Resp]]:
             Resp("Magren's grey-streaked hair catches the lamplight as he leans "
                  "in."),                                                             # turn 3
             _task_complete(                                                          # turn 4 (closes)
-                "",
-                player_message="You slip out into the harbour dark. Behind you, "
-                               "Magren bolts the door. — a good place to rest —",
+                "You slip out into the harbour dark. Behind you, "
+                "Magren bolts the door. — a good place to rest —",
                 notes="Dallid met Magren, who noticed the satchel's glow. Sunken "
                       "Crown seeded. Dallid left toward the wharf."),
         ],

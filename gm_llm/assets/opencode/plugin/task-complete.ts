@@ -1,6 +1,6 @@
 
 /**
- * `task_complete` — the model's explicit "I have finished the process you gave me" signal.
+ * `task_complete` — the model's explicit "I have finished the stage you gave me" signal.
  *
  * Why this exists: the interactive setup stages (intake + world build, character creation)
  * are multi-turn conversations with the player, and the live runner's session ends after its
@@ -9,12 +9,12 @@
  * appearing on disk fires the transition mid-conversation, because those files are written
  * *during* the task, not as its final act.
  *
- * So the model tells us directly. When it has genuinely finished the process described to it —
- * intake+world done and the player confirmed, the character confirmed and all files written, or
- * the session closed out (ending proposed, feedback collected) — it calls this tool as its final
- * act. The tool itself does nothing but acknowledge; the *signal* is the call appearing in the
- * response's tool parts, which the orchestrator reads (Backend.prompt_full). The orchestrator,
- * which always knows the active phase/stage, decides what the signal means.
+ * So the model tells us directly. What "the stage is done" means — what has to be written and
+ * confirmed — is the brief's business, felt one stage at a time; this tool only reports that
+ * the brief's conditions hold. The tool itself does nothing but acknowledge; the *signal* is
+ * the call appearing in the response's tool parts, which the orchestrator reads
+ * (Backend.prompt_full). The orchestrator, which always knows the active phase/stage, decides
+ * what the signal means.
  *
  * Failing to call it fails safe and visibly: the stage/session simply doesn't advance and the
  * conversation continues.
@@ -26,28 +26,14 @@ export default {
       tools.add({
         name: "task_complete",
         description:
-                "Signal that you have fully completed the process you were asked to run — and only " +
-                "then. Call this as your final act once every step is done and (for player-facing " +
-                "work) the player has confirmed. Calling it hands control back to the orchestrator to " +
-                "move on; do not call it while you still intend to keep talking to the player.",
-        // Two channels, both optional; the brief for the task in hand says which one (if any)
-        // it expects and what belongs in it.
+                "Signal completion of the current stage, called as and when instructed.",
         input: {
           type: "object",
           properties: {
-            player_message: {
-              type: "string",
-              description:
-                "The PLAYER-VISIBLE channel: a closing message the orchestrator shows to the " +
-                "player verbatim, when the brief asks for one (e.g. a session's closing narration). " +
-                "Nothing spoiler-bearing, and put the real thing here — prose you type outside " +
-                "the call is not surfaced.",
-            },
             notes: {
               type: "string",
               description:
-                "Closing notes for the task — only when the task asks for them. Never shown " +
-                "to the player; filed verbatim, so put the complete text here.",
+                "Closing notes for the task — only when the task asks for them.",
             },
           },
           additionalProperties: false,

@@ -156,12 +156,12 @@ class Gate:
         and its stray text would be worse than nothing as a correction brief. The
         miss is stamped `defaulted` and surfaced in the log/UI, never silent.
 
-        `whole=True`: a checker runs a todowrite list then reports, so its findings
-        and tool call can land in separate text parts — we need all of them."""
-        reply = self.backend.prompt_full(sid, "narrative-checker", brief, whole=True)
+        The checker runs a todowrite list then reports, so its findings and tool call
+        can land in separate text parts — a reply reads all of them."""
+        reply = self.backend.prompt_full(sid, "narrative-checker", brief)
         reply = self.backend.ensure_tool(sid, "narrative-checker", reply,
                                          tool="report_findings", args=("passed",),
-                                         nudge=load("nudge-report-findings"), whole=True)
+                                         nudge=load("nudge-report-findings"))
         tool_input = reply.tool_inputs.get("report_findings")
         if tool_input:
             passed = _parse_passed(tool_input)

@@ -34,6 +34,20 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   level-ups, and its notes. The benchmark keeps the `player` agent.
 
 ### Changed
+- **The reply is the player's screen, for every agent, without an override.** A turn surfaces all
+  its text blocks in order (exact repeats shown once), so what the DM says as it works no longer
+  disappears behind a short closing recap. In luna-campaign6's setup the character-fit proposal
+  and the character hooks never reached the player this way — the player read and approved only
+  the closing question. The rule itself is stated once per agent: reply text reaches the player
+  verbatim and unfiltered; spoilers never go there, and behind-the-screen work stays in
+  reasoning, tool calls and files.
+- **`task_complete` carries no `player_message` and no channel lore.** Its description now says
+  only what it is ("signal completion of the current stage, called as and when instructed");
+  the closing narration is the reply text ahead of the call, and `notes` (unchanged) only goes
+  where the brief asks for it. The old "prose outside the call is not surfaced" sentence was a
+  leftover transport for the world overview that had outlived its backend, and it is what led
+  the DM to funnel player-facing questions through the call — campaign6's intake asked for the
+  player's approval and signalled completion in the same breath, twice.
 - Setup plans session 1 straight away; the yes/no comes before session 1 opens, not before it's
   planned.
 - **Session plans start from what the session offers the character**: something worth chasing,

@@ -8,9 +8,9 @@ sits in between: no reminder rides in front of the message and no checker review
 The orchestrator owns the **transcript**: it writes `campaign/sessions/<N>/transcript.md` from each
 turn's player message and DM narration, and `log-extractor` reads that record after the session.
 
-The DM ends a session by calling `task_complete` once, with its closing narration in
-`player_message` and its handoff notes in `notes`. The closing narration joins the transcript; the
-notes are filed to `sessions/<N>/notes.md`.
+The DM ends a session by calling `task_complete` once, with its handoff notes in `notes`; its
+closing narration is its reply text, shown to the player like any turn's. The closing narration
+joins the transcript; the notes are filed to `sessions/<N>/notes.md`.
 
 `Game` is the headless core. Interfaces (the TUI, the benchmark) drive it:
   g = Game(backend, preloader)
@@ -52,8 +52,8 @@ def _looks_like_close(text: str) -> bool:
 
 
 def join_narration(text: str, closing: str) -> str:
-    """The reply's own text plus the closing narration a `task_complete` carried — either may
-    be empty, and a model that repeats one inside the other gets it once."""
+    """The reply's own text plus a closing the code appends — either may be empty, and a
+    model that repeats one inside the other gets it once."""
     text, closing = (text or "").strip(), (closing or "").strip()
     if not closing or closing in text:
         return text
@@ -158,10 +158,10 @@ class Game(CombatMixin):
         try:
             with self.backend.patient(HEAVY_STALL_TIMEOUT, retries=HEAVY_RETRIES):
                 reply = self.backend.prompt_full(self.runner_sid, self.runner_agent,
-                                                 load("handoff-brief"), whole=True)
+                                                 load("handoff-brief"))
                 reply = self.backend.ensure_tool(self.runner_sid, self.runner_agent, reply,
                                                  tool="task_complete", args=("notes",),
-                                                 nudge=load("nudge-notes"), whole=True)
+                                                 nudge=load("nudge-notes"))
         except BackendCancelled:
             raise
         except BackendError:
@@ -202,7 +202,6 @@ class Game(CombatMixin):
         session_complete = (not opening) and ("task_complete" in reply.tools)
         if session_complete:
             closing = reply.tool_inputs.get("task_complete", {})
-            narration = join_narration(narration, closing.get("player_message", ""))
             self._write_notes((closing.get("notes") or "").strip())
             # A disk fact, so a wrap the player never confirms still shows the same choice
             # after a restart instead of resuming into more play.

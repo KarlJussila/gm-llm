@@ -92,17 +92,18 @@ def a_turn_is_the_player_and_nothing_else():
     print("a_turn_is_the_player_and_nothing_else\n")
 
 
-def the_closing_call_carries_narration_and_notes():
+def the_close_speaks_in_its_text_and_files_its_notes():
     tmp = tempfile.mkdtemp()
-    closing = _Reply("", ("task_complete",), {"task_complete": {
-        "player_message": "The lamps gutter as Brennan seals the shaft.",
-        "notes": "Tarin is alive in the Wastes; Brennan evacuated the mine."}})
+    closing = _Reply("The lamps gutter as Brennan seals the shaft.",
+                     ("task_complete",),
+                     {"task_complete": {
+                         "notes": "Tarin is alive in the Wastes; Brennan evacuated the mine."}})
     backend, game = _game(tmp, [_Reply("The scene opens."), closing])
     game.start()
     tr = game.turn("We seal the mine.")
     camp = Path(tmp) / "campaign"
     check(tr.session_complete and tr.final == "The lamps gutter as Brennan seals the shaft.",
-          "the closing narration comes back as the turn's narration")
+          "the closing narration is the turn's own text")
     transcript = paths.transcript(camp, 1).read_text()
     check(transcript.rstrip().endswith("The lamps gutter as Brennan seals the shaft."),
           "…and closes the transcript (no empty final DM block)")
@@ -112,7 +113,7 @@ def the_closing_call_carries_narration_and_notes():
     n_before = len(backend.dm_msgs)
     check(game.handoff() == paths.notes(camp, 1) and len(backend.dm_msgs) == n_before,
           "the wrap's handoff finds the notes already there and sends nothing")
-    print("the_closing_call_carries_narration_and_notes\n")
+    print("the_close_speaks_in_its_text_and_files_its_notes\n")
 
 
 def missing_notes_fall_back_to_one_request():
@@ -188,9 +189,10 @@ def dice_calls_come_back_as_rolls():
     print("dice_calls_come_back_as_rolls\n")
 
 
-def a_final_answer_is_the_reply():
-    """Seen in setup (luna7): the question said as commentary, a tool call, then said again
-    as the final answer. Joined whole, the player read it twice."""
+def a_repeated_line_shows_once():
+    """Said as commentary before a tool call and said again as the closing answer — the
+    player reads it once. A turn's own distinct blocks all come through, in order: the
+    short closing recap of a long reply is new text, not the reply."""
     q = "What kind of campaign would you like to play?"
     texts, calls, _ = read_turn([
         {"type": "assistant", "content": [
@@ -200,12 +202,22 @@ def a_final_answer_is_the_reply():
             {"type": "text", "text": q, "native": {"phase": "final_answer"}}]},
         {"type": "idle", "outcome": "succeeded"},
     ])
-    check(texts == [q], "only the final answer is the reply")
+    check(texts == [q], "a line said twice in one turn reads once")
     check([n for n, _ in calls] == ["task_complete"], "the tool call still comes back")
+    draft, closer = "The lamps gutter as Brennan seals the shaft.", "Onward, then."
+    texts, _, _ = read_turn([
+        {"type": "assistant", "content": [
+            {"type": "text", "text": draft, "native": {"phase": "commentary"}},
+            {"type": "tool", "name": "task_complete", "state": {"input": {}}}]},
+        {"type": "assistant", "content": [
+            {"type": "text", "text": closer, "native": {"phase": "final_answer"}}]},
+        {"type": "idle", "outcome": "succeeded"},
+    ])
+    check(texts == [draft, closer], "distinct blocks all surface, in order")
     texts, _, _ = read_turn([{"type": "assistant", "content": [
         {"type": "text", "text": "No phases here.", "native": {}}]}])
     check(texts == ["No phases here."], "a turn without a final answer reads as before")
-    print("a_final_answer_is_the_reply\n")
+    print("a_repeated_line_shows_once\n")
 
 
 def a_failed_turn_is_an_error():
@@ -220,9 +232,9 @@ def a_failed_turn_is_an_error():
 
 
 if __name__ == "__main__":
-    a_final_answer_is_the_reply()
+    a_repeated_line_shows_once()
     a_turn_is_the_player_and_nothing_else()
-    the_closing_call_carries_narration_and_notes()
+    the_close_speaks_in_its_text_and_files_its_notes()
     missing_notes_fall_back_to_one_request()
     join_narration_dedupes()
     a_turn_reads_back_whole()
