@@ -12,7 +12,8 @@ as-of: S<n>
 <Current in-game date and time of day.>
 
 ## Calendar reference
-<How time works here if non-standard: weeks, months, seasons, recurring events.>
+<The world's calendar as its people reckon it: named months or seasons, weeks and festivals, so a
+date reads the way a local would say it.>
 
 ## Timeline — past
 | date | event |

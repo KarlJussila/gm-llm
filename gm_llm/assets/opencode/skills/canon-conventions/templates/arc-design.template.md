@@ -23,8 +23,8 @@ hooks-into: <the major arc's slug — minor arcs only; delete this line on the m
 <What this story is about and why it matters.>
 
 ## Core conflict & stakes
-<The central tension, who opposes the PC and why, and what tangibly happens if it goes unresolved —
-tied to this PC.>
+<Who opposes the PC, what they want and what they'll do to get it; what the PC stands to lose; and
+what tangibly happens if no one stops them — tied to this PC.>
 
 ## Key NPCs & factions
 - [[<slug>]] — <role; what they want; what they know about the core conflict>
@@ -38,8 +38,8 @@ tied to this PC.>
 - <a question the campaign will raise> → <its committed answer, the truth play will uncover>
 
 ## Tension curve
-<Build-up → rising action → climax → falling action → resolution, where each beat sits, and the
-kinds of play each stretch calls for.>
+<Build-up → rising action → climax → falling action → resolution: where each beat sits, what the
+opposition is doing in each stretch, and the kinds of play each stretch calls for.>
 
 ## Level pacing
 <!-- Major arc only (a minor arc writes "— the major arc owns advancement"). Milestone level-ups

@@ -34,6 +34,13 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   level-ups, and its notes. The benchmark keeps the `player` agent.
 
 ### Changed
+- **Arcs are the story the brief asks for.** `arc-design` scales the major arc's opposition and
+  stakes with the PC's level by the game's tiers of play, up to a climax only a hero at its top
+  level could face; a humble start makes the PC small, not the world. The opposition is dangerous,
+  and red tape is texture, never the conflict; turning points include the opposition's moves, not
+  only revelations; every stretch of the tension curve has a conflict pressing now; the arc builds
+  on the PC as written rather than a stand it hopes they'll take; and it says what's true, not
+  what isn't. The calendar template asks for the world's own calendar, not a day count.
 - **The reply is the player's screen, for every agent, without an override.** A turn surfaces all
   its text blocks in order as-is, so what the DM says as it works no longer disappears behind a
   short closing recap. In luna-campaign6's setup the character-fit proposal
