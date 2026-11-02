@@ -25,8 +25,9 @@ wrong one the probe prompt gave it).
    accept a temperature; agent files set a reasoning `variant` instead.
 2. **No per-turn reminders.** No brief prepended to every message, no staleness counts, no wrap
    countdown. Standing guidance lives in the agent prompt and is read once.
-3. **Skills stay; loading is the model's call.** A skill's `description` says briefly *when* to load
-   it, never a summary of what it contains. No brief names the skills to load or their order. A rule
+3. **Skills stay, and the model can find them.** A skill's `description` says briefly *when* to load
+   it, never a summary of what it contains. A brief or a skill names the skill a stage calls for when
+   that is the one expected then, but naming is never the only way a skill gets loaded. A rule
    that applies on every turn belongs in the agent prompt, not in a skill that is always loaded.
    Each agent's permissions allow only its own skills, so its catalog lists nothing else — not
    another agent's, not the player's own.
@@ -59,7 +60,7 @@ wrong one the probe prompt gave it).
 | Agent | Role | Model-facing change |
 |---|---|---|
 | `dm-runner` | Live play: read-only campaign access, dice, the combat tracker, `task_complete` | New prompt (see § Live play) |
-| `dm` | Between sessions: setup, reconcile, planning; writes the campaign | Briefs state goals, not skill sequences |
+| `dm` | Between sessions: setup, reconcile, planning; writes the campaign | Briefs state goals and name the skill each stage calls for |
 | `log-extractor` | Fresh-context digest of the transcript | Whole-transcript read |
 | `narrative-checker` | Between-session gates, and the benchmark's after-play checker | Re-authored for Luna; never at the table |
 | `player` | The benchmark's player | See [benchmark.md](benchmark.md) |

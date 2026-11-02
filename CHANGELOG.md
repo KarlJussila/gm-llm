@@ -75,10 +75,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   as one message rather than retelling it.
 - **opencode auto-compaction is back on**, so a warm `dm` or runner thread outlives the
   model's context window instead of failing at it. Transcripts and canon never depended on it.
-- **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal, not the skills
-  to load; skill descriptions say only when to load them; no prompt instructs a task list. The
-  in-play check skills (`check-turn`, `check-conduct`, `check-combat`) are deleted, and
-  `combat-run` now says to roll initiative before `start_encounter`.
+- **The model-facing prompts are rewritten for GPT-6 Luna.** Briefs state the goal and name the
+  skill a stage calls for, not a sequence of skills to work through; skill descriptions say only
+  when to load them; no prompt instructs a task list. The in-play check skills (`check-turn`,
+  `check-conduct`, `check-combat`) are deleted, and `combat-run` now says to roll initiative
+  before `start_encounter`.
 - **The autoplayer's character packet is generated** from the PC's sheet, state and knowledge
   ledger, the same way for `--player auto` and `bench run`; the sheet's DM-side hooks stay out.
   `--character` and the `*.player.md` lookup are gone. The autoplayer gets no per-turn reminder:
