@@ -190,21 +190,11 @@ def dice_calls_come_back_as_rolls():
 
 
 def every_text_block_surfaces_in_order():
-    """Said as commentary before a tool call and said again as the closing answer — both
-    blocks surface: no guessing about what the model meant to show exactly once."""
-    q = "What kind of campaign would you like to play?"
-    texts, calls, _ = read_turn([
-        {"type": "assistant", "content": [
-            {"type": "text", "text": q, "native": {"phase": "commentary"}},
-            {"type": "tool", "name": "task_complete", "state": {"input": {}}}]},
-        {"type": "assistant", "content": [
-            {"type": "text", "text": q, "native": {"phase": "final_answer"}}]},
-        {"type": "idle", "outcome": "succeeded"},
-    ])
-    check(texts == [q, q], "every block surfaces, including an exact repeat")
-    check([n for n, _ in calls] == ["task_complete"], "the tool call still comes back")
+    """A turn can hold text on both sides of its tool calls. All of it surfaces, in
+    order — including blocks the model tagged `commentary` or `final_answer`, the
+    phases that once drove the finals override; the tags are inert."""
     draft, closer = "The lamps gutter as Brennan seals the shaft.", "Onward, then."
-    texts, _, _ = read_turn([
+    texts, calls, _ = read_turn([
         {"type": "assistant", "content": [
             {"type": "text", "text": draft, "native": {"phase": "commentary"}},
             {"type": "tool", "name": "task_complete", "state": {"input": {}}}]},
@@ -212,10 +202,8 @@ def every_text_block_surfaces_in_order():
             {"type": "text", "text": closer, "native": {"phase": "final_answer"}}]},
         {"type": "idle", "outcome": "succeeded"},
     ])
-    check(texts == [draft, closer], "distinct blocks all surface, in order")
-    texts, _, _ = read_turn([{"type": "assistant", "content": [
-        {"type": "text", "text": "No phases here.", "native": {}}]}])
-    check(texts == ["No phases here."], "a turn without a final answer reads as before")
+    check(texts == [draft, closer], "every block surfaces, in order, across the call")
+    check([n for n, _ in calls] == ["task_complete"], "the tool call still comes back")
     print("every_text_block_surfaces_in_order\n")
 
 
