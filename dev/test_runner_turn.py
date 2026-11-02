@@ -189,10 +189,9 @@ def dice_calls_come_back_as_rolls():
     print("dice_calls_come_back_as_rolls\n")
 
 
-def a_repeated_line_shows_once():
-    """Said as commentary before a tool call and said again as the closing answer — the
-    player reads it once. A turn's own distinct blocks all come through, in order: the
-    short closing recap of a long reply is new text, not the reply."""
+def every_text_block_surfaces_in_order():
+    """Said as commentary before a tool call and said again as the closing answer — both
+    blocks surface: no guessing about what the model meant to show exactly once."""
     q = "What kind of campaign would you like to play?"
     texts, calls, _ = read_turn([
         {"type": "assistant", "content": [
@@ -202,7 +201,7 @@ def a_repeated_line_shows_once():
             {"type": "text", "text": q, "native": {"phase": "final_answer"}}]},
         {"type": "idle", "outcome": "succeeded"},
     ])
-    check(texts == [q], "a line said twice in one turn reads once")
+    check(texts == [q, q], "every block surfaces, including an exact repeat")
     check([n for n, _ in calls] == ["task_complete"], "the tool call still comes back")
     draft, closer = "The lamps gutter as Brennan seals the shaft.", "Onward, then."
     texts, _, _ = read_turn([
@@ -217,7 +216,7 @@ def a_repeated_line_shows_once():
     texts, _, _ = read_turn([{"type": "assistant", "content": [
         {"type": "text", "text": "No phases here.", "native": {}}]}])
     check(texts == ["No phases here."], "a turn without a final answer reads as before")
-    print("a_repeated_line_shows_once\n")
+    print("every_text_block_surfaces_in_order\n")
 
 
 def a_failed_turn_is_an_error():
@@ -232,7 +231,7 @@ def a_failed_turn_is_an_error():
 
 
 if __name__ == "__main__":
-    a_repeated_line_shows_once()
+    every_text_block_surfaces_in_order()
     a_turn_is_the_player_and_nothing_else()
     the_close_speaks_in_its_text_and_files_its_notes()
     missing_notes_fall_back_to_one_request()

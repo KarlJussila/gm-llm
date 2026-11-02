@@ -186,7 +186,7 @@ back missing.
 **The reply is the player's screen.** Every agent's rules state the one rule: reply text reaches
 the player verbatim and unfiltered — the player-facing words go there and nowhere else, spoilers
 never go there, and behind-the-screen work stays in reasoning, tool calls and files. The
-orchestrator surfaces a turn's text blocks in order, dropping exact repeats, and doesn't mine
+orchestrator surfaces a turn's text blocks in order, as-is, and doesn't mine
 tool arguments for player-facing content.
 
 **`task_complete` stays task-agnostic.** Its only parameter is `notes`: closing notes for the

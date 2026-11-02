@@ -664,8 +664,7 @@ def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str 
 
     The reply is every text block, in order: the player's screen is the agent's whole reply,
     whatever channel the model wrote it in (`commentary` before tool calls, the closing
-    `final_answer`, or both). A line the turn repeats shows once — models that say something,
-    work through tools, and say it again as their closing answer would read it twice otherwise."""
+    `final_answer`, or both)."""
     texts: list[str] = []
     calls: list[tuple[str, dict]] = []
     error = None
@@ -674,10 +673,7 @@ def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str 
         if kind == "assistant":
             for c in m.get("content") or []:
                 if c.get("type") == "text" and (c.get("text") or "").strip():
-                    block = c["text"].strip()
-                    if block in "\n".join(texts):
-                        continue  # a repeat of what the turn already said
-                    texts.append(block)
+                    texts.append(c["text"].strip())
                 elif c.get("type") == "tool" and c.get("name"):
                     calls.append((c["name"], (c.get("state") or {}).get("input") or {}))
             if m.get("error"):
