@@ -154,10 +154,7 @@ class Gate:
         reminds it once; if there is still no usable verdict, the content passes by
         default — a checker that didn't follow protocol has no actionable findings,
         and its stray text would be worse than nothing as a correction brief. The
-        miss is stamped `defaulted` and surfaced in the log/UI, never silent.
-
-        The checker runs a todowrite list then reports, so its findings and tool call
-        can land in separate text parts — a reply reads all of them."""
+        miss is stamped `defaulted` and surfaced in the log/UI, never silent."""
         reply = self.backend.prompt_full(sid, "narrative-checker", brief)
         reply = self.backend.ensure_tool(sid, "narrative-checker", reply,
                                          tool="report_findings", args=("passed",),
@@ -169,9 +166,9 @@ class Gate:
             if passed is not None:
                 # Empty-body guard: a failure verdict with no findings anywhere is
                 # not actionable → passes by default. Findings the checker left in
-                # its text (with an empty `report` field) still count — the Verdict
-                # body falls back to reply.text below, so the correction brief has
-                # something to act on.
+                # its final message (with an empty `report` field) still count — the
+                # Verdict body falls back to reply.text below, so the correction brief
+                # has something to act on.
                 empty = not passed and not report and not reply.text.strip()
                 if empty:
                     passed = True

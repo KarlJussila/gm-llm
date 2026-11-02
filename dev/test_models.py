@@ -16,7 +16,7 @@ from gm_llm.orchestrator.backend import Backend, agent_overrides  # noqa: E402
 def _project(root: Path) -> Path:
     agents = root / ".opencode" / "agent"
     agents.mkdir(parents=True)
-    for name in ("dm", "helper"):
+    for name in ("dm", "dm-runner", "auto-player"):
         (agents / f"{name}.md").write_text(
             f"---\ndescription: {name}\nmode: primary\nmodel: openai/gpt-6-luna\n"
             "variant: xhigh\n---\nBody.\n", encoding="utf-8")
@@ -30,11 +30,12 @@ def main(root: Path) -> None:
 
     glm = agent_overrides(project, "opencode/glm-5.3-flash-free")
     assert glm == {name: {"model": "opencode/glm-5.3-flash-free", "variant": ""}
-                   for name in ("helper", "dm")}, \
-        "a new model drops the pinned variant (empty clears it; a null would void the entry)"
+                   for name in ("dm-runner", "dm")}, \
+        "a new model drops the pinned variant (empty clears it; a null would void the entry); " \
+        "the AI player keeps its own"
 
     assert agent_overrides(project, "opencode/glm-5.3-flash-free", "high")["dm"]["variant"] == "high"
-    assert agent_overrides(project, variant="low")["helper"] == \
+    assert agent_overrides(project, variant="low")["dm-runner"] == \
         {"model": "openai/gpt-6-luna", "variant": "low"}, \
         "a variant alone keeps each agent's model — opencode needs the model named"
 
@@ -49,7 +50,7 @@ def main(root: Path) -> None:
     assert agent_overrides(project, variant="low")["dm"] == \
         {"model": "opencode/deepseek-v4.1-flash-free", "variant": "low"}
     (project / "gm-llm.yaml").write_text("variant: low\n", encoding="utf-8")
-    assert agent_overrides(project)["helper"] == {"model": "openai/gpt-6-luna", "variant": "low"}
+    assert agent_overrides(project)["dm-runner"] == {"model": "openai/gpt-6-luna", "variant": "low"}
     (project / "gm-llm.yaml").write_text("model: glm-5.3\n", encoding="utf-8")
     try:
         agent_overrides(project)
@@ -62,7 +63,8 @@ def main(root: Path) -> None:
     assert config["agent"]["dm"]["model"] == "opencode/glm-5.3-flash-free"
     assert config["compaction"] == {"auto": True}, "the server's own config stays"
     assert "agent" not in Backend(str(project)).server_config()
-    print("OK — the campaign's model reaches every agent through the server config; flags win.")
+    print("OK — the campaign's model reaches every agent but the AI players through the server "
+          "config; flags win.")
 
 
 if __name__ == "__main__":

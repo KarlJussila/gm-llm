@@ -15,11 +15,11 @@ You decide when the session ends; the player never has to ask. Run these in orde
    If the plan says no, don't invent one.
 3. **Ask for feedback.** Step out of character and ask a couple of short, open questions about how
    the session felt. Then stop and wait for the answer. Listen; don't argue or fix anything live.
-4. **Close.** Thank the player in a line or two, confirming the ending only in the terms they
-   experienced it — never what it "means" for the story — and with no preview of what's next.
-5. **Signal the end** with one `task_complete` call, as your last act, with `notes` — your
-   handoff notes for the between-session pass, below. Your closing words (step 4) stay in the
-   reply itself; the call carries nothing the player reads.
+4. **Signal the end** with one `task_complete` call, with `notes` — your handoff notes for the
+   between-session pass, below.
+5. **Close.** End your turn on your closing words: thank the player in a line or two, confirming
+   the ending only in the terms they experienced it — never what it "means" for the story — and
+   with no preview of what's next.
 
 ## The handoff notes
 

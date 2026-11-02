@@ -34,6 +34,12 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   level-ups, and its notes. The benchmark keeps the `player` agent.
 
 ### Changed
+- **Only the final message is surfaced.** A turn's reply is the message the agent ends it on, and
+  every agent with tools is told so: the DMs that only their final message reaches the player,
+  the AI players that only theirs reaches the DM. The finals override is gone, so the phase a model
+  tags its text with no longer decides; in luna-campaign6's setup it buried the character hooks
+  and the character-fit proposal behind a short closing question the DM didn't know was all the
+  player would see. `session-close` now calls `task_complete` before the closing words.
 - **Arcs are the story the brief asks for.** `arc-design` scales the major arc's opposition and
   stakes with the PC's level by the game's tiers of play, up to a climax only a hero at its top
   level could face; a humble start makes the PC small, not the world. The opposition is dangerous,
@@ -41,17 +47,10 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   only revelations; every stretch of the tension curve has a conflict pressing now; the arc builds
   on the PC as written rather than a stand it hopes they'll take; and it says what's true, not
   what isn't. The calendar template asks for the world's own calendar, not a day count.
-- **The reply is the player's screen, for every agent, without an override.** A turn surfaces all
-  its text blocks in order as-is, so what the DM says as it works no longer disappears behind a
-  short closing recap. In luna-campaign6's setup the character-fit proposal
-  and the character hooks never reached the player this way — the player read and approved only
-  the closing question. The rule itself is stated once per agent: reply text reaches the player
-  verbatim and unfiltered; spoilers never go there, and behind-the-screen work stays in
-  reasoning, tool calls and files.
 - **`task_complete` carries no `player_message` and no channel lore.** Its description now says
   only what it is ("signal completion of the current stage, called as and when instructed");
-  the closing narration is the reply text ahead of the call, and `notes` (unchanged) only goes
-  where the brief asks for it. The old "prose outside the call is not surfaced" sentence was a
+  the closing narration is the turn's final message, and `notes` (unchanged) only goes where the
+  brief asks for it. The old "prose outside the call is not surfaced" sentence was a
   leftover transport for the world overview that had outlived its backend, and it is what led
   the DM to funnel player-facing questions through the call — campaign6's intake asked for the
   player's approval and signalled completion in the same breath, twice.
@@ -162,10 +161,11 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 - **Archived turns record the DM's own dice rolls** (`rolls`: expression and total), and the
   checker sees them.
 - `gm-llm tokens` counts the checker's workspace (`check-ws`) as its own scope beside grading.
-- **A campaign can play on any model.** `model` and `variant` in `gm-llm.yaml` run every agent,
-  the subagents included, on another model or reasoning variant, without editing the agent
-  files, so `gm-llm update` keeps the choice. `gm-llm play --model` / `--variant` override them
-  for one invocation, as do `dev autoplay`, `dev prep` and `dev reconcile`.
+- **A campaign can play on any model.** `model` and `variant` in `gm-llm.yaml` run every agent
+  but the AI players on another model or reasoning variant, without editing the agent files, so
+  `gm-llm update` keeps the choice and runs on different DM models face the same player.
+  `gm-llm play --model` / `--variant` override them for one invocation, as do `dev autoplay`,
+  `dev prep` and `dev reconcile`.
 - **`bench run --subject-model` / `--subject-variant`** run the subject agents (`dm-runner`, `dm`,
   `author`, `log-extractor`) on another model; `--tier` names the scaffolding tier (`low`, the
   product, is the only one yet). The `conditions` event stamps every agent's model and reasoning

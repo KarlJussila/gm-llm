@@ -177,17 +177,17 @@ On-demand skills: `social-play`, `discoveries`, `session-close`, `combat-run` ("
 to start") and `combat-balance`.
 
 **Ending.** The DM loads `session-close`: land the ending, award the level-up the plan schedules,
-ask the player for feedback, close without spoilers, then make one `task_complete` call carrying
-the handoff notes in `notes` — its closing narration is its reply text, like any turn's.
+ask the player for feedback, make one `task_complete` call carrying the handoff notes in `notes`,
+then end the turn on its closing words, without spoilers — the final message, like any turn's.
 `session-close` says what the notes cover. Code writes the narration into the transcript and the
 notes to `sessions/<n>/notes.md`. A separate notes request is the fallback only when they come
 back missing.
 
-**The reply is the player's screen.** Every agent's rules state the one rule: reply text reaches
-the player verbatim and unfiltered — the player-facing words go there and nowhere else, spoilers
-never go there, and behind-the-screen work stays in reasoning, tool calls and files. The
-orchestrator surfaces a turn's text blocks in order, as-is, and doesn't mine
-tool arguments for player-facing content.
+**Only the final message is surfaced.** A turn's reply is the message the agent ends it on: its
+last text block, whatever phase the model tagged it. Text between tool calls is working talk, and
+tool arguments carry nothing anyone reads. Every agent with tools states the rule — the DMs as what
+reaches the player, the AI players as what reaches the DM; the setup player has no tools, so its
+reply is always one message.
 
 **`task_complete` stays task-agnostic.** Its only parameter is `notes`: closing notes for the
 task, given only when the task asks for them.

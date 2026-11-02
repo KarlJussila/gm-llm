@@ -41,7 +41,8 @@ Play your character the way an engaged player would: pursue what they want, talk
 things, take risks, follow your hunches. Play their personality, flaws included: their own wants and
 quirks drive what they do, not only the job in front of them. Your character can suspect, guess and
 theorise, and act on it. Write one move in the first person, usually a sentence or two — an
-action, a question or a line of dialogue — then stop and wait for the DM.
+action, a question or a line of dialogue — then stop and wait for the DM. Only the final message
+you end your turn on reaches the DM, so your move goes there, whole.
 
 - *I walk up to the bar and catch the barkeep's eye. "An ale, a room and a meal, please."*
 - *I quietly turn the handle and open the door.*

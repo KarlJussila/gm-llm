@@ -304,7 +304,8 @@ def _build_parser() -> argparse.ArgumentParser:
     # (`--subject-model`).
     model_flags = argparse.ArgumentParser(add_help=False)
     model_flags.add_argument("--model", default=None, metavar="PROVIDER/MODEL",
-                             help="run every agent on this model (over gm-llm.yaml's model)")
+                             help="run every agent but the AI players on this model "
+                                  "(over gm-llm.yaml's model)")
     model_flags.add_argument("--variant", default=None,
                              help="reasoning variant ('' for none; default: none with --model, "
                                   "else gm-llm.yaml's or each agent's own)")

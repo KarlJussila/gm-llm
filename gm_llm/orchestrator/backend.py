@@ -102,14 +102,18 @@ _USER = "opencode"
 _SERVER_CONFIG = {"compaction": {"auto": True}}
 
 
+# The AI players stand in for the person at the table, so the campaign's model isn't theirs:
+# they keep the model their files pin, and a run on another DM model keeps the same player.
+_PLAYERS = ("player", "auto-player", "setup-player")
+
+
 def agent_overrides(directory, model: str | None = None, variant: str | None = None) -> dict:
     """The campaign's model as opencode's `agent` config, for every agent in the project's
-    `.opencode/agent/`. `--model` / `--variant` win over `gm-llm.yaml`'s `model` / `variant`;
-    a model, from either, brings its own variant (none unless one is named), since a variant
-    belongs to the model it was set for. With neither, each agent keeps the model its file
-    pins. The config reaches the subagents opencode starts itself, which a per-session model
-    wouldn't. opencode ignores an entry that doesn't name the model, and an empty variant
-    clears the pinned one; a null voids the whole entry."""
+    `.opencode/agent/` but the AI players. `--model` / `--variant` win over `gm-llm.yaml`'s
+    `model` / `variant`; a model, from either, brings its own variant (none unless one is
+    named), since a variant belongs to the model it was set for. With neither, each agent keeps
+    the model its file pins. opencode ignores an entry that doesn't name the model, and an empty
+    variant clears the pinned one; a null voids the whole entry."""
     if model is None:
         settings = load_settings(directory)
         model = settings.model
@@ -119,6 +123,8 @@ def agent_overrides(directory, model: str | None = None, variant: str | None = N
         return {}
     out = {}
     for path in sorted((Path(directory) / ".opencode" / "agent").glob("*.md")):
+        if path.stem in _PLAYERS:
+            continue
         try:
             fm = split_frontmatter(path.read_text(encoding="utf-8"))[0] or {}
         except (OSError, FrontmatterError):
@@ -481,10 +487,9 @@ class Backend:
                     msgs = self._await_turn(session_id, user_id)
                     if self._cancel.is_set():
                         raise BackendCancelled(f"{agent} call cancelled")
-                    texts, calls, error = read_turn(msgs)
+                    out, calls, error = read_turn(msgs)
                     if self.logs.debug:
                         self._dump_turn(session_id, agent, msgs)
-                    out = "\n".join(texts)
                     if self._stalled:
                         reason = self._stalled
                     elif error:
@@ -657,14 +662,14 @@ class Backend:
         return ContextUsage(tokens=used, context_limit=limit.get("input") or limit["context"])
 
 
-def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str | None]:
-    """A turn's messages → (text blocks, (tool name, input) calls, error or None), in order.
+def read_turn(msgs: list[dict]) -> tuple[str, list[tuple[str, dict]], str | None]:
+    """A turn's messages → (its reply, (tool name, input) calls in order, error or None).
     The error is the turn's failure as opencode reported it — a failed or interrupted idle, or
     an assistant message carrying an error.
 
-    The reply is every text block, in order: the player's screen is the agent's whole reply,
-    whatever channel the model wrote it in (`commentary` before tool calls, the closing
-    `final_answer`, or both)."""
+    The reply is the turn's final message, its last text block, and nothing else: the agents
+    are told that only the message they end their turn on is surfaced, so text written between
+    tool calls is working talk, whatever phase the model tagged it."""
     texts: list[str] = []
     calls: list[tuple[str, dict]] = []
     error = None
@@ -680,7 +685,7 @@ def read_turn(msgs: list[dict]) -> tuple[list[str], list[tuple[str, dict]], str 
                 error = _error_text(m["error"])
         elif kind == "idle" and m.get("outcome") != "succeeded":
             error = _error_text(m.get("error")) if m.get("error") else f"turn {m.get('outcome')}"
-    return texts, calls, error
+    return (texts[-1] if texts else ""), calls, error
 
 
 def dice_rolls(msgs: list[dict]) -> tuple[str, ...]:

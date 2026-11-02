@@ -21,7 +21,8 @@ you. Each later message is the DM's latest beat, in `<dm>…</dm>`.
 ## Your turn
 
 Pick one next move — an action, a question or a line of dialogue — and write it in the first person,
-usually a sentence or two. Then stop and wait for the DM.
+usually a sentence or two. Then stop and wait for the DM. Only the final message you end your turn
+on reaches the DM, so your move goes there, whole.
 
 - *I walk up to the bar and catch the barkeep's eye. "An ale, a room and a meal, please."*
 - *I quietly turn the handle and open the door.*

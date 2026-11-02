@@ -189,26 +189,30 @@ def dice_calls_come_back_as_rolls():
     print("dice_calls_come_back_as_rolls\n")
 
 
-def every_text_block_surfaces_in_order():
-    """A turn can hold text on both sides of its tool calls. All of it surfaces, in
-    order — including blocks the model tagged `commentary` or `final_answer`, the
-    phases that once drove the finals override; the tags are inert."""
-    draft, closer = "The lamps gutter as Brennan seals the shaft.", "Onward, then."
-    texts, calls, _ = read_turn([
+def the_final_message_is_the_reply():
+    """A turn can hold text on both sides of its tool calls; only the message it ends on is
+    the reply — the agents are told so. The phase tags the model puts on its text don't
+    change which block that is."""
+    draft, closer = "Let me check the plan first.", "The lamps gutter as Brennan seals the shaft."
+    reply, calls, _ = read_turn([
         {"type": "assistant", "content": [
-            {"type": "text", "text": draft, "native": {"phase": "commentary"}},
+            {"type": "text", "text": draft, "native": {"phase": "final_answer"}},
             {"type": "tool", "name": "task_complete", "state": {"input": {}}}]},
         {"type": "assistant", "content": [
-            {"type": "text", "text": closer, "native": {"phase": "final_answer"}}]},
+            {"type": "text", "text": closer, "native": {"phase": "commentary"}}]},
         {"type": "idle", "outcome": "succeeded"},
     ])
-    check(texts == [draft, closer], "every block surfaces, in order, across the call")
+    check(reply == closer, "the reply is the last text block, whatever its phase")
     check([n for n, _ in calls] == ["task_complete"], "the tool call still comes back")
-    print("every_text_block_surfaces_in_order\n")
+    reply, _, _ = read_turn([{"type": "assistant", "content": [
+        {"type": "text", "text": draft},
+        {"type": "tool", "name": "patch", "state": {"input": {}}}]}])
+    check(reply == draft, "a turn that ends on a tool call keeps the text before it")
+    print("the_final_message_is_the_reply\n")
 
 
 def a_failed_turn_is_an_error():
-    texts, calls, error = read_turn([
+    _, _, error = read_turn([
         {"type": "assistant", "content": [{"type": "text", "text": "partial"}]},
         {"type": "idle", "outcome": "failed", "error": {"message": "rate limited"}},
     ])
@@ -219,7 +223,7 @@ def a_failed_turn_is_an_error():
 
 
 if __name__ == "__main__":
-    every_text_block_surfaces_in_order()
+    the_final_message_is_the_reply()
     a_turn_is_the_player_and_nothing_else()
     the_close_speaks_in_its_text_and_files_its_notes()
     missing_notes_fall_back_to_one_request()
@@ -227,4 +231,4 @@ if __name__ == "__main__":
     a_turn_reads_back_whole()
     dice_calls_come_back_as_rolls()
     a_failed_turn_is_an_error()
-    print("OK — runner turn: the message, the close, and the reply coming back whole.")
+    print("OK — runner turn: the message, the close, and the final message as the reply.")

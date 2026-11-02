@@ -91,7 +91,9 @@ variant: high
 ```
 
 A `model` without `variant` runs at the model's default. `variant` alone changes the level on
-the pinned model. The agent files stay as shipped, so `gm-llm update` keeps the choice.
+the pinned model. The AI players (`--player auto` and `--setup-script`) keep their own model, so
+runs on different DM models face the same player. The agent files stay as shipped, so
+`gm-llm update` keeps the choice.
 
 The campaign runs apart from your own opencode setup: the global config directory (its
 `AGENTS.md`, MCP servers, plugins and skills) is left out, and each agent can load only its own
