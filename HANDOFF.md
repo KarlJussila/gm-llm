@@ -1,4 +1,4 @@
-# Handoff — live play on Luna (2026-10-24)
+# Handoff — autonomous play on Luna (2026-11-02)
 
 Ongoing work, kept transferable between agents. The plan is `ROADMAP.md`; the design is
 `design/luna.md` and `design/benchmark.md`. Run things through `.venv/bin/python` (see `CLAUDE.md`).
@@ -8,28 +8,28 @@ Ongoing work, kept transferable between agents. The plan is `ROADMAP.md`; the de
 - **The prompt rework** is tagged `luna-clean-slate` (`18f8d29`). Prose added after the tag is
   trimmed only through `/refine-prompts`; a new guardrail names the failure and the run (campaign
   directory + archive run id).
-- **Shakedown has moved to Karl's own campaigns** on Desktop, played through the TUI:
-  - `~/Desktop/luna-campaign`: sessions 1–2 played and reconciled, session 3 planned.
-  - `~/Desktop/luna-campaign2`: setup, then session 1 planned. Its setup run
-    (`20261024T005158Z-c601`) showed the failures fixed in `e00fa1d`.
-  - `~/Desktop/luna-campaign3`: session 1 in play under the old planning prompts (run
-    `20261024T033752Z-967c`). Its first fifteen minutes drove `7c727f1` through `a13a6e3`.
-- **Landed since 2026-10-21, never yet run on Luna:**
-  - The primer is written after the character and arcs, and session 1 opens with a verbatim
-    prologue (`53029b3`, seam fixed in `7c727f1`).
-  - The planning rework (`a13a6e3`). `session-plan` opens with what the session offers the
-    character and leaves the everyday world (pay, deals, bystanders) to the runner. The runner
-    improvises more freely and checks what it adds against canon.
-  - The `author` subagent is now `helper`, a general-purpose subagent, and `author-brief` is now
-    `plan-brief` (`a940b0b`).
-  - opencode auto-compaction is back on (`65353a2`). Under ChatGPT OAuth, opencode caps OpenAI
-    models at 400k context / 272k input.
-- **Scripted setup** (`play --setup-script`, the `setup-player` agent): a two-call Luna check of the
-  agent passed, but no full setup has run through it yet. Karl's script is
-  `~/Desktop/dallid-setup.md`, from his three setups. Setup now plans session 1 before asking to
-  start it.
-- **Karl's install** needs `/quit`, `pipx reinstall gm-llm`, `gm-llm update` to pick these up. The
-  build is hatchling now (`414e810`), so no `rm -rf build`.
+- **Shakedown runs as autonomous play** (`play --player auto`, with `--setup-script
+  ~/Desktop/dallid-setup.md` for setup). `~/Desktop/luna-campaign6` (run `20261102T032917Z-c936`)
+  played two sessions and was stopped. Its plot was dry: an arc of permit disputes with no real
+  opposition, which hinged on Dallid changing his ethics unprompted, far from the brief's level
+  5–20 heroic story. Its day-count calendar came from a template placeholder.
+- **Landed since campaign6, never yet run:**
+  - `arc-design` asks for the brief's story: opposition and stakes that grow by the tiers of play,
+    a dangerous opposition, its moves among the turning points, a conflict pressing in every
+    stretch, and the world's own calendar (`0bb32e6`).
+  - Only the final message is surfaced, for every agent with tools; the AI players keep their
+    pinned model whatever the campaign's `model` is (`32a5cb5`).
+  - No subagents: the dm does its own work (`b4a91c6`).
+- **Next:** a fresh Luna campaign from the same setup script, to see the arcs; then comparison runs
+  with the DM on `opencode/glm-5.3-flash-free` and on the local Qwen 3.8 Flash Next (polystrata),
+  the player staying on Luna. Each gets a fresh campaign, the same setup script, and
+  `feedback-dir: feedback` so no guidance carries over. GLM's free tier once refused a fresh
+  server, so check it first with `gm-llm dev ping`. The harness isolates opencode's global config,
+  so the polystrata provider has to be defined in the campaign's own opencode config.
+- **Campaign6's session 1 opening** looked like the auto-player knowing too much. It wasn't a leak:
+  its cold-start lead includes the knowledge ledger, which already lists what the PC knew. Giving
+  it the primer instead at session 1 is an option, not yet taken.
+- **Karl's install** needs `/quit`, `pipx reinstall gm-llm`, `gm-llm update` to pick these up.
 
 ## Benchmark
 
@@ -56,8 +56,8 @@ Ongoing work, kept transferable between agents. The plan is `ROADMAP.md`; the de
 ## Notes
 
 - Free models (`opencode/glm-5.3-flash-free`, `opencode/deepseek-v4.1-flash-free`) are fine for
-  anything that just needs *a* model, such as wiring and tool checks. Never use them for Luna's
-  measurements.
+  anything that just needs *a* model, such as wiring and tool checks. DM runs on them are real
+  data about the harness, but they don't stand in for Luna's measurements.
 
 ## Open, outside the repo
 
