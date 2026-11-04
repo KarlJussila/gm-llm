@@ -197,6 +197,9 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   invalidated.
 
 ### Fixed
+- **The prologue is read out once.** GLM took the runner's brief to mean its reply should carry
+  the prologue too, so the player got it twice; the brief now says the orchestrator puts it ahead
+  of the reply, and a reply that opens on a copy of it has the copy dropped.
 - **Deleted assets no longer ship from a stale `build/`.** setuptools reused the clone's `build/`
   and never pruned it, so skills removed in the Luna rework still installed and the agents loaded
   them. The package now builds with hatchling, which writes no `build/`, so updating is just

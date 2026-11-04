@@ -19,7 +19,8 @@ sys.path.insert(0, str(REPO))  # so `gm_llm` imports straight from the checkout
 
 from gm_llm.orchestrator import Game, paths  # noqa: E402
 from gm_llm.orchestrator.backend import Backend, read_turn  # noqa: E402
-from gm_llm.orchestrator.loop import join_narration, session_is_complete  # noqa: E402
+from gm_llm.orchestrator.loop import (  # noqa: E402
+    join_narration, session_is_complete, strip_prologue)
 
 
 class _Reply:
@@ -139,6 +140,16 @@ def join_narration_dedupes():
     print("join_narration_dedupes\n")
 
 
+def a_copied_prologue_is_dropped():
+    prologue = "The lamps went out.\n\nYou wait at the window."
+    scene = "Fog sits on the street."
+    check(strip_prologue(f"<prologue>\nThe lamps went out. You wait\nat the window.\n</prologue>\n\n"
+                         f"{scene}", prologue) == scene, "a tagged, rewrapped copy goes")
+    check(strip_prologue(f"{prologue}\n\n{scene}", prologue) == scene, "a bare copy goes")
+    check(strip_prologue(scene, prologue) == scene, "a reply that only continues stands")
+    print("a_copied_prologue_is_dropped\n")
+
+
 def a_turn_reads_back_whole():
     """A turn can span several assistant messages — narration, then a trailing tool call —
     and all of it comes back: the narration as the reply, the call as a signal."""
@@ -228,6 +239,7 @@ if __name__ == "__main__":
     the_close_speaks_in_its_text_and_files_its_notes()
     missing_notes_fall_back_to_one_request()
     join_narration_dedupes()
+    a_copied_prologue_is_dropped()
     a_turn_reads_back_whole()
     dice_calls_come_back_as_rolls()
     a_failed_turn_is_an_error()

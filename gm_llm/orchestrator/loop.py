@@ -62,6 +62,14 @@ def join_narration(text: str, closing: str) -> str:
     return f"{text}\n\n{closing}"
 
 
+def strip_prologue(text: str, prologue: str) -> str:
+    """The reply without a copy of the prologue it opens on (the code reads that out itself),
+    however the copy is wrapped or tagged."""
+    copy = r"\s+".join(map(re.escape, prologue.split()))
+    m = re.match(rf"\s*(?:<prologue>\s*)?{copy}\s*(?:</prologue>)?", text or "")
+    return (text[m.end():] if m else text or "").strip()
+
+
 @dataclass
 class TurnResult:
     player_input: str
@@ -207,7 +215,7 @@ class Game(CombatMixin):
             # after a restart instead of resuming into more play.
             self._mark_complete()
         if prologue:  # read out ahead of the opening scene, in the transcript as in the reply
-            narration = f"{prologue}\n\n{narration.strip()}"
+            narration = join_narration(prologue, strip_prologue(narration, prologue))
         self._step("done")
         self._combat_observe(reply)
         tr = TurnResult(player_msg, narration, session_complete,
