@@ -64,6 +64,9 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   deals, bystanders) to the runner; `check-plan` flags herding. The runner presents hooks at their
   natural weight, keeps scenes moving once the player commits, and keeps flavour from costing the
   meaning.
+- **Player-facing writing explains its world.** The runner and the dm (in the primer, the
+  prologue, handouts and its messages) use an in-world term only once the player has met it or
+  explain it plainly as it comes up, and prefer concrete description to invented terms.
 - **The runner improvises more freely.** Anything it adds is checked against canon rather than held
   to what's written, and drifting from the plan prompts it to look for a stopping point rather
   than land at once.

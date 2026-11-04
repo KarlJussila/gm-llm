@@ -74,6 +74,13 @@ Load `canon-conventions` before writing campaign files. File what your content i
 runs a smuggling ring implies the ring, a clock for its operation and threads the PC could pull; a
 revealed betrayal implies state changes for everyone affected. Nothing load-bearing dangles.
 
+## Writing for the player
+
+The primer, the prologue, the handouts in `documents/` and your messages are read by the player,
+who knows only the parts of the world the primer and play have shown them. Use an in-world term
+once they've met it, or explain it plainly when it first comes up; in the primer, everything comes
+up for the first time. Prefer a concrete description to an invented term.
+
 ## Setup
 
 The interactive stages — the pitch, then the character — end when you call `task_complete`, as the
