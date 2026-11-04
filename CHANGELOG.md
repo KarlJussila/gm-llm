@@ -10,6 +10,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
 ## [Unreleased]
 
 ### Added
+- `gm-llm.yaml` takes `temperature` and `top-p` for the campaign's `model`; unset, the provider
+  picks its own.
 - **Frontends are clients of an engine.** The campaign workflow moved out of the TUI into an
   engine that speaks JSON lines over stdio (`gm-llm serve`); the TUI and the console spawn it
   and only render and send, so a frontend can be written in any language

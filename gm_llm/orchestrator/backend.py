@@ -135,6 +135,15 @@ def agent_overrides(directory, model: str | None = None, variant: str | None = N
     return out
 
 
+def sampling_env(directory) -> str | None:
+    """`gm-llm.yaml`'s sampling for its `model`, as the sampling plugin reads it — only for that
+    model, so a pinned one it wasn't set for (a reasoning model may reject one) never gets it."""
+    settings = load_settings(directory)
+    if not (settings.model and settings.sampling):
+        return None
+    return json.dumps({"model": settings.model, **settings.sampling})
+
+
 class Backend:
     def __init__(
         self,
@@ -203,6 +212,8 @@ class Backend:
         env = {**os.environ, "OPENCODE_SERVER_PASSWORD": self.password,
                "OPENCODE_CONFIG_CONTENT": json.dumps(self.server_config()),
                "OPENCODE_CONFIG_DIR": self._config_dir, "OPENCODE_DISABLE_CLAUDE_CODE": "1"}
+        if sampling := sampling_env(self.directory):
+            env["GM_LLM_SAMPLING"] = sampling
         if os.name == "nt":
             # From `npm i -g`, `opencode` is an `opencode.cmd` shim that CreateProcess can't
             # launch directly, so run it through the shell. A new process group isolates it

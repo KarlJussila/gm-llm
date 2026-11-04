@@ -21,6 +21,7 @@ class Settings:
     feedback_dir: Path
     model: str | None = None     # every agent's model but the AI players', over its file's pin
     variant: str | None = None   # and reasoning variant ('' for none)
+    sampling: dict | None = None  # `temperature` / `top_p`, sent with `model`'s requests
 
 
 def load_settings(directory: str | Path) -> Settings:
@@ -31,8 +32,12 @@ def load_settings(directory: str | Path) -> Settings:
     model, variant = data.get("model"), data.get("variant")
     if model and "/" not in str(model):
         raise ValueError(f"{path}: model must be provider/model, e.g. opencode/glm-5.3-flash-free")
+    sampling = {key: float(data[name]) for name, key in (("temperature", "temperature"),
+                                                         ("top-p", "top_p"))
+                if data.get(name) is not None}
     return Settings((root / Path(data["feedback-dir"]).expanduser()).resolve(),
-                    str(model) if model else None, None if variant is None else str(variant))
+                    str(model) if model else None, None if variant is None else str(variant),
+                    sampling or None)
 
 
 def init_settings(directory: str | Path) -> None:

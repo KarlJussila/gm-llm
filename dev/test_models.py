@@ -3,13 +3,14 @@
 `--model` / `--variant` flags over them): every agent in the project is re-pinned through
 opencode's `agent` config. No pytest, no opencode — run me directly."""
 
+import json
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from gm_llm.orchestrator.backend import Backend, agent_overrides  # noqa: E402
+from gm_llm.orchestrator.backend import Backend, agent_overrides, sampling_env  # noqa: E402
 
 
 def _project(root: Path) -> Path:
@@ -50,6 +51,14 @@ def main(root: Path) -> None:
         {"model": "opencode/deepseek-v4.1-flash-free", "variant": "low"}
     (project / "gm-llm.yaml").write_text("variant: low\n", encoding="utf-8")
     assert agent_overrides(project)["dm-runner"] == {"model": "openai/gpt-6-luna", "variant": "low"}
+    # Sampling rides on the campaign's model, as that model's request options — never on a
+    # pinned one it wasn't set for.
+    (project / "gm-llm.yaml").write_text("model: opencode/glm-5.3-flash-free\ntemperature: 0.7\n"
+                                         "top-p: 0.95\n", encoding="utf-8")
+    assert json.loads(sampling_env(project)) == \
+        {"model": "opencode/glm-5.3-flash-free", "temperature": 0.7, "top_p": 0.95}
+    (project / "gm-llm.yaml").write_text("temperature: 0.7\n", encoding="utf-8")
+    assert sampling_env(project) is None, "no model, no sampling"
     (project / "gm-llm.yaml").write_text("model: glm-5.3\n", encoding="utf-8")
     try:
         agent_overrides(project)

@@ -91,6 +91,9 @@ the pinned model. The AI players (`--player auto` and `--setup-script`) keep the
 runs on different DM models face the same player. The agent files stay as shipped, so
 `gm-llm update` keeps the choice.
 
+`temperature` and `top-p` set the sampling for that `model`. Unset, the provider picks its own,
+and some endpoints ignore them anyway: opencode's free GLM does.
+
 The campaign runs apart from your own opencode setup: the global config directory (its
 `AGENTS.md`, MCP servers, plugins and skills) is left out, and each agent can load only its own
 skills. Your login carries over. A provider you defined only in the global config does not, so
@@ -332,6 +335,8 @@ Python over `opencode serve`'s HTTP API.
   signal; the orchestrator reads the call, never the prose.
 - `report-findings.ts` — `report_findings`: the checker's structured verdict
   (`report` + `passed`), read from the tool call — no text parsing.
+- `sampling.ts` — sends `gm-llm.yaml`'s `temperature` / `top-p` with the campaign model's
+  requests; opencode drops them from its own config.
 
 ## Development
 
