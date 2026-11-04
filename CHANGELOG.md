@@ -206,6 +206,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   invalidated.
 
 ### Fixed
+- **A frontmatter YAML error names its line** and says what usually causes it, and links to that
+  file no longer also show up as unresolved, which invited the model to write a duplicate.
 - **The prologue is read out once.** GLM took the runner's brief to mean its reply should carry
   the prologue too, so the player got it twice; the brief now says the orchestrator puts it ahead
   of the reply, and a reply that opens on a copy of it has the copy dropped.

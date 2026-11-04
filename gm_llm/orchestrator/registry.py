@@ -54,7 +54,11 @@ def split_frontmatter(text: str) -> tuple[dict | None, str]:
     try:
         data = yaml.safe_load(m.group(1))
     except yaml.YAMLError as e:
-        raise FrontmatterError(f"frontmatter is not valid YAML: {str(e).splitlines()[0]}") from e
+        mark = getattr(e, "problem_mark", None)
+        where = f" at line {text[:m.start(1)].count(chr(10)) + mark.line + 1}" if mark else ""
+        raise FrontmatterError(f"frontmatter is not valid YAML{where}: {str(e).splitlines()[0]} — "
+                               "a value holding `: `, or opening with a quote mark, needs "
+                               "quoting in full") from e
     if data is None:
         data = {}
     if not isinstance(data, dict):

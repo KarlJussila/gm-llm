@@ -173,7 +173,9 @@ def _section_filled(body: str, name: str) -> bool:
 
 
 def _lint_links(campaign: Path) -> list[Issue]:
-    known = {e.slug for e in scan(campaign)} | dashboard_slugs(campaign)
+    # A file whose frontmatter doesn't parse still answers to its name; its own issue says why.
+    known = ({e.slug for e in scan(campaign)} | {f.stem for f in entity_files(campaign)}
+             | dashboard_slugs(campaign))
     issues: list[Issue] = []
     for path in campaign_files(campaign):
         try:

@@ -186,6 +186,17 @@ def t_named_only_and_links(tmp):
         and "clock" not in bad[0] and "comment" not in bad[0], bad
 
 
+
+def t_broken_frontmatter(tmp):
+    c = build(tmp)
+    (c / "world/npcs/maret.md").write_text(
+        "---\nslug: maret\nname: Maret\ntype: npc\nstatus: active\nscale: a wing: two rooms\n---\n")
+    p = c / "arcs/the-tide.md"
+    p.write_text(p.read_text() + "\nSee [[maret]].\n")
+    out = issues(tmp)
+    assert any("maret.md" in i and "at line 6" in i for i in out), out
+    assert not any("resolve to nothing" in i for i in out), "a file that doesn't parse still resolves"
+
 def t_secrets(tmp):
     c = build(tmp)
     (c / "world/factions/harbor-cell.md").write_text(
@@ -277,7 +288,8 @@ for label, fn in [
     ("a creature's empty stat block and slug/file mismatches are flagged; an NPC shim isn't", t_sections_and_slug),
     ("stateful entities need a stamped state file", t_state_files),
     ("named-only stubs and dangling links are flagged; dashboards and comments resolve", t_named_only_and_links),
-    ("untagged, reused and unknown secret ids are flagged", t_secrets),
+    ("broken frontmatter names its line, and links to the file still resolve", t_broken_frontmatter),
+    ("untagged, reused, doubled and unknown secret ids are flagged", t_secrets),
     ("a learned secret flips its home tag and Known to, idempotently", t_reveal_sync),
     ("INDEX is generated from frontmatter; session paths; arc coverage", t_index_and_paths),
     ("a fresh scaffold lints clean", t_scaffold),
