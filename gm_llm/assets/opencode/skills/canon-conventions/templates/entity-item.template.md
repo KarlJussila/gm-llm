@@ -30,10 +30,7 @@ origin: <who made it, where, when>
 <Why it matters — who wants it and why.>
 
 ## Deeper layer / true nature
-<Hidden properties, real purpose, the catch.>
-
-## Secrets
-- [hidden:<secret-id>] <A concealed fact.>
+- [hidden:<secret-id>] <Hidden properties, real purpose, the catch — one tagged entry per secret.>
   Known to: <[[slug]], …>
 
 ## Links

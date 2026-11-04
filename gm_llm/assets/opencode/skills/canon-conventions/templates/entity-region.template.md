@@ -32,10 +32,7 @@ population: <rough scale — "sparse homesteads", "tens of thousands in the capi
 <The past that made this place what it is.>
 
 ## Deeper layer / what's hidden here
-<The buried truth about the region.>
-
-## Secrets
-- [hidden:<secret-id>] <A concealed fact.>
+- [hidden:<secret-id>] <The buried truth about the region — one tagged entry per secret.>
   Known to: <[[slug]], …>
 
 ## Links

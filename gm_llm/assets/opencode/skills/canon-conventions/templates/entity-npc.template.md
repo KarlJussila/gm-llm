@@ -38,7 +38,8 @@ affiliation: <[[faction-or-region-slug]], or "unaffiliated">
 <How they present and behave — enough to voice them consistently.>
 
 ## Deeper layer / true nature
-<The real story beneath the surface.>
+- [hidden:<secret-id>] <The real story beneath the surface — one tagged entry per secret.>
+  Known to: <[[slug]], …>
 
 ## Agenda
 <The want that drives them when the PC isn't steering.>
@@ -48,10 +49,6 @@ affiliation: <[[faction-or-region-slug]], or "unaffiliated">
 
 ## Disposition toward the PC
 <Friendly / hostile / wary / transactional — and why, and what shifts it.>
-
-## Secrets
-- [hidden:<secret-id>] <A concealed fact.>
-  Known to: <[[slug]], …>
 
 ## Links
 <[[slug]] references to related NPCs, factions, places, arcs.>

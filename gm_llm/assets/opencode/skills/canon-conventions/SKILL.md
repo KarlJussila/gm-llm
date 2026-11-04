@@ -120,7 +120,8 @@ unique across the campaign and a `Known to:` line naming the in-world parties wh
   Known to: [[lysa-fenn]], harbor-cell leadership.
 ```
 
-Tag the secrets, not the surface — openly apparent details need no tag.
+In an entity file, secrets live in its deeper layer, one tagged entry each. Tag the secrets, not
+the surface — openly apparent details need no tag.
 
 **When the PC learns a secret,** record it once, in the knowledge ledger, ending the line with
 `[learned:<id> S<n>]`. The orchestrator then turns the home tag into `[revealed:<id> S<n>]` and adds
@@ -135,5 +136,5 @@ It never survives a between-session pass: whoever is writing canon turns it into
 
 The orchestrator runs a lint after your work and sends back anything it finds: missing or unfilled
 frontmatter, a slug that doesn't match its file, a missing state file or `as-of`, an empty required
-section, a link that resolves nowhere, a secret without an id, a `named-only` stub. Check for those
-yourself first.
+section, a link that resolves nowhere, a secret without an id or tagged twice, a `named-only`
+stub. Check for those yourself first.

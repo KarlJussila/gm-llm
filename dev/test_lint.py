@@ -189,11 +189,13 @@ def t_named_only_and_links(tmp):
 def t_secrets(tmp):
     c = build(tmp)
     (c / "world/factions/harbor-cell.md").write_text(
-        FACTION + "\n- [hidden] untagged secret\n- [hidden:fenn-informant] a reused id\n")
+        FACTION + "\n- [hidden] untagged secret\n- [hidden:fenn-informant] a reused id\n"
+        "- [hidden:cell-cache] a cache\n(Secret: [hidden:cell-cache].)\n")
     (c / "characters/bram.knowledge.md").write_text("- Knows a lie. [learned:no-such-secret S2]\n")
     out = issues(tmp)
     assert any("has no id" in i for i in out), out
     assert any("is also used in" in i for i in out), out
+    assert any("`cell-cache` is tagged twice" in i for i in out), out
     assert any("no-such-secret" in i for i in out), out
 
 

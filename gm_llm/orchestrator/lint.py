@@ -200,10 +200,15 @@ def _lint_secrets(campaign: Path) -> list[Issue]:
             continue
         if _OLD_FLAG.search(text):
             issues.append(Issue(rel, "a secret flag has no id — write `[hidden:<id>]`"))
+        seen: set[str] = set()
         for m in list(HIDDEN.finditer(text)) + list(REVEALED.finditer(text)):
             sid = m.group(1)
-            if sid in homes and homes[sid] != rel:
+            if sid in seen:
+                issues.append(Issue(rel, f"secret id `{sid}` is tagged twice here — one tagged "
+                                         "entry per secret; refer to it elsewhere untagged"))
+            elif sid in homes:
                 issues.append(Issue(rel, f"secret id `{sid}` is also used in {homes[sid]}"))
+            seen.add(sid)
             homes.setdefault(sid, rel)
     for led in sorted((campaign / "characters").glob("*.knowledge.md")):
         rel = led.relative_to(campaign).as_posix()

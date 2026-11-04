@@ -36,11 +36,14 @@ luxury. She remembers names and grudges in equal measure. Tends to answer a ques
 question, which reads as gruffness but is really her buying time to decide how much to say.
 
 ## Deeper layer / true nature
-Lysa is an informant for the [[harbor-cell]]. Her brother was conscripted and died under the
-occupation; she has fed the cell the patrol rotation and manifest data for two years. She is not
-an idealist — she is a griever with access — and that makes her cautious rather than zealous. She
-will not take a risk she can't survive, and she has a private limit she has never told the cell:
-she will not get civilians killed.
+- [hidden:fenn-informant] Lysa feeds the harbor patrol's rotation and manifest data to the
+  [[harbor-cell]], and has for two years. Her brother was conscripted and died under the
+  occupation; she is not an idealist but a griever with access, which makes her cautious rather
+  than zealous. She will not take a risk she can't survive.
+  Known to: [[lysa-fenn]], harbor-cell leadership.
+- [hidden:fenn-limit] She will refuse, at the last moment, any plan she believes will get
+  civilians killed — even if it means breaking with the cell. She has never told them.
+  Known to: [[lysa-fenn]] only.
 
 ## Agenda
 To see the garrison gone without the harbor — and the people who depend on it — burned down in the
@@ -57,13 +60,6 @@ cell loses its eyes on the water.
 Wary-transactional. She has no reason to trust strangers and every reason not to. If the PC can
 show they're no friend of the garrison, she warms to guarded usefulness — information for
 information. Push too fast and she goes opaque.
-
-## Secrets
-- [hidden:fenn-informant] Lysa feeds the harbor patrol's rotation to the [[harbor-cell]].
-  Known to: [[lysa-fenn]], harbor-cell leadership.
-- [hidden:fenn-limit] She will refuse, at the last moment, any plan she believes will get civilians killed —
-  even if it means breaking with the cell.
-  Known to: [[lysa-fenn]] only.
 
 ## Links
 [[saltgate]] · [[harbor-cell]] · [[old-watchtower]]

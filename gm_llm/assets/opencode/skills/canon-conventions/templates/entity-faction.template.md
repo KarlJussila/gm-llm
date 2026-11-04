@@ -29,17 +29,14 @@ founded: <era or rough age>
 <Where it operates and what it can bring to bear.>
 
 ## Deeper layer / true agenda
-<The real goal beneath the stated one, if different.>
+- [hidden:<secret-id>] <The real goal beneath the stated one, and what it conceals — one tagged entry per secret.>
+  Known to: <[[slug]], …>
 
 ## Relationships
 <Stance toward other factions — allied, rival, at war, infiltrating.>
 
 ## Disposition toward the PC
 <How it regards the PC, and what would change that.>
-
-## Secrets
-- [hidden:<secret-id>] <A concealed fact.>
-  Known to: <[[slug]], …>
 
 ## Links
 <[[slug]] references to members, rivals, places, arcs.>

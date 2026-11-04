@@ -34,10 +34,7 @@ is state — each one's own `## Location`.>
 <Concrete reasons a PC would come or return.>
 
 ## Deeper layer / what it hides
-<Secret areas, true purpose, what's concealed.>
-
-## Secrets
-- [hidden:<secret-id>] <A concealed fact.>
+- [hidden:<secret-id>] <Secret areas, true purpose, what's concealed — one tagged entry per secret.>
   Known to: <[[slug]], …>
 
 ## Links
