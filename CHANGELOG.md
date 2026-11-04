@@ -71,6 +71,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   sections for the same truth; they are now one, the deeper layer, of tagged entries. Only that
   home carries the tag; elsewhere a secret is said plainly, with a link to its home. The lint
   flags a secret tagged twice in one file.
+- The prompts say "write down" and "write up" for adding to canon, not "file", which GLM took up
+  as its own voice, in canon, in narration and to the player.
 - **The runner improvises more freely.** Anything it adds is checked against canon rather than held
   to what's written, and drifting from the plan prompts it to look for a stopping point rather
   than land at once.

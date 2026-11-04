@@ -39,8 +39,8 @@ answer stays committed.
 - **Committed answers** — the truth beneath the story. Keep what the player knows verbatim, recommit
   what play contradicted, and answer every new load-bearing question play raised.
 - **Opposition, NPCs and factions** — update anyone whose role, want or held answer shifted, and add
-  any the arc now leans on, named and filed (`canon-conventions`). Someone still pushes against the
-  PC, and they respond to what the PC did.
+  any the arc now leans on, named and written up (`canon-conventions`). Someone still pushes against
+  the PC, and they respond to what the PC did.
 - **Premise, conflict, stakes, tension curve and engagement paths** — rewritten toward the story
   ahead, re-paced to how fast play is moving, with the kinds of play mapped onto what's left. Where
   the arc stands now is the state file's.

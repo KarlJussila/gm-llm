@@ -29,9 +29,9 @@ conflict comes to blows.
 Every identity, every reveal, the answer behind a mystery, what a check yields, what an NPC knows —
 fix it now, since the runner can't make those up without risking the arc; never write "DM decides"
 or "TBD" for one. Take the arc's committed answer if it has one, else existing canon, else decide it
-now and file it. The ordinary workings of the world — what a job pays, how a deal is struck, who's
-at the next table — are the runner's to improvise. Keep them plain when you need them (a job's pay
-is a sum, not a contract), or leave them out.
+now and write it down. The ordinary workings of the world — what a job pays, how a deal is struck,
+who's at the next table — are the runner's to improvise. Keep them plain when you need them (a job's
+pay is a sum, not a contract), or leave them out.
 
 ## What to work from
 

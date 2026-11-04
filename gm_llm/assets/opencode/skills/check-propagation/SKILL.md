@@ -22,7 +22,7 @@ that logs what the PC did, planned or rolled.
 ## The checks
 
 1. **New and changed canon.** Each NPC, place, faction and item in *World canon* and *Items* has a
-   file that says what play established about it — an improvised NPC filed with what the PC saw
+   file that says what play established about it — an improvised NPC written up with what the PC saw
    and heard, a changed entity revised where its truth changed.
 2. **The arcs.** Where play changed the story — contradicted a pending beat or answer, or made one
    impossible — the affected arc's design says so: its turning points, answers and the curve

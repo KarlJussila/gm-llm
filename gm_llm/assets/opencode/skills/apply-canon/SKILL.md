@@ -1,9 +1,9 @@
 ---
 name: apply-canon
-description: Load when filing a played session's new and changed entities, PC capabilities and documents into canon.
+description: Load when writing a played session's new and changed entities, PC capabilities and documents into canon.
 ---
 
-# apply-canon — file the session's new and changed canon
+# apply-canon — write up the session's new and changed canon
 
 Everything play established about who or what things are becomes committed canon here: improvised
 NPCs, new places, shifted truths. The record is the digest, `campaign/sessions/{N}/digest.md` —
@@ -13,8 +13,8 @@ chiefly *World canon*, *Items*, *Documents*, *PC capabilities* and *Combat react
 
 ## Entities
 
-Every NPC, location, faction, region and significant item play introduced or changed gets filed,
-improvised ones included.
+Every NPC, location, faction, region and significant item play introduced or changed gets written
+up, improvised ones included.
 
 - **Check `INDEX.md` first.** Reuse an existing slug, turn a `named-only` stub into a full file, and
   extend a role-overlapping entity rather than create a near-twin.
