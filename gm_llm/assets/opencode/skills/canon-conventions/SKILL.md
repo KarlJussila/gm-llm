@@ -120,8 +120,9 @@ unique across the campaign and a `Known to:` line naming the in-world parties wh
   Known to: [[lysa-fenn]], harbor-cell leadership.
 ```
 
-In an entity file, secrets live in its deeper layer, one tagged entry each. Tag the secrets, not
-the surface — openly apparent details need no tag.
+In an entity file, secrets live in its deeper layer, one tagged entry each. Only that home carries
+the tag: elsewhere, say what the secret is plainly and link its home. Tag the secrets, not the
+surface — openly apparent details need no tag.
 
 **When the PC learns a secret,** record it once, in the knowledge ledger, ending the line with
 `[learned:<id> S<n>]`. The orchestrator then turns the home tag into `[revealed:<id> S<n>]` and adds

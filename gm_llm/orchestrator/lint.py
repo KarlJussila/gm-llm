@@ -204,10 +204,12 @@ def _lint_secrets(campaign: Path) -> list[Issue]:
         for m in list(HIDDEN.finditer(text)) + list(REVEALED.finditer(text)):
             sid = m.group(1)
             if sid in seen:
-                issues.append(Issue(rel, f"secret id `{sid}` is tagged twice here — one tagged "
-                                         "entry per secret; refer to it elsewhere untagged"))
+                issues.append(Issue(rel, f"secret id `{sid}` is tagged twice here — only its home "
+                                         "carries the tag; elsewhere, say it plainly"))
             elif sid in homes:
-                issues.append(Issue(rel, f"secret id `{sid}` is also used in {homes[sid]}"))
+                issues.append(Issue(rel, f"secret id `{sid}` is also used in {homes[sid]} — only "
+                                         "its home carries the tag; elsewhere, say it plainly and "
+                                         "link the home"))
             seen.add(sid)
             homes.setdefault(sid, rel)
     for led in sorted((campaign / "characters").glob("*.knowledge.md")):

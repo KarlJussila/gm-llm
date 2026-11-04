@@ -68,7 +68,8 @@ There is no PyPI publish: a "release" is the version-bump commit, which live cam
   prologue, handouts and its messages) use an in-world term only once the player has met it or
   explain it plainly as it comes up, and prefer concrete description to invented terms.
 - **An entity's secrets have one home.** The templates' deeper layer and `## Secrets` were two
-  sections for the same truth; they are now one, the deeper layer, of tagged entries. The lint
+  sections for the same truth; they are now one, the deeper layer, of tagged entries. Only that
+  home carries the tag; elsewhere a secret is said plainly, with a link to its home. The lint
   flags a secret tagged twice in one file.
 - **The runner improvises more freely.** Anything it adds is checked against canon rather than held
   to what's written, and drifting from the plan prompts it to look for a stopping point rather
